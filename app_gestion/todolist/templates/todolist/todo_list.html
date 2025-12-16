@@ -19,12 +19,9 @@
         <ul class="todo-list__container">
             {% for todo in todo_pending %}
                 <li class="todo-list__main-item-wrapper">
-                    <div class="todo-list__main-item
-                                {% if todo.due_date|date:'Y-m-d' == today|date:'Y-m-d' %}
-                                    todo-today
-                                {% endif %}">
+                    <article class="todo-list__main-item todo--{{ todo.due_status }}">
                         <h3 class="todo-list__main-item-title">{{ todo.project }}</h3>
-                        <div class="todo-list__main-item-content">
+                        <div class="todo-list__main-item-content todo--{{ todo.due_status }}">
                             <label>
                                 <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
                                 {{ todo.title }}
@@ -39,7 +36,7 @@
                                 {% endwith %}
                             </div>
                         {% endif %}
-                    </div>
+                        </article>
                 </li>
             {% endfor %}
         </ul>
@@ -51,10 +48,7 @@
         <ul class="todo-list__container">
             {% for todo in todo_completed %}
                 <li class="todo-list__main-item-wrapper">
-                    <div class="todo-list__main-item
-                                {% if todo.due_date|date:'Y-m-d' == today|date:'Y-m-d' %}
-                                    todo-today
-                                {% endif %}">
+                    <article class="todo-list__main-item todo--{{ todo.due_status }}">
                         <h3 class="todo-list__main-item-title">{{ todo.project }}</h3>
                         <div class="todo-list__main-item-content">
                             <label>
@@ -71,7 +65,7 @@
                                 {% endwith %}
                             </div>
                         {% endif %}
-                    </div>
+                    </article>
                 </li>
             {% endfor %}
         </ul>

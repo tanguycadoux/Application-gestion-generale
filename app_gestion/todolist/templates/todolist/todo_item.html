@@ -1,7 +1,7 @@
 <ul>
     {% for todo in children %}
-        <li>
-            <div class="todo-list__small-item">
+        <li class="todo-list__small-item-wrapper todo-list__small-item-wrapper--{{ todo.due_status }}">
+            <div class="todo-list__small-item todo-list__small-item--{{ todo.due_status }}">
                 <div>
                     <label>
                         <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>

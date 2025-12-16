@@ -1,3 +1,5 @@
+from django.db.models import Min, Q
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse_lazy
@@ -7,7 +9,6 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from .models import Todo, Tag
 from .forms import TodoForm
-
 import json
 
 
@@ -22,8 +23,24 @@ class TodoListView(ListView):
     template_name = "todolist/todo_list.html"
 
     def get_queryset(self):
-        return Todo.objects.filter(parent__isnull=True).order_by('due_date')
-
+        return (
+            Todo.objects
+            .filter(parent__isnull=True)
+            .annotate(
+                earliest_child_due_date=Min(
+                    'children__due_date',
+                    filter=Q(children__completed=False)
+                ),
+                sort_due_date=Coalesce(
+                    Min(
+                        'children__due_date',
+                        filter=Q(children__completed=False)
+                    ),
+                    'due_date'
+                )
+            )
+            .order_by('sort_due_date')
+        )
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()

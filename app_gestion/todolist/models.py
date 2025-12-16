@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from datetime import date
+
 
 class Project(models.Model):
     name = models.CharField(max_length=200)
@@ -78,3 +80,19 @@ class Todo(models.Model):
 
         self.clean()
         super().save(*args, **kwargs)
+    
+    @property
+    def due_status(self):
+        if not self.due_date or self.completed:
+            return None
+
+        today = date.today()
+        delta = (self.due_date - today).days
+
+        if delta < 0:
+            return 'overdue'
+        elif delta == 0:
+            return 'today'
+        elif delta <= 3:
+            return 'soon'
+        return 'normal'

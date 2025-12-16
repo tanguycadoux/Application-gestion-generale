@@ -1,7 +1,6 @@
 /* | RESET | */
 
 /* | BASE | */
-
 time{
     font-size: .8rem;
 }
@@ -24,7 +23,7 @@ time{
 
 .todo-list__main-item{
     --border-radius: .6rem;
-    --bg-color: oklch(95% 0 0);
+    --bg-color: var(--color-neutral--95);
 
     padding: .4rem;
     border-radius: var(--border-radius);
@@ -36,17 +35,25 @@ time{
     position: relative;
 }
 
-.todo-list__main-item.todo-today{
-    --bg-color: oklch(95% 0.04 85);
-    box-shadow: inset 0 0 .6rem oklch(93% 0.12 47);
+.todo--overdue{
+    --bg-color:     var(--color-alert--90);
+    --border-color: var(--color-alert--60);
+}
+.todo--today{
+    --bg-color:     var(--color-primary--95);
+    --border-color: var(--color-primary--60);
+}
+.todo--soon{
+    --bg-color:     var(--color-primary--95);
 }
 
-.todo-list__main-item.todo-today::after{
+.todo--overdue::after,
+.todo--today::after{
     content: "";
     position: absolute;
     inset: 0;
     border-radius: var(--border-radius);
-    border: 1px solid oklch(80% 0.15 47);
+    border: .2rem solid var(--border-color);
     pointer-events: none;
 }
 
@@ -69,22 +76,56 @@ time{
 }
 
 .todo-list__children-wrapper ul{
-    --border-color: oklch(80% 0 0);
-    margin: .4rem 0 0;
+    --border-color: var(--color-neutral--50);
+
     padding: 0;
+    margin-top: .4rem;
     list-style: none;
     border: 1px solid var(--border-color);
     border-radius: .2rem;
+    overflow: hidden;
 }
 
-.todo-list__children-wrapper li{
-    margin: .4rem;
+.todo-list__small-item-wrapper{
+    --bg-color: var(--color-neutral--95);
+
+    background-color: var(--bg-color);
+
+    padding: .4rem;
 }
+
+.todo-list__small-item-wrapper--overdue{
+    --bg-color: var(--color-alert--90);
+}
+.todo-list__small-item-wrapper--today,
+.todo-list__small-item-wrapper--soon{
+    --bg-color: var(--color-primary--95);
+}
+
 
 .todo-list__small-item{
-    margin-top: .4rem;
+    --color: black;
+    --font-weight: 400;
+
+    color: var(--color);
+    background-color: var(--bg-color);
+    font-weight: var(--font-weight);
+    
     display: grid;
     grid-template-columns: 1fr auto;
+}
+
+.todo-list__small-item--overdue{
+    --color: var(--color-alert--40);
+    --font-weight: 600;
+}
+.todo-list__small-item--today{
+    --color: var(--color-primary--40);
+    --font-weight: 600;
+}
+.todo-list__small-item--soon{
+    --color: var(--color-primary--40);
+    --font-weight: 600;
 }
 
 .todo-list__small-item a{
