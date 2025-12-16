@@ -1,0 +1,18 @@
+{% extends "todolist/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Accueil</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Supprimer "{{ object.title }}" ?</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Oui, supprimer</button>
+    </form>
+
+    <a href="{% url 'todolist:todo_detail' object.pk %}">Annuler</a>
+{% endblock content %}
+

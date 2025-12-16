@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'note_taking/style.css' %}">
+{% endblock extra_head %}
+
+{% block nav %}
+    <ul>
+        <li><a href="{% url 'project_index' %}">Toutes les apps</a></li>
+    </ul>
+
+    <hr>
+
+    <ul>
+        <li><a href="{% url 'note_taking:index' %}">Accueil</a></li>
+        <li><a href="{% url 'note_taking:notes_list' %}">Liste des notes</a></li>
+    </ul>
+{% endblock nav %}
+
+{% block admin %}
+    <form method="post" action="{% url 'note_taking:overwrite_notes' %}">
+        {% csrf_token %}
+        <p>
+            <label for="source_folder">Réécrire tous les fichiers</label>
+            <input type="text" name="source_folder" id="source_folder" placeholder="Chemin du dossier source">
+        </p>
+        <button type="submit">Importer</button>
+    </form>
+    <hr>
+    <form method="post" action="{% url 'note_taking:synchronize_notes' %}">
+        {% csrf_token %}
+        <p>Synchroniser toutes les notes</p>
+        <button type="submit">Synchroniser</button>
+    </form>
+{% endblock admin %}

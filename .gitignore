@@ -1,0 +1,17 @@
+### Environnement ###
+.venv/
+
+### Django ###
+*.log
+*.pot
+*.pyc
+*.py[cod]
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+### Notes ###
+notes_quarto_files/
+notes_quarto_files_*/

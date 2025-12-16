@@ -1,0 +1,39 @@
+{% extends "todolist/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>TODO</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>{{ object.title }}</h1>
+    
+    {% if object.project %}
+        <p>{{ object.project }}</p>
+    {% else %}
+        <p>Pas de projet affilié.</p>
+    {% endif %}
+    {% if object.tags.all %}
+        <p>Tags : {% for t in object.tags.all %} {{ t.name }} {% endfor %}</p>
+    {% endif %}
+    {% if object.due_date %}
+        <p>{{ object.due_date }}</p>
+    {% endif %}
+    {% if object.description %}
+        <p>{{ object.description }}</p>
+    {% endif %}
+    {% if object.parent %}
+        <p>Parent : <a href="{% url 'todolist:todo_detail' object.parent.pk %}">{{ object.parent }}</a></p>
+    {% endif %}
+    {% if object.children.all %}
+        <div class="todo-list__children-wrapper">
+            {% with children=object.children.all %}
+                {% include "todolist/todo_item.html" with children=children %}
+            {% endwith %}
+        </div>
+    {% endif %}
+    
+    <a class="button" href="{% url 'todolist:todo_create' %}?parent={{ object.pk }}">+ Ajouter une sous-tâche</a>
+    <a class="button" href="{% url 'todolist:todo_edit' object.pk %}">Modifier</a>
+    <a class="button button--danger" href="{% url 'todolist:todo_delete' object.pk %}">Supprimer</a>
+{% endblock content %}

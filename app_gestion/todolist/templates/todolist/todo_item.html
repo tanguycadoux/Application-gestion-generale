@@ -1,0 +1,21 @@
+<ul>
+    {% for todo in children %}
+        <li>
+            <div class="todo-list__small-item">
+                <div>
+                    <label>
+                        <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
+                        {{ todo.title }}
+                    </label>
+                    <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
+                </div>
+                <time datetime="{{ todo.due_date|date:'c' }}">{{ todo.due_date|date:'d M Y' }}</time>
+            </div>
+            {% if todo.children.all %}
+                {% with children_2=todo.children.all %}
+                    {% include "todolist/todo_item.html" with children=children_2 %}
+                {% endwith %}
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>

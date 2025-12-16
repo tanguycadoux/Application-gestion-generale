@@ -1,0 +1,16 @@
+{% extends "todolist/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>TODO</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>{{ object|default:'Créer une Todo' }}</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Enregistrer</button>
+    </form>
+{% endblock content %}

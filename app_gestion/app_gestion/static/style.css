@@ -1,0 +1,132 @@
+/* | RESET | */
+
+body{
+    margin: 0;
+}
+
+h1:first-child, h2:first-child{
+    margin-top: 0;
+}
+
+/* | BASE | */
+
+body{
+    font-family: Arial, sans-serif;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    height: 100vh;
+    position: relative;
+}
+
+body > div{
+    padding: 1rem;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+nav{
+    background-color: lightgray;
+    padding: 1rem;
+}
+
+nav > p{
+    margin: 0 0 .5rem;
+}
+
+nav > ul{
+    padding-left: 0;
+    margin-top: 0;
+    list-style: none;
+}
+
+.nav-link{
+    --color: black;
+    --bg-color: none;
+
+    background-color: var(--bg-color);
+    padding: .6rem;
+    border-radius: .8rem;
+    display: block;
+    text-decoration: none;
+}
+
+.nav-link:hover, .nav-link--active{
+    --color: black;
+    --bg-color: oklch(95% 0 0);
+    
+    text-decoration: none;
+}
+
+a{
+    --color: oklch(40% 0.2 265);
+    color: var(--color);
+    text-decoration: none;
+}
+
+a:hover{
+    --color: oklch(55% 0.2 265);
+    text-decoration: underline;
+}
+
+a:visited{
+    color: var(--color);
+}
+
+/* | BLOCK | */
+
+.admin-side-panel{
+    background-color: lightgray;
+    padding: 1rem;
+}
+
+.messages_wrapper{
+    position: fixed;
+    border-radius: 1.5rem;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 50%;
+    height: 100%;
+    max-height: 20%;
+    background-color: rgb(178, 173, 182);
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.messages_wrapper > div{
+    overflow-y: auto;
+    height: 100%;
+}
+
+.messages_wrapper:not(.messages_wrapper:has(.alert)){
+    display: none;
+}
+
+.button{
+    --color: oklch(40% 0.15 265);
+    --bg-color: oklch(95% 0.05 265);
+
+    display: inline-block;
+    font-weight: 600;
+    padding: .6rem;
+    margin: .4rem 0;
+    text-decoration: none;
+    background-color: var(--bg-color);
+    border-radius: .8rem;
+}
+
+.button:hover{
+    --color: oklch(40% 0.15 265);
+    text-decoration: none;
+}
+
+.button--danger{
+    --color: oklch(40% 0.15 15);
+    --bg-color: oklch(95% 0.10 15);
+}
+
+.h2-like{
+    font-size: 1.5rem;
+    font-weight: 600;
+}

@@ -1,0 +1,80 @@
+{% extends "todolist/base.html" %}
+
+
+{% block extra_head %}
+    {{ block.super }}
+    {% load static %}
+    <script src="{% static 'todolist/todo.js' %}"></script>
+    <title>Liste des TODO</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Mes Todos</h1>
+
+    <a class="button" href="{% url 'todolist:todo_create' %}">+ Créer une TODO</a>
+
+    <details open>
+        <summary class="h2-like">A faire</summary>
+        
+        <ul class="todo-list__container">
+            {% for todo in todo_pending %}
+                <li class="todo-list__main-item-wrapper">
+                    <div class="todo-list__main-item
+                                {% if todo.due_date|date:'Y-m-d' == today|date:'Y-m-d' %}
+                                    todo-today
+                                {% endif %}">
+                        <h3 class="todo-list__main-item-title">{{ todo.project }}</h3>
+                        <div class="todo-list__main-item-content">
+                            <label>
+                                <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
+                                {{ todo.title }}
+                            </label>
+                            <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
+                        </div>
+                        <time datetime="{{ todo.due_date|date:'c' }}">{{ todo.due_date|date:'d M Y' }}</time>
+                        {% if todo.children.all %}
+                            <div class="todo-list__children-wrapper">
+                                {% with children=todo.children.all %}
+                                    {% include "todolist/todo_item.html" with children=children %}
+                                {% endwith %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </details>
+
+    <details>
+        <summary class="h2-like">Archivées</summary>
+        
+        <ul class="todo-list__container">
+            {% for todo in todo_completed %}
+                <li class="todo-list__main-item-wrapper">
+                    <div class="todo-list__main-item
+                                {% if todo.due_date|date:'Y-m-d' == today|date:'Y-m-d' %}
+                                    todo-today
+                                {% endif %}">
+                        <h3 class="todo-list__main-item-title">{{ todo.project }}</h3>
+                        <div class="todo-list__main-item-content">
+                            <label>
+                                <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
+                                {{ todo.title }}
+                            </label>
+                            <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
+                        </div>
+                        <time datetime="{{ todo.due_date|date:'c' }}">{{ todo.due_date|date:'d M Y' }}</time>
+                        {% if todo.children.all %}
+                            <div class="todo-list__children-wrapper">
+                                {% with children=todo.children.all %}
+                                    {% include "todolist/todo_item.html" with children=children %}
+                                {% endwith %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </details>
+{% endblock content %}
+

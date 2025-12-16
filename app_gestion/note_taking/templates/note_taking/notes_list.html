@@ -1,0 +1,52 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Liste des notes</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Liste des notes</h1>
+
+    <p>
+        {{ nb_files }} fichiers <code>.qmd</code> source.<br>
+        {{ nb_objects }} notes dans la base de données.
+    </p>
+
+    <hr>
+    <form method="post" action="{% url 'note_taking:import_note' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label for="note_import">Importer une note</label>
+            <input type="file" name="note_import" id="note_import" accept=".qmd">
+        </p>
+        <button type="submit">Importer</button>
+    </form>
+    <hr>
+
+    <h2>Table des objets</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Date ISO</th>
+                <th scope="col">Date</th>
+                <th scope="col">Liens</th>
+                <th scope="col">PK</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for note in notes_objects %}
+                <tr>
+                    <th scope="row">{{ note.date|date:'c' }}</th>
+                    <td scope="row">{{ note.date|date:'D. j M. Y' }}</td>
+                    <td>
+                        <a target="_blank" href="{% url 'note_taking:note_md' note.date|date:'c' %}">Markdown</a>
+                        <a target="_blank" href="{% url 'note_taking:note_json' note.date|date:'c' %}">JSON</a>
+                    </td>
+                    <td scope="row">{{ note.pk }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock content %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'todolist/style.css' %}">
+{% endblock extra_head %}
+
+{% block nav %}
+    <ul>
+        <li><a class="nav-link" href="{% url 'project_index' %}">Toutes les apps</a></li>
+    </ul>
+
+    <hr>
+
+    <ul>
+        {% url 'todolist:index' as url %}
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{% url 'todolist:index' %}">
+            Accueil
+        </a></li>
+
+        {% url 'todolist:todo_list' as url %}
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{% url 'todolist:todo_list' %}">
+            Liste des TODO
+        </a></li>
+    </ul>
+{% endblock nav %}

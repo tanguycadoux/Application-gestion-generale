@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    {% block extra_head %}{% endblock extra_head %}
+</head>
+
+<body>
+    <nav>
+        {% block nav %}{% endblock nav %}
+    </nav>
+    
+    <div>
+        {% block content %}{% endblock content %}
+    </div>
+    
+    <div class="admin-side-panel">
+        <h2>Admin</h2>
+        
+        <a href="{% url 'admin:index' %}" target="_blank">Admin panel</a>
+        
+        <hr>
+        
+        {% block admin %}{% endblock admin %}
+    </div>
+    
+    <div class="messages_wrapper">
+        <div>
+            
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% if not forloop.last %}
+            <hr>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

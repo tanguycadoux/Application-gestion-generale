@@ -1,0 +1,80 @@
+from django.db import models
+from django.core.exceptions import ValidationError
+
+
+class Project(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
+class Todo(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Basse'),
+        ('medium', 'Moyenne'),
+        ('high', 'Haute'),
+    ]
+
+    title = models.CharField(max_length=200)
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="todos",
+        null=True,
+        blank=True,
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        related_name="todos",
+        blank=True
+    )
+    description = models.TextField(blank=True)
+    completed = models.BooleanField(default=False)
+
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='medium'
+    )
+
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children'
+    )
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        if self.parent:
+            ancestor = self.parent
+            while ancestor:
+                if ancestor == self:
+                    raise ValidationError("Impossible de créer une boucle dans les sous-tâches.")
+                ancestor = ancestor.parent
+
+    def save(self, *args, **kwargs):
+        if self.parent:
+            self.project = self.parent.project
+            if not self.due_date:
+                self.due_date = self.parent.due_date
+
+        self.clean()
+        super().save(*args, **kwargs)
