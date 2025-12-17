@@ -115,5 +115,7 @@ def toggle_todo(request, pk):
             "children_count": incomplete_children.count(),
         })
     
+    toggled_ids = []    
     toggle(todo)
-    return JsonResponse({"status": "ok"})
+
+    return JsonResponse({"status": "ok", "toggled_ids": toggled_ids})

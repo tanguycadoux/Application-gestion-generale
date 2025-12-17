@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     await toggle_todo(todo_checkbox.dataset.url, todo_checkbox.checked, csrftoken, force=true);
                 }
             }
+            
+            location.reload();
         });
     });
 });
