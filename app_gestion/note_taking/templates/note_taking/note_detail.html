@@ -1,0 +1,23 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Liste des notes</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Note du {{ object }}</h1>
+
+    <p>Date : <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></p>
+    <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
+    <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
+
+    <ul>
+        {% for note_part in object.parts.all %}
+            <li>
+                <p>{{ note_part }}</p>
+                <p>{{ note_part.tags }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock content %}

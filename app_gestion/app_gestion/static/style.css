@@ -86,6 +86,32 @@ nav > ul{
     list-style: none;
 }
 
+a{
+    --color: oklch(40% 0.2 265);
+    color: var(--color);
+    text-decoration: none;
+}
+
+a:hover{
+    --color: oklch(55% 0.2 265);
+    text-decoration: underline;
+}
+
+a:visited{
+    color: var(--color);
+}
+
+table {
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid;
+}
+
+/* | BLOCK | */
+
 .nav-link{
     --color: black;
     --bg-color: none;
@@ -103,23 +129,6 @@ nav > ul{
     
     text-decoration: none;
 }
-
-a{
-    --color: oklch(40% 0.2 265);
-    color: var(--color);
-    text-decoration: none;
-}
-
-a:hover{
-    --color: oklch(55% 0.2 265);
-    text-decoration: underline;
-}
-
-a:visited{
-    color: var(--color);
-}
-
-/* | BLOCK | */
 
 .admin-side-panel{
     background-color: var(--color-neutral--95);

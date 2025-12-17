@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import ListView, DetailView
+
 from pathlib import Path
 import markdown
 
@@ -15,25 +17,11 @@ def index(request):
 
     return render(request, "note_taking/index.html", context)
 
-def notes_list(request):
-    qmd_files = sorted(
-        [f.name for f in settings.NOTES_DIR.glob("*.qmd")],
-        reverse=True
-    )
+class NoteDetail(DetailView):
+    model = Note
 
-    notes = []
-
-    for file in qmd_files:
-        notes.append({"date": Path(file).stem})
-
-    context = {
-        "notes": notes,
-        "notes_objects": Note.objects.all().order_by('-date'),
-        "nb_files": len(qmd_files),
-        "nb_objects": len(Note.objects.all()),
-        }
-
-    return render(request, "note_taking/notes_list.html", context)
+class NoteList(ListView):
+    model = Note
 
 def note_md(request, pk):
     # TO DELETE

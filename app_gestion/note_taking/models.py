@@ -13,7 +13,7 @@ class Note(models.Model):
         return f'{self.date}'
 
 class NotePart(models.Model):
-    note = models.ForeignKey(Note, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="parts")
     project = models.CharField(max_length=50, blank=False, default=None)
     subject = models.CharField(max_length=50, blank=True, null=True, default=None)
     tags = models.CharField(max_length=50, blank=True, null=True, default=None)
@@ -21,7 +21,7 @@ class NotePart(models.Model):
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         string_repr = str(self.project)
         if self.subject:
