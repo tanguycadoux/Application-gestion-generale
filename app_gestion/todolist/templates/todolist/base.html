@@ -14,12 +14,12 @@
 
     <ul>
         {% url 'todolist:index' as url %}
-        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{% url 'todolist:index' %}">
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
             Accueil
         </a></li>
 
         {% url 'todolist:todo_list' as url %}
-        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{% url 'todolist:todo_list' %}">
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
             Liste des TODO
         </a></li>
     </ul>

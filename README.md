@@ -1,11 +1,48 @@
-# Gestion générale
+# Application de gestion générale
 
-Appli d'organisation pour le CEA.
+Application pour l'organisation quotidienne.
 
-Prise de notes organisées par jour, par sujet. Chaque sujet peut faire partie d'un (ou plusieurs) projets et avoir des tags.
+Projet DJANGO `app_gestion`, contenant des applications :
 
-Appli en Django.
+- `note_taking` pour la prise de notes,
+- `todolist` pour la gestion de TODO.
 
-Chaque jour est un fichier `.qmd`
+## Prise de notes
 
-Les notes peuvent créer des TODO si un titre/tag TODO est écrit dans la note (pas encore implémenté).
+Les notes sont organisés par jour, chaque jour étant un fichier quarto (`.qmd`).
+
+### Structure générale
+
+Une note est structurée de cette manière :
+
+```
+# Projet (exemple : ASTERICS)
+## Sujet (exemple : Caractérisation mécanique)
+### Tag 1 (exemple : Mesure géométrique des pièces et échantillons)
+#### Tag 2
+##### Tag 3
+###### Tag 4
+```
+
+Les titres sont cummulatifs, ce qui signifie qu'un texte contenu sous "Tag 2" hérite du projet, sujet et Tag 1. Par convention, même si un titre conient une virgule, il est considéré comme un tag à part entière (par exemple le titre "Conception, approvisionnement et fabrication" donnera le tag `Conception, approvisionnement et fabrication` et non les tags `Conception` et `approvisionnement et fabrication`).
+
+### Tags supplémentaires
+
+Il est possible d'ajouter plus de tags en ajoutant un bloc avec la classe `metadata` :
+
+```
+::: {.metadata}
+tags: [tag supplémentaire 1, tag supplémentaire 2]
+:::
+```
+
+Lorsque des tags sont spécifiés de cette manière, ils ajoutent les tags à ceux déjà présents précédemment, et sont conservés dans les titres de niveau plus profonds : `A COMPLETER`
+
+```
+# Projet
+## Sujet
+### Tag 1
+#### Tag 2
+##### Tag 3
+###### Tag 4
+```

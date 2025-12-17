@@ -7,14 +7,21 @@
 
 {% block nav %}
     <ul>
-        <li><a href="{% url 'project_index' %}">Toutes les apps</a></li>
+        <li><a class="nav-link" href="{% url 'project_index' %}">Toutes les apps</a></li>
     </ul>
 
     <hr>
 
     <ul>
-        <li><a href="{% url 'note_taking:index' %}">Accueil</a></li>
-        <li><a href="{% url 'note_taking:notes_list' %}">Liste des notes</a></li>
+        {% url 'note_taking:index' as url %}
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
+            Accueil
+        </a></li>
+        
+        {% url 'note_taking:notes_list' as url %}
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
+            Les notes
+        </a></li>
     </ul>
 {% endblock nav %}
 
