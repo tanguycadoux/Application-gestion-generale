@@ -86,7 +86,7 @@ time{
     overflow: hidden;
 }
 
-.todo-list__small-item-wrapper{
+.todo-line-item__wrapper{
     --bg-color: var(--color-neutral--95);
 
     background-color: var(--bg-color);
@@ -94,16 +94,16 @@ time{
     padding: .4rem;
 }
 
-.todo-list__small-item-wrapper--overdue{
+.todo-line-item__wrapper--overdue{
     --bg-color: var(--color-alert--90);
 }
-.todo-list__small-item-wrapper--today,
-.todo-list__small-item-wrapper--soon{
+.todo-line-item__wrapper--today,
+.todo-line-item__wrapper--soon{
     --bg-color: var(--color-primary--95);
 }
 
 
-.todo-list__small-item{
+.todo-line-item{
     --color: black;
     --font-weight: 400;
 
@@ -113,22 +113,23 @@ time{
     
     display: grid;
     grid-template-columns: 1fr auto;
+    align-items: baseline;
 }
 
-.todo-list__small-item--overdue{
+.todo-line-item--overdue{
     --color: var(--color-alert--40);
     --font-weight: 600;
 }
-.todo-list__small-item--today{
+.todo-line-item--today{
     --color: var(--color-primary--40);
     --font-weight: 600;
 }
-.todo-list__small-item--soon{
+.todo-line-item--soon{
     --color: var(--color-primary--40);
     --font-weight: 600;
 }
 
-.todo-list__small-item a{
+.todo-line-item a{
     width: fit-content;
 }
 
