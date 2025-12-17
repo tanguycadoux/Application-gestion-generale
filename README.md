@@ -36,13 +36,39 @@ tags: [tag supplémentaire 1, tag supplémentaire 2]
 :::
 ```
 
-Lorsque des tags sont spécifiés de cette manière, ils ajoutent les tags à ceux déjà présents précédemment, et sont conservés dans les titres de niveau plus profonds : `A COMPLETER`
+Lorsque des tags sont spécifiés de cette manière, ils ajoutent les tags à ceux déjà présents précédemment, et sont conservés dans les titres de niveau plus profonds. Si au même niveau un autre jeu de tags est donné, il remplace le précédent :
 
 ```
 # Projet
 ## Sujet
 ### Tag 1
+
+Tags : Tag 1
+
+::: {.metadata}
+tags: [m1, m2]
+:::
+
+Tags : Tag 1, m1, m2
+
+::: {.metadata}
+tags: [m3, m4]
+:::
+
+Tags : Tag 1, m3, m4
+
 #### Tag 2
 ##### Tag 3
+
+Tags : Tag 1, m3, m4, Tag 2, Tag 3
+
+::: {.metadata}
+tags: [m5, m6]
+:::
+
+Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6
+
 ###### Tag 4
+
+Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6, Tag 4
 ```
