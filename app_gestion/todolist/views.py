@@ -91,11 +91,29 @@ class TodoDeleteView(DeleteView):
 
 
 def toggle_todo(request, pk):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        todo = Todo.objects.get(pk=pk)
-        children = todo.children.all()
-        print(children)
+    def toggle(todo):
         todo.completed = data.get("completed", False)
         todo.save()
-        return JsonResponse({"status": "ok"})
+        if todo.completed:
+            for child in todo.children.all():
+                toggle(child)
+    
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid method"}, status=405)
+
+    data = json.loads(request.body)
+    force = data.get("force", False)
+    completed = data.get("completed", False)
+
+    todo = Todo.objects.get(pk=pk)
+    incomplete_children = todo.children.filter(completed=False)
+
+    if completed and incomplete_children.exists() and not force:
+        return JsonResponse({
+            "status": "needs_confirmation",
+            "message": "Cette tâche contient des sous-tâches non complétées.",
+            "children_count": incomplete_children.count(),
+        })
+    
+    toggle(todo)
+    return JsonResponse({"status": "ok"})
