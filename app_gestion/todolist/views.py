@@ -94,6 +94,8 @@ def toggle_todo(request, pk):
     if request.method == "POST":
         data = json.loads(request.body)
         todo = Todo.objects.get(pk=pk)
+        children = todo.children.all()
+        print(children)
         todo.completed = data.get("completed", False)
         todo.save()
         return JsonResponse({"status": "ok"})

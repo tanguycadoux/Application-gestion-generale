@@ -2,6 +2,10 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from datetime import date
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
 
 
 class Project(models.Model):
@@ -60,6 +64,9 @@ class Todo(models.Model):
         blank=True,
         related_name='children'
     )
+
+    if TYPE_CHECKING:
+        children: "QuerySet[Todo]"
 
     def __str__(self):
         return self.title
