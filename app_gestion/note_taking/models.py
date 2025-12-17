@@ -15,10 +15,13 @@ class Note(models.Model):
 class NotePart(models.Model):
     note = models.ForeignKey(Note, on_delete=models.CASCADE)
     project = models.CharField(max_length=50, blank=False, default=None)
-    subject = models.CharField(max_length=50, blank=True, default=None)
-    tags = models.CharField(max_length=50, blank=True, default=None)
-    content = models.TextField(blank=False, default=None)
+    subject = models.CharField(max_length=50, blank=True, null=True, default=None)
+    tags = models.CharField(max_length=50, blank=True, null=True, default=None)
+    content = models.TextField(blank=True, null=True, default=None)
 
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
         string_repr = str(self.project)
         if self.subject:

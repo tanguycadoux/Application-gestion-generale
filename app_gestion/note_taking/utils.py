@@ -1,4 +1,4 @@
-from .models import Note
+from .models import Note, NotePart
 
 from datetime import datetime, date
 from pathlib import Path
@@ -16,7 +16,6 @@ def insert_note_in_table(file):
     filename = Path(file.name).stem
 
     is_test = filename[:4] == 'TEST'
-
     if is_test:
         note_date = filename[5:]
     else:
@@ -27,7 +26,15 @@ def insert_note_in_table(file):
     raw_content = raw_bytes.decode('utf-8')
 
     note = Note(date=note_date, is_test=is_test, raw=raw_content)
+    
+    parsed_note = parse_note_as_dict(note)
+    if note_date != parsed_note['note metadata']['date']:
+        raise ValueError('La date de la note n\'est pas cohérente.')
+    
     note.save()
+
+    insert_noteparts_in_table(note, parsed_note)
+
     return note
 
 def parse_note_as_dict(note: Note) -> dict:
@@ -42,9 +49,9 @@ def parse_note_as_dict(note: Note) -> dict:
         return parsed_key, parsed_value
     
     json_content = {
-        'File date': note.date,
-        'Note metadata': [],
-        'Content': [],
+        'file date': note.date,
+        'note metadata': {},
+        'content': [],
         }
     
     is_note_metadata_block = False
@@ -65,17 +72,18 @@ def parse_note_as_dict(note: Note) -> dict:
     for i, line in enumerate(note.raw.split('\n')):
         line = line.strip()
 
-        if line.strip() == '---':
-            is_note_metadata_block = not(is_note_metadata_block)
-            continue
+        if not is_code_block:
+            if line.strip() == '---':
+                is_note_metadata_block = not(is_note_metadata_block)
+                continue
 
-        if line == r'::: {.metadata}':
-            is_local_metadata_block = True
-            continue
+            if line == r'::: {.metadata}':
+                is_local_metadata_block = True
+                continue
 
-        if is_local_metadata_block and line == ':::':
-            is_local_metadata_block = False
-            continue
+            if is_local_metadata_block and line == ':::':
+                is_local_metadata_block = False
+                continue
 
         if line[0:3] == '```':
             is_code_block = not(is_code_block)
@@ -116,7 +124,7 @@ def parse_note_as_dict(note: Note) -> dict:
 
         elif is_note_metadata_block:
             parsed_key, parsed_value = parse_text_as_dict(line)
-            json_content['Note metadata'].append({parsed_key: parsed_value})
+            json_content['note metadata'][parsed_key] = parsed_value
 
         elif is_local_metadata_block:
             parsed_key, parsed_value = parse_text_as_dict(line)
@@ -146,34 +154,45 @@ def parse_note_as_dict(note: Note) -> dict:
                 if hierarchy[f'tags_under_title_{j}'] is not None:
                     tags = tags.union(hierarchy[f'tags_under_title_{j}'])
 
-            for json_line in json_content['Content']:
-                json_line_tags = set(json_line["Tags"])
-                if project == json_line["Project"] and subject == json_line["Subject"] and tags == json_line_tags:
+            for json_line in json_content['content']:
+                json_line_tags = set(json_line["tags"])
+                if project == json_line["project"] and subject == json_line["subject"] and tags == json_line_tags:
                     append_new = False
-                    json_line["Content"].append(line)
+                    json_line["content"].append(line)
                     break
             if append_new:
-                json_content['Content'].append({
-                    "Project": project,
-                    "Subject": subject,
-                    "Tags": list(tags),
-                    "Content": [line],
+                json_content['content'].append({
+                    "project": project,
+                    "subject": subject,
+                    "tags": list(tags),
+                    "content": [line],
                 })
     
     lines_to_remove = []
-    for i, json_line in enumerate(json_content['Content']):
-        if json_line["Content"] == [""]:
+    for i, json_line in enumerate(json_content['content']):
+        if json_line["content"] == [""]:
             lines_to_remove.append(i)
     for i in reversed(lines_to_remove):
-        json_content['Content'].pop(i)
+        json_content['content'].pop(i)
     
-    for json_line in json_content['Content']:
-        while json_line['Content'][0] == "":
-            json_line['Content'].pop(0)
-        while json_line['Content'][-1] == "":
-            json_line['Content'].pop(-1)
+    for json_line in json_content['content']:
+        while json_line['content'][0] == "":
+            json_line['content'].pop(0)
+        while json_line['content'][-1] == "":
+            json_line['content'].pop(-1)
     
     return json_content
 
-def insert_noteparts_in_table(file):
-    return
+def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
+    note_parts = []
+    for note_part_raw in parsed_note['content']:
+        content = '\n'.join(note_part_raw['content'])
+        note_part = NotePart(note=note,
+                             project=note_part_raw['project'],
+                             subject=note_part_raw['subject'],
+                             tags=note_part_raw['tags'],
+                             content=content,
+        )
+        note_part.save()
+        note_parts.append(note_part)
+    return note_parts
