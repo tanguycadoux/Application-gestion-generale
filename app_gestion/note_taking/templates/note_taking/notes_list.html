@@ -41,8 +41,8 @@
                     <th scope="row">{{ note.date|date:'c' }}</th>
                     <td scope="row">{{ note.date|date:'D. j M. Y' }}</td>
                     <td>
-                        <a target="_blank" href="{% url 'note_taking:note_md' note.date|date:'c' %}">Markdown</a>
-                        <a target="_blank" href="{% url 'note_taking:note_json' note.date|date:'c' %}">JSON</a>
+                        <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
+                        <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
                     </td>
                     <td scope="row">{{ note.pk }}</td>
                 </tr>

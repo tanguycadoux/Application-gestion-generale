@@ -26,18 +26,20 @@
 {% endblock nav %}
 
 {% block admin %}
-    <form method="post" action="{% url 'note_taking:overwrite_notes' %}">
-        {% csrf_token %}
-        <p>
-            <label for="source_folder">Réécrire tous les fichiers</label>
-            <input type="text" name="source_folder" id="source_folder" placeholder="Chemin du dossier source">
-        </p>
-        <button type="submit">Importer</button>
-    </form>
-    <hr>
-    <form method="post" action="{% url 'note_taking:synchronize_notes' %}">
-        {% csrf_token %}
-        <p>Synchroniser toutes les notes</p>
-        <button type="submit">Synchroniser</button>
-    </form>
+    {% comment %}
+        <!-- <form method="post" action="{% url 'note_taking:overwrite_notes' %}">
+            {% csrf_token %}
+            <p>
+                <label for="source_folder">Réécrire tous les fichiers</label>
+                <input type="text" name="source_folder" id="source_folder" placeholder="Chemin du dossier source">
+            </p>
+            <button type="submit">Importer</button>
+        </form>
+        <hr>
+        <form method="post" action="{% url 'note_taking:synchronize_notes' %}">
+            {% csrf_token %}
+            <p>Synchroniser toutes les notes</p>
+            <button type="submit">Synchroniser</button>
+        </form> -->
+    {% endcomment %}
 {% endblock admin %}
