@@ -1,4 +1,4 @@
-from .models import Note, NotePart
+from .models import Note, NotePart, Project
 
 from datetime import datetime, date
 from pathlib import Path
@@ -12,7 +12,7 @@ def validate_date_format(date_text):
     except ValueError:
         raise ValueError("Incorrect data format, should be YYYY-MM-DD")
 
-def insert_note_in_table(file):
+def insert_note_in_table(file, force=False):
     filename = Path(file.name).stem
 
     is_test = filename[:4] == 'TEST'
@@ -26,22 +26,43 @@ def insert_note_in_table(file):
     raw_content = raw_bytes.decode('utf-8')
 
     note = Note(date=note_date, is_test=is_test, raw=raw_content)
-    
+
     parsed_note = parse_note_as_dict(note)
     if note_date != parsed_note['note metadata']['date']:
         raise ValueError('La date de la note n\'est pas cohérente.')
-    
     note.save()
-
+    
     insert_noteparts_in_table(note, parsed_note)
 
     return note
+
+def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
+    note_parts = []
+    for note_part_raw in parsed_note['content']:
+        content = '\n'.join(note_part_raw['content'])
+
+        project, _ = Project.objects.get_or_create(
+            name=note_part_raw['project'],
+            defaults={'description': note_part_raw['project']}
+        )
+
+        note_part = NotePart(
+            note=note,
+            project=project,
+            subject=note_part_raw['subject'],
+            tags=note_part_raw['tags'],
+            content=content,
+        )
+
+        note_part.save()
+        note_parts.append(note_part)
+    return note_parts
 
 def parse_note_as_dict(note: Note) -> dict:
     def parse_text_as_dict(text):
         parsed_text = text.split(':')
         if len(parsed_text) != 2:
-            raise ValueError(f'La métadonnée locale est erronnée : format non type DICT ({text})')
+            raise ValueError(f'La métadonnée est erronnée : format non type DICT ({text})')
         
         parsed_key   = parsed_text[0].strip()
         parsed_value = parsed_text[1].strip()
@@ -90,7 +111,7 @@ def parse_note_as_dict(note: Note) -> dict:
         
         # Récupération des titres
         m = re.match(r'^(#+)\s+(.*)', line)
-        if m:
+        if m and not is_code_block:
             is_title_line = True
             level = len(m.group(1))
             title = m.group(2).strip()
@@ -122,11 +143,11 @@ def parse_note_as_dict(note: Note) -> dict:
         if is_note_metadata_block and is_local_metadata_block:
             raise ValueError(f'Erreur dans la lecture : à la fois block metadata local et global (ligne numéro {i+1} : {line})')
 
-        elif is_note_metadata_block:
+        elif is_note_metadata_block and line != "":
             parsed_key, parsed_value = parse_text_as_dict(line)
             json_content['note metadata'][parsed_key] = parsed_value
 
-        elif is_local_metadata_block:
+        elif is_local_metadata_block and line != "":
             parsed_key, parsed_value = parse_text_as_dict(line)
 
             if parsed_key == 'tags':
@@ -137,7 +158,13 @@ def parse_note_as_dict(note: Note) -> dict:
                 for tag in parsed_tags:
                     local_metadata_tags.add(tag.strip())
             
-            hierarchy[f'tags_under_title_{current_title_level}'] = local_metadata_tags
+            match current_title_level:
+                case 1:
+                    hierarchy[f'tags_under_project'] = local_metadata_tags
+                case 2:
+                    hierarchy[f'tags_under_subject'] = local_metadata_tags
+                case _:
+                    hierarchy[f'tags_under_title_{current_title_level}'] = local_metadata_tags
         
         else:
             append_new = True
@@ -153,7 +180,7 @@ def parse_note_as_dict(note: Note) -> dict:
                     tags.add(hierarchy[f'title_{j}'])
                 if hierarchy[f'tags_under_title_{j}'] is not None:
                     tags = tags.union(hierarchy[f'tags_under_title_{j}'])
-
+            
             for json_line in json_content['content']:
                 json_line_tags = set(json_line["tags"])
                 if project == json_line["project"] and subject == json_line["subject"] and tags == json_line_tags:
@@ -170,7 +197,8 @@ def parse_note_as_dict(note: Note) -> dict:
     
     lines_to_remove = []
     for i, json_line in enumerate(json_content['content']):
-        if json_line["content"] == [""]:
+        content_as_str = "".join(json_line["content"])
+        if content_as_str.strip() == "":
             lines_to_remove.append(i)
     for i in reversed(lines_to_remove):
         json_content['content'].pop(i)
@@ -182,17 +210,3 @@ def parse_note_as_dict(note: Note) -> dict:
             json_line['content'].pop(-1)
     
     return json_content
-
-def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
-    note_parts = []
-    for note_part_raw in parsed_note['content']:
-        content = '\n'.join(note_part_raw['content'])
-        note_part = NotePart(note=note,
-                             project=note_part_raw['project'],
-                             subject=note_part_raw['subject'],
-                             tags=note_part_raw['tags'],
-                             content=content,
-        )
-        note_part.save()
-        note_parts.append(note_part)
-    return note_parts

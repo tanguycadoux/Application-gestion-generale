@@ -1,0 +1,10 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Projet {{ object }}</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Projet {{ object }}</h1>
+{% endblock content %}

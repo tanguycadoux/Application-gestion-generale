@@ -1,6 +1,4 @@
-from django.conf import settings
 from django.contrib import messages
-from django.core.files.storage import FileSystemStorage
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView
@@ -8,7 +6,7 @@ from django.views.generic import ListView, DetailView
 from pathlib import Path
 import markdown
 
-from .models import Note
+from .models import Note, Project
 from .utils import insert_note_in_table, parse_note_as_dict
 
 
@@ -17,23 +15,22 @@ def index(request):
 
     return render(request, "note_taking/index.html", context)
 
+
 class NoteDetail(DetailView):
     model = Note
 
 class NoteList(ListView):
     model = Note
 
+
+class ProjectDetail(DetailView):
+    model = Project
+
+class ProjectList(ListView):
+    model = Project
+
+
 def note_md(request, pk):
-    # TO DELETE
-    # filename = f'{date}.qmd'
-    # note_path = settings.NOTES_DIR / filename
-
-    # if not note_path.exists() or not note_path.suffix == ".qmd":
-    #     raise Http404("Note not found.")
-    
-    # with open(note_path, "r", encoding="utf-8") as f:
-    #     content = f.read()
-
     note = get_object_or_404(Note, pk=pk)
     
     html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])    
@@ -48,40 +45,20 @@ def note_md(request, pk):
 def import_note(request):
     if request.method == "POST":
         try:
-            file = request.FILES["note_import"]
-            insert_note_in_table(file)
-            messages.success(request, "La note est ajoutée.")
+            files = request.FILES.getlist("note_import")
+            for file in files:
+                insert_note_in_table(file)
+            messages.success(request, "Les notes sont ajoutées.")
         except Exception as e:
             messages.error(request, f"Erreur lors de l'ajout de la note : {e}")
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
-# def overwrite_notes(request):
-#     if request.method == "POST":
-#         source_folder = request.POST.get("source_folder")
-#         project_notes_folder = settings.NOTES_DIR
-#         try:
-#             archive_folder(project_notes_folder)
-#             copy_folder_contents(source_folder, project_notes_folder)
-#             messages.success(request, "Le dossier est synchronisé.")
-#         except Exception as e:
-#             messages.error(request, f"Erreur lors de la synchronisation : {e}")
-#     return redirect(request.META.get('HTTP_REFERER', '/'))
-
-# def synchronize_notes(request):
-#     try:
-#         new_notes = []
-#         for filepath in Path(settings.NOTES_DIR).glob('*.qmd'):
-#             filename = Path(filepath)
-#             try:
-#                 note = insert_note_in_table(filename)
-#                 new_notes.append(note)
-#             except Exception as e:
-#                 messages.error(request, f"Erreur lors de l'ajout de la note {filename} : {e}")
-#         messages.success(request, f'{len(new_notes)} notes ont été ajoutées.')
-#     except Exception as e:
-#         messages.error(request, f"Erreur lors de la synchronisation : {e}")        
-#     return redirect(request.META.get('HTTP_REFERER', '/'))
-
 def note_json(request, pk):
     note = get_object_or_404(Note, pk=pk)
     return JsonResponse(parse_note_as_dict(note))
+
+# ADMIN
+def clear_notes(request):
+    Note.objects.all().delete()
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))

@@ -14,4 +14,11 @@ urlpatterns = [
     path("note/<int:pk>/json/", views.note_json, name="note_json"),
 
     path("note/import/", views.import_note, name="import_note"),
+
+    path("projects/", views.ProjectList.as_view(), name="projects_list"),
+
+    path("project/<int:pk>/", views.ProjectDetail.as_view(), name="project_detail"),
+
+    # ADMIN
+    path("notes/clear/", views.clear_notes, name="clear_notes"),
 ]

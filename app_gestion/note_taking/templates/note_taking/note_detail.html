@@ -6,18 +6,30 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Note du {{ object }}</h1>
+    <h1>Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
-    <p>Date : <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></p>
     <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
     <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
 
-    <ul>
-        {% for note_part in object.parts.all %}
-            <li>
-                <p>{{ note_part }}</p>
-                <p>{{ note_part.tags }}</p>
-            </li>
-        {% endfor %}
-    </ul>
+    {% for note_part in object.parts.all %}
+        <article class="note-part">
+            <header>
+               <h2>
+                    {{ note_part.project }}
+                    {% if note_part.subject %}
+                        <span> / {{ note_part.subject }}</span>
+                    {% endif %}
+                </h2>
+                {% if note_part.tags %}
+                    <ul class="tags-list">
+                        {% for tag in note_part.tags %}
+                            <li>{{ tag }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </header>
+
+            {{ note_part.content|safe|linebreaks }}
+        </article>
+    {% endfor %}
 {% endblock content %}

@@ -16,14 +16,12 @@
     <form method="post" action="{% url 'note_taking:import_note' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <p>
-            <label for="note_import">Importer une note</label>
-            <input type="file" name="note_import" id="note_import" accept=".qmd">
+            <label for="note_import">Importer une ou plusieurs notes</label>
+            <input type="file" name="note_import" id="note_import" accept=".qmd" multiple>
         </p>
         <button type="submit">Importer</button>
     </form>
     <hr>
-
-    <h2>Table des objets</h2>
 
     <table>
         <thead>
@@ -38,11 +36,17 @@
                     <th scope="row"><a href="{% url 'note_taking:note_detail' note.pk %}">
                         {{ note.date|date:'D. j M. Y' }}
                     </a></th>
-                    <td></td>
-                    <!-- <td>
-                        <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
-                        <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
-                    </td> -->
+                    <td>
+                        {% if note.projects %}
+                            <ul class="tags-list">
+                                {% for project in note.projects %}
+                                    <li><a href="{% url 'note_taking:project_detail' project.pk %}">
+                                        {{ project }}
+                                    </a></li>    
+                                {% endfor%}
+                            </ul>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

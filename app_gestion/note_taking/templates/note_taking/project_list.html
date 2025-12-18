@@ -1,0 +1,18 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Liste des projets</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Liste des projets</h1>
+
+    <ul>
+        {% for project in object_list %}
+            <li><a href="{% url 'note_taking:project_detail' project.pk %}">
+                {{ project }}
+            </a></li>
+        {% endfor %}
+    </ul>
+{% endblock content %}

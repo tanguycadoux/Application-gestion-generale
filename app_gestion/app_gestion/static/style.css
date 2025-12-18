@@ -191,3 +191,38 @@ th, td {
     font-size: 1.5rem;
     font-weight: 600;
 }
+
+.note-part{
+    border: 1px solid;
+    padding: .4rem;
+}
+
+.note-part header{
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.note-part header h2{
+    margin: 0;
+}
+
+.tags-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: .4rem;
+    height: fit-content;
+}
+
+.tags-list li{
+    --bg-color: lightgray;
+
+    background-color: var(--bg-color);
+    padding: .1rem .4rem;
+    border-radius: 1rem;
+    font-size: .8rem;
+    font-weight: 600;
+}
