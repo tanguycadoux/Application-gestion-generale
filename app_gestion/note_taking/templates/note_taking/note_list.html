@@ -9,7 +9,7 @@
     <h1>Liste des notes</h1>
 
     <p>
-        {{ object_list.count }} notes dans la base de données.
+        {{ notes.count }} notes dans la base de données.
     </p>
 
     <hr>
@@ -31,7 +31,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for note in object_list %}
+            {% for note in notes %}
                 <tr>
                     <th scope="row"><a href="{% url 'note_taking:note_detail' note.pk %}">
                         {{ note.date|date:'D. j M. Y' }}

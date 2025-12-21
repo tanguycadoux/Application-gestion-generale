@@ -22,6 +22,8 @@ class NoteDetail(DetailView):
 
 class NoteList(ListView):
     model = Note
+    context_object_name = "notes"
+    ordering = ['-date']
 
 
 class ProjectDetail(DetailView):

@@ -10,7 +10,8 @@
 
     {% for date, note_parts in note_parts_by_date %}
         <section class="note-date-section">
-            <h2>{{ date }}</h2>
+            <!-- Date format: Lundi 14 décembre 2025 -->
+            <h2><time datetime="{{ date }}">{{ date|date:"l d F Y"|capfirst }}</time></h2>
 
             {% for note_part in note_parts %}
                 <article class="note-part">

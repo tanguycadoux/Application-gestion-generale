@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 from datetime import date
@@ -47,6 +48,10 @@ class Todo(models.Model):
     description = models.TextField(blank=True)
     completed = models.BooleanField(default=False)
 
+    created_from_note = models.BooleanField(default=False)
+    note_part_date = models.DateField(null=True, blank=True)
+    note_part_text = models.CharField(max_length=200, blank=True, null=True)
+
     priority = models.CharField(
         max_length=10,
         choices=PRIORITY_CHOICES,
@@ -67,6 +72,15 @@ class Todo(models.Model):
 
     if TYPE_CHECKING:
         children: "QuerySet[Todo]"
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["created_from_note", "note_part_date", "note_part_text"],
+                condition=Q(created_from_note=True),
+                name="unique_note_parts_when_created_from_note",
+            )
+        ]
 
     def __str__(self):
         return self.title

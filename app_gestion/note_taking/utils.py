@@ -1,8 +1,9 @@
 from .models import Note, NotePart, Project
 
+from todolist.services import create_todo_from_dict
+
 from datetime import datetime, date
 from pathlib import Path
-import shutil
 import re
 
 
@@ -32,8 +33,33 @@ def insert_note_in_table(file, force=False):
         raise ValueError('La date de la note n\'est pas cohérente.')
     note.save()
     
-    insert_noteparts_in_table(note, parsed_note)
+    note_parts = insert_noteparts_in_table(note, parsed_note)
 
+    for note_part in note_parts:
+        if type(note_part.tags) != list:
+            raise TypeError
+        
+        if "TODO" in note_part.tags and type(note_part.content) == str:
+            tags = note_part.tags.copy()
+            tags.append(note_part.subject)
+            tags.remove('TODO')
+
+            for line in note_part.content.split('\n'):
+                line = line.strip()
+                line = line.strip('-')
+                line = line.strip()
+
+                todo_data = {
+                    "date": note_part.note.date,
+                    "project": note_part.project.name,
+                    "content": line,
+                    "tags": tags,
+                    "description": {
+                        "subject": note_part.subject,
+                        "tags": note_part.tags,
+                    },
+                }
+                create_todo_from_dict(todo_data)
     return note
 
 def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:

@@ -4,13 +4,14 @@ from .models import Todo, Project, Tag
 
 
 @admin.register(Todo)
-class NoteAdmin(admin.ModelAdmin):
-    list_display = ("pk", "title", "project", "description", "due_date" , "completed", "priority", "parent", "created_at", "updated_at")
+class TodoAdmin(admin.ModelAdmin):
+    list_display = ("pk", "title", "project", "description", "due_date" , "completed", "priority", "parent", "created_at", "updated_at", "created_from_note")
+    list_filter = ("created_from_note",)
 
 @admin.register(Project)
-class NoteAdmin(admin.ModelAdmin):
+class ProjectAdmin(admin.ModelAdmin):
     list_display = ("pk", "name", "description", "created_at")
                     
 @admin.register(Tag)
-class NoteAdmin(admin.ModelAdmin):
+class TagAdmin(admin.ModelAdmin):
     list_display = ("pk", "name")
