@@ -77,6 +77,7 @@ def parse_note_as_dict(note: Note) -> dict:
     
     is_note_metadata_block = False
     is_local_metadata_block = False
+    is_callout_block = False
     is_code_block = False
     is_title_line = False
     current_title_level = None
@@ -102,8 +103,16 @@ def parse_note_as_dict(note: Note) -> dict:
                 is_local_metadata_block = True
                 continue
 
+            if line[:18] == r'::: {.callout-note':
+                is_callout_block = True
+                continue
+
             if is_local_metadata_block and line == ':::':
                 is_local_metadata_block = False
+                continue
+
+            if is_callout_block and line == ':::':
+                is_callout_block = False
                 continue
 
         if line[0:3] == '```':
@@ -111,7 +120,7 @@ def parse_note_as_dict(note: Note) -> dict:
         
         # Récupération des titres
         m = re.match(r'^(#+)\s+(.*)', line)
-        if m and not is_code_block:
+        if m and not (is_code_block or is_callout_block):
             is_title_line = True
             level = len(m.group(1))
             title = m.group(2).strip()
