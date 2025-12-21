@@ -2,9 +2,34 @@
 
 {% block extra_head %}
     {{ block.super }}
-    <title>Projet {{ object }}</title>
+    <title>Projet {{ project }}</title>
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Projet {{ object }}</h1>
+    <h1>Projet {{ project }}</h1>
+
+    {% for date, note_parts in note_parts_by_date %}
+        <section class="note-date-section">
+            <h2>{{ date }}</h2>
+
+            {% for note_part in note_parts %}
+                <article class="note-part">
+                    <header>
+                        {% if note_part.subject %}
+                            <h3>{{ note_part.subject }}</h3>
+                        {% endif %}
+                        {% if note_part.tags %}
+                            <ul class="tags-list">
+                                {% for tag in note_part.tags %}
+                                    <li>{{ tag }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </header>
+
+                    {{ note_part.content|safe|linebreaks }}
+                </article>
+            {% endfor %}
+        </section>
+    {% endfor %}
 {% endblock content %}

@@ -1,3 +1,4 @@
+from typing import Any
 from django.contrib import messages
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -25,6 +26,17 @@ class NoteList(ListView):
 
 class ProjectDetail(DetailView):
     model = Project
+    context_object_name = "project"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        note_parts = self.object.note_parts.all().order_by('-note__date')
+        dates = note_parts.values_list('note__date', flat=True).distinct()
+        context["note_parts_by_date"] = []
+        for date in dates:
+            note_parts_date = note_parts.filter(note__date=date)
+            context["note_parts_by_date"].append((date, note_parts_date))
+        return context
 
 class ProjectList(ListView):
     model = Project
