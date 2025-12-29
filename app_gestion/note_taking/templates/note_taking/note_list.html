@@ -3,6 +3,8 @@
 {% block extra_head %}
     {{ block.super }}
     <title>Liste des notes</title>
+    {% load static %}
+    <script src="{% static 'note_taking/table.js' %}" defer></script>
 {% endblock extra_head %}
 
 {% block content %}
@@ -27,16 +29,44 @@
         <thead>
             <tr>
                 <th scope="col">
-                    <button class="table-head-filter">
-                        <span>Date</span>
-                        <span>&#9660;</span>
-                    </button>
+                    <a class="table-column-head"
+                        {% if next_sort %}
+                            href="?sort={{ next_sort }}&direction={{ next_direction }}"
+                        {% else %}
+                            href="{% url 'note_taking:notes_list' %}"
+                        {% endif %}
+                    >
+                        <p>
+                            Date
+                            {% if sort == "date" %}
+                                {% if direction == "asc" %}
+                                    <span>&#x1F869;</span>
+                                {% elif direction == "desc" %}
+                                    <span>&#x1F86B;</span>
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                        <span class="table-column-head__more">
+                            &centerdot;&centerdot;&centerdot;
+                        </span>
+                    </a>
                 </th>
                 <th scope="col">
-                    <button class="table-head-filter">
-                        <span>Projets</span>
-                        <span>&#9660;</span>
-                    </button>
+                    <a class="table-column-head">
+                        <p>
+                            Projets
+                            {% if sort == "project" %}
+                                {% if direction == "asc" %}
+                                    <span>&#x1F869;</span>
+                                {% elif direction == "desc" %}
+                                    <span>&#x1F86B;</span>
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                        <span class="table-column-head__more">
+                            &centerdot;&centerdot;&centerdot;
+                        </span>
+                    </a>
                 </th>
             </tr>
         </thead>

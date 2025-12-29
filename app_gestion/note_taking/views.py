@@ -1,5 +1,6 @@
 from typing import Any
 from django.contrib import messages
+from django.db.models.query import QuerySet
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView
@@ -23,7 +24,44 @@ class NoteDetail(DetailView):
 class NoteList(ListView):
     model = Note
     context_object_name = "notes"
-    ordering = ['-date']
+
+    DEFAULT_ORDERING = "-date"
+    
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        sort = self.request.GET.get("sort")
+        direction = self.request.GET.get("direction")
+
+        if not sort or not direction:
+            return qs.order_by(self.DEFAULT_ORDERING)
+
+        ordering = sort if direction == "asc" else f"-{sort}"
+        return qs.order_by(ordering)
+    
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        sort = self.request.GET.get("sort")
+        direction = self.request.GET.get("direction")
+        if not sort or not direction:
+            next_direction = "asc"
+            next_sort = self.DEFAULT_ORDERING.lstrip("-")
+        elif direction == "asc":
+            next_direction = "desc"
+            next_sort = sort
+        else:
+            next_direction = None
+            next_sort = None
+
+        context.update({
+            "sort": sort,
+            "direction": direction,
+            "next_sort": next_sort,
+            "next_direction": next_direction,
+        })
+        return context
 
 
 class ProjectDetail(DetailView):
@@ -47,7 +85,10 @@ class ProjectList(ListView):
 def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
     
-    html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])    
+    if note.raw is not None:
+        html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])    
+    else:
+        html_content = "<p>Aucun contenu disponible.</p>"
     
     context = {
         "date": note.date,

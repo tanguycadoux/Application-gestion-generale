@@ -256,7 +256,7 @@ button:hover, .button:hover{
     color: var(--color);
 }
 
-.table-head-filter{
+.table-column-head{
     --color:    black;
     --bg-color: inherit;
     --bg-color-hover: oklch(92% 0 0);
@@ -264,20 +264,37 @@ button:hover, .button:hover{
     background-color: var(--bg-color);
     color: var(--color);
 
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: baseline;
     font-weight: 600;
-    padding: .6rem;
+    padding: .4rem;
     margin: 0;
     text-decoration: none;
     border-radius: .6rem;
     cursor: pointer;
     width: 100%;
 }
-.table-head-filter:hover{
+.table-column-head:hover{
     --bg-color: var(--bg-color-hover);
     --color: var(--color);
 
     text-decoration: none;
+}
+
+.table-column-head__more{
+    --bg-color: inherit;
+    --bg-color-hover: oklch(95% 0 0);
+
+    background-color: var(--bg-color);
+
+    padding: .2rem;
+    border-radius: .2rem;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Standard syntax */
+}
+.table-column-head__more:hover{
+    --bg-color: var(--bg-color-hover);
 }

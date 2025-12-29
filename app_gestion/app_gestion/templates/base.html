@@ -4,6 +4,10 @@
 <head>
     {% load static %}
     <link rel="stylesheet" href="{% static 'style.css' %}">
+
+    <link rel="stylesheet" href="{% static 'alert_system.css' %}">
+    <script src="{% static 'alert_system.js' %}"></script>
+    
     {% block extra_head %}{% endblock extra_head %}
 </head>
 
@@ -25,17 +29,11 @@
         
         {% block admin %}{% endblock admin %}
     </div>
-    
-    <div class="messages_wrapper">
-        <div>
-            
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-            {% if not forloop.last %}
-            <hr>
-            {% endif %}
-            {% endfor %}
-        </div>
-    </div>
+
+    <script>
+        {% for message in messages %}
+            Alert.toast("{{ message|escapejs }}");
+        {% endfor %}
+    </script>
 </body>
 </html>
