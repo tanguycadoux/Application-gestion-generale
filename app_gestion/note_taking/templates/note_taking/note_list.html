@@ -23,11 +23,21 @@
     </form>
     <hr>
 
-    <table>
+    <table class="notes-list-table">
         <thead>
             <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Projets</th>
+                <th scope="col">
+                    <button class="table-head-filter">
+                        <span>Date</span>
+                        <span>&#9660;</span>
+                    </button>
+                </th>
+                <th scope="col">
+                    <button class="table-head-filter">
+                        <span>Projets</span>
+                        <span>&#9660;</span>
+                    </button>
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -40,7 +50,7 @@
                         {% if note.projects %}
                             <ul class="tags-list">
                                 {% for project in note.projects %}
-                                    <li><a href="{% url 'note_taking:project_detail' project.pk %}">
+                                    <li><a class="tag" href="{% url 'note_taking:project_detail' project.pk %}">
                                         {{ project }}
                                     </a></li>    
                                 {% endfor%}

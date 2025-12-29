@@ -95,12 +95,16 @@ nav > ul{
 
 a{
     --color: oklch(40% 0.2 265);
+    --color-hover: oklch(55% 0.2 265);
+
     color: var(--color);
+
     text-decoration: none;
 }
 
 a:hover{
-    --color: oklch(55% 0.2 265);
+    --color: var(--color-hover);
+
     text-decoration: underline;
 }
 
@@ -115,6 +119,7 @@ table {
 
 th, td {
     border: 1px solid;
+    padding: .2rem;
 }
 
 /* | BLOCK | */
@@ -168,30 +173,31 @@ th, td {
     display: none;
 }
 
-.button{
+button, .button{
     --color: var(--color-primary--40);
     --bg-color: var(--color-primary--93);
 
+    background-color: var(--bg-color);
+    color: var(--color);
+
+    font-size: 1rem;
     display: inline-block;
     font-weight: 600;
     padding: .6rem;
     margin: .4rem 0;
     text-decoration: none;
-    background-color: var(--bg-color);
     border-radius: .8rem;
+    border: none;
 }
-
-.button:hover{
+button:hover, .button:hover{
     --color:    var(--color-primary--40);
     --bg-color: var(--color-primary--95);
     text-decoration: none;
 }
-
 .button--danger{
     --color:    var(--color-alert--40);
     --bg-color: var(--color-alert--93);
 }
-
 .button--danger:hover{
     --color:    var(--color-alert--40);
     --bg-color: var(--color-alert--95);
@@ -227,12 +233,51 @@ th, td {
     height: fit-content;
 }
 
-.tags-list li{
-    --bg-color: lightgray;
+.tag{
+    --bg-color:     oklch(92% 0 0);
+    --border-color: oklch(80% 0 0);
+    --color:       black;
+    --color-hover: black;
 
     background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+
     padding: .1rem .4rem;
     border-radius: 1rem;
     font-size: .8rem;
     font-weight: 600;
+}
+.tag:hover{
+    --color: var(--color-hover);
+
+    text-decoration: none;
+}
+.tag:visited{
+    color: var(--color);
+}
+
+.table-head-filter{
+    --color:    black;
+    --bg-color: inherit;
+    --bg-color-hover: oklch(92% 0 0);
+
+    background-color: var(--bg-color);
+    color: var(--color);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: 600;
+    padding: .6rem;
+    margin: 0;
+    text-decoration: none;
+    border-radius: .6rem;
+    cursor: pointer;
+    width: 100%;
+}
+.table-head-filter:hover{
+    --bg-color: var(--bg-color-hover);
+    --color: var(--color);
+
+    text-decoration: none;
 }

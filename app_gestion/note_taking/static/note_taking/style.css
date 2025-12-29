@@ -1,0 +1,45 @@
+/* BLOCK */
+
+.notes-list-table{
+    --bg-color--even: oklch(96%  0 0);
+    --bg-color--odd:  oklch(100% 0 0);
+    --border-color:   oklch(86%  0 0);
+    --padding: .4rem;
+
+    outline: 1px solid var(--border-color);
+
+    border: none;
+    border-radius: .6rem;
+}
+
+.notes-list-table{
+    text-align: left;
+}
+
+.notes-list-table td, .notes-list-table th {
+    padding: var(--padding);
+    
+    border: none;
+}
+.notes-list-table td:not(:last-child), .notes-list-table th:not(:last-child) {
+    padding-right: calc(var(--padding)/2);
+}
+.notes-list-table td:not(:first-child), .notes-list-table th:not(:first-child) {
+    padding-left: calc(var(--padding)/2);
+}
+
+.notes-list-table thead {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.notes-list-table thead tr th {
+    background-color: var(--bg-color--even);
+}
+
+.notes-list-table tr:nth-child(even) {
+    background-color: var(--bg-color--even);
+}
+
+.notes-list-table tr:nth-child(odd) {
+    background-color: var(--bg-color--odd);
+}
