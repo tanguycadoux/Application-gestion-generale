@@ -1,0 +1,7 @@
+.table-column-options-popover{
+    font-size: 0.85rem;
+    width: fit-content;
+    min-width: auto;
+    border: 1px solid oklch(86% 0 0);
+    border-radius: 0.6rem;
+}
