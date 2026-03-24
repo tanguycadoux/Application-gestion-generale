@@ -8,6 +8,8 @@ app_name = "note_taking"
 urlpatterns = [
     path("", views.index, name="index"),
     path("notes/", views.NoteList.as_view(), name="notes_list"),
+    path("notes/search/", views.notes_search, name="notes_search"),
+    path("get-subjects/", views.get_subjects, name="get_subjects"),
 
     path("note/<int:pk>/", views.NoteDetail.as_view(), name="note_detail"),
     path("note/<int:pk>/md/", views.note_md, name="note_md"),

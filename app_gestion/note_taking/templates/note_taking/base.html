@@ -3,6 +3,7 @@
 {% block extra_head %}
     {% load static %}
     <link rel="stylesheet" href="{% static 'note_taking/style.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
 {% endblock extra_head %}
 
 {% block nav %}
@@ -17,10 +18,15 @@
         <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
             Accueil
         </a></li>
-        
+
         {% url 'note_taking:notes_list' as url %}
         <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
             Les notes
+        </a></li>
+        
+        {% url 'note_taking:notes_search' as url %}
+        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
+            Recherche de notes
         </a></li>
         
         {% url 'note_taking:projects_list' as url %}

@@ -1,0 +1,37 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Rechercher parmi les notes</title>
+{% endblock extra_head %}
+
+{% block content %}
+<h1>Rechercher parmi les notes</h1>
+
+<div class="grid grid-cols-[1fr_3fr] gap-4">
+    <div>
+        <form
+        method="post"
+        hx-post="{% url 'note_taking:notes_search' %}"
+        hx-target="#results"
+        hx-trigger="change delay:200ms"
+        >
+            {% csrf_token %}
+    
+            <details open>
+                <summary>Projets</summary>
+                {{ form.projects }}
+            </details>
+    
+            <div id="subjects-block">
+                {% include "note_taking/subjects_block.html" %}
+            </div>
+        </form>
+    </div>
+
+    <div id="results" class="overflow-hidden">
+        {% include "note_taking/notes_search_result.html" %}
+    </div>
+</div>
+
+{% endblock content %}

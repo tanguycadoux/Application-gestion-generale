@@ -1,0 +1,26 @@
+{% if results %}
+    {% for result in results %}
+        <article class="note-part mb-4">
+            <header>
+                {% if result.part.subject %}
+                    <h3 class="text-lg">{{ result.part.subject }}</h3>
+                {% endif %}
+                {% if result.part.tags %}
+                    <ul class="tags-list">
+                        {% for tag in result.part.tags %}
+                            <li class="tag">{{ tag }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </header>
+
+            <div class="prose">
+                {{ result.html|safe }}
+            </div>
+
+            <a class="text-sm" href="{% url 'note_taking:note_detail' result.part.note.pk %}">Note du {{ result.part.note }}</a>
+        </article>
+    {% endfor %}
+{% else %}
+    <p>Aucun résultat.</p>
+{% endif %}

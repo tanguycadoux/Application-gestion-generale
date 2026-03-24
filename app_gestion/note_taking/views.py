@@ -1,14 +1,16 @@
 from typing import Any
 from django.contrib import messages
 from django.db.models.query import QuerySet
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.views.generic import ListView, DetailView
 
 from pathlib import Path
 import markdown
 
-from .models import Note, Project
+from .forms import NoteSearchForm
+from .models import Note, Project, NotePart
 from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict
 
 
@@ -129,3 +131,65 @@ def clear_notes(request):
     Note.objects.all().delete()
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+def notes_search(request):
+    form = NoteSearchForm(request.POST or None)
+    results = None
+
+    if request.method == "POST" and form.is_valid():
+        projects = form.cleaned_data["projects"]
+        subjects = form.cleaned_data["subjects"]
+
+        results_qs = NotePart.objects.all()
+
+        if projects:
+            results_qs = results_qs.filter(project__in=projects)
+
+        if subjects:
+            results_qs = results_qs.filter(subject__in=subjects)
+        
+        results = []
+        for part in results_qs:
+            results.append({
+                "part": part,
+                "html": markdown.markdown(part.content, extensions=["extra", "codehilite"])
+            })
+    
+    if request.htmx:
+        html = render_to_string("note_taking/notes_search_result.html", {
+            "results": results
+        })
+        return HttpResponse(html)
+
+    return render(request, "note_taking/notes_search.html", {
+        "form": form,
+        "results": results,
+    })
+
+def get_subjects(request):
+    form = NoteSearchForm(request.POST or None)
+
+    projects = request.POST.getlist("projects")
+
+    if projects:
+        subjects = (
+            NotePart.objects
+            .filter(project_id__in=projects)
+            .exclude(subject__isnull=True)
+            .exclude(subject__exact="")
+            .values_list("subject", flat=True)
+            .distinct()
+        )
+    else:
+        subjects = (
+            NotePart.objects
+            .exclude(subject__isnull=True)
+            .exclude(subject__exact="")
+            .values_list("subject", flat=True)
+            .distinct()
+        )
+
+    form.fields["subjects"].choices = [(s, s) for s in sorted(subjects, key=str.lower)]
+
+    html = render_to_string("note_taking/subjects_block.html", {"form": form})
+    return HttpResponse(html)
