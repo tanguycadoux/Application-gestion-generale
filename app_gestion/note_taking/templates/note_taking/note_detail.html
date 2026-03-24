@@ -2,14 +2,26 @@
 
 {% block extra_head %}
     {{ block.super }}
-    <title>Liste des notes</title>
+    <title>Détail de la note</title>
 {% endblock extra_head %}
 
 {% block content %}
     <h1>Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
-    <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
-    <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
+    <form method="post" action="{% url 'note_taking:update_source_file' object.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label for="note_update_source_file">Modifier le fichier source de la note</label>
+            <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
+        </p>
+        <button type="submit">Modifier</button>
+    </form>
+
+    <div>
+        <span>Voir la note au format :</span>
+        <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
+        <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
+    </div>
 
     {% for note_part in object.parts.all %}
         <article class="note-part">

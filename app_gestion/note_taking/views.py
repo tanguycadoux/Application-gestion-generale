@@ -9,7 +9,7 @@ from pathlib import Path
 import markdown
 
 from .models import Note, Project
-from .utils import insert_note_in_table, parse_note_as_dict
+from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict
 
 
 def index(request):
@@ -103,14 +103,26 @@ def import_note(request):
             files = request.FILES.getlist("note_import")
             for file in files:
                 insert_note_in_table(file)
-            messages.success(request, "Les notes sont ajoutées.")
+            messages.success(request, "Les notes sont ajoutées")
         except Exception as e:
             messages.error(request, f"Erreur lors de l'ajout de la note : {e}")
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
+def update_source_file(request, pk):
+    if request.method == "POST":
+        try:
+            file = request.FILES.get("note_update_source_file")
+            if file is None:
+                raise ImportError("Choisir un fichier")
+            update_note_from_source_file(pk, file)
+            messages.success(request, "La note est mise à jour")
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
 def note_json(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    return JsonResponse(parse_note_as_dict(note))
+    return JsonResponse(parse_note_raw_file_as_dict(note.date, note.raw))
 
 # ADMIN
 def clear_notes(request):

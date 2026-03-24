@@ -13,22 +13,20 @@ def validate_date_format(date_text):
     except ValueError:
         raise ValueError("Incorrect data format, should be YYYY-MM-DD")
 
-def insert_note_in_table(file, force=False):
+def insert_note_in_table(file):
     filename = Path(file.name).stem
 
     is_test = filename[:4] == 'TEST'
-    if is_test:
-        note_date = filename[5:]
-    else:
-        note_date = filename
+    note_date = filename[5:] if is_test else filename
 
     validate_date_format(note_date)
+
     raw_bytes = file.read()
     raw_content = raw_bytes.decode('utf-8')
 
     note = Note(date=note_date, is_test=is_test, raw=raw_content)
+    parsed_note = parse_note_raw_file_as_dict(note.date, note.raw)
 
-    parsed_note = parse_note_as_dict(note)
     if note_date != parsed_note['note metadata']['date']:
         raise ValueError('La date de la note n\'est pas cohérente.')
     note.save()
@@ -62,6 +60,64 @@ def insert_note_in_table(file, force=False):
                 create_todo_from_dict(todo_data)
     return note
 
+def update_note_from_source_file(pk, file):
+    note = Note.objects.get(pk=pk)
+    if note is None:
+        raise TypeError(f"La note n'existe pas (pk={pk})")
+
+    filename = Path(file.name).stem
+
+    is_test = filename[:4] == 'TEST'
+    note_date = filename[5:] if is_test else filename
+
+    validate_date_format(note_date)
+
+    raw_bytes = file.read()
+    raw_content = raw_bytes.decode('utf-8')
+
+    parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
+
+    if note_date != parsed_note['note metadata']['date']:
+        raise ValueError('La date du fichier source n\'est pas cohérente.')
+    if str(note.date) != note_date:
+        raise ValueError('La date de la note n\'est pas la même que celle du fichier source.')
+    
+    note.raw = raw_content
+    note.is_test = is_test
+    note.save()
+
+    note.parts.all().delete()
+
+    note_parts = insert_noteparts_in_table(note, parsed_note)
+
+    for note_part in note_parts:
+        if type(note_part.tags) != list:
+            raise TypeError
+        
+        if "TODO" in note_part.tags and type(note_part.content) == str:
+            tags = note_part.tags.copy()
+            tags.append(note_part.subject)
+            tags.remove('TODO')
+
+            for line in note_part.content.split('\n'):
+                line = line.strip()
+                line = line.strip('-')
+                line = line.strip()
+
+                todo_data = {
+                    "date": note_part.note.date,
+                    "project": note_part.project.name,
+                    "content": line,
+                    "tags": tags,
+                    "description": {
+                        "subject": note_part.subject,
+                        "tags": note_part.tags,
+                    },
+                }
+                create_todo_from_dict(todo_data)
+    return note
+
+
 def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
     note_parts = []
     for note_part_raw in parsed_note['content']:
@@ -84,7 +140,7 @@ def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
         note_parts.append(note_part)
     return note_parts
 
-def parse_note_as_dict(note: Note) -> dict:
+def parse_note_raw_file_as_dict(date, raw) -> dict:
     def parse_text_as_dict(text):
         parsed_text = text.split(':')
         if len(parsed_text) != 2:
@@ -96,7 +152,7 @@ def parse_note_as_dict(note: Note) -> dict:
         return parsed_key, parsed_value
     
     json_content = {
-        'file date': note.date,
+        'file date': date,
         'note metadata': {},
         'content': [],
         }
@@ -117,12 +173,15 @@ def parse_note_as_dict(note: Note) -> dict:
         hierarchy[f'title_{i}'] = None
         hierarchy[f'tags_under_title_{i}'] = None
     local_metadata_tags = set()
-    for i, line in enumerate(note.raw.split('\n')):
+    for i, line in enumerate(raw.split('\n')):
         line = line.strip()
 
         if not is_code_block:
             if line.strip() == '---':
-                is_note_metadata_block = not(is_note_metadata_block)
+                if i == 0:
+                    is_note_metadata_block = True
+                else:
+                    is_note_metadata_block = False
                 continue
 
             if line == r'::: {.metadata}':
