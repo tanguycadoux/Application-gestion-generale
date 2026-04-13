@@ -3,22 +3,23 @@
 <html>
 <head>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'style.css' %}">
-
-    <link rel="stylesheet" href="{% static 'alert_system.css' %}">
-    <script src="{% static 'alert_system.js' %}"></script>
-
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
+
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'alert_system.css' %}">
+
+    <script src="{% static 'alert_system.js' %}"></script>
     
     {% block extra_head %}{% endblock extra_head %}
 </head>
 
-<body>
-    <nav>
+<body class="font-sans grid grid-cols-[auto_1fr_auto] h-screen relative">
+    <nav class="p-4 bg-slate-200">
         {% block nav %}{% endblock nav %}
     </nav>
     
-    <main>
+    <main class="p-4 h-full box-border overflow-auto">
         {% block content %}{% endblock content %}
     </main>
     

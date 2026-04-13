@@ -6,7 +6,7 @@
 {% endblock extra_head %}
 
 {% block content %}
-<h1>Rechercher parmi les notes</h1>
+<h1 class="mb-4">Rechercher parmi les notes</h1>
 
 <div class="grid grid-cols-[1fr_3fr] gap-4">
     <div>
@@ -18,9 +18,11 @@
         >
             {% csrf_token %}
     
-            <details open>
-                <summary>Projets</summary>
-                {{ form.projects }}
+            <details class="mb-4" open>
+                <summary class="select-none bg-slate-200 p-1 cursor-pointer">Projets</summary>
+                <div class="pl-1 border-l-[2px] border-slate-200">
+                    {{ form.projects }}
+                </div>
             </details>
     
             <div id="subjects-block">
