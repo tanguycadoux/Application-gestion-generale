@@ -42,3 +42,12 @@ class NotePart(models.Model):
         if self.subject:
             string_repr = f'{string_repr}, {self.subject}'
         return f'{self.project}, {self.subject}'
+
+class NotePartImage(models.Model):
+    note_part = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="images", blank=True, null=True)
+    file = models.ImageField(upload_to="note_images/", blank=True, null=True)
+    alt_text = models.CharField(max_length=255, blank=True, null=True)
+    original_path = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"Image for {self.note_part}: {self.file.name}"

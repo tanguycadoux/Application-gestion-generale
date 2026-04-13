@@ -1,0 +1,23 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Liste des images</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Liste des images importées</h1>
+
+    <div>
+        {% for img in images %}
+            <div>
+                <p>{{ img.original_path }}</p>
+                {% if img.file %}
+                    <img src="{{ img.file.url }}" class="w-96">
+                {% else %}
+                    <p style="color:red;">Pas de fichier associé</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock content %}

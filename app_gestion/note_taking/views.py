@@ -10,8 +10,8 @@ from pathlib import Path
 import markdown
 
 from .forms import NoteSearchForm
-from .models import Note, Project, NotePart
-from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict
+from .models import Note, Project, NotePart, NotePartImage
+from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image
 
 
 def index(request):
@@ -64,6 +64,11 @@ class NoteList(ListView):
             "next_direction": next_direction,
         })
         return context
+
+class NotePartImageList(ListView):
+    model = NotePartImage
+    context_object_name = "images"
+    template_name = "note_taking/images_list.html"
 
 
 class ProjectDetail(DetailView):
@@ -193,3 +198,14 @@ def get_subjects(request):
 
     html = render_to_string("note_taking/subjects_block.html", {"form": form})
     return HttpResponse(html)
+
+def import_images(request):
+    if request.method == "POST":
+        try:
+            files = request.FILES.getlist("image_import")
+            for file in files:
+                import_image(file)
+            messages.success(request, "Les images sont ajoutées")
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'ajout de l'image : {e}")
+    return redirect(request.META.get('HTTP_REFERER', '/'))

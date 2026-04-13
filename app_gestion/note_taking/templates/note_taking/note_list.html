@@ -15,12 +15,20 @@
         {{ notes.count }} notes dans la base de données.
     </p>
 
-    <hr>
     <form method="post" action="{% url 'note_taking:import_note' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <p>
             <label for="note_import">Importer une ou plusieurs notes</label>
             <input type="file" name="note_import" id="note_import" accept=".qmd" multiple>
+        </p>
+        <button class="button-tw" type="submit">Importer</button>
+    </form>
+
+    <form method="post" action="{% url 'note_taking:import_images' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label for="image_import">Importer une ou plusieurs images</label>
+            <input type="file" name="image_import" id="image_import" accept="image/*" multiple>
         </p>
         <button class="button-tw" type="submit">Importer</button>
     </form>

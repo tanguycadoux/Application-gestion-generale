@@ -1,4 +1,6 @@
-from .models import Note, NotePart, Project
+from django.core.files import File
+
+from .models import Note, NotePart, Project, NotePartImage
 
 from todolist.services import create_todo_from_dict
 
@@ -304,3 +306,11 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
             json_line['content'].pop(-1)
     
     return json_content
+
+def import_image(file):
+    print(file)
+    img = NotePartImage.objects.create(
+        file=file,
+        original_path=file.name,
+    )
+    return img
