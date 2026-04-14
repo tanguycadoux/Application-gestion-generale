@@ -157,7 +157,7 @@ def notes_search(request):
         for part in results_qs:
             results.append({
                 "part": part,
-                "html": markdown.markdown(part.content, extensions=["extra", "codehilite"])
+                "html": part.rendered_content
             })
     
     if request.htmx:

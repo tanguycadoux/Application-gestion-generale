@@ -8,12 +8,12 @@
 {% block content %}
     <h1>Liste des images importées</h1>
 
-    <div>
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
         {% for img in images %}
             <div>
                 <p>{{ img.original_path }}</p>
                 {% if img.file %}
-                    <img src="{{ img.file.url }}" class="w-96">
+                    <img src="{{ img.file.url }}" class="w-full">
                 {% else %}
                     <p style="color:red;">Pas de fichier associé</p>
                 {% endif %}

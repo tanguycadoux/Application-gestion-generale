@@ -124,6 +124,7 @@ def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
     note_parts = []
     for note_part_raw in parsed_note['content']:
         content = '\n'.join(note_part_raw['content'])
+        content = replace_image_paths(content)
 
         project, _ = Project.objects.get_or_create(
             name=note_part_raw['project'],
@@ -141,6 +142,21 @@ def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
         note_part.save()
         note_parts.append(note_part)
     return note_parts
+
+def replace_image_paths(content: str) -> str:
+    def repl(match):
+        path = match.group("path")
+        name = Path(path).name
+
+        image_obj = NotePartImage.objects.get(original_path=name)
+
+        return match.group(0).replace(path, f"image:{image_obj.pk}")
+    
+    IMAGE_REGEX = re.compile(
+        r'\!\[[^\]]*\]\((?P<path>[^)]+)\)'
+    )
+
+    return IMAGE_REGEX.sub(repl, content)
 
 def parse_note_raw_file_as_dict(date, raw) -> dict:
     def parse_text_as_dict(text):
@@ -308,7 +324,9 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
     return json_content
 
 def import_image(file):
-    print(file)
+    if NotePartImage.objects.filter(original_path=file.name).exists():
+        raise ValueError(f"Une image avec ce nom de fichier existe déjà\xa0: {file.name}")
+    
     img = NotePartImage.objects.create(
         file=file,
         original_path=file.name,

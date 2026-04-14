@@ -16,7 +16,7 @@ class NotePartAdmin(admin.ModelAdmin):
 
 @admin.register(NotePartImage)
 class NotePartImageAdmin(admin.ModelAdmin):
-    list_display = ("note_part", "file", "alt_text", "original_path",)
+    list_display = ("pk", "file", "original_path",)
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):

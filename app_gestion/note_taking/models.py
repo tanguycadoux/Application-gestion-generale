@@ -1,5 +1,8 @@
 from django.db import models
 
+import markdown
+import re
+
 
 class Project(models.Model):
     name = models.CharField(unique=True, blank=False, null=False, max_length=50)
@@ -43,11 +46,30 @@ class NotePart(models.Model):
             string_repr = f'{string_repr}, {self.subject}'
         return f'{self.project}, {self.subject}'
 
+    def rendered_content(self):
+        def repl(match):
+            pk = match.group("pk")
+            alt = match.group("alt")
+            attrs = match.group("attrs") or ""
+
+            try:
+                img = NotePartImage.objects.get(pk=pk)
+                url = img.file.url
+            except NotePartImage.DoesNotExist:
+                url = "/static/img/image-missing.png"
+
+            return f'![{alt}]({url}){attrs}'
+
+        RENDER_IMAGE_REGEX = re.compile(
+            r'\!\[(?P<alt>[^\]]*)\]\(image:(?P<pk>\d+)\)(?P<attrs>\{[^}]*\})?'
+        )
+
+        return markdown.markdown(RENDER_IMAGE_REGEX.sub(repl, self.content), extensions=["fenced_code", "tables"])    
+
+
 class NotePartImage(models.Model):
-    note_part = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="images", blank=True, null=True)
     file = models.ImageField(upload_to="note_images/", blank=True, null=True)
-    alt_text = models.CharField(max_length=255, blank=True, null=True)
-    original_path = models.CharField(max_length=255)
+    original_path = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
-        return f"Image for {self.note_part}: {self.file.name}"
+        return self.file.name

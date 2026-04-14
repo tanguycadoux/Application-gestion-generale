@@ -41,7 +41,7 @@
                 {% endif %}
             </header>
 
-            {{ note_part.content|safe|linebreaks }}
+            {{ note_part.rendered_content|safe|linebreaks }}
         </article>
     {% endfor %}
 {% endblock content %}
