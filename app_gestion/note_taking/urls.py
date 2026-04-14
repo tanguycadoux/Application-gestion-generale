@@ -21,11 +21,7 @@ urlpatterns = [
     path("note/import_images/", views.import_images, name="import_images"),
 
     path("images/", views.NotePartImageList.as_view(), name="images_list"),
-
-    path("projects/", views.ProjectList.as_view(), name="projects_list"),
-
-    path("project/<int:pk>/", views.ProjectDetail.as_view(), name="project_detail"),
-
+    
     # ADMIN
     path("notes/clear/", views.clear_notes, name="clear_notes"),
 ]

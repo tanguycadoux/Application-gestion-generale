@@ -40,12 +40,6 @@
             <span class="material-symbols-rounded">image</span>
             <span>Les images</span>
         </a></li>
-        
-        {% url 'note_taking:projects_list' as url %}
-        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-            <span class="material-symbols-rounded">category</span>
-            <span>Les projets</span>
-        </a></li>
     </ul>
 {% endblock nav %}
 

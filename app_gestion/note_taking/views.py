@@ -71,24 +71,6 @@ class NotePartImageList(ListView):
     template_name = "note_taking/images_list.html"
 
 
-class ProjectDetail(DetailView):
-    model = Project
-    context_object_name = "project"
-
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-        note_parts = self.object.note_parts.all().order_by('-note__date')
-        dates = note_parts.values_list('note__date', flat=True).distinct()
-        context["note_parts_by_date"] = []
-        for date in dates:
-            note_parts_date = note_parts.filter(note__date=date)
-            context["note_parts_by_date"].append((date, note_parts_date))
-        return context
-
-class ProjectList(ListView):
-    model = Project
-
-
 def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
     

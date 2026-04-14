@@ -80,9 +80,7 @@
                         {% if note.projects %}
                             <ul class="tags-list">
                                 {% for project in note.projects %}
-                                    <li><a class="tag" href="{% url 'note_taking:project_detail' project.pk %}">
-                                        {{ project }}
-                                    </a></li>    
+                                    <li>{{ project }}</li>    
                                 {% endfor%}
                             </ul>
                         {% endif %}
