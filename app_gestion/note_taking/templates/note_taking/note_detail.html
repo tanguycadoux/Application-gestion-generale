@@ -17,16 +17,16 @@
         <button type="submit">Modifier</button>
     </form>
 
-    <div>
+    <div class="mb-4">
         <span>Voir la note au format :</span>
         <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
         <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
     </div>
 
     {% for note_part in object.parts.all %}
-        <article class="note-part">
+        <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header>
-               <h2>
+               <h2 class="font-medium">
                     {{ note_part.project }}
                     {% if note_part.subject %}
                         <span> / {{ note_part.subject }}</span>

@@ -127,13 +127,20 @@ def notes_search(request):
         projects = form.cleaned_data["projects"]
         subjects = form.cleaned_data["subjects"]
 
-        results_qs = NotePart.objects.all()
+        results_qs = (
+            NotePart.objects
+            .select_related("note")
+            .order_by("-note__date")
+        )
 
         if projects:
             results_qs = results_qs.filter(project__in=projects)
 
         if subjects:
             results_qs = results_qs.filter(subject__in=subjects)
+        
+        # for qs in results_qs:
+        #     print(qs.note.date)
         
         results = []
         for part in results_qs:

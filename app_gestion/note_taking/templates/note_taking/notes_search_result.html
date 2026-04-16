@@ -1,9 +1,9 @@
 {% if results %}
     {% for result in results %}
-        <article class="note-part mb-4">
-            <header>
+        <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
+            <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
                 {% if result.part.subject %}
-                    <h3 class="text-lg">{{ result.part.subject }}</h3>
+                    <h3 class="text-lg font-medium">{{ result.part.subject }}</h3>
                 {% endif %}
                 {% if result.part.tags %}
                     <ul class="tags-list">
@@ -12,13 +12,12 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
+                <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' result.part.note.pk %}">Note du {{ result.part.note }}</a>
             </header>
 
             <div class="prose">
-                {{ result.html|safe }}
+                {{ result.part.rendered_content|safe|linebreaks }}
             </div>
-
-            <a class="text-sm" href="{% url 'note_taking:note_detail' result.part.note.pk %}">Note du {{ result.part.note }}</a>
         </article>
     {% endfor %}
 {% else %}

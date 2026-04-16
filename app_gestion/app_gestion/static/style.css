@@ -180,22 +180,6 @@ button:hover, .button:hover{
     font-weight: 600;
 }
 
-.note-part{
-    border: 1px solid;
-    padding: .4rem;
-}
-
-.note-part header{
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-    align-items: center;
-}
-
-.note-part header h2{
-    margin: 0;
-}
-
 .tags-list{
     list-style: none;
     margin: 0;
