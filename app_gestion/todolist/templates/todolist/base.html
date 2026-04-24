@@ -6,21 +6,26 @@
 {% endblock extra_head %}
 
 {% block nav %}
-    <ul>
-        <li><a class="nav-link" href="{% url 'project_index' %}">Toutes les apps</a></li>
+    <ul class="mb-4">
+        <li><a class="button-tw button-with-icon" href="{% url 'project_index' %}">
+            <span class="material-symbols-rounded">apps</span>
+            <span>Toutes les apps</span>
+        </a></li>
     </ul>
 
     <hr>
 
     <ul>
         {% url 'todolist:index' as url %}
-        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
-            Accueil
+        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
+            <span class="material-symbols-rounded">home</span>
+            <span>Accueil</span>
         </a></li>
 
         {% url 'todolist:todo_list' as url %}
-        <li><a class="nav-link {% if request.path == url %}nav-link--active{% endif %}" href="{{ url }}">
-            Liste des TODO
+        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
+            <span class="material-symbols-rounded">checklist</span>
+            <span>Liste des TODO</span>
         </a></li>
     </ul>
 {% endblock nav %}

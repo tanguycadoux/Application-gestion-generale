@@ -6,9 +6,17 @@
 
 {% block nav %}
     <ul>
-        
-        <li><a class="nav-link" href="note_taking/">Prise de notes</a></li>
-        <li><a class="nav-link" href="todolist/">TODO list</a></li>
+        {% url 'note_taking:index' as url %}
+        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
+            <span class="material-symbols-rounded">docs</span>
+            <span>Prise de notes</span>
+        </a></li>
+
+        {% url 'todolist:index' as url %}
+        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
+            <span class="material-symbols-rounded">checklist</span>
+            <span>TODO list</span>
+        </a></li>
     </ul>
 {% endblock nav %}
 
