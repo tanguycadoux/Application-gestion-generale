@@ -9,7 +9,7 @@ from django.views.generic import ListView, DetailView
 from pathlib import Path
 import markdown
 
-from .forms import NoteSearchForm
+from .forms import NoteSearchForm, NewNoteForm
 from .models import Note, Project, NotePart, NotePartImage
 from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image
 
@@ -198,3 +198,13 @@ def import_images(request):
         except Exception as e:
             messages.error(request, f"Erreur lors de l'ajout de l'image : {e}")
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+def new_note(request):
+    if request.method == "POST":
+        form = NewNoteForm(request.POST)
+        if form.is_valid():
+            note = form.save()
+            return redirect("note_taking:note_detail", pk=note.pk)
+    else:
+        form = NewNoteForm()
+    return render(request, "note_taking/note_new.html")

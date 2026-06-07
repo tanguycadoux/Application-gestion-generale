@@ -1,7 +1,7 @@
 from django import forms
 from django.urls import reverse_lazy
 
-from .models import Project, NotePart
+from .models import Project, NotePart, Note
 
 
 class NoteSearchForm(forms.Form):
@@ -36,3 +36,8 @@ class NoteSearchForm(forms.Form):
         subjects = sorted(subjects, key=str.lower)
 
         self.fields["subjects"].choices = [(s, s) for s in subjects]
+
+class NewNoteForm(forms.ModelForm):
+    class Meta:
+        model = Note
+        fields = ["date", "raw"]

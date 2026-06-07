@@ -1,0 +1,55 @@
+{% extends "note_taking/base.html" %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Nouvelle note</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <h1>Nouvelle note</h1>
+
+    <form method="post" action="{% url 'note_taking:new_note' %}">
+        {% csrf_token %}
+        <div>
+            <label for="date">Date :</label>
+            <input type="date" name="date" placeholder="Date" required>
+        </div>
+        <textarea name="content" class="w-full h-96 border"></textarea>
+        <button type="submit" class="material-symbols-rounded">save</button>
+    </form>
+
+    <script>
+        const dateInput = document.querySelector('input[name="date"]');
+        const contentInput = document.querySelector('textarea[name="content"]');
+
+        window.addEventListener('DOMContentLoaded', function() {
+            contentInput.value = `---\ndate: AAAA-MM-DD\n---`;
+        });
+
+        dateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const previousContent = contentInput.value;
+            let previousContentLines = previousContent.split('\n');
+
+            let isNoteMetadataBlock = false;
+            const formattedDate = selectedDate.toISOString().split('T')[0];
+            for (let i = 0; i < previousContentLines.length; i++) {
+                if (previousContentLines[i].trim() === '---') {
+                    if (i === 0) {
+                        isNoteMetadataBlock = true;
+                    } else {
+                        previousContentLines.splice(i, 0, `date: ${formattedDate}`);
+                        console.log(previousContentLines);
+                        break;
+                    }
+                }
+                if (isNoteMetadataBlock && previousContentLines[i].trim().startsWith('date:')) {
+                    previousContentLines[i] = `date: ${formattedDate}`;
+                    break;
+                }
+            }
+
+            contentInput.value = previousContentLines.join('\n');
+        });
+    </script>
+{% endblock content %}
