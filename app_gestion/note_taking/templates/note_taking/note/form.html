@@ -1,0 +1,46 @@
+<form method="post" action="{{ form_action }}">
+    {% csrf_token %}
+    <div>
+        <label for="date">Date :</label>
+        <input type="date" name="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}">
+    </div>
+    <textarea name="raw" class="w-full h-96 border">{{ form.raw.value|default:'' }}</textarea>
+    <button type="submit" class="material-symbols-rounded">save</button>
+</form>
+
+<script>
+    const dateInput = document.querySelector('input[name="date"]');
+    const contentInput = document.querySelector('textarea[name="raw"]');
+
+    window.addEventListener('DOMContentLoaded', function () {
+        if (!contentInput.value.trim()) {
+            contentInput.value = `---\ndate: AAAA-MM-DD\n---`;
+        }
+    });
+
+    dateInput.addEventListener('change', function () {
+        const selectedDate = new Date(this.value);
+        const previousContent = contentInput.value;
+        let previousContentLines = previousContent.split('\n');
+
+        let isNoteMetadataBlock = false;
+        const formattedDate = selectedDate.toISOString().split('T')[0];
+        for (let i = 0; i < previousContentLines.length; i++) {
+            if (previousContentLines[i].trim() === '---') {
+                if (i === 0) {
+                    isNoteMetadataBlock = true;
+                } else {
+                    previousContentLines.splice(i, 0, `date: ${formattedDate}`);
+                    console.log(previousContentLines);
+                    break;
+                }
+            }
+            if (isNoteMetadataBlock && previousContentLines[i].trim().startsWith('date:')) {
+                previousContentLines[i] = `date: ${formattedDate}`;
+                break;
+            }
+        }
+
+        contentInput.value = previousContentLines.join('\n');
+    });
+</script>

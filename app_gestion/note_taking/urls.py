@@ -16,6 +16,7 @@ urlpatterns = [
     path("note/<int:pk>/json/", views.note_json, name="note_json"),
 
     path("note/new/", views.new_note, name="new_note"),
+    path("note/<int:pk>/edit/", views.edit_note, name="edit_note"),
     path("note/import/", views.import_note, name="import_note"),
     path("note/update_source_file/<int:pk>", views.update_source_file, name="update_source_file"),
     

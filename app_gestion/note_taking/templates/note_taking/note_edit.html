@@ -2,11 +2,11 @@
 
 {% block extra_head %}
     {{ block.super }}
-    <title>Nouvelle note</title>
+    <title>Editer la note</title>
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Nouvelle note</h1>
+    <h1>Editer la note </h1>
 
     {% include "note_taking/note/form.html" with form_action=request.path %}
 {% endblock content %}

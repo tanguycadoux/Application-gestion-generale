@@ -207,4 +207,17 @@ def new_note(request):
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
         form = NewNoteForm()
-    return render(request, "note_taking/note_new.html")
+    return render(request, "note_taking/note_new.html", {'form': form})
+
+def edit_note(request, pk):
+    note = get_object_or_404(Note, pk=pk)
+
+    if request.method == 'POST':
+        form = NewNoteForm(request.POST, instance=note)
+        if form.is_valid():
+            form.save()
+            return redirect('note_taking:note_detail', pk=note.pk)
+    else:
+        form = NewNoteForm(instance=note)
+
+    return render(request, 'note_taking/note_edit.html', {'form': form, 'note': note})
