@@ -11,15 +11,16 @@ urlpatterns = [
     path("notes/search/", views.notes_search, name="notes_search"),
     path("get-subjects/", views.get_subjects, name="get_subjects"),
 
-    path("note/<int:pk>/", views.NoteDetail.as_view(), name="note_detail"),
-    path("note/<int:pk>/md/", views.note_md, name="note_md"),
-    path("note/<int:pk>/json/", views.note_json, name="note_json"),
-
     path("note/new/", views.new_note, name="new_note"),
-    path("note/<int:pk>/edit/", views.edit_note, name="edit_note"),
     path("note/import/", views.import_note, name="import_note"),
     path("note/update_source_file/<int:pk>", views.update_source_file, name="update_source_file"),
     
+    path("note/<int:pk>/", views.NoteDetail.as_view(), name="note_detail"),
+    path("note/<int:pk>/md/", views.note_md, name="note_md"),
+    path("note/<int:pk>/json/", views.note_json, name="note_json"),
+    path("note/<int:pk>/edit/", views.edit_note, name="edit_note"),
+    path("note/<int:pk>/delete/", views.delete_note, name="delete_note"),
+
     path("note/import_images/", views.import_images, name="import_images"),
 
     path("images/", views.NotePartImageList.as_view(), name="images_list"),

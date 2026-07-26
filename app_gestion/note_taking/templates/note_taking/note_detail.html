@@ -6,16 +6,31 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
+    <header class="flex items-start mb-4">
+        <h1 class="flex-1">Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
-    <form method="post" action="{% url 'note_taking:update_source_file' object.pk %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <p>
-            <label for="note_update_source_file">Modifier le fichier source de la note</label>
-            <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
-        </p>
-        <button type="submit">Modifier</button>
+        {% url 'note_taking:edit_note' note.pk as url %}
+        <a class="p-2 rounded-2xl hover:bg-slate-200 inline-flex" href="{{ url }}">
+            <span class="material-symbols-rounded">edit</span>
+        </a>
+        
+        {% url 'note_taking:delete_note' note.pk as url %}
+        <a class="p-2 rounded-2xl hover:bg-red-200 inline-flex" href="{{ url }}">
+            <span class="material-symbols-rounded">delete</span>
+        </a>
     </form>
+    </header>
+
+    <div class="border border-red-500 p-1">
+        <form method="post" action="{% url 'note_taking:update_source_file' object.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p>
+                <label for="note_update_source_file">Modifier le fichier source de la note</label>
+                <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
+            </p>
+            <button type="submit">Modifier</button>
+        </form>
+    </div>
 
     <div class="mb-4">
         <span>Voir la note au format :</span>
@@ -24,7 +39,7 @@
     </div>
 
     {% for note_part in object.parts.all %}
-        <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
+        <article class="border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header>
                <h2 class="font-medium">
                     {{ note_part.project }}

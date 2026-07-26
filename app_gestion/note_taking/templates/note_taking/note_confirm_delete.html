@@ -1,0 +1,7 @@
+<h1>Confirmer la suppression</h1>
+<p>Supprimer la note du {{ note.date }} ? Cette action est irréversible.</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Supprimer</button>
+    <a href="{% url 'note_taking:note_detail' note.pk %}">Annuler</a>
+</form>
