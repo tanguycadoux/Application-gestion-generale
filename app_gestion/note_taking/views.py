@@ -11,7 +11,7 @@ import markdown
 
 from .forms import NoteSearchForm, NewNoteForm
 from .models import Note, Project, NotePart, NotePartImage
-from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image
+from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image, process_note_parts
 
 
 def index(request):
@@ -204,6 +204,10 @@ def new_note(request):
         form = NewNoteForm(request.POST)
         if form.is_valid():
             note = form.save()
+            try:
+                process_note_parts(note)
+            except Exception as e:
+                messages.error(request, f"La note est créée mais le contenu n'a pas pu être traité : {e}")
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
         form = NewNoteForm()
@@ -215,7 +219,11 @@ def edit_note(request, pk):
     if request.method == 'POST':
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
-            form.save()
+            note = form.save()
+            try:
+                process_note_parts(note)
+            except Exception as e:
+                messages.error(request, f"La note est créée mais le contenu n'a pas pu être traité : {e}")
             return redirect('note_taking:note_detail', pk=note.pk)
     else:
         form = NewNoteForm(instance=note)
