@@ -4,7 +4,7 @@
         <label for="date">Date :</label>
         <input type="date" name="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}">
     </div>
-    <textarea name="raw" class="w-full h-96 border">{{ form.raw.value|default:'' }}</textarea>
+    <textarea name="raw" class="w-full h-96 border font-mono focus-visible:outline-none">{{ form.raw.value|default:'' }}</textarea>
     <button type="submit" class="material-symbols-rounded">save</button>
 </form>
 
