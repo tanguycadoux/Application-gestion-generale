@@ -6,6 +6,7 @@ détecter toute régression lors de la restructuration (M3).
 
 import shutil
 import tempfile
+import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -88,11 +89,12 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(note.parts.get().project, existing)
         self.assertEqual(Project.objects.count(), 1)
 
-    def test_fichier_de_test(self):
-        note = insert_note_in_table(qmd_file("TEST_2025-11-24.qmd", HEADER + "# P\nx"))
-
-        self.assertTrue(note.is_test)
-        self.assertEqual(note.date, "2025-11-24")
+    @unittest.expectedFailure
+    def test_prefixe_test_refuse(self):
+        """#63 : la notion de note de test n'existe plus."""
+        with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
+            insert_note_in_table(qmd_file("TEST_2025-11-24.qmd", HEADER + "# P\nx"))
+        self.assertFalse(Note.objects.exists())
 
     def test_nom_de_fichier_invalide(self):
         with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
