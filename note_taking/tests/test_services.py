@@ -6,7 +6,6 @@ détecter toute régression lors de la restructuration (M3).
 
 import shutil
 import tempfile
-import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
