@@ -166,6 +166,17 @@ class UpdateNoteTests(ServiceTestCase):
             )
 
     @unittest.expectedFailure
+    def test_fichier_utf8_avec_bom(self):
+        """Bug #41 : un fichier enregistré en UTF-8 avec BOM est refusé."""
+        update_note_from_source_file(
+            self.note.pk,
+            qmd_file("2025-11-24.qmd", HEADER + "# P\ny", encoding="utf-8-sig"),
+        )
+
+        self.note.refresh_from_db()
+        self.assertEqual(parts_summary(self.note), [("P", None, [], "y")])
+
+    @unittest.expectedFailure
     def test_echec_de_l_analyse_conserve_la_note(self):
         """Bug #45 : le contenu est remplacé et les parts supprimées."""
         old_raw = self.note.raw
