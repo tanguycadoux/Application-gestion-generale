@@ -113,6 +113,16 @@ class ImportNoteTests(ServiceTestCase):
         )
         self.assertEqual(parts_summary(note), [("P", None, [], "x")])
 
+    @unittest.expectedFailure
+    def test_echec_de_l_analyse_n_enregistre_pas_la_note(self):
+        """Bug #45 : la note est enregistrée sans ses parts."""
+        with self.assertRaises(NotePartImage.DoesNotExist):
+            insert_note_in_table(
+                qmd_file("2025-11-24.qmd", HEADER + "# P\n![Banc](banc.png)")
+            )
+
+        self.assertFalse(Note.objects.exists())
+
 
 class UpdateNoteTests(ServiceTestCase):
     def setUp(self):
@@ -154,6 +164,21 @@ class UpdateNoteTests(ServiceTestCase):
             update_note_from_source_file(
                 self.note.pk, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
             )
+
+    @unittest.expectedFailure
+    def test_echec_de_l_analyse_conserve_la_note(self):
+        """Bug #45 : le contenu est remplacé et les parts supprimées."""
+        old_raw = self.note.raw
+
+        with self.assertRaises(NotePartImage.DoesNotExist):
+            update_note_from_source_file(
+                self.note.pk,
+                qmd_file("2025-11-24.qmd", HEADER + "# P\n![Banc](banc.png)"),
+            )
+
+        self.note.refresh_from_db()
+        self.assertEqual(self.note.raw, old_raw)
+        self.assertEqual(parts_summary(self.note), [("P", None, ["Ancien"], "x")])
 
 
 class ProcessNotePartsTests(ServiceTestCase):
