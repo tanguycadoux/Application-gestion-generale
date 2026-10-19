@@ -105,9 +105,7 @@ class ImportNoteTests(ServiceTestCase):
             insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# P\ny"))
         self.assertEqual(Note.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_fichier_utf8_avec_bom(self):
-        """Bug #41 : un fichier enregistré en UTF-8 avec BOM est refusé."""
         note = insert_note_in_table(
             qmd_file("2025-11-24.qmd", HEADER + "# P\nx", encoding="utf-8-sig")
         )
@@ -162,6 +160,15 @@ class UpdateNoteTests(ServiceTestCase):
             update_note_from_source_file(
                 self.note.pk, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
             )
+
+    def test_fichier_utf8_avec_bom(self):
+        update_note_from_source_file(
+            self.note.pk,
+            qmd_file("2025-11-24.qmd", HEADER + "# P\ny", encoding="utf-8-sig"),
+        )
+
+        self.note.refresh_from_db()
+        self.assertEqual(parts_summary(self.note), [("P", None, [], "y")])
 
     def test_echec_de_l_analyse_conserve_la_note(self):
         old_raw = self.note.raw
@@ -267,10 +274,9 @@ class TodoGenerationTests(ServiceTestCase):
             ["Tâche", "Tâche modifiée"],
         )
 
-    @unittest.expectedFailure
     def test_ligne_vide_ne_cree_pas_de_todo(self):
-        """Bug #42 : une ligne vide dans une part TODO crée une TODO sans titre."""
-        self.process("# P\n## S\n### TODO\n- Première\n\n- Seconde")
+        """Une ligne vide ou un tiret seul ne crée pas de TODO."""
+        self.process("# P\n## S\n### TODO\n- Première\n\n-\n- Seconde")
 
         self.assertEqual(
             sorted(Todo.objects.values_list("title", flat=True)),
