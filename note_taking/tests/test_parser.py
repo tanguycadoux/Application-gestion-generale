@@ -284,9 +284,7 @@ class KnownBugsTests(SimpleTestCase):
         result = parse("---\nheure: 10:30\n---\n# P\nx")
         self.assertEqual(result["note metadata"], {"heure": "10:30"})
 
-    @unittest.expectedFailure
     def test_ligne_vide_avant_bloc_en_tete(self):
-        """Bug #38."""
         result = parse("\n---\ndate: 2025-11-24\n---\n# P\nx")
         self.assertEqual(result["note metadata"], {"date": "2025-11-24"})
         self.assertEqual(

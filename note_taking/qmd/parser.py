@@ -84,13 +84,18 @@ class NoteParser:
         self.local_tags: set[str] = set()
 
         self.in_front_matter = False
+        # Le bloc d'en-tête ne peut commencer qu'avant toute ligne non vide.
+        self.front_matter_allowed = True
         self.in_metadata_block = False
         self.in_callout = False
         self.in_code_block = False
 
     def parse(self, raw: str) -> ParsedNote:
         for number, line in enumerate(raw.split("\n")):
-            self.parse_line(number, line.strip())
+            line = line.strip()
+            self.parse_line(number, line)
+            if line != "":
+                self.front_matter_allowed = False
         self.clean_parts()
         return self.note
 
@@ -122,7 +127,7 @@ class NoteParser:
     def parse_block_delimiter(self, number: int, line: str) -> bool:
         """Ouvre ou ferme un bloc ; renvoie True si la ligne est consommée."""
         if line == FRONT_MATTER_DELIMITER:
-            self.in_front_matter = number == 0
+            self.in_front_matter = self.front_matter_allowed
         elif line == METADATA_BLOCK_START:
             self.in_metadata_block = True
         elif line.startswith(CALLOUT_START):
