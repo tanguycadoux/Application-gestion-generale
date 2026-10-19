@@ -7,11 +7,11 @@ from django.views.generic import DetailView, ListView
 from .exceptions import NoteError
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart, NotePartImage
+from .qmd.parser import parse_note_raw_file_as_dict
 from .rendering import render_markdown
-from .utils import (
+from .services import (
     import_image,
     insert_note_in_table,
-    parse_note_raw_file_as_dict,
     process_note_parts,
     update_note_from_source_file,
 )

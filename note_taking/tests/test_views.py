@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from note_taking.models import Note, NotePartImage
-from note_taking.utils import import_image
+from note_taking.services import import_image
 
 MEDIA_ROOT = tempfile.mkdtemp()
 

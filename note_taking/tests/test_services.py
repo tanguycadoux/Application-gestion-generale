@@ -19,7 +19,7 @@ from note_taking.exceptions import (
     NoteParseError,
 )
 from note_taking.models import Note, NotePart, Project
-from note_taking.utils import (
+from note_taking.services import (
     import_image,
     insert_note_in_table,
     process_note_parts,

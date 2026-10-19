@@ -20,7 +20,7 @@ from pathlib import Path
 from django.test import SimpleTestCase
 
 from note_taking.exceptions import NoteParseError
-from note_taking.utils import parse_note_raw_file_as_dict
+from note_taking.qmd.parser import parse_note_raw_file_as_dict
 
 DATA_DIR = Path(__file__).parent / "data"
 
