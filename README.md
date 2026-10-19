@@ -189,3 +189,22 @@ Une sous-tâche hérite du projet de sa parente, ainsi que de son échéance si 
 La liste (`/todolist/todos`) sépare les TODO en cours des TODO terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours).
 
 Valider une TODO valide aussi ses sous-tâches, après confirmation si certaines ne sont pas terminées.
+
+## Orientations
+
+Le suivi détaillé se fait dans les [issues](https://github.com/tanguycadoux/Application-gestion-generale/issues) et les [milestones](https://github.com/tanguycadoux/Application-gestion-generale/milestones) GitHub. Cette section ne donne que les grandes lignes.
+
+Principes :
+
+- application locale et mono-utilisateur ;
+- la base de données fait foi, le format qmd sert à l'import et à l'export ;
+- front sans étape de build : HTML, CSS et JS natifs (htmx pour les mises à jour partielles).
+
+En cours : réorganisation du code pour préparer les évolutions (tests et outillage, nettoyage, puis restructuration des apps et du modèle de données : projets, sujets et tags partagés, app dédiée aux images, découpage du parseur qmd).
+
+Pistes envisagées ensuite, non planifiées :
+
+- éditeur de notes assisté (insertion de projets, sujets et images depuis des listes),
+- éditeur d'images simple (vectoriel et matriciel) et page détail d'une image avec les notes liées,
+- vue calendrier des notes et accès direct à la note du jour,
+- export et réimport de toutes les notes au format qmd.
