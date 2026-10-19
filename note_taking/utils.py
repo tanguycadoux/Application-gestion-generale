@@ -2,6 +2,8 @@ import re
 from datetime import date
 from pathlib import Path
 
+from django.db import transaction
+
 from todolist.services import create_todo_from_dict
 
 from .models import Note, NotePart, NotePartImage, Project
@@ -62,6 +64,7 @@ def validate_date_format(date_text):
 #     return note
 
 
+@transaction.atomic
 def update_note_from_source_file(pk, file):
     note = Note.objects.get(pk=pk)
     if note is None:
@@ -94,6 +97,7 @@ def update_note_from_source_file(pk, file):
     return note
 
 
+@transaction.atomic
 def insert_note_in_table(file):
     filename = Path(file.name).stem
 
