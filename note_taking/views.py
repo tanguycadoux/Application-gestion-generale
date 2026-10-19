@@ -1,4 +1,3 @@
-import markdown
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -7,6 +6,7 @@ from django.views.generic import DetailView, ListView
 
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart, NotePartImage
+from .rendering import render_markdown
 from .utils import (
     import_image,
     insert_note_in_table,
@@ -80,7 +80,7 @@ def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
 
     if note.raw is not None:
-        html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])
+        html_content = render_markdown(note.raw)
     else:
         html_content = "<p>Aucun contenu disponible.</p>"
 

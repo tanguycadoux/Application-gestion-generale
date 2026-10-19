@@ -7,6 +7,7 @@ from django.db import transaction
 from todolist.services import create_todo_from_dict
 
 from .models import Note, NotePart, NotePartImage, Project
+from .rendering import IMAGE_PATH_REGEX
 
 
 def validate_date_format(date_text):
@@ -207,9 +208,7 @@ def replace_image_paths(content: str) -> str:
 
         return match.group(0).replace(path, f"image:{image_obj.pk}")
 
-    IMAGE_REGEX = re.compile(r"\!\[[^\]]*\]\((?P<path>[^)]+)\)")
-
-    return IMAGE_REGEX.sub(repl, content)
+    return IMAGE_PATH_REGEX.sub(repl, content)
 
 
 def parse_note_raw_file_as_dict(date, raw) -> dict:

@@ -1,6 +1,3 @@
-import re
-
-import markdown
 from django.db import models
 
 
@@ -48,27 +45,10 @@ class NotePart(models.Model):
         return f"{self.project}, {self.subject}"
 
     def rendered_content(self):
-        def repl(match):
-            pk = match.group("pk")
-            alt = match.group("alt")
-            attrs = match.group("attrs") or ""
+        # Import local : rendering importe les modèles.
+        from .rendering import render_note_part
 
-            try:
-                img = NotePartImage.objects.get(pk=pk)
-                url = img.file.url
-            except NotePartImage.DoesNotExist:
-                url = "/static/img/image-missing.png"
-
-            return f"![{alt}]({url}){attrs}"
-
-        RENDER_IMAGE_REGEX = re.compile(
-            r"\!\[(?P<alt>[^\]]*)\]\(image:(?P<pk>\d+)\)(?P<attrs>\{[^}]*\})?"
-        )
-
-        return markdown.markdown(
-            RENDER_IMAGE_REGEX.sub(repl, self.content),
-            extensions=["fenced_code", "tables"],
-        )
+        return render_note_part(self.content or "")
 
 
 class NotePartImage(models.Model):
