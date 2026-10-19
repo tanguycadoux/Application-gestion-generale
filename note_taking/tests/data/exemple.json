@@ -1,0 +1,197 @@
+{
+  "file date": "2025-11-24",
+  "note metadata": {
+    "date": "2025-11-24"
+  },
+  "content": [
+    {
+      "project": "Projet Alpha",
+      "subject": null,
+      "tags": [],
+      "content": [
+        "Texte au niveau du projet."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [],
+      "content": [
+        "Introduction du sujet."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Hypothèses"
+      ],
+      "content": [
+        "Première hypothèse."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Hypothèses",
+        "Matériaux"
+      ],
+      "content": [
+        "Acier inoxydable."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "304L",
+        "Hypothèses",
+        "Matériaux",
+        "Nuances"
+      ],
+      "content": [
+        "Nuance retenue."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Conception, approvisionnement et fabrication"
+      ],
+      "content": [
+        "Le titre contient une virgule mais reste un seul tag.",
+        "",
+        "```python",
+        "# Un titre dans un bloc de code n'est pas interprété",
+        "::: {.metadata}",
+        "tags: [ignoré]",
+        ":::",
+        "```",
+        "",
+        "## Un titre dans un callout n'est pas interprété",
+        "Contenu du callout."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Résultats",
+        "m1",
+        "m2"
+      ],
+      "content": [
+        "Résultats avec m1 et m2."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Résultats",
+        "m3"
+      ],
+      "content": [
+        "Résultats avec m3 à la place de m1 et m2."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Détails",
+        "Résultats",
+        "m3"
+      ],
+      "content": [
+        "Détails qui héritent de m3."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Calcul thermique",
+      "tags": [
+        "Détails",
+        "Résultats",
+        "m3",
+        "m4"
+      ],
+      "content": [
+        "Détails avec m3 et m4."
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Mesures",
+      "tags": [
+        "TODO"
+      ],
+      "content": [
+        "- Commander les capteurs",
+        "- Calibrer le banc"
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "subject": "Mesures",
+      "tags": [
+        "Photos"
+      ],
+      "content": [
+        "![Banc de mesure](images/banc.png)"
+      ]
+    },
+    {
+      "project": "Projet Beta",
+      "subject": null,
+      "tags": [
+        "interne"
+      ],
+      "content": [
+        "Texte du projet Beta, avec le tag interne."
+      ]
+    },
+    {
+      "project": "Projet Beta",
+      "subject": "Revue",
+      "tags": [
+        "interne",
+        "revue"
+      ],
+      "content": [
+        "Texte avec les tags interne et revue."
+      ]
+    },
+    {
+      "project": "Projet Beta",
+      "subject": "Revue",
+      "tags": [
+        "Points ouverts",
+        "interne",
+        "revue"
+      ],
+      "content": [
+        "Texte entouré de lignes vides.",
+        "",
+        "",
+        "",
+        "",
+        "Ce texte est regroupé avec le premier « Points ouverts » (mêmes projet, sujet et tags)."
+      ]
+    },
+    {
+      "project": "Projet Beta",
+      "subject": "Revue",
+      "tags": [
+        "Décisions",
+        "interne",
+        "revue"
+      ],
+      "content": [
+        "Une décision."
+      ]
+    }
+  ]
+}

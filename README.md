@@ -49,6 +49,18 @@ ruff check .        # lint (ajouter --fix pour corriger automatiquement)
 ruff format .       # formatage
 ```
 
+Les tests se lancent avec :
+
+```powershell
+python manage.py test
+```
+
+Le parseur de notes est testé sur une note d'exemple (`note_taking/tests/data/exemple.qmd`) dont le résultat attendu est figé dans `exemple.json`. Après un changement de comportement voulu, régénérer ce fichier puis relire son diff :
+
+```powershell
+$env:UPDATE_GOLDEN = "1"; python manage.py test note_taking.tests.test_parser; Remove-Item Env:UPDATE_GOLDEN
+```
+
 Les commits de formatage pur sont listés dans `.git-blame-ignore-revs`. Pour que `git blame` les ignore :
 
 ```powershell
