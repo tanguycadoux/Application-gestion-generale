@@ -2,14 +2,79 @@
 
 Application pour l'organisation quotidienne.
 
-Projet DJANGO `app_gestion`, contenant des applications :
+Projet Django `app_gestion`, contenant des applications :
 
 - `note_taking` pour la prise de notes,
 - `todolist` pour la gestion de TODO.
 
+## Installation et lancement
+
+Prérequis : Python 3.10 ou supérieur.
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+L'application est ensuite accessible sur <http://127.0.0.1:8000/>.
+
+Dépendances principales :
+
+- `Django`,
+- `Markdown` pour le rendu HTML des notes,
+- `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
+- `Pillow` pour le stockage des images de notes (`ImageField`).
+
+`requirements.txt` est généré avec `pipreqs`, qui ne détecte que les `import` du code. `django-htmx` (déclaré seulement comme chaîne dans `MIDDLEWARE`) et `Pillow` (importé par Django en interne) doivent donc y être ajoutés à la main après chaque régénération :
+
+```powershell
+pipreqs --encoding utf-8 --ignore .venv --force .
+```
+
+Attention : la version de `pipreqs` installée (0.4.13) ne détecte pas les paquets du venv et prend les dernières versions publiées sur PyPI (`--use-local` renvoie une liste vide). Aligner ensuite les versions sur celles du venv (`pip list`).
+
+Côté front, Tailwind et htmx sont chargés depuis un CDN.
+
+Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`).
+
+### Structure du dépôt
+
+```
+app_gestion/          # configuration du projet (settings, urls, templates et statiques communs)
+note_taking/          # application de prise de notes
+todolist/             # application de gestion des TODO
+manage.py
+db.sqlite3            # base de données (non versionnée)
+media/note_images/    # images importées (non versionnées)
+notes_quarto_files/   # fichiers sources .qmd des notes (non versionnés)
+```
+
 ## Prise de notes
 
-Les notes sont organisés par jour, chaque jour étant un fichier quarto (`.qmd`).
+Les notes sont organisées par jour : une note correspond à une date (unique) et son contenu est stocké en base de données (champ `raw`), au format markdown / quarto.
+
+Une note peut être :
+
+- créée et modifiée directement dans l'application (`/note_taking/note/new/`, puis `/note_taking/note/<id>/edit/`),
+- importée depuis un ou plusieurs fichiers quarto (`.qmd`),
+- mise à jour depuis un fichier source, depuis sa vue détail.
+
+À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
+
+### Import de fichiers
+
+Le nom du fichier doit être la date de la note au format `AAAA-MM-JJ` (exemple : `2025-11-24.qmd`). Un fichier préfixé par `TEST_` (exemple : `TEST_2025-11-24.qmd`) est marqué comme note de test.
+
+Le fichier doit commencer par un bloc de métadonnées dont la date correspond au nom du fichier :
+
+```
+---
+date: 2025-11-24
+---
+```
 
 ### Structure générale
 
@@ -24,7 +89,11 @@ Une note est structurée de cette manière :
 ###### Tag 4
 ```
 
-Les titres sont cummulatifs, ce qui signifie qu'un texte contenu sous "Tag 2" hérite du projet, sujet et Tag 1. Par convention, même si un titre conient une virgule, il est considéré comme un tag à part entière (par exemple le titre "Conception, approvisionnement et fabrication" donnera le tag `Conception, approvisionnement et fabrication` et non les tags `Conception` et `approvisionnement et fabrication`).
+Les titres sont cumulatifs, ce qui signifie qu'un texte contenu sous "Tag 2" hérite du projet, sujet et Tag 1. Par convention, même si un titre contient une virgule, il est considéré comme un tag à part entière (par exemple le titre "Conception, approvisionnement et fabrication" donnera le tag `Conception, approvisionnement et fabrication` et non les tags `Conception` et `approvisionnement et fabrication`).
+
+Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même sujet et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore.
+
+Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
 
 ### Tags supplémentaires
 
@@ -72,3 +141,51 @@ Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6
 
 Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6, Tag 4
 ```
+
+### Génération des TODO
+
+Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) génère une TODO par ligne de contenu dans l'application `todolist` :
+
+```
+# Projet
+## Sujet
+### TODO
+
+- Première tâche
+- Deuxième tâche
+```
+
+Chaque TODO est rattachée au projet, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`) ainsi que le sujet. Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+
+### Images
+
+Les images sont importées séparément (bouton d'import, liste sur `/note_taking/images/`) et stockées dans `media/note_images/`. Dans une note, une image est référencée par son nom de fichier :
+
+```
+![Légende](chemin/vers/image.png)
+```
+
+Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
+
+### Fonctionnalités
+
+- liste des notes, triable par colonne (`/note_taking/notes/`),
+- vue détail d'une note, rendu markdown complet (`/note_taking/note/<id>/md/`) et résultat de l'analyse en JSON (`/note_taking/note/<id>/json/`),
+- recherche des note parts par projet(s) et sujet(s) (`/note_taking/notes/search/`), les sujets proposés étant filtrés selon les projets cochés,
+- suppression d'une note.
+
+## Gestion des TODO
+
+Les TODO peuvent être créées manuellement ou générées depuis les notes. Une TODO possède :
+
+- un titre et une description,
+- un projet et des tags,
+- une priorité (basse, moyenne, haute),
+- une date d'échéance,
+- une TODO parente éventuelle (sous-tâches).
+
+Une sous-tâche hérite du projet de sa parente, ainsi que de son échéance si elle n'en a pas.
+
+La liste (`/todolist/todos`) sépare les TODO en cours des TODO terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours).
+
+Valider une TODO valide aussi ses sous-tâches, après confirmation si certaines ne sont pas terminées.
