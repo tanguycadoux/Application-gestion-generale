@@ -75,7 +75,7 @@ def update_note_from_source_file(pk, file):
     validate_date_format(note_date)
 
     raw_bytes = file.read()
-    raw_content = raw_bytes.decode("utf-8")
+    raw_content = raw_bytes.decode("utf-8-sig")
 
     parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
 
@@ -103,7 +103,7 @@ def insert_note_in_table(file):
     validate_date_format(note_date)
 
     raw_bytes = file.read()
-    raw_content = raw_bytes.decode("utf-8")
+    raw_content = raw_bytes.decode("utf-8-sig")
 
     note = Note(date=note_date, is_test=is_test, raw=raw_content)
     parsed_note = parse_note_raw_file_as_dict(note.date, note.raw)
