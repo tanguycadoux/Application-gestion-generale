@@ -273,9 +273,7 @@ class KnownBugsTests(SimpleTestCase):
         raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
         self.assertEqual(parts(raw), [("P", None, [], ["avant", "---", "apres"])])
 
-    @unittest.expectedFailure
     def test_texte_avant_premier_projet_ignore(self):
-        """Bug #36 : pour l'instant, ce texte est ignoré."""
         self.assertEqual(parts("intro\n# P\nx"), [("P", None, [], ["x"])])
 
     def test_metadonnee_contenant_deux_points(self):

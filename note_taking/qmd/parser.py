@@ -186,6 +186,9 @@ class NoteParser:
 
     def add_content(self, line: str) -> None:
         project = self.levels[1].title
+        if project is None:
+            # Texte avant le premier projet : ignoré pour l'instant (#36).
+            return
         subject = self.levels[2].title
         tags = self.current_tags()
 
