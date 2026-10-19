@@ -12,8 +12,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
 from core.models import Project
+from images.services import import_image
 from note_taking.exceptions import (
-    ImageAlreadyExistsError,
     ImageNotFoundError,
     InvalidNoteFileError,
     NoteAlreadyExistsError,
@@ -21,7 +21,6 @@ from note_taking.exceptions import (
 )
 from note_taking.models import Note, NotePart
 from note_taking.services import (
-    import_image,
     insert_note_in_table,
     process_note_parts,
     update_note_from_source_file,
@@ -309,17 +308,7 @@ class TodoGenerationTests(ServiceTestCase):
 
 
 class ImageTests(ServiceTestCase):
-    def test_import_image(self):
-        image = import_image(image_file("banc.png"))
-
-        self.assertEqual(image.original_path, "banc.png")
-        self.assertTrue(image.file.name.startswith("note_images/"))
-
-    def test_import_image_nom_deja_utilise(self):
-        import_image(image_file("banc.png"))
-
-        with self.assertRaisesMessage(ImageAlreadyExistsError, "existe déjà"):
-            import_image(image_file("banc.png"))
+    """Images dans les notes ; l'import lui-même est testé dans l'app images."""
 
     def test_reference_remplacee_par_identifiant(self):
         image = import_image(image_file("banc.png"))

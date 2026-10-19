@@ -8,8 +8,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from note_taking.models import Note, NotePartImage
-from note_taking.services import import_image, process_note_parts
+from images.models import Image
+from images.services import import_image
+from note_taking.models import Note
+from note_taking.services import process_note_parts
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -123,7 +125,7 @@ class ImportImagesViewTests(ViewTestCase):
     def test_import_reussi(self):
         response = self.client.post(self.url, {"image_import": [image_file("a.png")]})
 
-        self.assertTrue(NotePartImage.objects.filter(original_path="a.png").exists())
+        self.assertTrue(Image.objects.filter(name="a.png").exists())
         self.assertEqual(self.levels(response), ["success"])
 
     def test_image_deja_importee(self):
@@ -131,7 +133,7 @@ class ImportImagesViewTests(ViewTestCase):
 
         response = self.client.post(self.url, {"image_import": [image_file("a.png")]})
 
-        self.assertEqual(NotePartImage.objects.count(), 1)
+        self.assertEqual(Image.objects.count(), 1)
         self.assertEqual(self.levels(response), ["error"])
 
 

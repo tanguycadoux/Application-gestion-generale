@@ -6,7 +6,7 @@ import markdown
 from django.templatetags.static import static
 from django.utils.html import escape
 
-from .models import NotePartImage
+from images.models import Image
 
 MARKDOWN_EXTENSIONS = ["fenced_code", "tables"]
 
@@ -122,8 +122,8 @@ def resolve_image_refs(content: str) -> str:
         attrs = match.group("attrs") or ""
 
         try:
-            url = NotePartImage.objects.get(pk=match.group("pk")).file.url
-        except NotePartImage.DoesNotExist:
+            url = Image.objects.get(pk=match.group("pk")).file.url
+        except Image.DoesNotExist:
             url = static(IMAGE_MISSING_PATH)
 
         return f"![{alt}]({url}){attrs}"

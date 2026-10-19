@@ -4,13 +4,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.generic import DetailView, ListView
 
-from .exceptions import NoteError
+from core.exceptions import AppError
+from images.models import Image
+from images.services import import_image
+
 from .forms import NewNoteForm, NoteSearchForm
-from .models import Note, NotePart, NotePartImage
+from .models import Note, NotePart
 from .qmd.parser import parse_note
 from .rendering import render_markdown
 from .services import (
-    import_image,
     insert_note_in_table,
     process_note_parts,
     update_note_from_source_file,
@@ -71,8 +73,8 @@ class NoteList(ListView):
         return context
 
 
-class NotePartImageList(ListView):
-    model = NotePartImage
+class ImageList(ListView):
+    model = Image
     context_object_name = "images"
     template_name = "note_taking/images_list.html"
 
@@ -99,7 +101,7 @@ def import_files(request, files, import_file, success_message):
     for file in files:
         try:
             import_file(file)
-        except NoteError as e:
+        except AppError as e:
             messages.error(request, f"Échec pour {file.name} : {e}")
         else:
             imported += 1
@@ -130,7 +132,7 @@ def update_source_file(request, pk):
         else:
             try:
                 update_note_from_source_file(note, file)
-            except NoteError as e:
+            except AppError as e:
                 messages.error(
                     request, f"Erreur lors de la mise à jour de la note : {e}"
                 )
@@ -207,7 +209,7 @@ def new_note(request):
             note = form.save()
             try:
                 process_note_parts(note)
-            except NoteError as e:
+            except AppError as e:
                 messages.error(
                     request,
                     f"La note est enregistrée mais son contenu n'a pas pu être "
@@ -228,7 +230,7 @@ def edit_note(request, pk):
             note = form.save()
             try:
                 process_note_parts(note)
-            except NoteError as e:
+            except AppError as e:
                 messages.error(
                     request,
                     f"La note est enregistrée mais son contenu n'a pas pu être "

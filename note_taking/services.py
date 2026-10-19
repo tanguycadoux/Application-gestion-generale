@@ -5,16 +5,16 @@ from pathlib import Path
 from django.db import transaction
 
 from core.models import Project, Subject, Tag
+from images.models import Image
 from todolist.services import create_todo_from_dict
 
 from .exceptions import (
-    ImageAlreadyExistsError,
     ImageNotFoundError,
     InvalidNoteFileError,
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from .models import Note, NotePart, NotePartImage
+from .models import Note, NotePart
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX
@@ -139,8 +139,8 @@ def replace_image_paths(content: str) -> str:
         name = Path(path).name
 
         try:
-            image_obj = NotePartImage.objects.get(original_path=name)
-        except NotePartImage.DoesNotExist:
+            image_obj = Image.objects.get(name=name)
+        except Image.DoesNotExist:
             raise ImageNotFoundError(
                 f"L'image {name} n'a pas été importée : l'importer avant la note."
             ) from None
@@ -148,16 +148,3 @@ def replace_image_paths(content: str) -> str:
         return match.group(0).replace(path, f"image:{image_obj.pk}")
 
     return IMAGE_PATH_REGEX.sub(repl, content)
-
-
-def import_image(file):
-    if NotePartImage.objects.filter(original_path=file.name).exists():
-        raise ImageAlreadyExistsError(
-            f"Une image avec ce nom de fichier existe déjà\xa0: {file.name}"
-        )
-
-    img = NotePartImage.objects.create(
-        file=file,
-        original_path=file.name,
-    )
-    return img
