@@ -1,6 +1,5 @@
 """Tests des représentations textuelles des modèles."""
 
-import unittest
 
 from django.test import SimpleTestCase
 
@@ -21,7 +20,6 @@ class NotePartStrTests(SimpleTestCase):
 
 
 class TextFieldsDefaultTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_contenu_vide_par_defaut(self):
         """#48 : chaîne vide plutôt que None."""
         self.assertEqual(NotePart().content, "")

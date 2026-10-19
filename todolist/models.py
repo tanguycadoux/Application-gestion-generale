@@ -32,7 +32,7 @@ class Todo(models.Model):
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
-    note_part_text = models.CharField(max_length=200, blank=True, null=True)
+    note_part_text = models.CharField(max_length=200, blank=True, default="")
 
     priority = models.CharField(
         max_length=10, choices=PRIORITY_CHOICES, default="medium"

@@ -31,7 +31,7 @@ class NotePart(models.Model):
         related_name="note_parts",
     )
     tags = models.ManyToManyField(Tag, related_name="note_parts", blank=True)
-    content = models.TextField(blank=True, null=True, default=None)
+    content = models.TextField(blank=True, default="")
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -46,7 +46,7 @@ class NotePart(models.Model):
         # Import local : rendering importe les modèles.
         from .rendering import render_note_part
 
-        return render_note_part(self.content or "")
+        return render_note_part(self.content)
 
 
 class NotePartImage(models.Model):
