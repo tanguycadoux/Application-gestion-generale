@@ -109,7 +109,7 @@ class CalloutRenderingTests(SimpleTestCase):
 
 class NoteMarkdownViewTests(TestCase):
     def test_rendu_du_contenu_complet(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\n\n| a |\n|---|\n| 1 |")
+        note = Note.objects.create(date="2025-11-24", body="# P\n\n| a |\n|---|\n| 1 |")
 
         response = self.client.get(reverse("note_taking:note_md", args=[note.pk]))
 
@@ -118,7 +118,7 @@ class NoteMarkdownViewTests(TestCase):
         self.assertEqual(str(response.context["date"]), "2025-11-24")
 
     def test_note_sans_contenu(self):
-        note = Note.objects.create(date="2025-11-24", raw=None)
+        note = Note.objects.create(date="2025-11-24", body="")
 
         response = self.client.get(reverse("note_taking:note_md", args=[note.pk]))
 

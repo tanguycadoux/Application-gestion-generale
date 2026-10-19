@@ -3,7 +3,9 @@ from django.urls import reverse_lazy
 
 from core.models import Project, Subject
 
+from .exceptions import NoteParseError
 from .models import Note
+from .qmd.files import split_front_matter
 
 
 class NoteSearchForm(forms.Form):
@@ -45,4 +47,24 @@ class NoteSearchForm(forms.Form):
 class NewNoteForm(forms.ModelForm):
     class Meta:
         model = Note
-        fields = ["date", "raw"]
+        fields = ["date", "body"]
+
+    def clean(self):
+        """Retire un éventuel bloc d'en-tête du corps, après en avoir vérifié la date."""
+        cleaned_data = super().clean()
+        try:
+            metadata, body = split_front_matter(cleaned_data.get("body", ""))
+        except NoteParseError as e:
+            self.add_error("body", str(e))
+            return cleaned_data
+
+        header_date = metadata.get("date")
+        note_date = cleaned_data.get("date")
+        if header_date and note_date and header_date != str(note_date):
+            self.add_error(
+                "body",
+                f"La date du bloc d'en-tête ({header_date}) ne correspond pas "
+                "à la date de la note.",
+            )
+        cleaned_data["body"] = body
+        return cleaned_data

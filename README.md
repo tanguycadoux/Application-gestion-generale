@@ -82,7 +82,7 @@ notes_quarto_files/   # fichiers sources .qmd des notes (non versionnés)
 
 ## Prise de notes
 
-Les notes sont organisées par jour : une note correspond à une date (unique) et son contenu est stocké en base de données (champ `raw`), au format markdown / quarto.
+Les notes sont organisées par jour : une note correspond à une date (unique) et son contenu est stocké en base de données (champ `body`), au format markdown / quarto. La base fait foi : le corps est stocké sans bloc d'en-tête (`---` / `date: …` / `---`), la date étant celle de la note.
 
 Une note peut être :
 
@@ -103,6 +103,8 @@ Le fichier doit commencer par un bloc de métadonnées dont la date correspond a
 date: 2025-11-24
 ---
 ```
+
+Ce bloc sert uniquement à vérifier la date : il est retiré avant l'enregistrement. Dans l'éditeur de l'application, un bloc d'en-tête éventuel est traité de la même manière (une date différente de celle de la note est refusée).
 
 ### Structure générale
 

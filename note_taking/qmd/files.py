@@ -1,10 +1,10 @@
-"""Lecture des fichiers de note .qmd."""
+"""Lecture des fichiers de note .qmd et de leur bloc d'en-tête."""
 
 from datetime import date
 from pathlib import Path
 
-from ..exceptions import InvalidNoteFileError
-from .parser import ParsedNote
+from ..exceptions import InvalidNoteFileError, NoteParseError
+from .parser import FRONT_MATTER_DELIMITER, parse_key_value
 
 
 def validate_date_format(date_text):
@@ -23,15 +23,47 @@ def read_note_file(file) -> tuple[str, str]:
     validate_date_format(note_date)
 
     try:
-        raw_content = file.read().decode("utf-8-sig")
+        content = file.read().decode("utf-8-sig")
     except UnicodeDecodeError:
         raise InvalidNoteFileError("Le fichier n'est pas encodé en UTF-8.") from None
 
-    return note_date, raw_content
+    return note_date, content
 
 
-def check_metadata_date(note_date: str, parsed_note: ParsedNote) -> None:
-    if note_date != parsed_note.metadata.get("date"):
+def split_front_matter(text: str) -> tuple[dict[str, str], str]:
+    """Sépare le bloc d'en-tête qmd du corps de la note.
+
+    Le bloc d'en-tête doit être la première ligne non vide. Renvoie
+    (métadonnées, corps), le corps sans les lignes vides qui suivent le bloc.
+    Sans bloc d'en-tête, les métadonnées sont vides et le texte est inchangé.
+    """
+    lines = text.split("\n")
+    start = next((i for i, line in enumerate(lines) if line.strip()), None)
+    if start is None or lines[start].strip() != FRONT_MATTER_DELIMITER:
+        return {}, text
+
+    end = next(
+        (
+            i
+            for i in range(start + 1, len(lines))
+            if lines[i].strip() == FRONT_MATTER_DELIMITER
+        ),
+        None,
+    )
+    if end is None:
+        raise NoteParseError("Le bloc d'en-tête n'est pas fermé (ligne --- manquante).")
+
+    metadata = dict(
+        parse_key_value(line.strip()) for line in lines[start + 1 : end] if line.strip()
+    )
+    body = lines[end + 1 :]
+    while body and not body[0].strip():
+        body.pop(0)
+    return metadata, "\n".join(body)
+
+
+def check_metadata_date(note_date: str, metadata: dict[str, str]) -> None:
+    if note_date != metadata.get("date"):
         raise InvalidNoteFileError(
             "La date des métadonnées ne correspond pas au nom du fichier."
         )

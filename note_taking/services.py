@@ -15,56 +15,54 @@ from .exceptions import (
     NoteParseError,
 )
 from .models import Note, NotePart, NotePartImage
-from .qmd.files import check_metadata_date, read_note_file
+from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX
 
 
 @transaction.atomic
 def update_note_from_source_file(note: Note, file) -> Note:
-    note_date, raw_content = read_note_file(file)
-
-    parsed_note = parse_note(note_date, raw_content)
-    check_metadata_date(note_date, parsed_note)
+    note_date, content = read_note_file(file)
+    metadata, body = split_front_matter(content)
+    check_metadata_date(note_date, metadata)
 
     if str(note.date) != note_date:
         raise InvalidNoteFileError(
             "Le fichier source ne correspond pas à la date de la note."
         )
 
-    note.raw = raw_content
+    note.body = body
     note.save()
 
-    process_note_parts(note, parsed_note=parsed_note)
+    process_note_parts(note)
     return note
 
 
 @transaction.atomic
 def insert_note_in_table(file) -> Note:
-    note_date, raw_content = read_note_file(file)
-
-    parsed_note = parse_note(note_date, raw_content)
-    check_metadata_date(note_date, parsed_note)
+    note_date, content = read_note_file(file)
+    metadata, body = split_front_matter(content)
+    check_metadata_date(note_date, metadata)
 
     if Note.objects.filter(date=note_date).exists():
         raise NoteAlreadyExistsError(f"Une note existe déjà pour le {note_date}.")
 
-    note = Note.objects.create(date=note_date, raw=raw_content)
+    note = Note.objects.create(date=note_date, body=body)
 
-    process_note_parts(note, parsed_note=parsed_note)
+    process_note_parts(note)
     return note
 
 
 def process_note_parts(
     note: Note, parsed_note: ParsedNote | None = None
 ) -> list[NotePart]:
-    """(Re)génère les NotePart et les todos associés à partir de note.raw.
+    """(Re)génère les NotePart et les todos associés à partir de note.body.
 
-    À appeler après chaque sauvegarde de note.raw (import fichier ou
+    À appeler après chaque sauvegarde de note.body (import fichier ou
     édition depuis le formulaire web), une fois `note` déjà persistée.
     """
     if parsed_note is None:
-        parsed_note = parse_note(str(note.date), note.raw or "")
+        parsed_note = parse_note(str(note.date), note.body)
 
         parsed_date = parsed_note.metadata.get("date")
         if parsed_date and str(note.date) != parsed_date:
