@@ -6,6 +6,13 @@ from django.db import transaction
 
 from todolist.services import create_todo_from_dict
 
+from .exceptions import (
+    ImageAlreadyExistsError,
+    ImageNotFoundError,
+    InvalidNoteFileError,
+    NoteAlreadyExistsError,
+    NoteParseError,
+)
 from .models import Note, NotePart, NotePartImage, Project
 from .rendering import IMAGE_PATH_REGEX
 
@@ -14,7 +21,10 @@ def validate_date_format(date_text):
     try:
         date.fromisoformat(date_text)
     except ValueError:
-        raise ValueError("Incorrect data format, should be YYYY-MM-DD") from None
+        raise InvalidNoteFileError(
+            "Nom de fichier invalide : la date doit être au format AAAA-MM-JJ "
+            "(exemple : 2025-11-24.qmd)."
+        ) from None
 
 
 # def insert_note_in_table(file):
@@ -65,12 +75,8 @@ def validate_date_format(date_text):
 #     return note
 
 
-@transaction.atomic
-def update_note_from_source_file(pk, file):
-    note = Note.objects.get(pk=pk)
-    if note is None:
-        raise TypeError(f"La note n'existe pas (pk={pk})")
-
+def read_note_file(file) -> tuple[str, bool, str]:
+    """Lit un fichier de note : (date, note de test ou non, contenu)."""
     filename = Path(file.name).stem
 
     is_test = filename[:4] == "TEST"
@@ -78,16 +84,31 @@ def update_note_from_source_file(pk, file):
 
     validate_date_format(note_date)
 
-    raw_bytes = file.read()
-    raw_content = raw_bytes.decode("utf-8-sig")
+    try:
+        raw_content = file.read().decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise InvalidNoteFileError("Le fichier n'est pas encodé en UTF-8.") from None
+
+    return note_date, is_test, raw_content
+
+
+def check_metadata_date(note_date: str, parsed_note: dict) -> None:
+    if note_date != parsed_note["note metadata"].get("date"):
+        raise InvalidNoteFileError(
+            "La date des métadonnées ne correspond pas au nom du fichier."
+        )
+
+
+@transaction.atomic
+def update_note_from_source_file(note: Note, file) -> Note:
+    note_date, is_test, raw_content = read_note_file(file)
 
     parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
+    check_metadata_date(note_date, parsed_note)
 
-    if note_date != parsed_note["note metadata"].get("date"):
-        raise ValueError("La date du fichier source n'est pas cohérente.")
     if str(note.date) != note_date:
-        raise ValueError(
-            "La date de la note n'est pas la même que celle du fichier source."
+        raise InvalidNoteFileError(
+            "Le fichier source ne correspond pas à la date de la note."
         )
 
     note.raw = raw_content
@@ -99,23 +120,16 @@ def update_note_from_source_file(pk, file):
 
 
 @transaction.atomic
-def insert_note_in_table(file):
-    filename = Path(file.name).stem
+def insert_note_in_table(file) -> Note:
+    note_date, is_test, raw_content = read_note_file(file)
 
-    is_test = filename[:4] == "TEST"
-    note_date = filename[5:] if is_test else filename
+    parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
+    check_metadata_date(note_date, parsed_note)
 
-    validate_date_format(note_date)
+    if Note.objects.filter(date=note_date).exists():
+        raise NoteAlreadyExistsError(f"Une note existe déjà pour le {note_date}.")
 
-    raw_bytes = file.read()
-    raw_content = raw_bytes.decode("utf-8-sig")
-
-    note = Note(date=note_date, is_test=is_test, raw=raw_content)
-    parsed_note = parse_note_raw_file_as_dict(note.date, note.raw)
-
-    if note_date != parsed_note["note metadata"].get("date"):
-        raise ValueError("La date de la note n'est pas cohérente.")
-    note.save()
+    note = Note.objects.create(date=note_date, is_test=is_test, raw=raw_content)
 
     process_note_parts(note, parsed_note=parsed_note)
     return note
@@ -132,8 +146,9 @@ def process_note_parts(note: Note, parsed_note: dict | None = None) -> list[Note
 
         parsed_date = parsed_note["note metadata"].get("date")
         if parsed_date and str(note.date) != parsed_date:
-            raise ValueError(
-                "La date dans les métadonnées du contenu ne correspond pas à la date de la note."
+            raise NoteParseError(
+                "La date dans les métadonnées du contenu ne correspond pas "
+                "à la date de la note."
             )
 
     note.parts.all().delete()
@@ -204,7 +219,12 @@ def replace_image_paths(content: str) -> str:
         path = match.group("path")
         name = Path(path).name
 
-        image_obj = NotePartImage.objects.get(original_path=name)
+        try:
+            image_obj = NotePartImage.objects.get(original_path=name)
+        except NotePartImage.DoesNotExist:
+            raise ImageNotFoundError(
+                f"L'image {name} n'a pas été importée : l'importer avant la note."
+            ) from None
 
         return match.group(0).replace(path, f"image:{image_obj.pk}")
 
@@ -215,7 +235,7 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
     def parse_text_as_dict(text):
         parsed_text = text.split(":")
         if len(parsed_text) != 2:
-            raise ValueError(
+            raise NoteParseError(
                 f"La métadonnée est erronnée : format non type DICT ({text})"
             )
 
@@ -308,7 +328,7 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
             continue
 
         if is_note_metadata_block and is_local_metadata_block:
-            raise ValueError(
+            raise NoteParseError(
                 f"Erreur dans la lecture : à la fois block metadata local et global (ligne numéro {i + 1} : {line})"
             )
 
@@ -321,7 +341,7 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
 
             if parsed_key == "tags":
                 if parsed_value[0] != "[" or parsed_value[-1] != "]":
-                    raise ValueError(
+                    raise NoteParseError(
                         f"La métadonnée locale est erronnée : format non type ARRAY (ligne numéro {i + 1} : {line})"
                     )
                 local_metadata_tags = set()
@@ -395,7 +415,7 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
 
 def import_image(file):
     if NotePartImage.objects.filter(original_path=file.name).exists():
-        raise ValueError(
+        raise ImageAlreadyExistsError(
             f"Une image avec ce nom de fichier existe déjà\xa0: {file.name}"
         )
 

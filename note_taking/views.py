@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.views.generic import DetailView, ListView
 
+from .exceptions import NoteError
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart, NotePartImage
 from .rendering import render_markdown
@@ -92,28 +93,49 @@ def note_md(request, pk):
     return render(request, "note_taking/note_md.html", context)
 
 
+def import_files(request, files, import_file, success_message):
+    """Importe chaque fichier indépendamment et affiche un message récapitulatif."""
+    imported = 0
+    for file in files:
+        try:
+            import_file(file)
+        except NoteError as e:
+            messages.error(request, f"Échec pour {file.name} : {e}")
+        else:
+            imported += 1
+
+    if imported:
+        messages.success(request, success_message(imported))
+    elif not files:
+        messages.warning(request, "Aucun fichier sélectionné.")
+
+
 def import_note(request):
     if request.method == "POST":
-        try:
-            files = request.FILES.getlist("note_import")
-            for file in files:
-                insert_note_in_table(file)
-            messages.success(request, "Les notes sont ajoutées")
-        except Exception as e:
-            messages.error(request, f"Erreur lors de l'ajout de la note : {e}")
+        import_files(
+            request,
+            request.FILES.getlist("note_import"),
+            insert_note_in_table,
+            lambda n: f"{n} note(s) importée(s).",
+        )
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 def update_source_file(request, pk):
+    note = get_object_or_404(Note, pk=pk)
     if request.method == "POST":
-        try:
-            file = request.FILES.get("note_update_source_file")
-            if file is None:
-                raise ImportError("Choisir un fichier")
-            update_note_from_source_file(pk, file)
-            messages.success(request, "La note est mise à jour")
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
+        file = request.FILES.get("note_update_source_file")
+        if file is None:
+            messages.error(request, "Choisir un fichier.")
+        else:
+            try:
+                update_note_from_source_file(note, file)
+            except NoteError as e:
+                messages.error(
+                    request, f"Erreur lors de la mise à jour de la note : {e}"
+                )
+            else:
+                messages.success(request, "La note est mise à jour.")
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
@@ -197,13 +219,12 @@ def get_subjects(request):
 
 def import_images(request):
     if request.method == "POST":
-        try:
-            files = request.FILES.getlist("image_import")
-            for file in files:
-                import_image(file)
-            messages.success(request, "Les images sont ajoutées")
-        except Exception as e:
-            messages.error(request, f"Erreur lors de l'ajout de l'image : {e}")
+        import_files(
+            request,
+            request.FILES.getlist("image_import"),
+            import_image,
+            lambda n: f"{n} image(s) importée(s).",
+        )
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
@@ -214,10 +235,11 @@ def new_note(request):
             note = form.save()
             try:
                 process_note_parts(note)
-            except Exception as e:
+            except NoteError as e:
                 messages.error(
                     request,
-                    f"La note est créée mais le contenu n'a pas pu être traité : {e}",
+                    f"La note est enregistrée mais son contenu n'a pas pu être "
+                    f"traité : {e}",
                 )
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
@@ -234,10 +256,11 @@ def edit_note(request, pk):
             note = form.save()
             try:
                 process_note_parts(note)
-            except Exception as e:
+            except NoteError as e:
                 messages.error(
                     request,
-                    f"La note est créée mais le contenu n'a pas pu être traité : {e}",
+                    f"La note est enregistrée mais son contenu n'a pas pu être "
+                    f"traité : {e}",
                 )
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
