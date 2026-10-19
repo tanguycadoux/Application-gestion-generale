@@ -1,0 +1,148 @@
+# Architecture
+
+Ce document décrit l'organisation du code et les décisions structurantes du projet, avec leur raison. Le fonctionnement côté utilisateur (format des notes, génération des TODO…) est décrit dans le [README](../README.md) ; le suivi des évolutions se fait dans les [issues](https://github.com/tanguycadoux/Application-gestion-generale/issues) GitHub.
+
+## Contexte
+
+- Application **locale et mono-utilisateur** : pas d'authentification, réglages Django non durcis (`DEBUG`, `SECRET_KEY` en dur).
+- Django, SQLite, rendu côté serveur. Front **sans étape de build** : HTML, CSS et JS natifs, Tailwind et htmx chargés par CDN.
+
+## Apps et dépendances
+
+```
+app_gestion/   configuration : settings, urls
+core/          éléments communs : Project, Subject, Tag, AppError,
+               page d'accueil, gabarit de base, statiques communs
+images/        modèle Image et import des images
+note_taking/   notes, analyse qmd, rendu, recherche, pages d'images
+todolist/      TODO
+```
+
+Sens des dépendances (une flèche signifie « importe ») :
+
+```
+note_taking ──► images ──► core
+     │                      ▲
+     ├──────► todolist ─────┤
+     └──────────────────────┘
+```
+
+- `core` ne dépend d'aucune app.
+- `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
+- `todolist` ne connaît pas les notes. Le seul couplage notes → TODO est l'appel à `todolist.services.create_todo_from_dict` dans `note_taking/services.py`.
+
+## Organisation de `note_taking`
+
+| Module | Rôle |
+|---|---|
+| `qmd/parser.py` | analyse du texte d'une note en note parts (`ParsedNote`, `ParsedPart`) ; **sans accès à la base** |
+| `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
+| `services.py` | import, mise à jour, génération des note parts, des liens vers les images et des TODO (accès à la base) |
+| `rendering.py` | rendu HTML : Markdown, références d'images, callouts Quarto |
+| `exceptions.py` | erreurs métier (`NoteError` et sous-classes) |
+| `management/commands/reprocess_notes.py` | recalcul des note parts de toutes les notes |
+
+Les vues sont fines : elles délèguent aux services et n'attrapent que les erreurs métier.
+
+## Modèle de données
+
+```
+Note ──< NotePart >── Project          (core)
+           │  │  └──── Subject (option) (core)
+           │  └──<>── Tag              (core)
+           └────<>─── Image            (images), via NotePartImageLink
+
+Todo >── Project, Todo >─< Tag, Todo >── Todo (parent)
+```
+
+- **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
+- **`NotePart`** : morceau de note partageant projet, sujet et tags. **Données dérivées** de `Note.body`.
+- **`Project`, `Subject`, `Tag`** : partagés par les notes et les TODO, noms uniques.
+- **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
+
+## Décisions
+
+### La base fait foi, le qmd est un format d'échange (#24)
+
+`Note.body` est le texte de la note, **sans bloc d'en-tête** (`---` / `date: …` / `---`). La date est celle de `Note.date`. Le bloc d'en-tête n'est lu qu'à l'import (vérification de la date) et sera régénéré à l'export (#64). Dans le formulaire web, un bloc d'en-tête éventuel est retiré, ou refusé si sa date diffère.
+
+On ne stocke pas la note sous forme structurée (arbre de sections) : le découpage en note parts perd de l'information (ordre, origine des tags, mise en forme) et ne permet pas de régénérer la note. Le texte reste la source.
+
+### Les note parts sont dérivées et recalculées
+
+`process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire). Conséquences :
+
+- aucune donnée saisie ne doit être rattachée à une note part, car elle serait perdue au prochain enregistrement ;
+- après une évolution du parseur, `python manage.py reprocess_notes` recalcule toutes les notes (`--dry-run` pour simuler).
+
+### TODO générées depuis les notes
+
+Une TODO générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle TODO ; l'ancienne est conservée. Le sujet est en pause.
+
+### Projets, sujets et tags partagés (#19, #20)
+
+- Un même modèle pour les notes et les TODO, fusionnés par nom lors de la migration.
+- Un **sujet est global**, indépendant des projets (« Calcul thermique » peut apparaître dans plusieurs projets).
+- La casse est respectée (« Thermique » ≠ « thermique »).
+- Sujets et tags devenus inutilisés restent en base, mais ne sont pas proposés dans la recherche.
+- Les tags vides (`tags: []`) sont ignorés.
+
+### Images (#25, #26)
+
+- Modèle dans l'app `images` ; les **pages restent dans la prise de notes**.
+- Une image est référencée dans une note par son **nom de fichier**, quel que soit le dossier écrit. À l'analyse, la référence devient `image:<pk>` dans le contenu de la note part.
+- Le **format** (vectoriel ou matriciel) se déduit de l'extension du fichier (`is_vector`), l'**origine** de la présence d'une source (`is_editable`) : ce sont deux notions indépendantes, sans champ dédié.
+- Le lien vers les images est porté par la **note part**, là où l'image est utilisée : on sait dans quel projet, sujet et avec quels tags elle apparaît. `Note.images` en est déduit.
+
+### Suppression protégée
+
+Un objet utilisé ne peut pas être supprimé (`on_delete=PROTECT`) :
+
+- un **projet** utilisé par une note part ou une TODO ;
+- un **sujet** utilisé par une note part ;
+- une **image** utilisée par une note part (via `NotePartImageLink`).
+
+Django refuse la suppression (`ProtectedError`) et l'admin liste les éléments concernés.
+
+### Analyse des notes
+
+Les règles d'analyse sont décrites dans le README. Choix notables :
+
+- le texte placé avant le premier projet (`#`) est ignoré (à revoir, #36) ;
+- les callouts Quarto sont conservés dans le contenu et rendus en encadrés à la manière de Quarto (#39) ;
+- l'indentation du contenu est conservée (#34).
+
+### Erreurs métier
+
+`core.exceptions.AppError` est la base des erreurs dont le message est destiné à l'utilisateur (`NoteError`, `ImageError` et leurs sous-classes). Les vues n'attrapent que celles-ci ; toute autre exception est un bug et n'est pas masquée. Un import de plusieurs fichiers traite chaque fichier indépendamment, en tout ou rien.
+
+### Champs texte
+
+Aucun champ texte n'est nullable : chaîne vide par défaut (#48, règle ruff `DJ001`).
+
+## Conventions de travail
+
+### Tests
+
+- `python manage.py test` ; tests dans un paquet `tests/` par app.
+- **Tests d'abord** : avant de modifier un comportement, un commit ajoute les tests du comportement attendu, marqués `@unittest.expectedFailure` ; le commit de correction retire le décorateur.
+- Le parseur est couvert par une note d'exemple (`note_taking/tests/data/exemple.qmd`) dont le résultat attendu est figé (`exemple.json`, régénérable avec `UPDATE_GOLDEN=1`, diff à relire).
+
+### Outillage et CI
+
+- `ruff` (lint et formatage, configuration dans `pyproject.toml`), `mypy` avec `django-stubs` (`mypy.ini`).
+- La CI GitHub Actions lance `ruff check`, `ruff format --check`, `mypy`, `makemigrations --check` et les tests à chaque PR.
+- `main` est protégée : une PR ne peut être mergée que si la CI passe et que la branche est à jour.
+
+### Git
+
+- Une branche par issue, partie de `main` à jour ; pas de PR empilées.
+- Messages au format Conventional Commits, en français (`type(portée): description`).
+- Merge par merge commit (le commit de formatage est référencé dans `.git-blame-ignore-revs`).
+
+### Migrations de données
+
+- Une migration de données n'importe pas le code de l'application (les modèles et le parseur évoluent) : elle utilise `apps.get_model` et, si besoin, une copie figée des fonctions utiles.
+- Elle échoue sans rien modifier si les données ne sont pas dans l'état attendu, plutôt que de perdre de l'information.
+- Avant la PR, elle est vérifiée sur une **copie** de la base réelle (comparaison avant / après, en SQL).
+- Avant de l'appliquer : sauvegarder `db.sqlite3`.
