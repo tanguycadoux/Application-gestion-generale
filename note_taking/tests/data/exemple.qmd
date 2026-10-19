@@ -1,0 +1,112 @@
+---
+date: 2025-11-24
+---
+
+# Projet Alpha
+
+Texte au niveau du projet.
+
+## Calcul thermique
+
+Introduction du sujet.
+
+### Hypothèses
+
+Première hypothèse.
+
+#### Matériaux
+
+Acier inoxydable.
+
+##### Nuances
+
+###### 304L
+
+Nuance retenue.
+
+### Conception, approvisionnement et fabrication
+
+Le titre contient une virgule mais reste un seul tag.
+
+```python
+# Un titre dans un bloc de code n'est pas interprété
+::: {.metadata}
+tags: [ignoré]
+:::
+```
+
+::: {.callout-note title="Remarque"}
+## Un titre dans un callout n'est pas interprété
+Contenu du callout.
+:::
+
+### Résultats
+
+::: {.metadata}
+tags: [m1, m2]
+:::
+
+Résultats avec m1 et m2.
+
+::: {.metadata}
+tags: [m3]
+:::
+
+Résultats avec m3 à la place de m1 et m2.
+
+#### Détails
+
+Détails qui héritent de m3.
+
+::: {.metadata}
+tags: [m4]
+:::
+
+Détails avec m3 et m4.
+
+## Mesures
+
+### TODO
+
+- Commander les capteurs
+- Calibrer le banc
+
+### Photos
+
+![Banc de mesure](images/banc.png)
+
+# Projet Beta
+
+::: {.metadata}
+tags: [interne]
+:::
+
+Texte du projet Beta, avec le tag interne.
+
+## Revue
+
+::: {.metadata}
+tags: [revue]
+:::
+
+Texte avec les tags interne et revue.
+
+### Points ouverts
+
+
+
+Texte entouré de lignes vides.
+
+
+
+### Section vide
+
+
+
+### Décisions
+
+Une décision.
+
+### Points ouverts
+
+Ce texte est regroupé avec le premier « Points ouverts » (mêmes projet, sujet et tags).
