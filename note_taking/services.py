@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.db import transaction
 
-from core.models import Project
+from core.models import Project, Subject, Tag
 from todolist.services import create_todo_from_dict
 
 from .exceptions import (
@@ -84,14 +84,13 @@ def process_note_parts(
 
 
 def create_todos_from_note_part(note_part: NotePart):
-    if not isinstance(note_part.tags, list):
-        raise TypeError
+    part_tags = [tag.name for tag in note_part.tags.all()]
+    subject = note_part.subject.name if note_part.subject else None
 
-    if "TODO" in note_part.tags and isinstance(note_part.content, str):
-        tags = note_part.tags.copy()
-        if note_part.subject:
-            tags.append(note_part.subject)
-        tags.remove("TODO")
+    if "TODO" in part_tags and isinstance(note_part.content, str):
+        tags = [tag for tag in part_tags if tag != "TODO"]
+        if subject:
+            tags.append(subject)
 
         for line in note_part.content.split("\n"):
             line = line.strip()
@@ -106,8 +105,8 @@ def create_todos_from_note_part(note_part: NotePart):
                 "content": line,
                 "tags": tags,
                 "description": {
-                    "subject": note_part.subject,
-                    "tags": note_part.tags,
+                    "subject": subject,
+                    "tags": part_tags,
                 },
             }
             create_todo_from_dict(todo_data)
@@ -121,15 +120,18 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
 
         project, _ = Project.objects.get_or_create(name=parsed_part.project)
 
-        note_part = NotePart(
-            note=note,
-            project=project,
-            subject=parsed_part.subject,
-            tags=parsed_part.tags,
-            content=content,
+        subject = (
+            Subject.objects.get_or_create(name=parsed_part.subject)[0]
+            if parsed_part.subject
+            else None
         )
 
-        note_part.save()
+        note_part = NotePart.objects.create(
+            note=note, project=project, subject=subject, content=content
+        )
+        note_part.tags.set(
+            [Tag.objects.get_or_create(name=name)[0] for name in parsed_part.tags]
+        )
         note_parts.append(note_part)
     return note_parts
 

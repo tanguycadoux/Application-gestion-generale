@@ -2,13 +2,13 @@
 
 from django.test import SimpleTestCase
 
-from core.models import Project
+from core.models import Project, Subject
 from note_taking.models import NotePart
 
 
 class NotePartStrTests(SimpleTestCase):
     def test_avec_sujet(self):
-        part = NotePart(project=Project(name="Alpha"), subject="Mesures")
+        part = NotePart(project=Project(name="Alpha"), subject=Subject(name="Mesures"))
 
         self.assertEqual(str(part), "Alpha, Mesures")
 

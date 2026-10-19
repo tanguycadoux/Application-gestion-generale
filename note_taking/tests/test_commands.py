@@ -5,7 +5,7 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
-from core.models import Project
+from core.models import Project, Tag
 from note_taking.models import Note, NotePart
 from todolist.models import Todo
 
@@ -14,12 +14,12 @@ class ReprocessNotesTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", raw="# P\n### A\nx")
         # Note part obsolète, comme après une évolution du parseur.
-        NotePart.objects.create(
+        part = NotePart.objects.create(
             note=self.note,
             project=Project.objects.create(name="Ancien"),
-            tags=["obsolète"],
             content="x",
         )
+        part.tags.set([Tag.objects.create(name="obsolète")])
 
     def reprocess(self, *args):
         out, err = StringIO(), StringIO()
@@ -27,7 +27,10 @@ class ReprocessNotesTests(TestCase):
         return out.getvalue(), err.getvalue()
 
     def parts(self, note):
-        return [(p.project.name, p.tags, p.content) for p in note.parts.all()]
+        return [
+            (p.project.name, list(p.tags.values_list("name", flat=True)), p.content)
+            for p in note.parts.all()
+        ]
 
     def test_recalcule_les_note_parts(self):
         out, _ = self.reprocess()

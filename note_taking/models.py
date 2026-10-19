@@ -1,6 +1,6 @@
 from django.db import models
 
-from core.models import Project
+from core.models import Project, Subject, Tag
 
 
 class Note(models.Model):
@@ -24,8 +24,14 @@ class NotePart(models.Model):
     project = models.ForeignKey(
         Project, on_delete=models.PROTECT, related_name="note_parts"
     )
-    subject = models.CharField(max_length=50, blank=True, null=True, default=None)
-    tags = models.JSONField(null=True, blank=True)
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="note_parts",
+    )
+    tags = models.ManyToManyField(Tag, related_name="note_parts", blank=True)
     content = models.TextField(blank=True, null=True, default=None)
 
     created = models.DateTimeField(auto_now_add=True)

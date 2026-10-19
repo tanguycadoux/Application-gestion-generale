@@ -43,7 +43,12 @@ def image_file(name: str) -> SimpleUploadedFile:
 
 def parts_summary(note: Note) -> list[tuple]:
     return [
-        (part.project.name, part.subject, sorted(part.tags or []), part.content)
+        (
+            part.project.name,
+            part.subject.name if part.subject else None,
+            sorted(part.tags.values_list("name", flat=True)),
+            part.content,
+        )
         for part in note.parts.order_by("pk")
     ]
 

@@ -152,13 +152,17 @@ def notes_search(request):
         projects = form.cleaned_data["projects"]
         subjects = form.cleaned_data["subjects"]
 
-        results_qs = NotePart.objects.select_related("note").order_by("-note__date")
+        results_qs = (
+            NotePart.objects.select_related("note", "subject")
+            .prefetch_related("tags")
+            .order_by("-note__date")
+        )
 
         if projects:
             results_qs = results_qs.filter(project__in=projects)
 
         if subjects:
-            results_qs = results_qs.filter(subject__in=subjects)
+            results_qs = results_qs.filter(subject__name__in=subjects)
 
         results = list(results_qs)
 

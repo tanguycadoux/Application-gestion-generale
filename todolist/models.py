@@ -5,17 +5,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
-from core.models import Project
+from core.models import Project, Tag
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
-
-
-class Tag(models.Model):
-    name = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.name
 
 
 class Todo(models.Model):

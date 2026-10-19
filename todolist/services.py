@@ -1,6 +1,6 @@
-from core.models import Project
+from core.models import Project, Tag
 
-from .models import Tag, Todo
+from .models import Todo
 
 
 def create_todo_from_dict(todo_data: dict) -> Todo:
