@@ -70,8 +70,10 @@
         ":::",
         "```",
         "",
+        "::: {.callout-note title=\"Remarque\"}",
         "## Un titre dans un callout n'est pas interprété",
-        "Contenu du callout."
+        "Contenu du callout.",
+        ":::"
       ]
     },
     {
