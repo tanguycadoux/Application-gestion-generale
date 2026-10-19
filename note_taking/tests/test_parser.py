@@ -14,6 +14,7 @@ puis relire le diff de `exemple.json` avant de commiter.
 
 import json
 import os
+import unittest
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -201,6 +202,12 @@ class LocalMetadataTests(SimpleTestCase):
     def test_tags_non_tableau(self):
         with self.assertRaisesMessage(NoteParseError, "format non type ARRAY"):
             parse("# P\n::: {.metadata}\ntags: a, b\n:::\nx")
+
+    @unittest.expectedFailure
+    def test_tags_vides_ignores(self):
+        """#20 : `tags: []` ou une virgule en trop produisaient un tag vide."""
+        raw = "# P\n### A\n::: {.metadata}\ntags: [m1, , ]\n:::\nx"
+        self.assertEqual(parts(raw), [("P", None, ["A", "m1"], ["x"])])
 
     def test_titre_suivant_meme_niveau_n_herite_pas(self):
         raw = "# P\n## S\n### A\n::: {.metadata}\ntags: [m1]\n:::\nx\n### B\ny"
