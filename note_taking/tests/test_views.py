@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -186,9 +185,7 @@ class NoteFormViewTests(ViewTestCase):
 
 
 class ClearNotesRemovedTests(ViewTestCase):
-    @unittest.expectedFailure
     def test_get_ne_supprime_pas_les_notes(self):
-        """#14 : l'action de suppression de toutes les notes est retirée."""
         Note.objects.create(date="2025-11-24", raw="# P\nx")
 
         response = self.client.get("/note_taking/notes/clear/")
