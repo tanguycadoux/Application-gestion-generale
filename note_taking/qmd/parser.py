@@ -91,9 +91,10 @@ class NoteParser:
         self.in_code_block = False
 
     def parse(self, raw: str) -> ParsedNote:
-        for number, line in enumerate(raw.split("\n")):
-            line = line.strip()
-            self.parse_line(number, line)
+        for number, raw_line in enumerate(raw.split("\n")):
+            # Détection sur la ligne sans espaces ; contenu avec son indentation.
+            line = raw_line.strip()
+            self.parse_line(number, line, raw_line.rstrip())
             if line != "":
                 self.front_matter_allowed = False
         self.clean_parts()
@@ -101,7 +102,7 @@ class NoteParser:
 
     # Lignes
 
-    def parse_line(self, number: int, line: str) -> None:
+    def parse_line(self, number: int, line: str, content: str) -> None:
         if not self.in_code_block and self.parse_block_delimiter(number, line):
             return
 
@@ -122,7 +123,7 @@ class NoteParser:
         elif self.in_metadata_block and line != "":
             self.parse_metadata_line(number, line)
         else:
-            self.add_content(line)
+            self.add_content(content)
 
     def parse_block_delimiter(self, number: int, line: str) -> bool:
         """Ouvre ou ferme un bloc ; renvoie True si la ligne est consommée."""

@@ -261,9 +261,7 @@ class KnownBugsTests(SimpleTestCase):
     Une fois un bug corrigé, retirer le décorateur expectedFailure.
     """
 
-    @unittest.expectedFailure
     def test_indentation_conservee(self):
-        """Bug #34."""
         self.assertEqual(
             parts("# P\n- a\n    - b"),
             [("P", None, [], ["- a", "    - b"])],
