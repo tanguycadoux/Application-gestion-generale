@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from ..exceptions import InvalidNoteFileError
+from .parser import ParsedNote
 
 
 def validate_date_format(date_text):
@@ -33,8 +34,8 @@ def read_note_file(file) -> tuple[str, bool, str]:
     return note_date, is_test, raw_content
 
 
-def check_metadata_date(note_date: str, parsed_note: dict) -> None:
-    if note_date != parsed_note["note metadata"].get("date"):
+def check_metadata_date(note_date: str, parsed_note: ParsedNote) -> None:
+    if note_date != parsed_note.metadata.get("date"):
         raise InvalidNoteFileError(
             "La date des métadonnées ne correspond pas au nom du fichier."
         )

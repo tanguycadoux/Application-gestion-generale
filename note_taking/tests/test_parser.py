@@ -20,7 +20,12 @@ from pathlib import Path
 from django.test import SimpleTestCase
 
 from note_taking.exceptions import NoteParseError
-from note_taking.qmd.parser import parse_note_raw_file_as_dict
+from note_taking.qmd.parser import (
+    ParsedNote,
+    ParsedPart,
+    parse_note,
+    parse_note_raw_file_as_dict,
+)
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -45,6 +50,34 @@ def parts(raw: str) -> list[tuple]:
         (part["project"], part["subject"], sorted(part["tags"]), part["content"])
         for part in parse(raw)["content"]
     ]
+
+
+class ParsedNoteTests(SimpleTestCase):
+    def test_resultat_type(self):
+        note = parse_note("2025-11-24", "---\ndate: 2025-11-24\n---\n# P\n## S\nx")
+
+        self.assertEqual(
+            note,
+            ParsedNote(
+                file_date="2025-11-24",
+                metadata={"date": "2025-11-24"},
+                parts=[ParsedPart(project="P", subject="S", tags=[], lines=["x"])],
+            ),
+        )
+
+    def test_format_json_historique(self):
+        note = parse_note("2025-11-24", "# P\n### A\nx")
+
+        self.assertEqual(
+            note.as_dict(),
+            {
+                "file date": "2025-11-24",
+                "note metadata": {},
+                "content": [
+                    {"project": "P", "subject": None, "tags": ["A"], "content": ["x"]}
+                ],
+            },
+        )
 
 
 class ExampleNoteTests(SimpleTestCase):
