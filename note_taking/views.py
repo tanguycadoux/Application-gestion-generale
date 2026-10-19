@@ -1,17 +1,19 @@
-from typing import Any
-from django.contrib import messages
-from django.db.models.query import QuerySet
-from django.http import Http404, JsonResponse, HttpResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from django.template.loader import render_to_string
-from django.views.generic import ListView, DetailView
-
-from pathlib import Path
 import markdown
+from django.contrib import messages
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.views.generic import DetailView, ListView
 
-from .forms import NoteSearchForm, NewNoteForm
-from .models import Note, Project, NotePart, NotePartImage
-from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image, process_note_parts
+from .forms import NewNoteForm, NoteSearchForm
+from .models import Note, NotePart, NotePartImage
+from .utils import (
+    import_image,
+    insert_note_in_table,
+    parse_note_raw_file_as_dict,
+    process_note_parts,
+    update_note_from_source_file,
+)
 
 
 def index(request):
@@ -23,12 +25,13 @@ def index(request):
 class NoteDetail(DetailView):
     model = Note
 
+
 class NoteList(ListView):
     model = Note
     context_object_name = "notes"
 
     DEFAULT_ORDERING = "-date"
-    
+
     def get_queryset(self):
         qs = super().get_queryset()
 
@@ -40,7 +43,6 @@ class NoteList(ListView):
 
         ordering = sort if direction == "asc" else f"-{sort}"
         return qs.order_by(ordering)
-    
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -57,13 +59,16 @@ class NoteList(ListView):
             next_direction = None
             next_sort = None
 
-        context.update({
-            "sort": sort,
-            "direction": direction,
-            "next_sort": next_sort,
-            "next_direction": next_direction,
-        })
+        context.update(
+            {
+                "sort": sort,
+                "direction": direction,
+                "next_sort": next_sort,
+                "next_direction": next_direction,
+            }
+        )
         return context
+
 
 class NotePartImageList(ListView):
     model = NotePartImage
@@ -73,18 +78,19 @@ class NotePartImageList(ListView):
 
 def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    
+
     if note.raw is not None:
-        html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])    
+        html_content = markdown.markdown(note.raw, extensions=["fenced_code", "tables"])
     else:
         html_content = "<p>Aucun contenu disponible.</p>"
-    
+
     context = {
         "date": note.date,
         "content": html_content,
     }
 
     return render(request, "note_taking/note_md.html", context)
+
 
 def import_note(request):
     if request.method == "POST":
@@ -95,7 +101,8 @@ def import_note(request):
             messages.success(request, "Les notes sont ajoutées")
         except Exception as e:
             messages.error(request, f"Erreur lors de l'ajout de la note : {e}")
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 def update_source_file(request, pk):
     if request.method == "POST":
@@ -107,17 +114,20 @@ def update_source_file(request, pk):
             messages.success(request, "La note est mise à jour")
         except Exception as e:
             messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 def note_json(request, pk):
     note = get_object_or_404(Note, pk=pk)
     return JsonResponse(parse_note_raw_file_as_dict(note.date, note.raw))
 
+
 # ADMIN
 def clear_notes(request):
     Note.objects.all().delete()
 
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 def notes_search(request):
     form = NoteSearchForm(request.POST or None)
@@ -127,38 +137,36 @@ def notes_search(request):
         projects = form.cleaned_data["projects"]
         subjects = form.cleaned_data["subjects"]
 
-        results_qs = (
-            NotePart.objects
-            .select_related("note")
-            .order_by("-note__date")
-        )
+        results_qs = NotePart.objects.select_related("note").order_by("-note__date")
 
         if projects:
             results_qs = results_qs.filter(project__in=projects)
 
         if subjects:
             results_qs = results_qs.filter(subject__in=subjects)
-        
+
         # for qs in results_qs:
         #     print(qs.note.date)
-        
+
         results = []
         for part in results_qs:
-            results.append({
-                "part": part,
-                "html": part.rendered_content
-            })
-    
+            results.append({"part": part, "html": part.rendered_content})
+
     if request.htmx:
-        html = render_to_string("note_taking/notes_search_result.html", {
-            "results": results
-        })
+        html = render_to_string(
+            "note_taking/notes_search_result.html", {"results": results}
+        )
         return HttpResponse(html)
 
-    return render(request, "note_taking/notes_search.html", {
-        "form": form,
-        "results": results,
-    })
+    return render(
+        request,
+        "note_taking/notes_search.html",
+        {
+            "form": form,
+            "results": results,
+        },
+    )
+
 
 def get_subjects(request):
     form = NoteSearchForm(request.POST or None)
@@ -167,8 +175,7 @@ def get_subjects(request):
 
     if projects:
         subjects = (
-            NotePart.objects
-            .filter(project_id__in=projects)
+            NotePart.objects.filter(project_id__in=projects)
             .exclude(subject__isnull=True)
             .exclude(subject__exact="")
             .values_list("subject", flat=True)
@@ -176,8 +183,7 @@ def get_subjects(request):
         )
     else:
         subjects = (
-            NotePart.objects
-            .exclude(subject__isnull=True)
+            NotePart.objects.exclude(subject__isnull=True)
             .exclude(subject__exact="")
             .values_list("subject", flat=True)
             .distinct()
@@ -188,6 +194,7 @@ def get_subjects(request):
     html = render_to_string("note_taking/subjects_block.html", {"form": form})
     return HttpResponse(html)
 
+
 def import_images(request):
     if request.method == "POST":
         try:
@@ -197,7 +204,8 @@ def import_images(request):
             messages.success(request, "Les images sont ajoutées")
         except Exception as e:
             messages.error(request, f"Erreur lors de l'ajout de l'image : {e}")
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 def new_note(request):
     if request.method == "POST":
@@ -207,33 +215,41 @@ def new_note(request):
             try:
                 process_note_parts(note)
             except Exception as e:
-                messages.error(request, f"La note est créée mais le contenu n'a pas pu être traité : {e}")
+                messages.error(
+                    request,
+                    f"La note est créée mais le contenu n'a pas pu être traité : {e}",
+                )
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
         form = NewNoteForm()
-    return render(request, "note_taking/note_new.html", {'form': form})
+    return render(request, "note_taking/note_new.html", {"form": form})
+
 
 def edit_note(request, pk):
     note = get_object_or_404(Note, pk=pk)
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
             try:
                 process_note_parts(note)
             except Exception as e:
-                messages.error(request, f"La note est créée mais le contenu n'a pas pu être traité : {e}")
-            return redirect('note_taking:note_detail', pk=note.pk)
+                messages.error(
+                    request,
+                    f"La note est créée mais le contenu n'a pas pu être traité : {e}",
+                )
+            return redirect("note_taking:note_detail", pk=note.pk)
     else:
         form = NewNoteForm(instance=note)
 
-    return render(request, 'note_taking/note_edit.html', {'form': form, 'note': note})
+    return render(request, "note_taking/note_edit.html", {"form": form, "note": note})
+
 
 def delete_note(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    if request.method == 'POST':
+    if request.method == "POST":
         note.delete()
         messages.success(request, "La note a été supprimée.")
-        return redirect('note_taking:notes_list')
-    return render(request, 'note_taking/note_confirm_delete.html', {'note': note})
+        return redirect("note_taking:notes_list")
+    return render(request, "note_taking/note_confirm_delete.html", {"note": note})
