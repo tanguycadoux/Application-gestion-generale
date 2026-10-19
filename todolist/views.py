@@ -3,9 +3,10 @@ import json
 from django.db.models import Min, Q
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -92,25 +93,22 @@ class TodoDeleteView(DeleteView):
     success_url = reverse_lazy("todolist:todo_list")
 
 
+@require_POST
 def toggle_todo(request, pk):
-    def toggle(todo):
-        todo.completed = data.get("completed", False)
-        todo.save()
-        if todo.completed:
-            for child in todo.children.all():
-                toggle(child)
+    todo = get_object_or_404(Todo, pk=pk)
 
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid method"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        data = None
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Corps de requête JSON invalide."}, status=400)
 
-    data = json.loads(request.body)
-    force = data.get("force", False)
-    completed = data.get("completed", False)
+    completed = bool(data.get("completed", False))
+    force = bool(data.get("force", False))
 
-    todo = Todo.objects.get(pk=pk)
     incomplete_children = todo.children.filter(completed=False)
-
-    if completed and incomplete_children.exists() and not force:
+    if completed and not force and incomplete_children.exists():
         return JsonResponse(
             {
                 "status": "needs_confirmation",
@@ -119,7 +117,5 @@ def toggle_todo(request, pk):
             }
         )
 
-    toggled_ids = []
-    toggle(todo)
-
+    toggled_ids = todo.set_completed(completed)
     return JsonResponse({"status": "ok", "toggled_ids": toggled_ids})

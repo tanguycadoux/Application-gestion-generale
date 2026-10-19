@@ -94,6 +94,20 @@ class Todo(models.Model):
                     )
                 ancestor = ancestor.parent
 
+    def set_completed(self, completed: bool) -> list[int]:
+        """Change l'état de la TODO ; la compléter complète aussi ses sous-tâches.
+
+        Renvoie les identifiants des TODO modifiées.
+        """
+        self.completed = completed
+        self.save()
+        toggled_ids = [self.pk]
+
+        if completed:
+            for child in self.children.all():
+                toggled_ids += child.set_completed(True)
+        return toggled_ids
+
     @property
     def due_status(self):
         if not self.due_date or self.completed:
