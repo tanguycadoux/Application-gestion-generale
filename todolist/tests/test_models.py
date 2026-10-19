@@ -1,6 +1,5 @@
 """Tests du modèle Todo."""
 
-
 from django.test import SimpleTestCase
 
 from todolist.models import Todo

@@ -1,6 +1,5 @@
 """Tests des représentations textuelles des modèles."""
 
-
 from django.test import SimpleTestCase
 
 from core.models import Project, Subject
