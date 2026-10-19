@@ -1,9 +1,10 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from note_taking.models import Note, NotePart, Project
+from note_taking.rendering import render_markdown
 
 
 class NotePartRenderingTests(TestCase):
@@ -30,6 +31,79 @@ class NotePartRenderingTests(TestCase):
         html = self.render("![a](image:999){width=50%}")
 
         self.assertIn("{width=50%}", html)
+
+
+class CalloutRenderingTests(SimpleTestCase):
+    def test_titre_en_attribut(self):
+        html = render_markdown(
+            '::: {.callout-warning title="Attention !"}\nTexte **gras**\n:::'
+        )
+
+        self.assertHTMLEqual(
+            html,
+            '<div class="callout callout-warning">'
+            '<div class="callout-header">Attention !</div>'
+            '<div class="callout-body"><p>Texte <strong>gras</strong></p></div>'
+            "</div>",
+        )
+
+    def test_titre_depuis_le_premier_titre_markdown(self):
+        html = render_markdown("::: {.callout-tip}\n\n## Mon titre\nTexte\n:::")
+
+        self.assertInHTML('<div class="callout-header">Mon titre</div>', html)
+        self.assertNotIn("<h2>", html)
+
+    def test_titre_par_defaut_du_type(self):
+        for callout_type, title in (
+            ("note", "Note"),
+            ("tip", "Astuce"),
+            ("warning", "Avertissement"),
+            ("caution", "Attention"),
+            ("important", "Important"),
+        ):
+            with self.subTest(callout_type=callout_type):
+                html = render_markdown(f"::: {{.callout-{callout_type}}}\nx\n:::")
+
+                self.assertInHTML(f'<div class="callout-header">{title}</div>', html)
+
+    def test_texte_autour_du_callout(self):
+        html = render_markdown("Avant\n\n::: {.callout-note}\nDedans\n:::\n\nAprès")
+
+        self.assertHTMLEqual(
+            html,
+            "<p>Avant</p>"
+            '<div class="callout callout-note">'
+            '<div class="callout-header">Note</div>'
+            '<div class="callout-body"><p>Dedans</p></div>'
+            "</div>"
+            "<p>Après</p>",
+        )
+
+    def test_titre_echappe(self):
+        html = render_markdown('::: {.callout-note title="<b>x</b>"}\ny\n:::')
+
+        self.assertIn("&lt;b&gt;x&lt;/b&gt;", html)
+
+    def test_callout_dans_un_bloc_de_code_non_interprete(self):
+        html = render_markdown("```\n::: {.callout-note}\nx\n:::\n```")
+
+        self.assertNotIn('class="callout', html)
+        self.assertIn("::: {.callout-note}", html)
+
+    def test_callout_non_ferme_laisse_tel_quel(self):
+        html = render_markdown("::: {.callout-note}\nx")
+
+        self.assertNotIn('class="callout', html)
+
+    def test_rendu_d_une_note_part(self):
+        part = NotePart(
+            project=Project(name="P"),
+            content='::: {.callout-note title="Remarque"}\nContenu\n:::',
+        )
+
+        self.assertInHTML(
+            '<div class="callout-header">Remarque</div>', part.rendered_content()
+        )
 
 
 class NoteMarkdownViewTests(TestCase):

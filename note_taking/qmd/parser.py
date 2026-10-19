@@ -22,7 +22,7 @@ TITLE_REGEX = re.compile(r"^(#+)\s+(.*)")
 
 FRONT_MATTER_DELIMITER = "---"
 METADATA_BLOCK_START = "::: {.metadata}"
-CALLOUT_START = "::: {.callout-note"
+CALLOUT_START = "::: {.callout-"
 BLOCK_END = ":::"
 CODE_FENCE = "```"
 
@@ -106,6 +106,11 @@ class NoteParser:
         if not self.in_code_block and self.parse_block_delimiter(number, line):
             return
 
+        if not self.in_code_block and self.parse_callout_delimiter(line):
+            # Les marqueurs de callout restent dans le contenu, pour le rendu.
+            self.add_content(content)
+            return
+
         if line.startswith(CODE_FENCE):
             self.in_code_block = not self.in_code_block
 
@@ -133,10 +138,16 @@ class NoteParser:
             self.in_front_matter = True
         elif line == METADATA_BLOCK_START:
             self.in_metadata_block = True
-        elif line.startswith(CALLOUT_START):
-            self.in_callout = True
         elif self.in_metadata_block and line == BLOCK_END:
             self.in_metadata_block = False
+        else:
+            return False
+        return True
+
+    def parse_callout_delimiter(self, line: str) -> bool:
+        """Ouvre ou ferme un callout ; renvoie True si la ligne est un marqueur."""
+        if line.startswith(CALLOUT_START):
+            self.in_callout = True
         elif self.in_callout and line == BLOCK_END:
             self.in_callout = False
         else:

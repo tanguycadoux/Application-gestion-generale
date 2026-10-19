@@ -14,7 +14,6 @@ puis relire le diff de `exemple.json` avant de commiter.
 
 import json
 import os
-import unittest
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -232,9 +231,7 @@ class IgnoredBlocksTests(SimpleTestCase):
         self.assertEqual((project, subject, tags), ("P", None, []))
         self.assertIn("## pas un titre", content)
 
-    @unittest.expectedFailure
     def test_callout_conserve_dans_le_contenu(self):
-        """Bug #39 : les marqueurs du callout sont retirés du contenu."""
         raw = '# P\n::: {.callout-note title="t"}\n## pas un titre\nc\n:::\nx'
         self.assertEqual(
             parts(raw),
@@ -255,11 +252,8 @@ class IgnoredBlocksTests(SimpleTestCase):
         )
 
 
-class KnownBugsTests(SimpleTestCase):
-    """Comportements à corriger lors de la réécriture du parseur (#23).
-
-    Une fois un bug corrigé, retirer le décorateur expectedFailure.
-    """
+class FixedBugsTests(SimpleTestCase):
+    """Non-régression des bugs corrigés du parseur (#34 à #38)."""
 
     def test_indentation_conservee(self):
         self.assertEqual(

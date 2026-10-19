@@ -43,3 +43,31 @@
 .notes-list-table tr:nth-child(odd) {
     background-color: var(--bg-color--odd);
 }
+
+/* CALLOUTS (rendu inspiré de Quarto) */
+
+.callout {
+    --callout-color: #adb5bd;
+
+    margin: 1rem 0;
+    border: 1px solid #dee2e6;
+    border-left: 5px solid var(--callout-color);
+    border-radius: .25rem;
+    overflow: hidden;
+}
+
+.callout-header {
+    padding: .4rem .75rem;
+    font-weight: 600;
+    background-color: color-mix(in srgb, var(--callout-color) 12%, white);
+}
+
+.callout-body {
+    padding: .5rem .75rem;
+}
+
+.callout-note      { --callout-color: #0758e5; }
+.callout-tip       { --callout-color: #00a047; }
+.callout-important { --callout-color: #cc1914; }
+.callout-caution   { --callout-color: #fc5300; }
+.callout-warning   { --callout-color: #ffc107; }
