@@ -203,18 +203,14 @@ class LocalMetadataTests(SimpleTestCase):
         with self.assertRaisesMessage(NoteParseError, "format non type ARRAY"):
             parse("# P\n::: {.metadata}\ntags: a, b\n:::\nx")
 
-    @unittest.expectedFailure
     def test_titre_suivant_meme_niveau_n_herite_pas(self):
-        """Bug #8 : les tags {.metadata} d'un titre passent au suivant de même niveau."""
         raw = "# P\n## S\n### A\n::: {.metadata}\ntags: [m1]\n:::\nx\n### B\ny"
         self.assertEqual(
             parts(raw),
             [("P", "S", ["A", "m1"], ["x"]), ("P", "S", ["B"], ["y"])],
         )
 
-    @unittest.expectedFailure
     def test_sujet_suivant_n_herite_pas(self):
-        """Bug #8, au niveau des sujets."""
         raw = "# P\n## S1\n::: {.metadata}\ntags: [m1]\n:::\nx\n## S2\ny"
         self.assertEqual(
             parts(raw),

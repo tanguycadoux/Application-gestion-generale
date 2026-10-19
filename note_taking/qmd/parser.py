@@ -145,9 +145,8 @@ class NoteParser:
         if level > MAX_LEVEL:
             return True
 
-        self.levels[level].title = match.group(2).strip()
-        if level == 1:
-            self.levels[1].tags = None
+        # Un nouveau titre remplace son niveau et efface les niveaux plus profonds.
+        self.levels[level] = Level(title=match.group(2).strip())
         for deeper in range(level + 1, MAX_LEVEL + 1):
             self.levels[deeper] = Level()
         return True
