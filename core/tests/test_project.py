@@ -1,7 +1,5 @@
 """Tests du modèle Project partagé entre notes et TODO."""
 
-import unittest
-
 from django.db.models import ProtectedError
 from django.test import TestCase
 
@@ -19,7 +17,6 @@ class ProjectDeletionTests(TestCase):
         )
         process_note_parts(self.note)
 
-    @unittest.expectedFailure
     def test_projet_utilise_par_une_note_part(self):
         project = self.note.parts.get().project
         Todo.objects.all().delete()
@@ -27,7 +24,6 @@ class ProjectDeletionTests(TestCase):
         with self.assertRaises(ProtectedError):
             project.delete()
 
-    @unittest.expectedFailure
     def test_projet_utilise_par_une_todo(self):
         project = Todo.objects.get().project
         self.note.delete()

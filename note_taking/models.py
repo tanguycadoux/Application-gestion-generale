@@ -1,12 +1,6 @@
 from django.db import models
 
-
-class Project(models.Model):
-    name = models.CharField(unique=True, blank=False, null=False, max_length=50)
-    description = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return self.name
+from core.models import Project
 
 
 class Note(models.Model):
@@ -28,7 +22,7 @@ class Note(models.Model):
 class NotePart(models.Model):
     note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="parts")
     project = models.ForeignKey(
-        Project, on_delete=models.RESTRICT, related_name="note_parts"
+        Project, on_delete=models.PROTECT, related_name="note_parts"
     )
     subject = models.CharField(max_length=50, blank=True, null=True, default=None)
     tags = models.JSONField(null=True, blank=True)

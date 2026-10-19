@@ -2,7 +2,8 @@
 
 from django.test import SimpleTestCase
 
-from note_taking.models import NotePart, Project
+from core.models import Project
+from note_taking.models import NotePart
 
 
 class NotePartStrTests(SimpleTestCase):
