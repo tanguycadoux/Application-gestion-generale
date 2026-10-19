@@ -105,9 +105,7 @@ class ImportNoteTests(ServiceTestCase):
             insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# P\ny"))
         self.assertEqual(Note.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_fichier_utf8_avec_bom(self):
-        """Bug #41 : un fichier enregistré en UTF-8 avec BOM est refusé."""
         note = insert_note_in_table(
             qmd_file("2025-11-24.qmd", HEADER + "# P\nx", encoding="utf-8-sig")
         )
@@ -165,9 +163,7 @@ class UpdateNoteTests(ServiceTestCase):
                 self.note.pk, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
             )
 
-    @unittest.expectedFailure
     def test_fichier_utf8_avec_bom(self):
-        """Bug #41 : un fichier enregistré en UTF-8 avec BOM est refusé."""
         update_note_from_source_file(
             self.note.pk,
             qmd_file("2025-11-24.qmd", HEADER + "# P\ny", encoding="utf-8-sig"),
