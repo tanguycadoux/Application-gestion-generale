@@ -34,7 +34,17 @@ Les dépendances sont maintenues à la main, avec des versions épinglées :
 
 Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis reporter la version installée (`pip list`) dans le fichier concerné.
 
-Côté front, Tailwind et htmx sont chargés depuis un CDN.
+### Front
+
+Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées depuis un CDN.
+
+| Outil | Rôle | Chargement |
+|---|---|---|
+| [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | Play CDN `cdn.tailwindcss.com`, dans `core/templates/base.html` |
+| [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` |
+| [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes) | unpkg, version 1.9.11, dans `note_taking/templates/note_taking/base.html` |
+
+Règle de style : les classes Tailwind sont utilisées en priorité ; les feuilles CSS propres (`core/static/core/`, `<app>/static/<app>/`) sont réservées à ce que Tailwind ne couvre pas (par exemple le rendu des callouts). La migration complète vers Tailwind et des composants réutilisables sont prévus dans le milestone M4 (#78, #79).
 
 Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`) :
 
@@ -238,9 +248,15 @@ Principes :
 
 La réorganisation du code (milestones M1 à M3 : tests et outillage, nettoyage, restructuration des apps et du modèle de données) est terminée. L'organisation du code, les décisions structurantes et les conventions de travail sont décrites dans [`docs/architecture.md`](docs/architecture.md).
 
-Pistes envisagées ensuite, non planifiées :
+Évolutions planifiées (milestones GitHub) :
 
-- éditeur de notes assisté (insertion de projets, sujets et images depuis des listes),
-- éditeur d'images simple (vectoriel et matriciel) et page détail d'une image avec les notes liées,
-- vue calendrier des notes et accès direct à la note du jour,
-- export et réimport de toutes les notes au format qmd.
+| Milestone | Contenu |
+|---|---|
+| M4 · Fondations de l'interface | style Tailwind et icônes Material, composants réutilisables, corrections de rendu |
+| M5 · Navigation dans les notes | accès direct à la note du jour, vue calendrier |
+| M6 · Images | page détail d'une image avec les notes liées, suppression des images inutilisées |
+| M7 · Export et import qmd | export de toutes les notes et de leurs images, réimport |
+| M8 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
+| M9 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
+
+M4 sert de base aux suivants ; M5, M6 et M7 sont indépendants entre eux.
