@@ -18,12 +18,10 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import URLPattern, URLResolver, include, path
 
-from . import views
-
-urlpatterns = [
-    path("", views.index, name="project_index"),
+urlpatterns: list[URLPattern | URLResolver] = [
+    path("", include("core.urls")),
     path("note_taking/", include("note_taking.urls")),
     path("todolist/", include("todolist.urls")),
     path("admin/", admin.site.urls),
