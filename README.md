@@ -75,6 +75,7 @@ core/                 # éléments communs : projets, sujets, tags, page d'accue
 images/               # images utilisables dans les notes (modèle, import)
 note_taking/          # application de prise de notes
 todolist/             # application de gestion des TODO
+docs/                 # documentation (architecture et décisions)
 manage.py
 db.sqlite3            # base de données (non versionnée)
 media/note_images/    # images importées (non versionnées)
@@ -235,7 +236,7 @@ Principes :
 - la base de données fait foi, le format qmd sert à l'import et à l'export ;
 - front sans étape de build : HTML, CSS et JS natifs (htmx pour les mises à jour partielles).
 
-En cours : réorganisation du code pour préparer les évolutions (tests et outillage, nettoyage, puis restructuration des apps et du modèle de données : projets, sujets et tags partagés, app dédiée aux images, découpage du parseur qmd).
+La réorganisation du code (milestones M1 à M3 : tests et outillage, nettoyage, restructuration des apps et du modèle de données) est terminée. L'organisation du code, les décisions structurantes et les conventions de travail sont décrites dans [`docs/architecture.md`](docs/architecture.md).
 
 Pistes envisagées ensuite, non planifiées :
 
