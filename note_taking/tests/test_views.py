@@ -182,3 +182,24 @@ class NoteFormViewTests(ViewTestCase):
         note.refresh_from_db()
         self.assertEqual(note.raw, "# P\n![a](absente.png)")
         self.assertEqual(self.levels(response), ["error"])
+
+
+class ClearNotesRemovedTests(ViewTestCase):
+    def test_get_ne_supprime_pas_les_notes(self):
+        Note.objects.create(date="2025-11-24", raw="# P\nx")
+
+        response = self.client.get("/note_taking/notes/clear/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(Note.objects.count(), 1)
+
+    def test_pages_de_notes_affichees(self):
+        note = Note.objects.create(date="2025-11-24", raw="# P\nx")
+
+        for url in (
+            reverse("note_taking:index"),
+            reverse("note_taking:notes_list"),
+            reverse("note_taking:note_detail", args=[note.pk]),
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 200)

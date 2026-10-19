@@ -144,13 +144,6 @@ def note_json(request, pk):
     return JsonResponse(parse_note_raw_file_as_dict(note.date, note.raw))
 
 
-# ADMIN
-def clear_notes(request):
-    Note.objects.all().delete()
-
-    return redirect(request.META.get("HTTP_REFERER", "/"))
-
-
 def notes_search(request):
     form = NoteSearchForm(request.POST or None)
     results = None
