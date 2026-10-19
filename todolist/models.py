@@ -1,9 +1,9 @@
-from django.db import models
-from django.db.models import Q
-from django.core.exceptions import ValidationError
-
 from datetime import date
 from typing import TYPE_CHECKING
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import Q
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -27,9 +27,9 @@ class Tag(models.Model):
 
 class Todo(models.Model):
     PRIORITY_CHOICES = [
-        ('low', 'Basse'),
-        ('medium', 'Moyenne'),
-        ('high', 'Haute'),
+        ("low", "Basse"),
+        ("medium", "Moyenne"),
+        ("high", "Haute"),
     ]
 
     title = models.CharField(max_length=200)
@@ -40,11 +40,7 @@ class Todo(models.Model):
         null=True,
         blank=True,
     )
-    tags = models.ManyToManyField(
-        Tag,
-        related_name="todos",
-        blank=True
-    )
+    tags = models.ManyToManyField(Tag, related_name="todos", blank=True)
     description = models.TextField(blank=True)
     completed = models.BooleanField(default=False)
 
@@ -53,9 +49,7 @@ class Todo(models.Model):
     note_part_text = models.CharField(max_length=200, blank=True, null=True)
 
     priority = models.CharField(
-        max_length=10,
-        choices=PRIORITY_CHOICES,
-        default='medium'
+        max_length=10, choices=PRIORITY_CHOICES, default="medium"
     )
 
     due_date = models.DateField(null=True, blank=True)
@@ -63,16 +57,12 @@ class Todo(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     parent = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='children'
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
 
     if TYPE_CHECKING:
-        children: "QuerySet[Todo]"
-    
+        children: QuerySet[Todo]
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -85,14 +75,6 @@ class Todo(models.Model):
     def __str__(self):
         return self.title
 
-    def clean(self):
-        if self.parent:
-            ancestor = self.parent
-            while ancestor:
-                if ancestor == self:
-                    raise ValidationError("Impossible de créer une boucle dans les sous-tâches.")
-                ancestor = ancestor.parent
-
     def save(self, *args, **kwargs):
         if self.parent:
             self.project = self.parent.project
@@ -101,7 +83,17 @@ class Todo(models.Model):
 
         self.clean()
         super().save(*args, **kwargs)
-    
+
+    def clean(self):
+        if self.parent:
+            ancestor = self.parent
+            while ancestor:
+                if ancestor == self:
+                    raise ValidationError(
+                        "Impossible de créer une boucle dans les sous-tâches."
+                    )
+                ancestor = ancestor.parent
+
     @property
     def due_status(self):
         if not self.due_date or self.completed:
@@ -111,9 +103,9 @@ class Todo(models.Model):
         delta = (self.due_date - today).days
 
         if delta < 0:
-            return 'overdue'
+            return "overdue"
         elif delta == 0:
-            return 'today'
+            return "today"
         elif delta <= 3:
-            return 'soon'
-        return 'normal'
+            return "soon"
+        return "normal"

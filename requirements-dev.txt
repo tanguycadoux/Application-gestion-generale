@@ -4,3 +4,4 @@
 django-stubs==6.1.2
 mypy==2.4.0
 ruff==0.17.1
+types-Markdown==3.10.2.20261007

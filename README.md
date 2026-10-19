@@ -36,7 +36,24 @@ Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis re
 
 Côté front, Tailwind et htmx sont chargés depuis un CDN.
 
-Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`).
+Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`) :
+
+```powershell
+mypy .
+```
+
+Le lint et le formatage se font avec `ruff` (configuration dans `pyproject.toml`) :
+
+```powershell
+ruff check .        # lint (ajouter --fix pour corriger automatiquement)
+ruff format .       # formatage
+```
+
+Les commits de formatage pur sont listés dans `.git-blame-ignore-revs`. Pour que `git blame` les ignore :
+
+```powershell
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 ### Structure du dépôt
 
