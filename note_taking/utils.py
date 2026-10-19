@@ -289,7 +289,7 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
     for i in range(3, 7):
         hierarchy[f'title_{i}'] = None
         hierarchy[f'tags_under_title_{i}'] = None
-    local_metadata_tags = set()
+    local_metadata_tags: set[str] = set()
     for i, line in enumerate(raw.split('\n')):
         line = line.strip()
 
@@ -381,16 +381,18 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
             append_new = True
             project = hierarchy["project"]
             subject = hierarchy["subject"]
-            tags = set()
+            tags: set[str] = set()
             if hierarchy['tags_under_project'] is not None:
                 tags = tags.union(hierarchy['tags_under_project'])
             if hierarchy['tags_under_subject'] is not None:
                 tags = tags.union(hierarchy['tags_under_subject'])
             for j in range(3, 7):
-                if hierarchy[f'title_{j}'] is not None:
-                    tags.add(hierarchy[f'title_{j}'])
-                if hierarchy[f'tags_under_title_{j}'] is not None:
-                    tags = tags.union(hierarchy[f'tags_under_title_{j}'])
+                title = hierarchy[f'title_{j}']
+                if isinstance(title, str):
+                    tags.add(title)
+                tags_under_title = hierarchy[f'tags_under_title_{j}']
+                if isinstance(tags_under_title, set):
+                    tags = tags.union(tags_under_title)
             
             for json_line in json_content['content']:
                 json_line_tags = set(json_line["tags"])

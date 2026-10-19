@@ -36,7 +36,11 @@ Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis re
 
 Côté front, Tailwind et htmx sont chargés depuis un CDN.
 
-Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`).
+Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`) :
+
+```powershell
+mypy .
+```
 
 ### Structure du dépôt
 
