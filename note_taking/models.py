@@ -6,7 +6,6 @@ from core.models import Project, Subject, Tag
 class Note(models.Model):
     date = models.DateField(unique=True)
     raw = models.TextField(blank=True, null=True)
-    is_test = models.BooleanField(default=False)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

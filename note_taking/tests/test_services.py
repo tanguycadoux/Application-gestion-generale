@@ -6,7 +6,6 @@ détecter toute régression lors de la restructuration (M3).
 
 import shutil
 import tempfile
-import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -70,7 +69,6 @@ class ImportNoteTests(ServiceTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.date, date(2025, 11, 24))
-        self.assertFalse(note.is_test)
         self.assertEqual(note.raw, HEADER + "# P\n## S\n### A\nx")
         self.assertEqual(parts_summary(note), [("P", "S", ["A"], "x")])
 
@@ -89,7 +87,6 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(note.parts.get().project, existing)
         self.assertEqual(Project.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_prefixe_test_refuse(self):
         """#63 : la notion de note de test n'existe plus."""
         with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
@@ -149,13 +146,10 @@ class UpdateNoteTests(ServiceTestCase):
     def test_mise_a_jour_du_contenu_et_des_parts(self):
         new_raw = HEADER + "# P\n### Nouveau\ny"
 
-        update_note_from_source_file(
-            self.note, qmd_file("TEST_2025-11-24.qmd", new_raw)
-        )
+        update_note_from_source_file(self.note, qmd_file("2025-11-24.qmd", new_raw))
 
         self.note.refresh_from_db()
         self.assertEqual(self.note.raw, new_raw)
-        self.assertTrue(self.note.is_test)
         self.assertEqual(parts_summary(self.note), [("P", None, ["Nouveau"], "y")])
 
     def test_fichier_d_une_autre_date(self):

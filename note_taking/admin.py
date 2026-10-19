@@ -10,7 +10,6 @@ class NoteAdmin(admin.ModelAdmin):
         "date",
         "created",
         "updated",
-        "is_test",
     )
     readonly_fields = ("date",)
     list_filter = ("date",)

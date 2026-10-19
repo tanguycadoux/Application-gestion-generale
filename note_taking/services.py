@@ -22,7 +22,7 @@ from .rendering import IMAGE_PATH_REGEX
 
 @transaction.atomic
 def update_note_from_source_file(note: Note, file) -> Note:
-    note_date, is_test, raw_content = read_note_file(file)
+    note_date, raw_content = read_note_file(file)
 
     parsed_note = parse_note(note_date, raw_content)
     check_metadata_date(note_date, parsed_note)
@@ -33,7 +33,6 @@ def update_note_from_source_file(note: Note, file) -> Note:
         )
 
     note.raw = raw_content
-    note.is_test = is_test
     note.save()
 
     process_note_parts(note, parsed_note=parsed_note)
@@ -42,7 +41,7 @@ def update_note_from_source_file(note: Note, file) -> Note:
 
 @transaction.atomic
 def insert_note_in_table(file) -> Note:
-    note_date, is_test, raw_content = read_note_file(file)
+    note_date, raw_content = read_note_file(file)
 
     parsed_note = parse_note(note_date, raw_content)
     check_metadata_date(note_date, parsed_note)
@@ -50,7 +49,7 @@ def insert_note_in_table(file) -> Note:
     if Note.objects.filter(date=note_date).exists():
         raise NoteAlreadyExistsError(f"Une note existe déjà pour le {note_date}.")
 
-    note = Note.objects.create(date=note_date, is_test=is_test, raw=raw_content)
+    note = Note.objects.create(date=note_date, raw=raw_content)
 
     process_note_parts(note, parsed_note=parsed_note)
     return note
