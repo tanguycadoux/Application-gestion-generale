@@ -287,11 +287,8 @@ class TodoGenerationTests(ServiceTestCase):
             ["Première", "Seconde"],
         )
 
-    @unittest.expectedFailure
     def test_todo_sans_sujet(self):
-        """Bug #43 : une part TODO sans sujet fait échouer le traitement."""
-        with transaction.atomic():
-            self.process("# P\n### TODO\n- Tâche")
+        self.process("# P\n### TODO\n- Tâche")
 
         todo = Todo.objects.get()
         self.assertEqual(list(todo.tags.values_list("name", flat=True)), [])

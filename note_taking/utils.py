@@ -146,7 +146,8 @@ def create_todos_from_note_part(note_part: NotePart):
 
     if "TODO" in note_part.tags and isinstance(note_part.content, str):
         tags = note_part.tags.copy()
-        tags.append(note_part.subject)
+        if note_part.subject:
+            tags.append(note_part.subject)
         tags.remove("TODO")
 
         for line in note_part.content.split("\n"):
