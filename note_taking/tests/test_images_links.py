@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import ProtectedError
@@ -35,7 +34,6 @@ class NotePartImagesTests(TestCase):
         process_note_parts(note)
         return note
 
-    @unittest.expectedFailure
     def test_images_liees_a_leur_note_part(self):
         note = self.process(
             "# P\n### A\n![](images/banc.png)\n### B\n![](capteur.png)\n![](banc.png)"
@@ -46,13 +44,11 @@ class NotePartImagesTests(TestCase):
             {"A": {self.banc}, "B": {self.capteur, self.banc}},
         )
 
-    @unittest.expectedFailure
     def test_images_d_une_note(self):
         note = self.process("# P\n### A\n![](banc.png)\n### B\n![](banc.png)")
 
         self.assertEqual(list(note.images), [self.banc])
 
-    @unittest.expectedFailure
     def test_liens_recalcules(self):
         note = self.process("# P\n![](banc.png)")
 
@@ -62,7 +58,6 @@ class NotePartImagesTests(TestCase):
         self.assertEqual(list(note.images), [self.capteur])
         self.assertFalse(self.banc.note_parts.exists())
 
-    @unittest.expectedFailure
     def test_image_utilisee_non_supprimable(self):
         self.process("# P\n![](banc.png)")
 

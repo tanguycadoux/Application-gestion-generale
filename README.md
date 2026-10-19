@@ -200,6 +200,8 @@ Au moment de l'analyse, le chemin est remplacé par une référence vers l'image
 
 Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
 
+Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaque enregistrement de la note). Une image utilisée par une note ne peut pas être supprimée.
+
 ### Fonctionnalités
 
 - liste des notes, triable par colonne (`/note_taking/notes/`),

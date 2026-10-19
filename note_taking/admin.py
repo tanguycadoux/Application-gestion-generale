@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import Note, NotePart
+from .models import Note, NotePart, NotePartImageLink
+
+
+class NotePartImageLinkInline(admin.TabularInline):
+    """Images utilisées par la note part (calculées à l'analyse)."""
+
+    model = NotePartImageLink
+    extra = 0
+    can_delete = False
+    readonly_fields = ("image",)
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Note)
@@ -30,3 +42,4 @@ class NotePartAdmin(admin.ModelAdmin):
         "project",
         "subject",
     )
+    inlines = [NotePartImageLinkInline]

@@ -113,7 +113,7 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
     note_parts = []
     for parsed_part in parsed_note.parts:
         content = "\n".join(parsed_part.lines)
-        content = replace_image_paths(content)
+        content, images = replace_image_paths(content)
 
         project, _ = Project.objects.get_or_create(name=parsed_part.project)
 
@@ -129,11 +129,18 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
         note_part.tags.set(
             [Tag.objects.get_or_create(name=name)[0] for name in parsed_part.tags]
         )
+        note_part.images.set(images)
         note_parts.append(note_part)
     return note_parts
 
 
-def replace_image_paths(content: str) -> str:
+def replace_image_paths(content: str) -> tuple[str, list[Image]]:
+    """Remplace les chemins d'images par `image:<pk>`.
+
+    Renvoie le contenu modifié et les images référencées, sans doublon.
+    """
+    images: dict[int, Image] = {}
+
     def repl(match):
         path = match.group("path")
         name = Path(path).name
@@ -145,6 +152,7 @@ def replace_image_paths(content: str) -> str:
                 f"L'image {name} n'a pas été importée : l'importer avant la note."
             ) from None
 
+        images[image_obj.pk] = image_obj
         return match.group(0).replace(path, f"image:{image_obj.pk}")
 
-    return IMAGE_PATH_REGEX.sub(repl, content)
+    return IMAGE_PATH_REGEX.sub(repl, content), list(images.values())
