@@ -71,7 +71,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 ```
 app_gestion/          # configuration du projet (settings, urls)
-core/                 # éléments communs : page d'accueil, gabarit de base, statiques communs
+core/                 # éléments communs : projets, page d'accueil, gabarit de base, statiques communs
 note_taking/          # application de prise de notes
 todolist/             # application de gestion des TODO
 manage.py
@@ -119,7 +119,7 @@ Une note est structurée de cette manière :
 
 Les titres sont cumulatifs, ce qui signifie qu'un texte contenu sous "Tag 2" hérite du projet, sujet et Tag 1. Par convention, même si un titre contient une virgule, il est considéré comme un tag à part entière (par exemple le titre "Conception, approvisionnement et fabrication" donnera le tag `Conception, approvisionnement et fabrication` et non les tags `Conception` et `approvisionnement et fabrication`).
 
-Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même sujet et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore.
+Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même sujet et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore. Ils sont communs aux notes et aux TODO (app `core`), et un projet utilisé par une note ou une TODO ne peut pas être supprimé.
 
 Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
 

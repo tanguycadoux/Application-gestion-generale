@@ -4,6 +4,7 @@ from pathlib import Path
 
 from django.db import transaction
 
+from core.models import Project
 from todolist.services import create_todo_from_dict
 
 from .exceptions import (
@@ -13,7 +14,7 @@ from .exceptions import (
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from .models import Note, NotePart, NotePartImage, Project
+from .models import Note, NotePart, NotePartImage
 from .qmd.files import check_metadata_date, read_note_file
 from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX
@@ -118,10 +119,7 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
         content = "\n".join(parsed_part.lines)
         content = replace_image_paths(content)
 
-        project, _ = Project.objects.get_or_create(
-            name=parsed_part.project,
-            defaults={"description": parsed_part.project},
-        )
+        project, _ = Project.objects.get_or_create(name=parsed_part.project)
 
         note_part = NotePart(
             note=note,

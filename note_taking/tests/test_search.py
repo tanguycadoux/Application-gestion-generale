@@ -3,7 +3,8 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from note_taking.models import Note, NotePart, Project
+from core.models import Project
+from note_taking.models import Note, NotePart
 
 
 class SearchTestCase(TestCase):

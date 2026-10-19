@@ -5,7 +5,8 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase
 
-from note_taking.models import Note, NotePart, Project
+from core.models import Project
+from note_taking.models import Note, NotePart
 from todolist.models import Todo
 
 

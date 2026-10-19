@@ -3,7 +3,8 @@
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from note_taking.models import Note, NotePart, Project
+from core.models import Project
+from note_taking.models import Note, NotePart
 from note_taking.rendering import render_markdown
 
 

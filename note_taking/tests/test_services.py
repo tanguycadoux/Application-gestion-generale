@@ -11,6 +11,7 @@ from datetime import date
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from core.models import Project
 from note_taking.exceptions import (
     ImageAlreadyExistsError,
     ImageNotFoundError,
@@ -18,7 +19,7 @@ from note_taking.exceptions import (
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from note_taking.models import Note, NotePart, Project
+from note_taking.models import Note, NotePart
 from note_taking.services import (
     import_image,
     insert_note_in_table,
@@ -68,10 +69,11 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(parts_summary(note), [("P", "S", ["A"], "x")])
 
     def test_projet_cree_automatiquement(self):
+        """#19 : description vide plutôt que le nom du projet."""
         insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# Nouveau\nx"))
 
         project = Project.objects.get(name="Nouveau")
-        self.assertEqual(project.description, "Nouveau")
+        self.assertEqual(project.description, "")
 
     def test_projet_existant_reutilise(self):
         existing = Project.objects.create(name="P", description="Existant")
@@ -237,6 +239,12 @@ class TodoGenerationTests(ServiceTestCase):
         note = Note.objects.create(date="2025-11-24", raw=raw)
         process_note_parts(note)
         return note
+
+    def test_meme_projet_que_la_note_part(self):
+        """#19 : notes et TODO partagent le même modèle Project."""
+        note = self.process("# P\n## S\n### TODO\n- Tâche")
+
+        self.assertEqual(Todo.objects.get().project, note.parts.get().project)
 
     def test_une_todo_par_ligne(self):
         self.process("# P\n## S\n### TODO\n- Première\n- Seconde")

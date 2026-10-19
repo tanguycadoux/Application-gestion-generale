@@ -5,17 +5,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
+from core.models import Project
+
 if TYPE_CHECKING:
     from django.db.models import QuerySet
-
-
-class Project(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
 
 
 class Tag(models.Model):
@@ -35,7 +28,7 @@ class Todo(models.Model):
     title = models.CharField(max_length=200)
     project = models.ForeignKey(
         Project,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="todos",
         null=True,
         blank=True,
