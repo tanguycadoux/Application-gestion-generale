@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from note_taking.models import Note, NotePartImage
-from note_taking.services import import_image
+from note_taking.services import import_image, process_note_parts
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -228,3 +228,33 @@ class ClearNotesRemovedTests(ViewTestCase):
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
+
+
+class RenderedPartsDisplayTests(ViewTestCase):
+    """Le HTML rendu des note parts est affiché tel quel (#56)."""
+
+    RAW = "# P\n## S\nPremier paragraphe.\n\nSecond paragraphe."
+
+    def setUp(self):
+        self.note = Note.objects.create(date="2025-11-24", raw=self.RAW)
+        process_note_parts(self.note)
+
+    def assertRenderedAsIs(self, response):
+        html = response.content.decode()
+        self.assertIn("<p>Premier paragraphe.</p>", html)
+        self.assertNotIn("<p><p>", html)
+        self.assertNotIn("</p><br>", html)
+
+    def test_detail_de_la_note(self):
+        response = self.client.get(
+            reverse("note_taking:note_detail", args=[self.note.pk])
+        )
+
+        self.assertRenderedAsIs(response)
+
+    def test_resultats_de_recherche(self):
+        response = self.client.post(
+            reverse("note_taking:notes_search"), {"subjects": ["S"]}
+        )
+
+        self.assertRenderedAsIs(response)
