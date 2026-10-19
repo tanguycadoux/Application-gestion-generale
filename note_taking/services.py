@@ -84,7 +84,7 @@ def create_todos_from_note_part(note_part: NotePart):
     part_tags = [tag.name for tag in note_part.tags.all()]
     subject = note_part.subject.name if note_part.subject else None
 
-    if "TODO" in part_tags and isinstance(note_part.content, str):
+    if "TODO" in part_tags:
         tags = [tag for tag in part_tags if tag != "TODO"]
         if subject:
             tags.append(subject)

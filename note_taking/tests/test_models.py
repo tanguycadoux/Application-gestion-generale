@@ -16,3 +16,9 @@ class NotePartStrTests(SimpleTestCase):
         part = NotePart(project=Project(name="Alpha"), subject=None)
 
         self.assertEqual(str(part), "Alpha")
+
+
+class TextFieldsDefaultTests(SimpleTestCase):
+    def test_contenu_vide_par_defaut(self):
+        """#48 : chaîne vide plutôt que None."""
+        self.assertEqual(NotePart().content, "")
