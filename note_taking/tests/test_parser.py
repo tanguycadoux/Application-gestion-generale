@@ -280,9 +280,7 @@ class KnownBugsTests(SimpleTestCase):
         """Bug #36 : pour l'instant, ce texte est ignoré."""
         self.assertEqual(parts("intro\n# P\nx"), [("P", None, [], ["x"])])
 
-    @unittest.expectedFailure
     def test_metadonnee_contenant_deux_points(self):
-        """Bug #37."""
         result = parse("---\nheure: 10:30\n---\n# P\nx")
         self.assertEqual(result["note metadata"], {"heure": "10:30"})
 

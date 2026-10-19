@@ -67,7 +67,8 @@ class Level:
 
 
 def parse_key_value(text: str) -> tuple[str, str]:
-    parsed_text = text.split(":")
+    # Découpage sur le premier « : » seulement : la valeur peut en contenir.
+    parsed_text = text.split(":", 1)
     if len(parsed_text) != 2:
         raise NoteParseError(
             f"La métadonnée est erronnée : format non type DICT ({text})"
