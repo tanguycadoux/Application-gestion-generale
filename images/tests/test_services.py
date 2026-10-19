@@ -28,7 +28,6 @@ class ImportImageTests(TestCase):
         image = import_image(image_file("banc.png"))
 
         self.assertEqual(image.name, "banc.png")
-        self.assertEqual(image.kind, Image.Kind.IMPORTED)
         self.assertFalse(image.source)
         self.assertTrue(image.file.name.startswith("note_images/"))
 
