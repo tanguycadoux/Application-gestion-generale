@@ -25,18 +25,20 @@ class NoteSearchForm(forms.Form):
         label="Sujet(s)",
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, projects=None, **kwargs):
+        """`projects` : identifiants de projets limitant les sujets proposés."""
         super().__init__(*args, **kwargs)
 
-        subjects = (
-            NotePart.objects.exclude(subject__isnull=True)
-            .exclude(subject__exact="")
-            .values_list("subject", flat=True)
-            .distinct()
+        parts = NotePart.objects.exclude(subject__isnull=True).exclude(
+            subject__exact=""
         )
-        subjects = sorted(subjects, key=str.lower)
+        if projects:
+            parts = parts.filter(project_id__in=projects)
+        subjects = parts.values_list("subject", flat=True).distinct()
 
-        self.fields["subjects"].choices = [(s, s) for s in subjects]
+        self.fields["subjects"].choices = [
+            (s, s) for s in sorted(subjects, key=str.lower)
+        ]
 
 
 class NewNoteForm(forms.ModelForm):

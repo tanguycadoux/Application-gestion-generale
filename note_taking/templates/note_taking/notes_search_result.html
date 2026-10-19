@@ -1,22 +1,22 @@
 {% if results %}
-    {% for result in results %}
+    {% for part in results %}
         <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
-                {% if result.part.subject %}
-                    <h3 class="text-lg font-medium">{{ result.part.subject }}</h3>
+                {% if part.subject %}
+                    <h3 class="text-lg font-medium">{{ part.subject }}</h3>
                 {% endif %}
-                {% if result.part.tags %}
+                {% if part.tags %}
                     <ul class="tags-list">
-                        {% for tag in result.part.tags %}
+                        {% for tag in part.tags %}
                             <li class="tag">{{ tag }}</li>
                         {% endfor %}
                     </ul>
                 {% endif %}
-                <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' result.part.note.pk %}">Note du {{ result.part.note }}</a>
+                <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a>
             </header>
 
             <div class="prose">
-                {{ result.part.rendered_content|safe|linebreaks }}
+                {{ part.rendered_content|safe|linebreaks }}
             </div>
         </article>
     {% endfor %}

@@ -13,7 +13,6 @@ class Note(models.Model):
     date = models.DateField(unique=True)
     raw = models.TextField(blank=True, null=True)
     is_test = models.BooleanField(default=False)
-    tags = models.JSONField(null=True, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -42,7 +41,7 @@ class NotePart(models.Model):
         string_repr = str(self.project)
         if self.subject:
             string_repr = f"{string_repr}, {self.subject}"
-        return f"{self.project}, {self.subject}"
+        return string_repr
 
     def rendered_content(self):
         # Import local : rendering importe les modèles.
