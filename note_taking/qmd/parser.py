@@ -126,8 +126,10 @@ class NoteParser:
 
     def parse_block_delimiter(self, number: int, line: str) -> bool:
         """Ouvre ou ferme un bloc ; renvoie True si la ligne est consommée."""
-        if line == FRONT_MATTER_DELIMITER:
-            self.in_front_matter = self.front_matter_allowed
+        if line == FRONT_MATTER_DELIMITER and self.in_front_matter:
+            self.in_front_matter = False
+        elif line == FRONT_MATTER_DELIMITER and self.front_matter_allowed:
+            self.in_front_matter = True
         elif line == METADATA_BLOCK_START:
             self.in_metadata_block = True
         elif line.startswith(CALLOUT_START):

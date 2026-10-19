@@ -269,9 +269,7 @@ class KnownBugsTests(SimpleTestCase):
             [("P", None, [], ["- a", "    - b"])],
         )
 
-    @unittest.expectedFailure
     def test_ligne_horizontale_conservee(self):
-        """Bug #35."""
         raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
         self.assertEqual(parts(raw), [("P", None, [], ["avant", "---", "apres"])])
 
