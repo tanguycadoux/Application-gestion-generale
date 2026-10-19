@@ -153,6 +153,8 @@ def create_todos_from_note_part(note_part: NotePart):
             line = line.strip()
             line = line.strip("-")
             line = line.strip()
+            if not line:
+                continue
 
             todo_data = {
                 "date": note_part.note.date,

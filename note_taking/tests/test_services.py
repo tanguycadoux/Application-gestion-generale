@@ -271,9 +271,8 @@ class TodoGenerationTests(ServiceTestCase):
             ["Tâche", "Tâche modifiée"],
         )
 
-    @unittest.expectedFailure
     def test_ligne_vide_ne_cree_pas_de_todo(self):
-        """Bug #42 : une ligne vide (ou un tiret seul) crée une TODO sans titre."""
+        """Une ligne vide ou un tiret seul ne crée pas de TODO."""
         self.process("# P\n## S\n### TODO\n- Première\n\n-\n- Seconde")
 
         self.assertEqual(
