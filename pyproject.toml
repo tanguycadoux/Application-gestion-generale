@@ -13,5 +13,5 @@ select = [
     "DJ",              # bonnes pratiques Django
 ]
 ignore = [
-    "DJ001",  # null=True sur des champs texte : correction avec migration, voir #17
+    "DJ001",  # null=True sur des champs texte : correction avec migration, voir #48
 ]

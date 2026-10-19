@@ -160,12 +160,7 @@ def notes_search(request):
         if subjects:
             results_qs = results_qs.filter(subject__in=subjects)
 
-        # for qs in results_qs:
-        #     print(qs.note.date)
-
-        results = []
-        for part in results_qs:
-            results.append({"part": part, "html": part.rendered_content})
+        results = list(results_qs)
 
     if request.htmx:
         html = render_to_string(
@@ -184,27 +179,7 @@ def notes_search(request):
 
 
 def get_subjects(request):
-    form = NoteSearchForm(request.POST or None)
-
-    projects = request.POST.getlist("projects")
-
-    if projects:
-        subjects = (
-            NotePart.objects.filter(project_id__in=projects)
-            .exclude(subject__isnull=True)
-            .exclude(subject__exact="")
-            .values_list("subject", flat=True)
-            .distinct()
-        )
-    else:
-        subjects = (
-            NotePart.objects.exclude(subject__isnull=True)
-            .exclude(subject__exact="")
-            .values_list("subject", flat=True)
-            .distinct()
-        )
-
-    form.fields["subjects"].choices = [(s, s) for s in sorted(subjects, key=str.lower)]
+    form = NoteSearchForm(projects=request.POST.getlist("projects"))
 
     html = render_to_string("note_taking/subjects_block.html", {"form": form})
     return HttpResponse(html)

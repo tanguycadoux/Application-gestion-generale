@@ -27,54 +27,6 @@ def validate_date_format(date_text):
         ) from None
 
 
-# def insert_note_in_table(file):
-#     filename = Path(file.name).stem
-
-#     is_test = filename[:4] == 'TEST'
-#     note_date = filename[5:] if is_test else filename
-
-#     validate_date_format(note_date)
-
-#     raw_bytes = file.read()
-#     raw_content = raw_bytes.decode('utf-8')
-
-#     note = Note(date=note_date, is_test=is_test, raw=raw_content)
-#     parsed_note = parse_note_raw_file_as_dict(note.date, note.raw)
-
-#     if note_date != parsed_note['note metadata']['date']:
-#         raise ValueError('La date de la note n\'est pas cohérente.')
-#     note.save()
-
-#     note_parts = insert_noteparts_in_table(note, parsed_note)
-
-#     for note_part in note_parts:
-#         if type(note_part.tags) != list:
-#             raise TypeError
-
-#         if "TODO" in note_part.tags and type(note_part.content) == str:
-#             tags = note_part.tags.copy()
-#             tags.append(note_part.subject)
-#             tags.remove('TODO')
-
-#             for line in note_part.content.split('\n'):
-#                 line = line.strip()
-#                 line = line.strip('-')
-#                 line = line.strip()
-
-#                 todo_data = {
-#                     "date": note_part.note.date,
-#                     "project": note_part.project.name,
-#                     "content": line,
-#                     "tags": tags,
-#                     "description": {
-#                         "subject": note_part.subject,
-#                         "tags": note_part.tags,
-#                     },
-#                 }
-#                 create_todo_from_dict(todo_data)
-#     return note
-
-
 def read_note_file(file) -> tuple[str, bool, str]:
     """Lit un fichier de note : (date, note de test ou non, contenu)."""
     filename = Path(file.name).stem
