@@ -69,7 +69,6 @@ class ImportNoteTests(ServiceTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.date, date(2025, 11, 24))
-        self.assertFalse(note.is_test)
         self.assertEqual(note.raw, HEADER + "# P\n## S\n### A\nx")
         self.assertEqual(parts_summary(note), [("P", "S", ["A"], "x")])
 
@@ -88,11 +87,11 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(note.parts.get().project, existing)
         self.assertEqual(Project.objects.count(), 1)
 
-    def test_fichier_de_test(self):
-        note = insert_note_in_table(qmd_file("TEST_2025-11-24.qmd", HEADER + "# P\nx"))
-
-        self.assertTrue(note.is_test)
-        self.assertEqual(note.date, "2025-11-24")
+    def test_prefixe_test_refuse(self):
+        """#63 : la notion de note de test n'existe plus."""
+        with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
+            insert_note_in_table(qmd_file("TEST_2025-11-24.qmd", HEADER + "# P\nx"))
+        self.assertFalse(Note.objects.exists())
 
     def test_nom_de_fichier_invalide(self):
         with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
@@ -147,13 +146,10 @@ class UpdateNoteTests(ServiceTestCase):
     def test_mise_a_jour_du_contenu_et_des_parts(self):
         new_raw = HEADER + "# P\n### Nouveau\ny"
 
-        update_note_from_source_file(
-            self.note, qmd_file("TEST_2025-11-24.qmd", new_raw)
-        )
+        update_note_from_source_file(self.note, qmd_file("2025-11-24.qmd", new_raw))
 
         self.note.refresh_from_db()
         self.assertEqual(self.note.raw, new_raw)
-        self.assertTrue(self.note.is_test)
         self.assertEqual(parts_summary(self.note), [("P", None, ["Nouveau"], "y")])
 
     def test_fichier_d_une_autre_date(self):

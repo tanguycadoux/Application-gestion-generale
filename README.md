@@ -94,7 +94,7 @@ Une note peut être :
 
 ### Import de fichiers
 
-Le nom du fichier doit être la date de la note au format `AAAA-MM-JJ` (exemple : `2025-11-24.qmd`). Un fichier préfixé par `TEST_` (exemple : `TEST_2025-11-24.qmd`) est marqué comme note de test.
+Le nom du fichier doit être la date de la note au format `AAAA-MM-JJ` (exemple : `2025-11-24.qmd`).
 
 Le fichier doit commencer par un bloc de métadonnées dont la date correspond au nom du fichier :
 

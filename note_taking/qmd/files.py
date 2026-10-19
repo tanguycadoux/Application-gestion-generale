@@ -17,13 +17,9 @@ def validate_date_format(date_text):
         ) from None
 
 
-def read_note_file(file) -> tuple[str, bool, str]:
-    """Lit un fichier de note : (date, note de test ou non, contenu)."""
-    filename = Path(file.name).stem
-
-    is_test = filename[:4] == "TEST"
-    note_date = filename[5:] if is_test else filename
-
+def read_note_file(file) -> tuple[str, str]:
+    """Lit un fichier de note nommé AAAA-MM-JJ.qmd : (date, contenu)."""
+    note_date = Path(file.name).stem
     validate_date_format(note_date)
 
     try:
@@ -31,7 +27,7 @@ def read_note_file(file) -> tuple[str, bool, str]:
     except UnicodeDecodeError:
         raise InvalidNoteFileError("Le fichier n'est pas encodé en UTF-8.") from None
 
-    return note_date, is_test, raw_content
+    return note_date, raw_content
 
 
 def check_metadata_date(note_date: str, parsed_note: ParsedNote) -> None:
