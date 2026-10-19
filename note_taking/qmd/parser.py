@@ -22,7 +22,7 @@ TITLE_REGEX = re.compile(r"^(#+)\s+(.*)")
 
 FRONT_MATTER_DELIMITER = "---"
 METADATA_BLOCK_START = "::: {.metadata}"
-CALLOUT_START = "::: {.callout-note"
+CALLOUT_START = "::: {.callout-"
 BLOCK_END = ":::"
 CODE_FENCE = "```"
 
@@ -67,7 +67,8 @@ class Level:
 
 
 def parse_key_value(text: str) -> tuple[str, str]:
-    parsed_text = text.split(":")
+    # Découpage sur le premier « : » seulement : la valeur peut en contenir.
+    parsed_text = text.split(":", 1)
     if len(parsed_text) != 2:
         raise NoteParseError(
             f"La métadonnée est erronnée : format non type DICT ({text})"
@@ -83,20 +84,31 @@ class NoteParser:
         self.local_tags: set[str] = set()
 
         self.in_front_matter = False
+        # Le bloc d'en-tête ne peut commencer qu'avant toute ligne non vide.
+        self.front_matter_allowed = True
         self.in_metadata_block = False
         self.in_callout = False
         self.in_code_block = False
 
     def parse(self, raw: str) -> ParsedNote:
-        for number, line in enumerate(raw.split("\n")):
-            self.parse_line(number, line.strip())
+        for number, raw_line in enumerate(raw.split("\n")):
+            # Détection sur la ligne sans espaces ; contenu avec son indentation.
+            line = raw_line.strip()
+            self.parse_line(number, line, raw_line.rstrip())
+            if line != "":
+                self.front_matter_allowed = False
         self.clean_parts()
         return self.note
 
     # Lignes
 
-    def parse_line(self, number: int, line: str) -> None:
+    def parse_line(self, number: int, line: str, content: str) -> None:
         if not self.in_code_block and self.parse_block_delimiter(number, line):
+            return
+
+        if not self.in_code_block and self.parse_callout_delimiter(line):
+            # Les marqueurs de callout restent dans le contenu, pour le rendu.
+            self.add_content(content)
             return
 
         if line.startswith(CODE_FENCE):
@@ -116,18 +128,26 @@ class NoteParser:
         elif self.in_metadata_block and line != "":
             self.parse_metadata_line(number, line)
         else:
-            self.add_content(line)
+            self.add_content(content)
 
     def parse_block_delimiter(self, number: int, line: str) -> bool:
         """Ouvre ou ferme un bloc ; renvoie True si la ligne est consommée."""
-        if line == FRONT_MATTER_DELIMITER:
-            self.in_front_matter = number == 0
+        if line == FRONT_MATTER_DELIMITER and self.in_front_matter:
+            self.in_front_matter = False
+        elif line == FRONT_MATTER_DELIMITER and self.front_matter_allowed:
+            self.in_front_matter = True
         elif line == METADATA_BLOCK_START:
             self.in_metadata_block = True
-        elif line.startswith(CALLOUT_START):
-            self.in_callout = True
         elif self.in_metadata_block and line == BLOCK_END:
             self.in_metadata_block = False
+        else:
+            return False
+        return True
+
+    def parse_callout_delimiter(self, line: str) -> bool:
+        """Ouvre ou ferme un callout ; renvoie True si la ligne est un marqueur."""
+        if line.startswith(CALLOUT_START):
+            self.in_callout = True
         elif self.in_callout and line == BLOCK_END:
             self.in_callout = False
         else:
@@ -178,6 +198,9 @@ class NoteParser:
 
     def add_content(self, line: str) -> None:
         project = self.levels[1].title
+        if project is None:
+            # Texte avant le premier projet : ignoré pour l'instant (#36).
+            return
         subject = self.levels[2].title
         tags = self.current_tags()
 

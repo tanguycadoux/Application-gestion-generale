@@ -4,6 +4,7 @@ import re
 
 import markdown
 from django.templatetags.static import static
+from django.utils.html import escape
 
 from .models import NotePartImage
 
@@ -20,8 +21,97 @@ IMAGE_REF_REGEX = re.compile(
 )
 
 
+# Callout Quarto : ::: {.callout-<type> title="…"} … :::
+CALLOUT_START_REGEX = re.compile(r"^:::\s*\{\.callout-(?P<type>\w+)(?P<attrs>[^}]*)\}$")
+CALLOUT_END = ":::"
+CALLOUT_TITLE_ATTR_REGEX = re.compile(r'title="(?P<title>[^"]*)"')
+CALLOUT_HEADING_REGEX = re.compile(r"^#+\s+(?P<title>.+)$")
+
+# Titres par défaut de Quarto en français
+CALLOUT_DEFAULT_TITLES = {
+    "note": "Note",
+    "tip": "Astuce",
+    "warning": "Avertissement",
+    "caution": "Attention",
+    "important": "Important",
+}
+
+CODE_FENCE = "```"
+
+
 def render_markdown(text: str) -> str:
+    """Rend du Markdown en HTML, callouts Quarto compris."""
+    html: list[str] = []
+    pending: list[str] = []
+    lines = text.split("\n")
+    in_code_block = False
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        if stripped.startswith(CODE_FENCE):
+            in_code_block = not in_code_block
+
+        start = None if in_code_block else CALLOUT_START_REGEX.match(stripped)
+        end = find_callout_end(lines, index) if start else None
+        if start and end is not None:
+            html.append(render_plain_markdown("\n".join(pending)))
+            pending = []
+            html.append(render_callout(start, lines[index + 1 : end]))
+            index = end + 1
+            continue
+
+        pending.append(line)
+        index += 1
+
+    html.append(render_plain_markdown("\n".join(pending)))
+    return "\n".join(part for part in html if part)
+
+
+def render_plain_markdown(text: str) -> str:
     return markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS)
+
+
+def find_callout_end(lines: list[str], start: int) -> int | None:
+    """Indice de la ligne fermant le callout ouvert à `start`, s'il existe."""
+    for index in range(start + 1, len(lines)):
+        if lines[index].strip() == CALLOUT_END:
+            return index
+    return None
+
+
+def render_callout(start: re.Match[str], body: list[str]) -> str:
+    """Encadré à la manière de Quarto.
+
+    Le titre est l'attribut `title`, sinon le premier titre Markdown du
+    callout, sinon le titre par défaut du type.
+    """
+    callout_type = start.group("type")
+    title_attr = CALLOUT_TITLE_ATTR_REGEX.search(start.group("attrs"))
+    body = list(body)
+
+    if title_attr:
+        title = title_attr.group("title")
+    else:
+        first = next((i for i, line in enumerate(body) if line.strip()), None)
+        heading = (
+            CALLOUT_HEADING_REGEX.match(body[first].strip())
+            if first is not None
+            else None
+        )
+        if first is not None and heading:
+            title = heading.group("title").strip()
+            del body[first]
+        else:
+            title = CALLOUT_DEFAULT_TITLES.get(callout_type, callout_type.capitalize())
+
+    return (
+        f'<div class="callout callout-{callout_type}">'
+        f'<div class="callout-header">{escape(title)}</div>'
+        f'<div class="callout-body">{render_markdown("\n".join(body))}</div>'
+        "</div>"
+    )
 
 
 def resolve_image_refs(content: str) -> str:
