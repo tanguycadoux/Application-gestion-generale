@@ -1,7 +1,6 @@
 """Tests de la vue de complétion d'une TODO (case à cocher de la liste)."""
 
 import json
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -67,9 +66,7 @@ class ToggleTodoTests(TestCase):
 
         self.assertEqual(response.status_code, 405)
 
-    @unittest.expectedFailure
     def test_ids_des_todos_modifiees(self):
-        """#15 : toggled_ids est toujours vide."""
         response = self.toggle(self.parent, completed=True, force=True)
 
         self.assertEqual(
@@ -77,19 +74,24 @@ class ToggleTodoTests(TestCase):
             sorted([self.parent.pk, self.child.pk, self.grandchild.pk]),
         )
 
-    @unittest.expectedFailure
     def test_todo_inexistante(self):
-        """#15 : erreur 500 au lieu de 404."""
         response = self.toggle(Todo(pk=999), completed=True)
 
         self.assertEqual(response.status_code, 404)
 
-    @unittest.expectedFailure
     def test_corps_invalide(self):
-        """#15 : erreur 500 au lieu de 400."""
         response = self.client.post(
             reverse("todolist:todo_toggle", args=[self.parent.pk]),
             "pas du json",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_json_qui_n_est_pas_un_objet(self):
+        response = self.client.post(
+            reverse("todolist:todo_toggle", args=[self.parent.pk]),
+            "[]",
             content_type="application/json",
         )
 
