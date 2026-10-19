@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Note, NotePart, NotePartImage
+from .models import Note, NotePart
 
 
 @admin.register(Note)
@@ -29,13 +29,4 @@ class NotePartAdmin(admin.ModelAdmin):
         "note__date",
         "project",
         "subject",
-    )
-
-
-@admin.register(NotePartImage)
-class NotePartImageAdmin(admin.ModelAdmin):
-    list_display = (
-        "pk",
-        "file",
-        "original_path",
     )

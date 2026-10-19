@@ -72,6 +72,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 app_gestion/          # configuration du projet (settings, urls)
 core/                 # éléments communs : projets, sujets, tags, page d'accueil, gabarit de base, statiques
+images/               # images utilisables dans les notes (modèle, import)
 note_taking/          # application de prise de notes
 todolist/             # application de gestion des TODO
 manage.py
@@ -196,6 +197,8 @@ Les images sont importées séparément (bouton d'import, liste sur `/note_takin
 ```
 
 Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
+
+Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un type (importée, vectorielle ou matricielle) et, pour les images créées dans l'application à terme, un fichier source éditable.
 
 ### Fonctionnalités
 

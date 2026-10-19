@@ -1,12 +1,10 @@
-"""Exceptions métier de la prise de notes.
+"""Exceptions métier de la prise de notes (voir core.exceptions.AppError)."""
 
-Leurs messages sont destinés à l'utilisateur : les vues les affichent
-tels quels. Toute autre exception est un bug et n'est pas attrapée.
-"""
+from core.exceptions import AppError
 
 
-class NoteError(Exception):
-    """Base des erreurs métier, attrapées et affichées par les vues."""
+class NoteError(AppError):
+    """Base des erreurs métier de la prise de notes."""
 
 
 class InvalidNoteFileError(NoteError):
@@ -23,7 +21,3 @@ class NoteAlreadyExistsError(NoteError):
 
 class ImageNotFoundError(NoteError):
     """Image référencée dans une note mais non importée."""
-
-
-class ImageAlreadyExistsError(NoteError):
-    """Image déjà importée sous ce nom de fichier."""

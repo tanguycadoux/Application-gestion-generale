@@ -11,7 +11,7 @@
     <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
         {% for img in images %}
             <div>
-                <p>{{ img.original_path }}</p>
+                <p>{{ img.name }}</p>
                 {% if img.file %}
                     <img src="{{ img.file.url }}" class="w-full">
                 {% else %}

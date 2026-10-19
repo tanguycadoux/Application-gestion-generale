@@ -47,11 +47,3 @@ class NotePart(models.Model):
         from .rendering import render_note_part
 
         return render_note_part(self.content)
-
-
-class NotePartImage(models.Model):
-    file = models.ImageField(upload_to="note_images/", blank=True, null=True)
-    original_path = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.file.name
