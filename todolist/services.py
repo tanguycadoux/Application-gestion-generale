@@ -20,9 +20,6 @@ def create_todo_from_dict(todo_data: dict) -> Todo:
         tag_names = todo_data.get("tags", [])
 
         if tag_names:
-            tags = [
-                Tag.objects.get_or_create(name=name)[0]
-                for name in tag_names
-            ]
+            tags = [Tag.objects.get_or_create(name=name)[0] for name in tag_names]
             todo.tags.add(*tags)
     return todo

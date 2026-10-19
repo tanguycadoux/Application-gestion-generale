@@ -30,31 +30,27 @@ class TodoListView(ListView):
 
     def get_queryset(self):
         return (
-            Todo.objects
-            .filter(parent__isnull=True)
+            Todo.objects.filter(parent__isnull=True)
             .annotate(
                 earliest_child_due_date=Min(
-                    'children__due_date',
-                    filter=Q(children__completed=False)
+                    "children__due_date", filter=Q(children__completed=False)
                 ),
                 sort_due_date=Coalesce(
-                    Min(
-                        'children__due_date',
-                        filter=Q(children__completed=False)
-                    ),
-                    'due_date'
-                )
+                    Min("children__due_date", filter=Q(children__completed=False)),
+                    "due_date",
+                ),
             )
-            .order_by('sort_due_date')
+            .order_by("sort_due_date")
         )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
 
-        context['todo_pending'] = qs.filter(completed=False)
-        context['todo_completed'] = qs.filter(completed=True)
-        
-        context['today'] = timezone.localdate()
+        context["todo_pending"] = qs.filter(completed=False)
+        context["todo_completed"] = qs.filter(completed=True)
+
+        context["today"] = timezone.localdate()
         return context
 
 
@@ -103,7 +99,7 @@ def toggle_todo(request, pk):
         if todo.completed:
             for child in todo.children.all():
                 toggle(child)
-    
+
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=405)
 
@@ -115,13 +111,15 @@ def toggle_todo(request, pk):
     incomplete_children = todo.children.filter(completed=False)
 
     if completed and incomplete_children.exists() and not force:
-        return JsonResponse({
-            "status": "needs_confirmation",
-            "message": "Cette tâche contient des sous-tâches non complétées.",
-            "children_count": incomplete_children.count(),
-        })
-    
-    toggled_ids = []    
+        return JsonResponse(
+            {
+                "status": "needs_confirmation",
+                "message": "Cette tâche contient des sous-tâches non complétées.",
+                "children_count": incomplete_children.count(),
+            }
+        )
+
+    toggled_ids = []
     toggle(todo)
 
     return JsonResponse({"status": "ok", "toggled_ids": toggled_ids})
