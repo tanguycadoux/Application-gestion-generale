@@ -9,32 +9,30 @@ Projet Django `app_gestion`, contenant des applications :
 
 ## Installation et lancement
 
-Prérequis : Python 3.10 ou supérieur.
+Prérequis : Python 3.14 ou supérieur.
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python manage.py migrate
 python manage.py runserver
 ```
 
 L'application est ensuite accessible sur <http://127.0.0.1:8000/>.
 
-Dépendances principales :
+### Dépendances
 
-- `Django`,
-- `Markdown` pour le rendu HTML des notes,
-- `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
-- `Pillow` pour le stockage des images de notes (`ImageField`).
+Les dépendances sont maintenues à la main, avec des versions épinglées :
 
-`requirements.txt` est généré avec `pipreqs`, qui ne détecte que les `import` du code. `django-htmx` (déclaré seulement comme chaîne dans `MIDDLEWARE`) et `Pillow` (importé par Django en interne) doivent donc y être ajoutés à la main après chaque régénération :
+- `requirements.txt` : dépendances d'exécution,
+  - `Django`,
+  - `Markdown` pour le rendu HTML des notes,
+  - `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
+  - `Pillow` pour le stockage des images de notes (`ImageField`) ;
+- `requirements-dev.txt` : dépendances d'exécution et outillage de développement (`mypy`, `django-stubs`, `ruff`).
 
-```powershell
-pipreqs --encoding utf-8 --ignore .venv --force .
-```
-
-Attention : la version de `pipreqs` installée (0.4.13) ne détecte pas les paquets du venv et prend les dernières versions publiées sur PyPI (`--use-local` renvoie une liste vide). Aligner ensuite les versions sur celles du venv (`pip list`).
+Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis reporter la version installée (`pip list`) dans le fichier concerné.
 
 Côté front, Tailwind et htmx sont chargés depuis un CDN.
 
