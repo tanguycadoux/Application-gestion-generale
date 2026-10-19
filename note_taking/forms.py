@@ -1,9 +1,9 @@
 from django import forms
 from django.urls import reverse_lazy
 
-from core.models import Project
+from core.models import Project, Subject
 
-from .models import Note, NotePart
+from .models import Note
 
 
 class NoteSearchForm(forms.Form):
@@ -31,15 +31,14 @@ class NoteSearchForm(forms.Form):
         """`projects` : identifiants de projets limitant les sujets proposés."""
         super().__init__(*args, **kwargs)
 
-        parts = NotePart.objects.exclude(subject__isnull=True).exclude(
-            subject__exact=""
-        )
+        # Seuls les sujets utilisés par des note parts sont proposés.
+        subjects = Subject.objects.filter(note_parts__isnull=False)
         if projects:
-            parts = parts.filter(project_id__in=projects)
-        subjects = parts.values_list("subject", flat=True).distinct()
+            subjects = subjects.filter(note_parts__project_id__in=projects)
+        names = subjects.values_list("name", flat=True).distinct()
 
         self.fields["subjects"].choices = [
-            (s, s) for s in sorted(subjects, key=str.lower)
+            (name, name) for name in sorted(names, key=str.lower)
         ]
 
 

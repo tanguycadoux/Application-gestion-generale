@@ -1,7 +1,5 @@
 """Tests des sujets et tags partagés entre notes et TODO (#20)."""
 
-import unittest
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -17,14 +15,12 @@ def process(date: str, raw: str) -> Note:
 
 
 class SharedSubjectTagTests(TestCase):
-    @unittest.expectedFailure
     def test_sujet_partage_entre_notes(self):
         first = process("2025-11-24", "# P\n## Thermique\nx")
         second = process("2025-11-25", "# Q\n## Thermique\ny")
 
         self.assertEqual(first.parts.get().subject.pk, second.parts.get().subject.pk)
 
-    @unittest.expectedFailure
     def test_note_part_et_todo_partagent_les_tags(self):
         note = process(
             "2025-11-24",

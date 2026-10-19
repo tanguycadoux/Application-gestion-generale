@@ -47,9 +47,9 @@
                         <span> / {{ note_part.subject }}</span>
                     {% endif %}
                 </h2>
-                {% if note_part.tags %}
+                {% if note_part.tags.all %}
                     <ul class="tags-list">
-                        {% for tag in note_part.tags %}
+                        {% for tag in note_part.tags.all %}
                             <li class="tag">{{ tag }}</li>
                         {% endfor %}
                     </ul>

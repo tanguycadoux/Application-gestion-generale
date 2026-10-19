@@ -3,7 +3,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Project
+from core.models import Project, Subject
 from note_taking.models import Note, NotePart
 
 
@@ -12,20 +12,20 @@ class SearchTestCase(TestCase):
     def setUpTestData(cls):
         cls.alpha = Project.objects.create(name="Alpha")
         cls.beta = Project.objects.create(name="Beta")
+        thermique = Subject.objects.create(name="thermique")
+        mesures = Subject.objects.create(name="Mesures")
         old = Note.objects.create(date="2025-11-23")
         new = Note.objects.create(date="2025-11-24")
         cls.alpha_thermique = NotePart.objects.create(
-            note=old, project=cls.alpha, subject="thermique", tags=[], content="a1"
+            note=old, project=cls.alpha, subject=thermique, content="a1"
         )
         cls.alpha_mesures = NotePart.objects.create(
-            note=new, project=cls.alpha, subject="Mesures", tags=[], content="a2"
+            note=new, project=cls.alpha, subject=mesures, content="a2"
         )
         cls.beta_thermique = NotePart.objects.create(
-            note=new, project=cls.beta, subject="thermique", tags=[], content="b1"
+            note=new, project=cls.beta, subject=thermique, content="b1"
         )
-        NotePart.objects.create(
-            note=new, project=cls.beta, subject=None, tags=[], content="b2"
-        )
+        NotePart.objects.create(note=new, project=cls.beta, subject=None, content="b2")
 
 
 class NotesSearchTests(SearchTestCase):

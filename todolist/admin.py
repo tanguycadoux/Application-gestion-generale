@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Tag, Todo
+from .models import Todo
 
 
 @admin.register(Todo)
@@ -19,8 +19,3 @@ class TodoAdmin(admin.ModelAdmin):
         "created_from_note",
     )
     list_filter = ("created_from_note",)
-
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    list_display = ("pk", "name")

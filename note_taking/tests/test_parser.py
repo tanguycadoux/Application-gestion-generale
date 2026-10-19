@@ -14,7 +14,6 @@ puis relire le diff de `exemple.json` avant de commiter.
 
 import json
 import os
-import unittest
 from pathlib import Path
 
 from django.test import SimpleTestCase
@@ -203,7 +202,6 @@ class LocalMetadataTests(SimpleTestCase):
         with self.assertRaisesMessage(NoteParseError, "format non type ARRAY"):
             parse("# P\n::: {.metadata}\ntags: a, b\n:::\nx")
 
-    @unittest.expectedFailure
     def test_tags_vides_ignores(self):
         """#20 : `tags: []` ou une virgule en trop produisaient un tag vide."""
         raw = "# P\n### A\n::: {.metadata}\ntags: [m1, , ]\n:::\nx"

@@ -180,7 +180,8 @@ class NoteParser:
                     "La métadonnée locale est erronnée : format non type ARRAY "
                     f"(ligne numéro {number + 1} : {line})"
                 )
-            self.local_tags = {tag.strip() for tag in value.strip("[]").split(",")}
+            tags = (tag.strip() for tag in value.strip("[]").split(","))
+            self.local_tags = {tag for tag in tags if tag}
 
         if self.current_level is not None and self.current_level <= MAX_LEVEL:
             self.levels[self.current_level].tags = self.local_tags

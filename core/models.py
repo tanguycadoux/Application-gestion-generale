@@ -14,3 +14,27 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Subject(models.Model):
+    """Sujet de note, indépendant des projets."""
+
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    """Tag, partagé par les note parts et les TODO."""
+
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
