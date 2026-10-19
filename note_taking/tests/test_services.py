@@ -9,10 +9,16 @@ import tempfile
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
 
-from note_taking.models import Note, NotePart, NotePartImage, Project
+from note_taking.exceptions import (
+    ImageAlreadyExistsError,
+    ImageNotFoundError,
+    InvalidNoteFileError,
+    NoteAlreadyExistsError,
+    NoteParseError,
+)
+from note_taking.models import Note, NotePart, Project
 from note_taking.utils import (
     import_image,
     insert_note_in_table,
@@ -82,25 +88,31 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(note.date, "2025-11-24")
 
     def test_nom_de_fichier_invalide(self):
-        with self.assertRaisesMessage(ValueError, "YYYY-MM-DD"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "AAAA-MM-JJ"):
             insert_note_in_table(qmd_file("note.qmd", HEADER + "# P\nx"))
         self.assertFalse(Note.objects.exists())
 
     def test_date_en_tete_differente_du_nom(self):
-        with self.assertRaisesMessage(ValueError, "pas cohérente"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
             insert_note_in_table(qmd_file("2025-11-25.qmd", HEADER + "# P\nx"))
         self.assertFalse(Note.objects.exists())
 
     def test_sans_bloc_en_tete(self):
-        with self.assertRaisesMessage(ValueError, "pas cohérente"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
             insert_note_in_table(qmd_file("2025-11-24.qmd", "# P\nx"))
+        self.assertFalse(Note.objects.exists())
+
+    def test_fichier_non_utf8(self):
+        file = SimpleUploadedFile("2025-11-24.qmd", bytes([0xFF, 0xFE, 0x00]))
+
+        with self.assertRaisesMessage(InvalidNoteFileError, "UTF-8"):
+            insert_note_in_table(file)
         self.assertFalse(Note.objects.exists())
 
     def test_date_deja_importee(self):
         insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# P\nx"))
 
-        # Erreur de base de données brute : à remplacer par une erreur métier (#18).
-        with self.assertRaises(IntegrityError), transaction.atomic():
+        with self.assertRaisesMessage(NoteAlreadyExistsError, "existe déjà"):
             insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# P\ny"))
         self.assertEqual(Note.objects.count(), 1)
 
@@ -111,7 +123,7 @@ class ImportNoteTests(ServiceTestCase):
         self.assertEqual(parts_summary(note), [("P", None, [], "x")])
 
     def test_echec_de_l_analyse_n_enregistre_pas_la_note(self):
-        with self.assertRaises(NotePartImage.DoesNotExist):
+        with self.assertRaises(ImageNotFoundError):
             insert_note_in_table(
                 qmd_file("2025-11-24.qmd", HEADER + "# P\n![Banc](banc.png)")
             )
@@ -129,7 +141,7 @@ class UpdateNoteTests(ServiceTestCase):
         new_raw = HEADER + "# P\n### Nouveau\ny"
 
         update_note_from_source_file(
-            self.note.pk, qmd_file("TEST_2025-11-24.qmd", new_raw)
+            self.note, qmd_file("TEST_2025-11-24.qmd", new_raw)
         )
 
         self.note.refresh_from_db()
@@ -140,29 +152,27 @@ class UpdateNoteTests(ServiceTestCase):
     def test_fichier_d_une_autre_date(self):
         other = "---\ndate: 2025-11-25\n---\n# P\ny"
 
-        with self.assertRaisesMessage(ValueError, "pas la même"):
-            update_note_from_source_file(
-                self.note.pk, qmd_file("2025-11-25.qmd", other)
-            )
+        with self.assertRaisesMessage(InvalidNoteFileError, "date de la note"):
+            update_note_from_source_file(self.note, qmd_file("2025-11-25.qmd", other))
 
         self.note.refresh_from_db()
         self.assertEqual(parts_summary(self.note), [("P", None, ["Ancien"], "x")])
 
     def test_date_en_tete_differente_du_nom(self):
-        with self.assertRaisesMessage(ValueError, "pas cohérente"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
             update_note_from_source_file(
-                self.note.pk, qmd_file("2025-11-24.qmd", "---\ndate: 2025-11-25\n---\n")
+                self.note, qmd_file("2025-11-24.qmd", "---\ndate: 2025-11-25\n---\n")
             )
 
     def test_en_tete_sans_date(self):
-        with self.assertRaisesMessage(ValueError, "pas cohérente"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
             update_note_from_source_file(
-                self.note.pk, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
+                self.note, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
             )
 
     def test_fichier_utf8_avec_bom(self):
         update_note_from_source_file(
-            self.note.pk,
+            self.note,
             qmd_file("2025-11-24.qmd", HEADER + "# P\ny", encoding="utf-8-sig"),
         )
 
@@ -172,9 +182,9 @@ class UpdateNoteTests(ServiceTestCase):
     def test_echec_de_l_analyse_conserve_la_note(self):
         old_raw = self.note.raw
 
-        with self.assertRaises(NotePartImage.DoesNotExist):
+        with self.assertRaises(ImageNotFoundError):
             update_note_from_source_file(
-                self.note.pk,
+                self.note,
                 qmd_file("2025-11-24.qmd", HEADER + "# P\n![Banc](banc.png)"),
             )
 
@@ -196,7 +206,7 @@ class ProcessNotePartsTests(ServiceTestCase):
             date="2025-11-24", raw="---\ndate: 2025-11-25\n---\n# P\nx"
         )
 
-        with self.assertRaisesMessage(ValueError, "ne correspond pas"):
+        with self.assertRaisesMessage(NoteParseError, "ne correspond pas"):
             process_note_parts(note)
 
     def test_regeneration_remplace_les_parts(self):
@@ -299,7 +309,7 @@ class ImageTests(ServiceTestCase):
     def test_import_image_nom_deja_utilise(self):
         import_image(image_file("banc.png"))
 
-        with self.assertRaisesMessage(ValueError, "existe déjà"):
+        with self.assertRaisesMessage(ImageAlreadyExistsError, "existe déjà"):
             import_image(image_file("banc.png"))
 
     def test_reference_remplacee_par_identifiant(self):
@@ -315,8 +325,7 @@ class ImageTests(ServiceTestCase):
     def test_image_non_importee(self):
         note = Note.objects.create(date="2025-11-24", raw="# P\n![Banc](banc.png)")
 
-        # À remplacer par une erreur métier explicite (#18).
-        with self.assertRaises(NotePartImage.DoesNotExist):
+        with self.assertRaises(ImageNotFoundError):
             process_note_parts(note)
 
     def test_rendu_avec_image(self):

@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -62,9 +61,7 @@ class ImportNoteViewTests(ViewTestCase):
         self.assertFalse(Note.objects.exists())
         self.assertEqual(self.levels(response), ["error"])
 
-    @unittest.expectedFailure
     def test_un_echec_n_empeche_pas_les_fichiers_suivants(self):
-        """#18 : chaque fichier est importé indépendamment."""
         response = self.post(
             qmd_file("2025-11-24.qmd", HEADER + "# P\nx"),
             qmd_file("note.qmd", HEADER + "# P\nx"),
@@ -75,6 +72,11 @@ class ImportNoteViewTests(ViewTestCase):
         self.assertEqual(sorted(self.levels(response)), ["error", "success"])
         errors = [text for level, text in self.messages(response) if level == "error"]
         self.assertIn("note.qmd", errors[0])
+
+    def test_aucun_fichier(self):
+        response = self.post()
+
+        self.assertEqual(self.levels(response), ["warning"])
 
 
 class UpdateSourceFileViewTests(ViewTestCase):
@@ -106,6 +108,13 @@ class UpdateSourceFileViewTests(ViewTestCase):
         self.note.refresh_from_db()
         self.assertEqual(self.note.raw, HEADER + "# P\nx")
         self.assertEqual(self.levels(response), ["error"])
+
+    def test_note_inexistante(self):
+        response = self.client.post(
+            reverse("note_taking:update_source_file", args=[999])
+        )
+
+        self.assertEqual(response.status_code, 404)
 
 
 class ImportImagesViewTests(ViewTestCase):

@@ -19,6 +19,7 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 
+from note_taking.exceptions import NoteParseError
 from note_taking.utils import parse_note_raw_file_as_dict
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -76,7 +77,7 @@ class NoteMetadataTests(SimpleTestCase):
         self.assertEqual(parse("# P\nx")["note metadata"], {})
 
     def test_metadonnee_mal_formee(self):
-        with self.assertRaisesMessage(ValueError, "format non type DICT"):
+        with self.assertRaisesMessage(NoteParseError, "format non type DICT"):
             parse("---\npas de deux-points\n---\n# P\nx")
 
 
@@ -166,7 +167,7 @@ class LocalMetadataTests(SimpleTestCase):
         )
 
     def test_tags_non_tableau(self):
-        with self.assertRaisesMessage(ValueError, "format non type ARRAY"):
+        with self.assertRaisesMessage(NoteParseError, "format non type ARRAY"):
             parse("# P\n::: {.metadata}\ntags: a, b\n:::\nx")
 
     @unittest.expectedFailure
