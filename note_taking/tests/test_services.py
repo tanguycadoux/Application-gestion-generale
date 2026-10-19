@@ -6,6 +6,7 @@ détecter toute régression lors de la restructuration (M3).
 
 import shutil
 import tempfile
+import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -309,6 +310,15 @@ class TodoGenerationTests(ServiceTestCase):
 
 
 class ImageTests(ServiceTestCase):
+    @unittest.expectedFailure
+    def test_image_importee(self):
+        """#25 : modèle Image (nom d'origine, type, source éditable)."""
+        image = import_image(image_file("banc.png"))
+
+        self.assertEqual(image.name, "banc.png")
+        self.assertEqual(image.kind, "imported")
+        self.assertFalse(image.source)
+
     def test_import_image(self):
         image = import_image(image_file("banc.png"))
 
