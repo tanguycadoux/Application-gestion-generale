@@ -7,7 +7,7 @@ from django.views.generic import DetailView, ListView
 from .exceptions import NoteError
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart, NotePartImage
-from .qmd.parser import parse_note_raw_file_as_dict
+from .qmd.parser import parse_note
 from .rendering import render_markdown
 from .services import (
     import_image,
@@ -141,7 +141,7 @@ def update_source_file(request, pk):
 
 def note_json(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    return JsonResponse(parse_note_raw_file_as_dict(note.date, note.raw))
+    return JsonResponse(parse_note(str(note.date), note.raw or "").as_dict())
 
 
 def notes_search(request):

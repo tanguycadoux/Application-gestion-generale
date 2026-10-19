@@ -184,6 +184,31 @@ class NoteFormViewTests(ViewTestCase):
         self.assertEqual(self.levels(response), ["error"])
 
 
+class NoteJsonViewTests(ViewTestCase):
+    def test_analyse_au_format_json(self):
+        note = Note.objects.create(date="2025-11-24", raw=HEADER + "# P\n### A\nx")
+
+        response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
+
+        self.assertEqual(
+            response.json(),
+            {
+                "file date": "2025-11-24",
+                "note metadata": {"date": "2025-11-24"},
+                "content": [
+                    {"project": "P", "subject": None, "tags": ["A"], "content": ["x"]}
+                ],
+            },
+        )
+
+    def test_note_sans_contenu(self):
+        note = Note.objects.create(date="2025-11-24", raw=None)
+
+        response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
+
+        self.assertEqual(response.json()["content"], [])
+
+
 class ClearNotesRemovedTests(ViewTestCase):
     def test_get_ne_supprime_pas_les_notes(self):
         Note.objects.create(date="2025-11-24", raw="# P\nx")

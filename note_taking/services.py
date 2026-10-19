@@ -15,7 +15,7 @@ from .exceptions import (
 )
 from .models import Note, NotePart, NotePartImage, Project
 from .qmd.files import check_metadata_date, read_note_file
-from .qmd.parser import parse_note_raw_file_as_dict
+from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX
 
 
@@ -23,7 +23,7 @@ from .rendering import IMAGE_PATH_REGEX
 def update_note_from_source_file(note: Note, file) -> Note:
     note_date, is_test, raw_content = read_note_file(file)
 
-    parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
+    parsed_note = parse_note(note_date, raw_content)
     check_metadata_date(note_date, parsed_note)
 
     if str(note.date) != note_date:
@@ -43,7 +43,7 @@ def update_note_from_source_file(note: Note, file) -> Note:
 def insert_note_in_table(file) -> Note:
     note_date, is_test, raw_content = read_note_file(file)
 
-    parsed_note = parse_note_raw_file_as_dict(note_date, raw_content)
+    parsed_note = parse_note(note_date, raw_content)
     check_metadata_date(note_date, parsed_note)
 
     if Note.objects.filter(date=note_date).exists():
@@ -55,16 +55,18 @@ def insert_note_in_table(file) -> Note:
     return note
 
 
-def process_note_parts(note: Note, parsed_note: dict | None = None) -> list[NotePart]:
+def process_note_parts(
+    note: Note, parsed_note: ParsedNote | None = None
+) -> list[NotePart]:
     """(Re)génère les NotePart et les todos associés à partir de note.raw.
 
     À appeler après chaque sauvegarde de note.raw (import fichier ou
     édition depuis le formulaire web), une fois `note` déjà persistée.
     """
     if parsed_note is None:
-        parsed_note = parse_note_raw_file_as_dict(note.date, note.raw or "")
+        parsed_note = parse_note(str(note.date), note.raw or "")
 
-        parsed_date = parsed_note["note metadata"].get("date")
+        parsed_date = parsed_note.metadata.get("date")
         if parsed_date and str(note.date) != parsed_date:
             raise NoteParseError(
                 "La date dans les métadonnées du contenu ne correspond pas "
@@ -110,22 +112,22 @@ def create_todos_from_note_part(note_part: NotePart):
             create_todo_from_dict(todo_data)
 
 
-def insert_noteparts_in_table(note: Note, parsed_note) -> list[NotePart]:
+def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NotePart]:
     note_parts = []
-    for note_part_raw in parsed_note["content"]:
-        content = "\n".join(note_part_raw["content"])
+    for parsed_part in parsed_note.parts:
+        content = "\n".join(parsed_part.lines)
         content = replace_image_paths(content)
 
         project, _ = Project.objects.get_or_create(
-            name=note_part_raw["project"],
-            defaults={"description": note_part_raw["project"]},
+            name=parsed_part.project,
+            defaults={"description": parsed_part.project},
         )
 
         note_part = NotePart(
             note=note,
             project=project,
-            subject=note_part_raw["subject"],
-            tags=note_part_raw["tags"],
+            subject=parsed_part.subject,
+            tags=parsed_part.tags,
             content=content,
         )
 
