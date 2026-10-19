@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -246,7 +245,6 @@ class RenderedPartsDisplayTests(ViewTestCase):
         self.assertNotIn("<p><p>", html)
         self.assertNotIn("</p><br>", html)
 
-    @unittest.expectedFailure
     def test_detail_de_la_note(self):
         response = self.client.get(
             reverse("note_taking:note_detail", args=[self.note.pk])
@@ -254,7 +252,6 @@ class RenderedPartsDisplayTests(ViewTestCase):
 
         self.assertRenderedAsIs(response)
 
-    @unittest.expectedFailure
     def test_resultats_de_recherche(self):
         response = self.client.post(
             reverse("note_taking:notes_search"), {"subjects": ["S"]}
