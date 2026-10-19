@@ -70,7 +70,8 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 ### Structure du dépôt
 
 ```
-app_gestion/          # configuration du projet (settings, urls, templates et statiques communs)
+app_gestion/          # configuration du projet (settings, urls)
+core/                 # éléments communs : page d'accueil, gabarit de base, statiques communs
 note_taking/          # application de prise de notes
 todolist/             # application de gestion des TODO
 manage.py
