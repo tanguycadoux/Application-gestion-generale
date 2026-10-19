@@ -17,7 +17,6 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=255, unique=True)),
-                ('kind', models.CharField(choices=[('imported', 'Importée'), ('vector', 'Vectorielle'), ('raster', 'Matricielle')], default='imported', max_length=20)),
                 ('file', models.ImageField(max_length=255, upload_to='note_images/')),
                 ('source', models.FileField(blank=True, max_length=255, upload_to='image_sources/')),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, editable=False)),

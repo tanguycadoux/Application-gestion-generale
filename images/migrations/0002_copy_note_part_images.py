@@ -13,7 +13,7 @@ def copy_images(apps, schema_editor):
     Image = apps.get_model("images", "Image")
 
     Image.objects.bulk_create(
-        Image(pk=old.pk, name=old.original_path, kind="imported", file=old.file.name)
+        Image(pk=old.pk, name=old.original_path, file=old.file.name)
         for old in NotePartImage.objects.order_by("pk")
     )
 

@@ -5,6 +5,5 @@ from .models import Image
 
 @admin.register(Image)
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ("pk", "name", "kind", "file", "created_at")
-    list_filter = ("kind",)
+    list_display = ("pk", "name", "file", "created_at")
     search_fields = ("name",)

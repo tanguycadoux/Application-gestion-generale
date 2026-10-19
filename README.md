@@ -198,7 +198,7 @@ Les images sont importées séparément (bouton d'import, liste sur `/note_takin
 
 Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
 
-Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un type (importée, vectorielle ou matricielle) et, pour les images créées dans l'application à terme, un fichier source éditable.
+Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
 
 ### Fonctionnalités
 
