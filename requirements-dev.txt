@@ -1,0 +1,6 @@
+# Dépendances de développement : outillage (lint, typage)
+-r requirements.txt
+
+django-stubs==6.1.2
+mypy==2.4.0
+ruff==0.17.1

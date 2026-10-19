@@ -1,5 +1,5 @@
+# Dépendances d'exécution, maintenues à la main (versions épinglées)
 Django==6.1
-Markdown==3.10.3
-# Non détectés par pipreqs (pas importés directement dans le code)
 django-htmx==1.29.0
+Markdown==3.10.3
 Pillow==12.3.0
