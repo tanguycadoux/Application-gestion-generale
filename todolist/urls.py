@@ -1,10 +1,13 @@
 from django.urls import path
 
 from .views import (
-    index, toggle_todo,
-    TodoListView, TodoDetailView,
-    TodoCreateView, TodoUpdateView,
-    TodoDeleteView
+    TodoCreateView,
+    TodoDeleteView,
+    TodoDetailView,
+    TodoListView,
+    TodoUpdateView,
+    index,
+    toggle_todo,
 )
 
 app_name = "todolist"

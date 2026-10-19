@@ -1,19 +1,18 @@
-from django.core.files import File
 
-from .models import Note, NotePart, Project, NotePartImage
+import re
+from datetime import date
+from pathlib import Path
 
 from todolist.services import create_todo_from_dict
 
-from datetime import datetime, date
-from pathlib import Path
-import re
+from .models import Note, NotePart, NotePartImage, Project
 
 
 def validate_date_format(date_text):
     try:
         date.fromisoformat(date_text)
     except ValueError:
-        raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+        raise ValueError("Incorrect data format, should be YYYY-MM-DD") from None
 
 # def insert_note_in_table(file):
 #     filename = Path(file.name).stem
@@ -137,10 +136,10 @@ def process_note_parts(note: Note, parsed_note: dict | None = None) -> list[Note
 
 
 def create_todos_from_note_part(note_part: NotePart):
-    if type(note_part.tags) != list:
+    if not isinstance(note_part.tags, list):
         raise TypeError
 
-    if "TODO" in note_part.tags and type(note_part.content) == str:
+    if "TODO" in note_part.tags and isinstance(note_part.content, str):
         tags = note_part.tags.copy()
         tags.append(note_part.subject)
         tags.remove('TODO')
@@ -314,9 +313,9 @@ def parse_note_raw_file_as_dict(date, raw) -> dict:
             
             match current_title_level:
                 case 1:
-                    hierarchy[f'tags_under_project'] = local_metadata_tags
+                    hierarchy['tags_under_project'] = local_metadata_tags
                 case 2:
-                    hierarchy[f'tags_under_subject'] = local_metadata_tags
+                    hierarchy['tags_under_subject'] = local_metadata_tags
                 case _:
                     hierarchy[f'tags_under_title_{current_title_level}'] = local_metadata_tags
         

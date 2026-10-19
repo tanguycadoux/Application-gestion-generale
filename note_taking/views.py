@@ -1,17 +1,19 @@
-from typing import Any
-from django.contrib import messages
-from django.db.models.query import QuerySet
-from django.http import Http404, JsonResponse, HttpResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from django.template.loader import render_to_string
-from django.views.generic import ListView, DetailView
-
-from pathlib import Path
 import markdown
+from django.contrib import messages
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.views.generic import DetailView, ListView
 
-from .forms import NoteSearchForm, NewNoteForm
-from .models import Note, Project, NotePart, NotePartImage
-from .utils import insert_note_in_table, update_note_from_source_file, parse_note_raw_file_as_dict, import_image, process_note_parts
+from .forms import NewNoteForm, NoteSearchForm
+from .models import Note, NotePart, NotePartImage
+from .utils import (
+    import_image,
+    insert_note_in_table,
+    parse_note_raw_file_as_dict,
+    process_note_parts,
+    update_note_from_source_file,
+)
 
 
 def index(request):

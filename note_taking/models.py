@@ -1,7 +1,7 @@
-from django.db import models
+import re
 
 import markdown
-import re
+from django.db import models
 
 
 class Project(models.Model):

@@ -1,15 +1,21 @@
+import json
+
 from django.db.models import Min, Q
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
-from .models import Todo, Tag
 from .forms import TodoForm
-import json
+from .models import Todo
 
 
 def index(request):

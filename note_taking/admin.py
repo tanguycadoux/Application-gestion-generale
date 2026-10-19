@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Note, NotePart, Project, NotePartImage
+from .models import Note, NotePart, NotePartImage, Project
 
 
 @admin.register(Note)

@@ -1,7 +1,7 @@
 from django import forms
 from django.urls import reverse_lazy
 
-from .models import Project, NotePart, Note
+from .models import Note, NotePart, Project
 
 
 class NoteSearchForm(forms.Form):

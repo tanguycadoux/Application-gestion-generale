@@ -1,9 +1,9 @@
-from django.db import models
-from django.db.models import Q
-from django.core.exceptions import ValidationError
-
 from datetime import date
 from typing import TYPE_CHECKING
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import Q
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -71,7 +71,7 @@ class Todo(models.Model):
     )
 
     if TYPE_CHECKING:
-        children: "QuerySet[Todo]"
+        children: QuerySet[Todo]
     
     class Meta:
         constraints = [
@@ -85,14 +85,6 @@ class Todo(models.Model):
     def __str__(self):
         return self.title
 
-    def clean(self):
-        if self.parent:
-            ancestor = self.parent
-            while ancestor:
-                if ancestor == self:
-                    raise ValidationError("Impossible de créer une boucle dans les sous-tâches.")
-                ancestor = ancestor.parent
-
     def save(self, *args, **kwargs):
         if self.parent:
             self.project = self.parent.project
@@ -102,6 +94,14 @@ class Todo(models.Model):
         self.clean()
         super().save(*args, **kwargs)
     
+    def clean(self):
+        if self.parent:
+            ancestor = self.parent
+            while ancestor:
+                if ancestor == self:
+                    raise ValidationError("Impossible de créer une boucle dans les sous-tâches.")
+                ancestor = ancestor.parent
+
     @property
     def due_status(self):
         if not self.due_date or self.completed:
