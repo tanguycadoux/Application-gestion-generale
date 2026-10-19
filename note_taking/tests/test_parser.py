@@ -198,9 +198,71 @@ class IgnoredBlocksTests(SimpleTestCase):
 
     def test_callout_titres_non_interpretes(self):
         raw = '# P\n::: {.callout-note title="t"}\n## pas un titre\nc\n:::\nx'
+        [(project, subject, tags, content)] = parts(raw)
+        self.assertEqual((project, subject, tags), ("P", None, []))
+        self.assertIn("## pas un titre", content)
+
+    @unittest.expectedFailure
+    def test_callout_conserve_dans_le_contenu(self):
+        """Bug #39 : les marqueurs du callout sont retirés du contenu."""
+        raw = '# P\n::: {.callout-note title="t"}\n## pas un titre\nc\n:::\nx'
         self.assertEqual(
             parts(raw),
-            [("P", None, [], ["## pas un titre", "c", "x"])],
+            [
+                (
+                    "P",
+                    None,
+                    [],
+                    [
+                        '::: {.callout-note title="t"}',
+                        "## pas un titre",
+                        "c",
+                        ":::",
+                        "x",
+                    ],
+                )
+            ],
+        )
+
+
+class KnownBugsTests(SimpleTestCase):
+    """Comportements à corriger lors de la réécriture du parseur (#23).
+
+    Une fois un bug corrigé, retirer le décorateur expectedFailure.
+    """
+
+    @unittest.expectedFailure
+    def test_indentation_conservee(self):
+        """Bug #34."""
+        self.assertEqual(
+            parts("# P\n- a\n    - b"),
+            [("P", None, [], ["- a", "    - b"])],
+        )
+
+    @unittest.expectedFailure
+    def test_ligne_horizontale_conservee(self):
+        """Bug #35."""
+        raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
+        self.assertEqual(parts(raw), [("P", None, [], ["avant", "---", "apres"])])
+
+    @unittest.expectedFailure
+    def test_texte_avant_premier_projet_ignore(self):
+        """Bug #36 : pour l'instant, ce texte est ignoré."""
+        self.assertEqual(parts("intro\n# P\nx"), [("P", None, [], ["x"])])
+
+    @unittest.expectedFailure
+    def test_metadonnee_contenant_deux_points(self):
+        """Bug #37."""
+        result = parse("---\nheure: 10:30\n---\n# P\nx")
+        self.assertEqual(result["note metadata"], {"heure": "10:30"})
+
+    @unittest.expectedFailure
+    def test_ligne_vide_avant_bloc_en_tete(self):
+        """Bug #38."""
+        result = parse("\n---\ndate: 2025-11-24\n---\n# P\nx")
+        self.assertEqual(result["note metadata"], {"date": "2025-11-24"})
+        self.assertEqual(
+            parts("\n---\ndate: 2025-11-24\n---\n# P\nx"), [("P", None, [], ["x"])]
         )
 
 
