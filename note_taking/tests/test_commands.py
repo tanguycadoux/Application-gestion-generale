@@ -12,7 +12,7 @@ from todolist.models import Todo
 
 class ReprocessNotesTests(TestCase):
     def setUp(self):
-        self.note = Note.objects.create(date="2025-11-24", raw="# P\n### A\nx")
+        self.note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx")
         # Note part obsolète, comme après une évolution du parseur.
         part = NotePart.objects.create(
             note=self.note,
@@ -45,7 +45,7 @@ class ReprocessNotesTests(TestCase):
         self.assertIn("Simulation", out)
 
     def test_note_en_erreur_n_empeche_pas_les_autres(self):
-        broken = Note.objects.create(date="2025-11-25", raw="# P\n![a](absente.png)")
+        broken = Note.objects.create(date="2025-11-25", body="# P\n![a](absente.png)")
 
         out, err = self.reprocess()
 
@@ -54,7 +54,7 @@ class ReprocessNotesTests(TestCase):
         self.assertEqual(self.parts(self.note), [("P", ["A"], "x")])
 
     def test_todo_existante_non_recreee(self):
-        self.note.raw = "# P\n## S\n### TODO\n- Tâche"
+        self.note.body = "# P\n## S\n### TODO\n- Tâche"
         self.note.save()
         self.reprocess()
         todo = Todo.objects.get()

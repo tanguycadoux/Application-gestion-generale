@@ -81,7 +81,7 @@ class ImportNoteViewTests(ViewTestCase):
 
 class UpdateSourceFileViewTests(ViewTestCase):
     def setUp(self):
-        self.note = Note.objects.create(date="2025-11-24", raw=HEADER + "# P\nx")
+        self.note = Note.objects.create(date="2025-11-24", body=HEADER + "# P\nx")
         self.url = reverse("note_taking:update_source_file", args=[self.note.pk])
 
     def test_mise_a_jour_reussie(self):
@@ -91,7 +91,7 @@ class UpdateSourceFileViewTests(ViewTestCase):
         )
 
         self.note.refresh_from_db()
-        self.assertEqual(self.note.raw, HEADER + "# P\ny")
+        self.assertEqual(self.note.body, "# P\ny")
         self.assertEqual(self.levels(response), ["success"])
 
     def test_sans_fichier(self):
@@ -106,7 +106,7 @@ class UpdateSourceFileViewTests(ViewTestCase):
         )
 
         self.note.refresh_from_db()
-        self.assertEqual(self.note.raw, HEADER + "# P\nx")
+        self.assertEqual(self.note.body, HEADER + "# P\nx")
         self.assertEqual(self.levels(response), ["error"])
 
     def test_note_inexistante(self):
@@ -138,7 +138,7 @@ class ImportImagesViewTests(ViewTestCase):
 class NoteFormViewTests(ViewTestCase):
     def test_creation(self):
         response = self.client.post(
-            reverse("note_taking:new_note"), {"date": "2025-11-24", "raw": "# P\nx"}
+            reverse("note_taking:new_note"), {"date": "2025-11-24", "body": "# P\nx"}
         )
 
         note = Note.objects.get()
@@ -153,40 +153,40 @@ class NoteFormViewTests(ViewTestCase):
         """La note est enregistrée même si son contenu ne peut pas être traité."""
         response = self.client.post(
             reverse("note_taking:new_note"),
-            {"date": "2025-11-24", "raw": "# P\n![a](absente.png)"},
+            {"date": "2025-11-24", "body": "# P\n![a](absente.png)"},
         )
 
         self.assertTrue(Note.objects.exists())
         self.assertEqual(self.levels(response), ["error"])
 
     def test_modification(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\nx")
+        note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         self.client.post(
             reverse("note_taking:edit_note", args=[note.pk]),
-            {"date": "2025-11-24", "raw": "# P\n### A\ny"},
+            {"date": "2025-11-24", "body": "# P\n### A\ny"},
         )
 
         note.refresh_from_db()
-        self.assertEqual(note.raw, "# P\n### A\ny")
+        self.assertEqual(note.body, "# P\n### A\ny")
         self.assertEqual(list(note.parts.values_list("content", flat=True)), ["y"])
 
     def test_modification_contenu_non_traitable(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\nx")
+        note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         response = self.client.post(
             reverse("note_taking:edit_note", args=[note.pk]),
-            {"date": "2025-11-24", "raw": "# P\n![a](absente.png)"},
+            {"date": "2025-11-24", "body": "# P\n![a](absente.png)"},
         )
 
         note.refresh_from_db()
-        self.assertEqual(note.raw, "# P\n![a](absente.png)")
+        self.assertEqual(note.body, "# P\n![a](absente.png)")
         self.assertEqual(self.levels(response), ["error"])
 
 
 class NoteJsonViewTests(ViewTestCase):
     def test_analyse_au_format_json(self):
-        note = Note.objects.create(date="2025-11-24", raw=HEADER + "# P\n### A\nx")
+        note = Note.objects.create(date="2025-11-24", body=HEADER + "# P\n### A\nx")
 
         response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
 
@@ -202,7 +202,7 @@ class NoteJsonViewTests(ViewTestCase):
         )
 
     def test_note_sans_contenu(self):
-        note = Note.objects.create(date="2025-11-24", raw=None)
+        note = Note.objects.create(date="2025-11-24", body="")
 
         response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
 
@@ -211,7 +211,7 @@ class NoteJsonViewTests(ViewTestCase):
 
 class ClearNotesRemovedTests(ViewTestCase):
     def test_get_ne_supprime_pas_les_notes(self):
-        Note.objects.create(date="2025-11-24", raw="# P\nx")
+        Note.objects.create(date="2025-11-24", body="# P\nx")
 
         response = self.client.get("/note_taking/notes/clear/")
 
@@ -219,7 +219,7 @@ class ClearNotesRemovedTests(ViewTestCase):
         self.assertEqual(Note.objects.count(), 1)
 
     def test_pages_de_notes_affichees(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\nx")
+        note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         for url in (
             reverse("note_taking:index"),
@@ -236,7 +236,7 @@ class RenderedPartsDisplayTests(ViewTestCase):
     RAW = "# P\n## S\nPremier paragraphe.\n\nSecond paragraphe."
 
     def setUp(self):
-        self.note = Note.objects.create(date="2025-11-24", raw=self.RAW)
+        self.note = Note.objects.create(date="2025-11-24", body=self.RAW)
         process_note_parts(self.note)
 
     def assertRenderedAsIs(self, response):

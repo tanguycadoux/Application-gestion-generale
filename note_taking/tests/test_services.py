@@ -69,7 +69,7 @@ class ImportNoteTests(ServiceTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.date, date(2025, 11, 24))
-        self.assertEqual(note.raw, HEADER + "# P\n## S\n### A\nx")
+        self.assertEqual(note.body, "# P\n## S\n### A\nx")
         self.assertEqual(parts_summary(note), [("P", "S", ["A"], "x")])
 
     def test_projet_cree_automatiquement(self):
@@ -144,12 +144,12 @@ class UpdateNoteTests(ServiceTestCase):
         )
 
     def test_mise_a_jour_du_contenu_et_des_parts(self):
-        new_raw = HEADER + "# P\n### Nouveau\ny"
-
-        update_note_from_source_file(self.note, qmd_file("2025-11-24.qmd", new_raw))
+        update_note_from_source_file(
+            self.note, qmd_file("2025-11-24.qmd", HEADER + "# P\n### Nouveau\ny")
+        )
 
         self.note.refresh_from_db()
-        self.assertEqual(self.note.raw, new_raw)
+        self.assertEqual(self.note.body, "# P\n### Nouveau\ny")
         self.assertEqual(parts_summary(self.note), [("P", None, ["Nouveau"], "y")])
 
     def test_fichier_d_une_autre_date(self):
@@ -183,7 +183,7 @@ class UpdateNoteTests(ServiceTestCase):
         self.assertEqual(parts_summary(self.note), [("P", None, [], "y")])
 
     def test_echec_de_l_analyse_conserve_la_note(self):
-        old_raw = self.note.raw
+        old_raw = self.note.body
 
         with self.assertRaises(ImageNotFoundError):
             update_note_from_source_file(
@@ -192,13 +192,13 @@ class UpdateNoteTests(ServiceTestCase):
             )
 
         self.note.refresh_from_db()
-        self.assertEqual(self.note.raw, old_raw)
+        self.assertEqual(self.note.body, old_raw)
         self.assertEqual(parts_summary(self.note), [("P", None, ["Ancien"], "x")])
 
 
 class ProcessNotePartsTests(ServiceTestCase):
     def test_contenu_sans_bloc_en_tete(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\n## S\nx")
+        note = Note.objects.create(date="2025-11-24", body="# P\n## S\nx")
 
         process_note_parts(note)
 
@@ -206,29 +206,29 @@ class ProcessNotePartsTests(ServiceTestCase):
 
     def test_date_en_tete_differente_de_la_note(self):
         note = Note.objects.create(
-            date="2025-11-24", raw="---\ndate: 2025-11-25\n---\n# P\nx"
+            date="2025-11-24", body="---\ndate: 2025-11-25\n---\n# P\nx"
         )
 
         with self.assertRaisesMessage(NoteParseError, "ne correspond pas"):
             process_note_parts(note)
 
     def test_regeneration_remplace_les_parts(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\n### A\nx\n### B\ny")
+        note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx\n### B\ny")
         process_note_parts(note)
 
-        note.raw = "# P\n### C\nz"
+        note.body = "# P\n### C\nz"
         process_note_parts(note)
 
         self.assertEqual(parts_summary(note), [("P", None, ["C"], "z")])
         self.assertEqual(NotePart.objects.count(), 1)
 
     def test_contenu_vide(self):
-        note = Note.objects.create(date="2025-11-24", raw=None)
+        note = Note.objects.create(date="2025-11-24", body="")
 
         self.assertEqual(process_note_parts(note), [])
 
     def test_lignes_jointes_dans_le_contenu(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\nx\n\ny")
+        note = Note.objects.create(date="2025-11-24", body="# P\nx\n\ny")
 
         process_note_parts(note)
 
@@ -237,7 +237,7 @@ class ProcessNotePartsTests(ServiceTestCase):
 
 class TodoGenerationTests(ServiceTestCase):
     def process(self, raw: str) -> Note:
-        note = Note.objects.create(date="2025-11-24", raw=raw)
+        note = Note.objects.create(date="2025-11-24", body=raw)
         process_note_parts(note)
         return note
 
@@ -284,7 +284,7 @@ class TodoGenerationTests(ServiceTestCase):
         """Comportement voulu pour l'instant : l'ancienne TODO est conservée."""
         note = self.process("# P\n## S\n### TODO\n- Tâche")
 
-        note.raw = "# P\n## S\n### TODO\n- Tâche modifiée"
+        note.body = "# P\n## S\n### TODO\n- Tâche modifiée"
         process_note_parts(note)
 
         self.assertEqual(
@@ -324,7 +324,7 @@ class ImageTests(ServiceTestCase):
     def test_reference_remplacee_par_identifiant(self):
         image = import_image(image_file("banc.png"))
         note = Note.objects.create(
-            date="2025-11-24", raw="# P\n![Banc](dossier/banc.png)"
+            date="2025-11-24", body="# P\n![Banc](dossier/banc.png)"
         )
 
         process_note_parts(note)
@@ -332,7 +332,7 @@ class ImageTests(ServiceTestCase):
         self.assertEqual(note.parts.get().content, f"![Banc](image:{image.pk})")
 
     def test_image_non_importee(self):
-        note = Note.objects.create(date="2025-11-24", raw="# P\n![Banc](banc.png)")
+        note = Note.objects.create(date="2025-11-24", body="# P\n![Banc](banc.png)")
 
         with self.assertRaises(ImageNotFoundError):
             process_note_parts(note)

@@ -9,7 +9,7 @@ from todolist.models import Todo
 
 
 def process(date: str, raw: str) -> Note:
-    note = Note.objects.create(date=date, raw=raw)
+    note = Note.objects.create(date=date, body=raw)
     process_note_parts(note)
     return note
 
@@ -33,7 +33,7 @@ class SharedSubjectTagTests(TestCase):
 
     def test_sujet_inutilise_absent_de_la_recherche(self):
         note = process("2025-11-24", "# P\n## Ancien sujet\nx")
-        note.raw = "# P\n## Nouveau sujet\nx"
+        note.body = "# P\n## Nouveau sujet\nx"
         process_note_parts(note)
 
         response = self.client.get(reverse("note_taking:notes_search"))

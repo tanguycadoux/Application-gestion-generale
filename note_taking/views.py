@@ -80,8 +80,8 @@ class NotePartImageList(ListView):
 def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
 
-    if note.raw is not None:
-        html_content = render_markdown(note.raw)
+    if note.body:
+        html_content = render_markdown(note.body)
     else:
         html_content = "<p>Aucun contenu disponible.</p>"
 
@@ -141,7 +141,7 @@ def update_source_file(request, pk):
 
 def note_json(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    return JsonResponse(parse_note(str(note.date), note.raw or "").as_dict())
+    return JsonResponse(parse_note(str(note.date), note.body).as_dict())
 
 
 def notes_search(request):
