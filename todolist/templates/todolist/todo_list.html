@@ -13,7 +13,7 @@
     <h1>Mes Todos</h1>
 
     {% url 'todolist:todo_create' as url %}
-    {% button "+ Créer une TODO" href=url %}
+    {% button "Créer une TODO" icon="add" href=url %}
 
     <details open>
         <summary class="cursor-pointer"><h2 class="inline text-2xl">À faire</h2></summary>
