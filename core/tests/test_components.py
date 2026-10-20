@@ -1,7 +1,5 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
-import unittest
-
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -76,19 +74,16 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn('<button type="reset"', html)
 
-    @unittest.expectedFailure
     def test_lien_avec_href(self):
         html = render('{% button "Modifier" href="/todo/" type="reset" %}')
 
         self.assertHTMLEqual(html, f'<a class="{PRIMARY}" href="/todo/">Modifier</a>')
 
-    @unittest.expectedFailure
     def test_lien_danger(self):
         html = render('{% button "Supprimer" href="/todo/" variant="danger" %}')
 
         self.assertHTMLEqual(html, f'<a class="{DANGER}" href="/todo/">Supprimer</a>')
 
-    @unittest.expectedFailure
     def test_lien_icone_seule_discret(self):
         html = render(
             '{% button "Modifier" icon="edit" href="/edit/" variant="ghost"'
@@ -102,11 +97,14 @@ class ButtonTests(SimpleTestCase):
             "</a>",
         )
 
-    @unittest.expectedFailure
     def test_variante_discrete_danger(self):
         html = render('{% button "Supprimer" variant="ghost-danger" %}')
 
         self.assertIn(f'class="{GHOST_DANGER}"', html)
+
+    def test_variante_inconnue_refusee(self):
+        with self.assertRaises(ValueError):
+            render('{% button "OK" variant="autre" %}')
 
 
 class TagListTests(SimpleTestCase):

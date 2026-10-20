@@ -11,10 +11,10 @@
         <h1 class="flex-1">Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
         {% url 'note_taking:edit_note' note.pk as url %}
-        {% icon_link url "Modifier la note" "edit" %}
+        {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
         {% url 'note_taking:delete_note' note.pk as url %}
-        {% icon_link url "Supprimer la note" "delete" variant="danger" %}
+        {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
     </form>
     </header>
 

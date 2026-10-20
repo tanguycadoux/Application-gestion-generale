@@ -53,10 +53,19 @@ Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templa
 | Balise | Rendu |
 |---|---|
 | `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
-| `{% button "Libellé" icon="…" variant="danger" type="submit" icon_only=True %}` | bouton de formulaire (`primary` par défaut) |
-| `{% link_button url "Libellé" icon="…" variant="danger" %}` | lien présenté comme un bouton |
-| `{% icon_link url "Libellé" "icône" variant="danger" %}` | lien réduit à une icône, libellé pour les lecteurs d'écran |
+| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` ; avec `icon_only`, le libellé passe en `aria-label` |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
+
+Exemples :
+
+```django
+{% load ui %}
+{% button "Importer" %}
+{% url 'todolist:todo_edit' todo.pk as url %}{% button "Modifier" href=url %}
+{% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
+```
+
+Les principes de ces composants (un composant par rôle, l'apparence en variante, des paramètres ajoutés seulement quand une page en a besoin) sont décrits dans `docs/architecture.md`, section « Composants d'interface ».
 
 La migration complète vers Tailwind est prévue dans le milestone M4 (#79).
 

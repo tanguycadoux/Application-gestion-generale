@@ -1,8 +1,9 @@
 """Composants d'interface partagés, à charger avec `{% load ui %}`.
 
-Chaque balise rend un gabarit de `core/templates/core/components/`, qui porte
-les classes Tailwind du composant (écrites en entier, sans les construire par
-morceaux). Les icônes sont des noms de Material Symbols Rounded.
+Chaque balise rend un gabarit de `core/templates/core/components/`. Les classes
+Tailwind sont dans le gabarit, ou ici quand elles dépendent d'une variante,
+toujours écrites en entier (sans les construire par morceaux). Les icônes sont
+des noms de Material Symbols Rounded.
 """
 
 from django import template
@@ -24,36 +25,47 @@ def nav_link(context, url_name: str, label: str, icon: str) -> dict:
     }
 
 
+# Classes de chaque variante de bouton, écrites en entier.
+BUTTON_VARIANTS = {
+    "primary": (
+        "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
+        " font-semibold bg-primary-93 text-primary-40 hover:bg-primary-95"
+    ),
+    "danger": (
+        "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
+        " font-semibold bg-alert-93 text-alert-40 hover:bg-alert-95"
+    ),
+    "ghost": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200",
+    "ghost-danger": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200",
+}
+
+
 @register.inclusion_tag("core/components/button.html")
 def button(
     label: str,
+    href: str = "",
     icon: str = "",
     variant: str = "primary",
     type: str = "submit",
     icon_only: bool = False,
 ) -> dict:
-    """Bouton de formulaire ; `variant` vaut `primary` ou `danger`."""
+    """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
+
+    - `variant` : `primary`, `danger`, `ghost` (fond transparent) ou
+      `ghost-danger` ;
+    - `type` : type du `<button>`, ignoré pour un lien ;
+    - `icon_only` : n'affiche que l'icône, le libellé passe en `aria-label`.
+    """
+    if variant not in BUTTON_VARIANTS:
+        raise ValueError(f"Variante de bouton inconnue : {variant}")
     return {
         "label": label,
+        "href": href,
         "icon": icon,
-        "variant": variant,
+        "classes": BUTTON_VARIANTS[variant],
         "type": type,
         "icon_only": icon_only,
     }
-
-
-@register.inclusion_tag("core/components/link_button.html")
-def link_button(
-    href: str, label: str, icon: str = "", variant: str = "primary"
-) -> dict:
-    """Lien présenté comme un bouton ; `variant` vaut `primary` ou `danger`."""
-    return {"href": href, "label": label, "icon": icon, "variant": variant}
-
-
-@register.inclusion_tag("core/components/icon_link.html")
-def icon_link(href: str, label: str, icon: str, variant: str = "default") -> dict:
-    """Lien réduit à une icône ; `label` en donne le sens aux lecteurs d'écran."""
-    return {"href": href, "label": label, "icon": icon, "variant": variant}
 
 
 @register.inclusion_tag("core/components/tag_list.html")

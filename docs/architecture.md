@@ -11,7 +11,7 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 
 - Rendu côté serveur par les gabarits Django ; pas d'étape de build JS.
 - **Tailwind CSS** v4 (version navigateur, sur CDN) pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
-- Règle de style : classes Tailwind en priorité ; CSS propre réservé à ce que Tailwind ne couvre pas (rendu des callouts…). Les éléments d'interface récurrents sont des composants partagés : balises d'inclusion de `core/templatetags/ui.py` (`{% load ui %}`), gabarits dans `core/templates/core/components/`. La palette est définie dans le thème Tailwind de `core/templates/base.html`.
+- Règle de style : classes Tailwind en priorité ; CSS propre réservé à ce que Tailwind ne couvre pas (rendu des callouts…). Les éléments d'interface récurrents sont des composants partagés : balises d'inclusion de `core/templatetags/ui.py` (`{% load ui %}`), gabarits dans `core/templates/core/components/` (principes dans la section « Composants d'interface » plus bas). La palette est définie dans le thème Tailwind de `core/templates/base.html`.
 
 ## Apps et dépendances
 
@@ -125,6 +125,17 @@ Les règles d'analyse sont décrites dans le README. Choix notables :
 ### Champs texte
 
 Aucun champ texte n'est nullable : chaîne vide par défaut (#48, règle ruff `DJ001`).
+
+### Composants d'interface (#78)
+
+Les éléments d'interface récurrents (boutons, liens du menu, listes de tags…) sont des composants partagés, définis une fois dans `core` :
+
+- **Mécanisme** : des balises d'inclusion Django (`inclusion_tag`) dans `core/templatetags/ui.py`, chargées avec `{% load ui %}`. Chaque balise prépare le contexte et rend son gabarit, dans `core/templates/core/components/`. Elles ont été préférées aux `{% include … with … %}` : l'appel est plus court, les paramètres sont nommés et vérifiés (un paramètre inconnu est une erreur de gabarit), et une valeur invalide, comme une variante qui n'existe pas, peut être refusée.
+- **Un composant par rôle, pas par apparence** : deux éléments qui se comportent de la même façon pour l'utilisateur sont un seul composant. Par exemple, `button` rend un `<a>` quand on lui donne un `href` et un `<button>` sinon : la balise HTML découle de l'action (naviguer ou envoyer un formulaire), elle n'est pas un choix à faire à chaque appel. Un composant à part se justifie par un comportement propre : `nav_link` calcule lui-même son état actif à partir de la page courante.
+- **L'apparence passe par `variant`** (`primary`, `danger`, `ghost`…). Les classes Tailwind de chaque variante sont écrites en entier, dans le gabarit ou dans un dictionnaire de `ui.py`, jamais construites par morceaux.
+- **Une API minimale** : peu de paramètres, avec des valeurs par défaut qui couvrent l'usage courant. Le libellé est le premier argument, positionnel ; tout le reste est nommé. Un paramètre ou une variante ne s'ajoute que lorsqu'une page en a besoin, pas par anticipation.
+- **Accessibilité intégrée** : un élément réduit à une icône reçoit son libellé en `aria-label`, et le lien de menu actif reçoit `aria-current="page"`.
+- **Tests** : chaque composant a des tests du HTML rendu (`core/tests/test_components.py`), qui servent aussi de référence pour ses classes.
 
 ## Conventions de travail
 

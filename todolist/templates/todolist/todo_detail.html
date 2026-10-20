@@ -36,9 +36,9 @@
     
     {% url 'todolist:todo_create' as url %}
     {% querystring parent=object.pk as query %}
-    {% link_button url|add:query "+ Ajouter une sous-tâche" %}
+    {% button "+ Ajouter une sous-tâche" href=url|add:query %}
     {% url 'todolist:todo_edit' object.pk as url %}
-    {% link_button url "Modifier" %}
+    {% button "Modifier" href=url %}
     {% url 'todolist:todo_delete' object.pk as url %}
-    {% link_button url "Supprimer" variant="danger" %}
+    {% button "Supprimer" href=url variant="danger" %}
 {% endblock content %}
