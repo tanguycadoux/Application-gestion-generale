@@ -1,5 +1,6 @@
 """Services de note : import, mise à jour, note parts, TODO et images."""
 
+from datetime import date
 from pathlib import Path
 
 from django.db import transaction
@@ -47,7 +48,7 @@ def insert_note_in_table(file) -> Note:
     if Note.objects.filter(date=note_date).exists():
         raise NoteAlreadyExistsError(f"Une note existe déjà pour le {note_date}.")
 
-    note = Note.objects.create(date=note_date, body=body)
+    note = Note.objects.create(date=date.fromisoformat(note_date), body=body)
 
     process_note_parts(note)
     return note

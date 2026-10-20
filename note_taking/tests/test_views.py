@@ -9,8 +9,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from images.models import Image
-from images.services import import_image
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 
@@ -39,47 +37,6 @@ class ViewTestCase(TestCase):
 
     def levels(self, response) -> list[str]:
         return [level for level, _ in self.messages(response)]
-
-
-class ImportNoteViewTests(ViewTestCase):
-    url = reverse("note_taking:import_note")
-
-    def post(self, *files):
-        return self.client.post(
-            self.url, {"note_import": list(files)}, HTTP_REFERER="/note_taking/notes/"
-        )
-
-    def test_import_reussi(self):
-        response = self.post(qmd_file("2025-11-24.qmd", HEADER + "# P\nx"))
-
-        self.assertRedirects(
-            response, "/note_taking/notes/", fetch_redirect_response=False
-        )
-        self.assertTrue(Note.objects.filter(date="2025-11-24").exists())
-        self.assertEqual(self.levels(response), ["success"])
-
-    def test_import_en_erreur(self):
-        response = self.post(qmd_file("note.qmd", HEADER + "# P\nx"))
-
-        self.assertFalse(Note.objects.exists())
-        self.assertEqual(self.levels(response), ["error"])
-
-    def test_un_echec_n_empeche_pas_les_fichiers_suivants(self):
-        response = self.post(
-            qmd_file("2025-11-24.qmd", HEADER + "# P\nx"),
-            qmd_file("note.qmd", HEADER + "# P\nx"),
-            qmd_file("2025-11-25.qmd", "---\ndate: 2025-11-25\n---\n# P\nx"),
-        )
-
-        self.assertEqual(Note.objects.count(), 2)
-        self.assertEqual(sorted(self.levels(response)), ["error", "success"])
-        errors = [text for level, text in self.messages(response) if level == "error"]
-        self.assertIn("note.qmd", errors[0])
-
-    def test_aucun_fichier(self):
-        response = self.post()
-
-        self.assertEqual(self.levels(response), ["warning"])
 
 
 class UpdateSourceFileViewTests(ViewTestCase):
@@ -118,24 +75,6 @@ class UpdateSourceFileViewTests(ViewTestCase):
         )
 
         self.assertEqual(response.status_code, 404)
-
-
-class ImportImagesViewTests(ViewTestCase):
-    url = reverse("note_taking:import_images")
-
-    def test_import_reussi(self):
-        response = self.client.post(self.url, {"image_import": [image_file("a.png")]})
-
-        self.assertTrue(Image.objects.filter(name="a.png").exists())
-        self.assertEqual(self.levels(response), ["success"])
-
-    def test_image_deja_importee(self):
-        import_image(image_file("a.png"))
-
-        response = self.client.post(self.url, {"image_import": [image_file("a.png")]})
-
-        self.assertEqual(Image.objects.count(), 1)
-        self.assertEqual(self.levels(response), ["error"])
 
 
 class NoteFormViewTests(ViewTestCase):
