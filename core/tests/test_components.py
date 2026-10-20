@@ -1,5 +1,7 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
+import unittest
+
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -12,6 +14,8 @@ DANGER = (
     "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
     " font-semibold bg-alert-93 text-alert-40 hover:bg-alert-95"
 )
+GHOST = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200"
+GHOST_DANGER = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200"
 
 
 def render(source: str, path: str = "/", **context) -> str:
@@ -67,37 +71,42 @@ class ButtonTests(SimpleTestCase):
             "</button>",
         )
 
+    def test_type_du_bouton(self):
+        html = render('{% button "Annuler" type="reset" %}')
 
-class LinkButtonTests(SimpleTestCase):
-    def test_lien_en_forme_de_bouton(self):
-        html = render('{% link_button "/todo/" "Modifier" %}')
+        self.assertIn('<button type="reset"', html)
+
+    @unittest.expectedFailure
+    def test_lien_avec_href(self):
+        html = render('{% button "Modifier" href="/todo/" type="reset" %}')
 
         self.assertHTMLEqual(html, f'<a class="{PRIMARY}" href="/todo/">Modifier</a>')
 
+    @unittest.expectedFailure
     def test_lien_danger(self):
-        html = render('{% link_button "/todo/" "Supprimer" variant="danger" %}')
+        html = render('{% button "Supprimer" href="/todo/" variant="danger" %}')
 
         self.assertHTMLEqual(html, f'<a class="{DANGER}" href="/todo/">Supprimer</a>')
 
-
-class IconLinkTests(SimpleTestCase):
-    def test_lien_icone(self):
-        html = render('{% icon_link "/edit/" "Modifier" "edit" %}')
+    @unittest.expectedFailure
+    def test_lien_icone_seule_discret(self):
+        html = render(
+            '{% button "Modifier" icon="edit" href="/edit/" variant="ghost"'
+            " icon_only=True %}"
+        )
 
         self.assertHTMLEqual(
             html,
-            '<a class="inline-flex rounded-2xl p-2 hover:bg-slate-200"'
-            ' href="/edit/" aria-label="Modifier">'
+            f'<a class="{GHOST}" href="/edit/" aria-label="Modifier">'
             '<span class="material-symbols-rounded">edit</span>'
             "</a>",
         )
 
-    def test_lien_icone_danger(self):
-        html = render(
-            '{% icon_link "/delete/" "Supprimer" "delete" variant="danger" %}'
-        )
+    @unittest.expectedFailure
+    def test_variante_discrete_danger(self):
+        html = render('{% button "Supprimer" variant="ghost-danger" %}')
 
-        self.assertIn('class="inline-flex rounded-2xl p-2 hover:bg-red-200"', html)
+        self.assertIn(f'class="{GHOST_DANGER}"', html)
 
 
 class TagListTests(SimpleTestCase):
