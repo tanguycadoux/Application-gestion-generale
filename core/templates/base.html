@@ -3,7 +3,16 @@
 <html>
 <head>
     {% load static %}
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
+    <style type="text/tailwindcss">
+        /* Thème et styles de base Tailwind : seul endroit où les déclarer. */
+        @layer base {
+            /* Tailwind v4 ne met plus le curseur main sur les boutons (comportement de v3 conservé). */
+            button:not(:disabled), [role="button"]:not(:disabled) {
+                cursor: pointer;
+            }
+        }
+    </style>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
 
     <link rel="stylesheet" href="{% static 'core/style.css' %}">

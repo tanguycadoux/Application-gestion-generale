@@ -8,6 +8,6 @@
         {{ form.date.errors }}
     </div>
     {{ form.body.errors }}
-    <textarea name="body" class="w-full h-96 border font-mono focus-visible:outline-none">{{ form.body.value|default:'' }}</textarea>
+    <textarea name="body" class="w-full h-96 border border-gray-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
     <button type="submit" class="material-symbols-rounded">save</button>
 </form>

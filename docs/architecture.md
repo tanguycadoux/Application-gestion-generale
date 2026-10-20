@@ -10,7 +10,7 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 ## Front
 
 - Rendu côté serveur par les gabarits Django ; pas d'étape de build JS.
-- **Tailwind CSS** (Play CDN) pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
+- **Tailwind CSS** v4 (version navigateur, sur CDN) pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
 - Règle de style : classes Tailwind en priorité ; CSS propre réservé à ce que Tailwind ne couvre pas (rendu des callouts…). Les éléments d'interface récurrents sont destinés à devenir des composants partagés dans `core` (#78).
 
 ## Apps et dépendances
