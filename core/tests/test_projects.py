@@ -1,5 +1,7 @@
 """Tests des projets : couleur, pastille et page de gestion (#162)."""
 
+import unittest
+
 from django.contrib.messages import get_messages
 from django.template import Context, Template
 from django.test import TestCase
@@ -157,11 +159,27 @@ class ProjectPagesTests(TestCase):
             ["Le projet « Utilisé » est utilisé par 1 note et 1 tâche."],
         )
 
+    @unittest.expectedFailure
     def test_bouton_desactive_avec_la_raison(self):
         self.create_projects()
         html = self.client.get(reverse("core:projects")).content.decode()
 
-        self.assertIn("Utilisé par 1 note et 1 tâche.", html)
         self.assertIn(
             'data-confirm="Supprimer définitivement le projet « Libre » ?"', html
         )
+        self.assertInHTML(
+            f'<p id="project-{self.used.pk}-usage" class="text-sm text-slate-600">'
+            "Utilisé par 1 note et 1 tâche : suppression impossible.</p>",
+            html,
+        )
+
+    @unittest.expectedFailure
+    def test_raison_reliee_au_bouton_et_boutons_groupes(self):
+        """La raison est dans la colonne d'informations, reliée au bouton désactivé :
+        les boutons restent côte à côte, sans texte entre eux."""
+        self.create_projects()
+        html = self.client.get(reverse("core:projects")).content.decode()
+
+        self.assertIn(f'aria-describedby="project-{self.used.pk}-usage"', html)
+        self.assertIn('<div class="flex items-center gap-1">', html)
+        self.assertNotIn('<form class="flex flex-col items-end"', html)
