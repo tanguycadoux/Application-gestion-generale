@@ -1,3 +1,15 @@
+// Élément avec sa classe et, s'il y a lieu, son texte, placé tel quel (#142) :
+// un message qui contient du HTML s'affiche, il n'est pas interprété.
+function alertElement(tag, className, text = null, children = []) {
+  const element = document.createElement(tag);
+  element.className = className;
+  if (text !== null) {
+    element.textContent = text;
+  }
+  element.append(...children);
+  return element;
+}
+
 window.Alert = (function () {
   /* --- SYSTEME DE MODAL (alert/confirm) --- */
 
@@ -7,16 +19,14 @@ window.Alert = (function () {
       const overlay = document.createElement("div");
       overlay.className = "alert__overlay";
 
-      const modal = document.createElement("div");
-      modal.className = "alert__modal";
-
-      modal.innerHTML = `
-        <p class="alert__message">${message}</p>
-        <div class="alert__buttons">
-          <button class="alert__ok">OK</button>
-          ${showCancel ? '<button class="alert__cancel">Annuler</button>' : ""}
-        </div>
-      `;
+      const buttons = [alertElement("button", "alert__ok", "OK")];
+      if (showCancel) {
+        buttons.push(alertElement("button", "alert__cancel", "Annuler"));
+      }
+      const modal = alertElement("div", "alert__modal", null, [
+        alertElement("p", "alert__message", message),
+        alertElement("div", "alert__buttons", null, buttons),
+      ]);
 
       overlay.appendChild(modal);
       document.body.appendChild(overlay);
@@ -58,6 +68,7 @@ window.Alert = (function () {
       duration = 5
     } = options;
 
+    let display_title;
     switch (type) {
       case "info":
         display_title = "Info";
@@ -82,24 +93,17 @@ window.Alert = (function () {
 
     const duration_ms = duration * 1000;
 
-    const toast = document.createElement("div");
-    toast.className = `alert__toast alert__toast-${type}`;
-
-    var innerHtml = `
-      <div class="alert__toast-content">
-    `;
+    const content = [];
     if (has_title) {
-      innerHtml += `
-          <h6 class="alert__toast-title">${display_title}</h6>
-      `;
+      content.push(alertElement("h6", "alert__toast-title", display_title));
     }
-    innerHtml += `
-        <p class="alert__toast-text">${message}</p>
-      </div>
-      <div class="alert__toast-progress-behind"></div>
-      <div class="alert__toast-progress"></div>
-    `;
-    toast.innerHTML = innerHtml;
+    content.push(alertElement("p", "alert__toast-text", message));
+
+    const toast = alertElement("div", `alert__toast alert__toast-${type}`, null, [
+      alertElement("div", "alert__toast-content", null, content),
+      alertElement("div", "alert__toast-progress-behind"),
+      alertElement("div", "alert__toast-progress"),
+    ]);
     toastContainer.appendChild(toast);
 
     requestAnimationFrame(() => {
@@ -139,23 +143,21 @@ window.Alert = (function () {
       ordered_buttons[button_data.order] = button_data
     }
 
-    var pop_html = `
-      <p class="alert__popover-message">${message}</p>
-      <div class="alert__popover-buttons">
-    `;
+    const buttons = [];
     for (const button_data of ordered_buttons) {
       if (typeof button_data == 'undefined') {
         throw new Error(`Le bouton est vide.`);
       }
 
-      pop_html += `
-      <button class="alert__${button_data.class_suffix}">${button_data.message}</button>
-      `
+      buttons.push(
+        alertElement("button", `alert__${button_data.class_suffix}`, button_data.message)
+      );
     }
-    pop_html += `
-    </div>
-    `
-    const { pop, ready, close } = createPopoverBase(element, pop_html);
+    const content = [
+      alertElement("p", "alert__popover-message", message),
+      alertElement("div", "alert__popover-buttons", null, buttons),
+    ];
+    const { pop, ready, close } = createPopoverBase(element, content);
 
     await ready;
 
@@ -185,8 +187,9 @@ window.Alert = (function () {
   };
 })();
 
+// content : éléments du contenu de la popover (voir alertElement).
 function createPopoverBase(
-  element, content_html,
+  element, content,
   alignment = { "top": "top", "left": "right" }, margin_element_px = 5, margin_window_px = 10
 ) {
   let pop;
@@ -197,9 +200,7 @@ function createPopoverBase(
   const close = new Promise((resolveClose) => {
     document.querySelectorAll(".alert__popover").forEach(el => el.remove());
 
-    pop = document.createElement("div");
-    pop.className = "alert__popover";
-    pop.innerHTML = content_html;
+    pop = alertElement("div", "alert__popover", null, content);
 
     document.body.appendChild(pop);
 
