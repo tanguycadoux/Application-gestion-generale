@@ -87,8 +87,6 @@ def create_todos_from_note_part(note_part: NotePart):
 
     if "TODO" in part_tags:
         tags = [tag for tag in part_tags if tag != "TODO"]
-        if subject:
-            tags.append(subject)
 
         for line in note_part.content.split("\n"):
             line = line.strip()
@@ -101,11 +99,8 @@ def create_todos_from_note_part(note_part: NotePart):
                 "date": note_part.note.date,
                 "project": note_part.project.name,
                 "content": line,
+                "subject": subject,
                 "tags": tags,
-                "description": {
-                    "subject": subject,
-                    "tags": part_tags,
-                },
             }
             create_todo_from_dict(todo_data)
 

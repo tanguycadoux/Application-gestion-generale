@@ -6,6 +6,7 @@ from django.template import Context, Template
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
+from core.models import Project
 from todolist.models import Todo
 
 STATUSES = (None, "normal", "soon", "today", "overdue")
@@ -82,9 +83,16 @@ class DueClassesTests(SimpleTestCase):
 class TodoPagesTests(TestCase):
     def setUp(self):
         yesterday = date.today() - timedelta(days=1)
-        self.parent = Todo.objects.create(title="Parent", due_date=yesterday)
+        self.parent = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0],
+            title="Parent",
+            due_date=yesterday,
+        )
         self.child = Todo.objects.create(
-            title="Enfant", parent=self.parent, due_date=yesterday
+            project=Project.objects.get_or_create(name="P")[0],
+            title="Enfant",
+            parent=self.parent,
+            due_date=yesterday,
         )
 
     def test_liste_avec_les_classes_d_echeance(self):

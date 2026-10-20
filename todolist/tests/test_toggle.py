@@ -5,14 +5,25 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 
+from core.models import Project
 from todolist.models import Todo
 
 
 class ToggleTodoTests(TestCase):
     def setUp(self):
-        self.parent = Todo.objects.create(title="Parent")
-        self.child = Todo.objects.create(title="Enfant", parent=self.parent)
-        self.grandchild = Todo.objects.create(title="Petit-enfant", parent=self.child)
+        self.parent = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0], title="Parent"
+        )
+        self.child = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0],
+            title="Enfant",
+            parent=self.parent,
+        )
+        self.grandchild = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0],
+            title="Petit-enfant",
+            parent=self.child,
+        )
 
     def toggle(self, todo: Todo, **data):
         return self.client.post(

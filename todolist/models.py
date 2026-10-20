@@ -2,10 +2,11 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
 from django.db import models
 from django.db.models import Q
 
-from core.models import Project, Tag
+from core.models import Project, Subject, Tag
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -24,6 +25,12 @@ class Todo(models.Model):
         verbose_name="projet",
         on_delete=models.PROTECT,
         related_name="todos",
+    )
+    subject = models.ForeignKey(
+        Subject,
+        verbose_name="sujet",
+        on_delete=models.PROTECT,
+        related_name="todos",
         null=True,
         blank=True,
     )
@@ -31,7 +38,10 @@ class Todo(models.Model):
         Tag, verbose_name="tags", related_name="todos", blank=True
     )
     description = models.TextField("description", blank=True)
-    completed = models.BooleanField("terminée", default=False)
+    # Avancement en pourcentage (#163) ; une tâche est terminée à 100 %.
+    progress = models.PositiveSmallIntegerField(
+        "avancement (%)", default=0, validators=[MaxValueValidator(100)]
+    )
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
@@ -71,13 +81,15 @@ class Todo(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
-        if self.parent:
-            self.project = self.parent.project
-            if not self.due_date:
-                self.due_date = self.parent.due_date
-
+        # Le parent propose son projet et son échéance (formulaire), il ne les
+        # impose pas : les écarts sont signalés, pas empêchés. Seule la boucle
+        # parent-enfant est refusée.
         self.clean()
         super().save(*args, **kwargs)
+
+    @property
+    def completed(self) -> bool:
+        return self.progress == 100
 
     def clean(self):
         if self.parent:
@@ -90,11 +102,12 @@ class Todo(models.Model):
                 ancestor = ancestor.parent
 
     def set_completed(self, completed: bool) -> list[int]:
-        """Change l'état de la TODO ; la compléter complète aussi ses sous-tâches.
+        """Passe la tâche à 100 % ou à 0 % ; la compléter complète aussi ses
+        sous-tâches.
 
-        Renvoie les identifiants des TODO modifiées.
+        Renvoie les identifiants des tâches modifiées.
         """
-        self.completed = completed
+        self.progress = 100 if completed else 0
         self.save()
         toggled_ids = [self.pk]
 

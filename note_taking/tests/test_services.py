@@ -259,15 +259,15 @@ class TodoGenerationTests(ServiceTestCase):
             self.assertEqual(todo.note_part_date, date(2025, 11, 24))
             self.assertEqual(todo.project.name, "P")
 
-    def test_tags_de_la_part_et_sujet_sans_todo(self):
+    def test_tags_de_la_part_sans_todo_et_sujet_a_part(self):
+        """Le sujet de la note part devient le sujet de la tâche, pas un tag (#163)."""
         self.process(
             "# P\n## S\n### TODO\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
         )
 
         todo = Todo.objects.get()
-        self.assertEqual(
-            sorted(todo.tags.values_list("name", flat=True)), ["S", "urgent"]
-        )
+        self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
+        self.assertEqual(todo.subject.name, "S")
 
     def test_pas_de_todo_sans_tag_todo(self):
         self.process("# P\n## S\n### Notes\n- Pas une tâche")

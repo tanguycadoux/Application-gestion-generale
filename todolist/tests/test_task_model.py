@@ -1,7 +1,6 @@
 """Tests du modèle des tâches : sujet, avancement, projet obligatoire, sans héritage
 forcé du parent (#163)."""
 
-import unittest
 from datetime import date
 
 from django.core.exceptions import ValidationError
@@ -19,26 +18,22 @@ class ProgressTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
-    @unittest.expectedFailure
     def test_avancement_nul_par_defaut(self):
         todo = Todo.objects.create(title="T", project=self.project)
 
         self.assertEqual(todo.progress, 0)
         self.assertFalse(todo.completed)
 
-    @unittest.expectedFailure
     def test_terminee_a_cent_pour_cent(self):
         todo = Todo.objects.create(title="T", project=self.project, progress=100)
 
         self.assertTrue(todo.completed)
 
-    @unittest.expectedFailure
     def test_avancement_borne(self):
         for value in (-1, 101):
             with self.subTest(value=value), self.assertRaises(ValidationError):
                 Todo(title="T", project=self.project, progress=value).full_clean()
 
-    @unittest.expectedFailure
     def test_case_de_la_liste(self):
         todo = Todo.objects.create(title="T", project=self.project, progress=40)
         url = reverse("todolist:todo_toggle", args=[todo.pk])
@@ -56,7 +51,6 @@ class SubjectAndProjectTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
-    @unittest.expectedFailure
     def test_sujet_facultatif(self):
         subject = Subject.objects.create(name="S")
 
@@ -65,14 +59,12 @@ class SubjectAndProjectTests(TestCase):
         self.assertEqual(todo.subject, subject)
         self.assertIsNone(Todo.objects.create(title="U", project=self.project).subject)
 
-    @unittest.expectedFailure
     def test_projet_obligatoire(self):
         form = TodoForm(data={"title": "T", "priority": "medium", "progress": 0})
 
         self.assertFalse(form.is_valid())
         self.assertIn("project", form.errors)
 
-    @unittest.expectedFailure
     def test_champs_du_formulaire(self):
         self.assertEqual(
             list(TodoForm().fields),
@@ -100,14 +92,12 @@ class NoForcedInheritanceTests(TestCase):
             title="Parent", project=self.project, due_date=date(2025, 12, 1)
         )
 
-    @unittest.expectedFailure
     def test_projet_different_du_parent_conserve(self):
         child = Todo.objects.create(title="E", project=self.other, parent=self.parent)
 
         child.refresh_from_db()
         self.assertEqual(child.project, self.other)
 
-    @unittest.expectedFailure
     def test_echeance_absente_conservee(self):
         child = Todo.objects.create(title="E", project=self.project, parent=self.parent)
 
@@ -136,7 +126,6 @@ class TaskFromNoteTests(TestCase):
         process_note_parts(note)
         return Todo.objects.get()
 
-    @unittest.expectedFailure
     def test_sujet_de_la_note_part(self):
         todo = self.process(
             "# P\n## Réunion\n### TODO\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
@@ -145,7 +134,6 @@ class TaskFromNoteTests(TestCase):
         self.assertEqual(todo.subject.name, "Réunion")
         self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
 
-    @unittest.expectedFailure
     def test_description_vide(self):
         todo = self.process("# P\n## S\n### TODO\n- Tâche")
 

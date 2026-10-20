@@ -10,6 +10,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 
+from core.models import Project
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
 from todolist.models import Todo
@@ -66,7 +67,9 @@ class NoteDeleteTests(DeleteFormTestCase):
 
 class TodoDeleteTests(DeleteFormTestCase):
     def setUp(self):
-        self.todo = Todo.objects.create(title="Relire")
+        self.todo = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0], title="Relire"
+        )
         self.url = reverse("todolist:todo_delete", args=[self.todo.pk])
 
     def test_formulaire_de_suppression_avec_confirmation(self):

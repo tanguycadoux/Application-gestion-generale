@@ -58,7 +58,7 @@ class ReprocessNotesTests(TestCase):
         self.note.save()
         self.reprocess()
         todo = Todo.objects.get()
-        todo.completed = True
+        todo.progress = 100
         todo.save()
 
         out, _ = self.reprocess()

@@ -35,10 +35,10 @@ class TodoListView(ListView):
             Todo.objects.filter(parent__isnull=True)
             .annotate(
                 earliest_child_due_date=Min(
-                    "children__due_date", filter=Q(children__completed=False)
+                    "children__due_date", filter=Q(children__progress__lt=100)
                 ),
                 sort_due_date=Coalesce(
-                    Min("children__due_date", filter=Q(children__completed=False)),
+                    Min("children__due_date", filter=Q(children__progress__lt=100)),
                     "due_date",
                 ),
             )
@@ -49,8 +49,8 @@ class TodoListView(ListView):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
 
-        context["todo_pending"] = qs.filter(completed=False)
-        context["todo_completed"] = qs.filter(completed=True)
+        context["todo_pending"] = qs.filter(progress__lt=100)
+        context["todo_completed"] = qs.filter(progress=100)
 
         context["today"] = timezone.localdate()
         return context
@@ -114,7 +114,7 @@ def toggle_todo(request, pk):
     completed = bool(data.get("completed", False))
     force = bool(data.get("force", False))
 
-    incomplete_children = todo.children.filter(completed=False)
+    incomplete_children = todo.children.filter(progress__lt=100)
     if completed and not force and incomplete_children.exists():
         return JsonResponse(
             {
