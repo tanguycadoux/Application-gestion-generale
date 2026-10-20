@@ -4,6 +4,8 @@ from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
 
+from core.templatetags.ui import BUTTON_VARIANTS
+
 SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
 PRIMARY = SHAPE + " bg-blue-100 text-blue-800 hover:bg-blue-50"
 DANGER = SHAPE + " bg-red-100 text-red-800 hover:bg-red-50"
@@ -40,6 +42,20 @@ class NavLinkTests(SimpleTestCase):
 
 
 class ButtonTests(SimpleTestCase):
+    def test_classes_des_variantes(self):
+        """Règles des variantes (#145) : une forme commune ; les boutons pleins
+        s'éclaircissent au survol ; un ghost n'a de fond qu'au survol ; les
+        suppressions ont le texte rouge."""
+        self.assertEqual(
+            BUTTON_VARIANTS,
+            {
+                "primary": PRIMARY,
+                "danger": DANGER,
+                "ghost": GHOST,
+                "ghost-danger": GHOST_DANGER,
+            },
+        )
+
     def test_bouton_principal(self):
         html = render('{% button "Importer" %}')
 

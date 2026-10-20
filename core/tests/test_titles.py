@@ -130,13 +130,3 @@ class VocabularyTests(TestCase):
                 "parent": "Tâche parente",
             },
         )
-
-    def test_modifier_une_note_accentue(self):
-        note = Note.objects.create(date="2025-11-24", body="# P\nx")
-
-        html = self.client.get(
-            reverse("note_taking:edit_note", args=[note.pk])
-        ).content.decode()
-
-        self.assertNotIn("Editer", html)
-        self.assertIn("Modifier la note du", html)

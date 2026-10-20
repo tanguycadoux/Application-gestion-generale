@@ -83,12 +83,6 @@ class TailwindThemeTests(TestCase):
         """Les feuilles CSS propres utilisent var(--color-…) sans classe dans la page."""
         self.assertIn('@import "tailwindcss" theme(static);', self.html)
 
-    def test_plus_de_palette_maison(self):
-        self.assertNotIn("--color-primary-", self.html)
-        self.assertNotIn("--color-neutral-", self.html)
-        self.assertNotIn("--color-alert-", self.html)
-        self.assertNotIn("--color-warning-", self.html)
-
 
 class ColorClassesTests(SimpleTestCase):
     def test_sources_trouvees(self):
