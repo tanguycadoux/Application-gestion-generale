@@ -4,7 +4,6 @@ Le projet n'a pas de lanceur de tests JavaScript : ces tests lisent le script.
 """
 
 import re
-import unittest
 from pathlib import Path
 
 from django.contrib.staticfiles import finders
@@ -21,16 +20,13 @@ class AlertTextTests(SimpleTestCase):
     def setUp(self):
         self.script = read_script()
 
-    @unittest.expectedFailure
     def test_pas_d_insertion_en_html(self):
         self.assertNotIn("innerHTML", self.script)
         self.assertNotIn("insertAdjacentHTML", self.script)
 
-    @unittest.expectedFailure
     def test_textes_places_en_texte(self):
         self.assertIn("textContent", self.script)
 
-    @unittest.expectedFailure
     def test_pas_de_texte_dans_un_gabarit_de_chaine(self):
         """Message, titre et libellés ne passent plus par une chaîne `${…}` en HTML."""
         interpolations = re.findall(r"\$\{([^}]*)\}", self.script)
