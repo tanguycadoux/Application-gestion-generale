@@ -103,9 +103,17 @@
 }
 
 .callout-header {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
     padding: .4rem .75rem;
     font-weight: 600;
     background-color: color-mix(in srgb, var(--callout-color) 12%, white);
+}
+
+.callout-icon {
+    font-size: 1.25rem;
+    color: var(--callout-color);
 }
 
 .callout-body {
