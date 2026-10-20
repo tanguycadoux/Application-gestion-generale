@@ -1,9 +1,12 @@
 """Tests du style des formulaires : champs communs, libellés à gauche en grille (#132)."""
 
+import unittest
+
 from django import forms
 from django.test import TestCase
 from django.urls import reverse
 
+from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
 from todolist.forms import TodoForm
 from todolist.models import Todo
@@ -71,6 +74,52 @@ class FormGridTemplateTests(TestCase):
 
         self.assertIn('<span id="id_tags_label">Tags&nbsp;:</span>', html)
         self.assertIn('role="group" aria-labelledby="id_tags_label"', html)
+
+
+SAVE_BUTTON = (
+    '<button type="submit" form="{form}" class="{classes}" aria-label="{label}">'
+    '<span class="material-symbols-rounded">save</span></button>'
+)
+
+
+def page_header(html: str) -> str:
+    return html[html.index("<header") : html.index("</header>")]
+
+
+class SaveInHeaderTests(TestCase):
+    """Enregistrer : bouton ghost en haut à droite, comme la barre d'outils d'une note."""
+
+    def assert_save_in_header(self, html: str, form_id: str, label: str):
+        self.assertIn(f'<form id="{form_id}"', html)
+        self.assertInHTML(
+            SAVE_BUTTON.format(
+                form=form_id, classes=BUTTON_VARIANTS["ghost"], label=label
+            ),
+            page_header(html),
+        )
+        self.assertNotIn("col-start-2", html)
+
+    @unittest.expectedFailure
+    def test_nouvelle_note(self):
+        html = self.client.get(reverse("note_taking:new_note")).content.decode()
+
+        self.assert_save_in_header(html, "note-form", "Enregistrer la note")
+
+    @unittest.expectedFailure
+    def test_modification_d_une_note(self):
+        note = Note.objects.create(date="2025-11-24", body="# P\nx")
+
+        html = self.client.get(
+            reverse("note_taking:edit_note", args=[note.pk])
+        ).content.decode()
+
+        self.assert_save_in_header(html, "note-form", "Enregistrer la note")
+
+    @unittest.expectedFailure
+    def test_formulaire_de_todo(self):
+        html = self.client.get(reverse("todolist:todo_create")).content.decode()
+
+        self.assert_save_in_header(html, "todo-form", "Enregistrer la TODO")
 
 
 class FormPagesTests(TestCase):

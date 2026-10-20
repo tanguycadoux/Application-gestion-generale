@@ -1,5 +1,7 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
+import unittest
+
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -104,6 +106,21 @@ class ButtonTests(SimpleTestCase):
         self.assertIn("cursor-not-allowed", html)
         self.assertIn("opacity-50", html)
         self.assertNotIn("hover:", html)
+
+    @unittest.expectedFailure
+    def test_bouton_relie_a_un_formulaire(self):
+        """Un bouton hors de son formulaire l'envoie par l'attribut form."""
+        html = render(
+            '{% button "Enregistrer" icon="save" variant="ghost" icon_only=True'
+            ' form="note-form" %}'
+        )
+
+        self.assertIn('<button type="submit" form="note-form"', html)
+
+    @unittest.expectedFailure
+    def test_lien_relie_a_un_formulaire_refuse(self):
+        with self.assertRaises(ValueError):
+            render('{% button "Enregistrer" href="/x/" form="note-form" %}')
 
     def test_lien_desactive_refuse(self):
         with self.assertRaises(ValueError):
