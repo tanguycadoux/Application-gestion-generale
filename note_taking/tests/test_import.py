@@ -3,6 +3,7 @@
 import io
 import shutil
 import tempfile
+import unittest
 import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -270,3 +271,13 @@ class ImportViewTests(TestCase):
         for name in ("import_note", "import_images", "import_archive"):
             with self.subTest(name=name), self.assertRaises(NoReverseMatch):
                 reverse(f"note_taking:{name}")
+
+    @unittest.expectedFailure
+    def test_boutons_importer_et_exporter_cote_a_cote(self):
+        html = self.client.get(reverse("note_taking:notes_list")).content.decode()
+
+        self.assertRegex(
+            html,
+            r'<span class="material-symbols-rounded">upload</span>Importer</button>'
+            r"\s*</form>\s*<a [^>]*" + f'href="{reverse("note_taking:export_notes")}"',
+        )
