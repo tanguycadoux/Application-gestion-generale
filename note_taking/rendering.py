@@ -36,6 +36,16 @@ CALLOUT_DEFAULT_TITLES = {
     "important": "Important",
 }
 
+# Icônes Material Symbols proches de celles de Quarto
+CALLOUT_ICONS = {
+    "note": "info",
+    "tip": "lightbulb",
+    "warning": "warning",
+    "caution": "report",
+    "important": "error",
+}
+CALLOUT_NO_ICON_ATTR_REGEX = re.compile(r"\bicon=false\b")
+
 CODE_FENCE = "```"
 
 
@@ -85,10 +95,12 @@ def render_callout(start: re.Match[str], body: list[str]) -> str:
     """Encadré à la manière de Quarto.
 
     Le titre est l'attribut `title`, sinon le premier titre Markdown du
-    callout, sinon le titre par défaut du type.
+    callout, sinon le titre par défaut du type. L'icône dépend du type et
+    se retire avec `icon=false`.
     """
     callout_type = start.group("type")
-    title_attr = CALLOUT_TITLE_ATTR_REGEX.search(start.group("attrs"))
+    attrs = start.group("attrs")
+    title_attr = CALLOUT_TITLE_ATTR_REGEX.search(attrs)
     body = list(body)
 
     if title_attr:
@@ -106,9 +118,18 @@ def render_callout(start: re.Match[str], body: list[str]) -> str:
         else:
             title = CALLOUT_DEFAULT_TITLES.get(callout_type, callout_type.capitalize())
 
+    icon = CALLOUT_ICONS.get(callout_type)
+    icon_html = (
+        f'<span class="material-symbols-rounded callout-icon" aria-hidden="true">'
+        f"{icon}</span>"
+        if icon and not CALLOUT_NO_ICON_ATTR_REGEX.search(attrs)
+        else ""
+    )
+
     return (
         f'<div class="callout callout-{callout_type}">'
-        f'<div class="callout-header">{escape(title)}</div>'
+        f'<div class="callout-header">{icon_html}'
+        f'<span class="callout-title">{escape(title)}</span></div>'
         f'<div class="callout-body">{render_markdown("\n".join(body))}</div>'
         "</div>"
     )

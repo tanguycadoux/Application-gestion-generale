@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -52,7 +50,6 @@ class ImageMissingTests(SimpleTestCase):
 
 
 class CalloutRenderingTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_titre_en_attribut(self):
         html = render_markdown(
             '::: {.callout-warning title="Attention !"}\nTexte **gras**\n:::'
@@ -69,14 +66,12 @@ class CalloutRenderingTests(SimpleTestCase):
             "</div>",
         )
 
-    @unittest.expectedFailure
     def test_titre_depuis_le_premier_titre_markdown(self):
         html = render_markdown("::: {.callout-tip}\n\n## Mon titre\nTexte\n:::")
 
         self.assertInHTML('<span class="callout-title">Mon titre</span>', html)
         self.assertNotIn("<h2>", html)
 
-    @unittest.expectedFailure
     def test_titre_par_defaut_du_type(self):
         for callout_type, title in (
             ("note", "Note"),
@@ -90,7 +85,6 @@ class CalloutRenderingTests(SimpleTestCase):
 
                 self.assertInHTML(f'<span class="callout-title">{title}</span>', html)
 
-    @unittest.expectedFailure
     def test_texte_autour_du_callout(self):
         html = render_markdown("Avant\n\n::: {.callout-note}\nDedans\n:::\n\nAprès")
 
@@ -107,7 +101,6 @@ class CalloutRenderingTests(SimpleTestCase):
             "<p>Après</p>",
         )
 
-    @unittest.expectedFailure
     def test_icone_par_type(self):
         for callout_type, icon in (
             ("note", "info"),
@@ -152,7 +145,6 @@ class CalloutRenderingTests(SimpleTestCase):
 
         self.assertNotIn('class="callout', html)
 
-    @unittest.expectedFailure
     def test_rendu_d_une_note_part(self):
         part = NotePart(
             project=Project(name="P"),
