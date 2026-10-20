@@ -1,5 +1,6 @@
 """Tests des vues d'import, de mise à jour et d'édition des notes."""
 
+import re
 import shutil
 import tempfile
 
@@ -260,3 +261,38 @@ class RenderedPartsDisplayTests(ViewTestCase):
         )
 
         self.assertRenderedAsIs(response)
+
+
+class RenderedContentContainerTests(ViewTestCase):
+    """Le contenu rendu est placé dans un conteneur stylé (listes visibles, #80)."""
+
+    RAW = "# P\n## S\nPremier paragraphe.\n\n- un\n- deux"
+
+    # Le paragraphe rendu se trouve dans le conteneur, avant toute fermeture de div.
+    CONTAINER_REGEX = re.compile(
+        r'<div class="rendered-content">(?:(?!</div>).)*<p>Premier paragraphe\.</p>',
+        re.DOTALL,
+    )
+
+    def setUp(self):
+        self.note = Note.objects.create(date="2025-11-24", body=self.RAW)
+        process_note_parts(self.note)
+
+    def test_detail_de_la_note(self):
+        response = self.client.get(
+            reverse("note_taking:note_detail", args=[self.note.pk])
+        )
+
+        self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
+
+    def test_resultats_de_recherche(self):
+        response = self.client.post(
+            reverse("note_taking:notes_search"), {"subjects": ["S"]}
+        )
+
+        self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
+
+    def test_vue_markdown_complete(self):
+        response = self.client.get(reverse("note_taking:note_md", args=[self.note.pk]))
+
+        self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)

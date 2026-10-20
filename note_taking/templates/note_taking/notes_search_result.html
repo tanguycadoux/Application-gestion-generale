@@ -15,7 +15,7 @@
                 <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a>
             </header>
 
-            <div class="prose">
+            <div class="rendered-content">
                 {{ part.rendered_content|safe }}
             </div>
         </article>
