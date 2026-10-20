@@ -10,6 +10,7 @@ urlpatterns = [
     path("notes/search/", views.notes_search, name="notes_search"),
     path("get-subjects/", views.get_subjects, name="get_subjects"),
     path("note/new/", views.new_note, name="new_note"),
+    path("note/today/", views.note_today, name="note_today"),
     path("note/import/", views.import_note, name="import_note"),
     path(
         "note/update_source_file/<int:pk>",

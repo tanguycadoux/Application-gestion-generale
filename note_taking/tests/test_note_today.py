@@ -1,6 +1,5 @@
 """Tests de l'accès à la note du jour et du pré-remplissage de la date (#87)."""
 
-import unittest
 from datetime import date, datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -14,7 +13,6 @@ from note_taking.models import Note
 
 
 class NoteTodayTests(TestCase):
-    @unittest.expectedFailure
     def test_ouvre_la_note_du_jour_si_elle_existe(self):
         note = Note.objects.create(date=timezone.localdate())
 
@@ -24,7 +22,6 @@ class NoteTodayTests(TestCase):
             response, reverse("note_taking:note_detail", args=[note.pk])
         )
 
-    @unittest.expectedFailure
     def test_propose_de_la_creer_sinon(self):
         today = timezone.localdate()
 
@@ -34,11 +31,9 @@ class NoteTodayTests(TestCase):
             response, f"{reverse('note_taking:new_note')}?date={today.isoformat()}"
         )
 
-    @unittest.expectedFailure
     def test_fuseau_horaire_de_l_application(self):
         self.assertEqual(settings.TIME_ZONE, "Europe/Paris")
 
-    @unittest.expectedFailure
     def test_date_du_jour_selon_le_fuseau(self):
         """À 23 h 30 UTC le 1er mars, il est déjà le 2 mars à Paris."""
         now = datetime(2026, 3, 1, 23, 30, tzinfo=ZoneInfo("UTC"))
@@ -50,7 +45,6 @@ class NoteTodayTests(TestCase):
             response, f"{reverse('note_taking:new_note')}?date=2026-03-02"
         )
 
-    @unittest.expectedFailure
     def test_lien_dans_le_menu(self):
         response = self.client.get(reverse("note_taking:index"))
 
@@ -61,7 +55,6 @@ class NewNoteDatePrefillTests(TestCase):
     def get(self, query: str = ""):
         return self.client.get(reverse("note_taking:new_note") + query)
 
-    @unittest.expectedFailure
     def test_date_pre_remplie(self):
         response = self.get("?date=2026-03-02")
 
@@ -78,7 +71,6 @@ class NewNoteDatePrefillTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "pas-une-date")
 
-    @unittest.expectedFailure
     def test_note_existante_ouverte(self):
         note = Note.objects.create(date=date(2026, 3, 2))
 
