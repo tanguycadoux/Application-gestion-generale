@@ -1,7 +1,6 @@
 """Tests du calendrier mensuel des notes, sur l'accueil de note_taking (#88)."""
 
 import re
-import unittest
 from datetime import date, timedelta
 
 from django.test import TestCase
@@ -130,7 +129,6 @@ class CalendarDayLinkTests(TestCase):
     def get(self, query: str) -> str:
         return self.client.get(reverse("note_taking:index") + query).content.decode()
 
-    @unittest.expectedFailure
     def test_case_d_un_jour_avec_note(self):
         note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
         process_note_parts(note)
@@ -140,7 +138,6 @@ class CalendarDayLinkTests(TestCase):
 
         self.assertRegex(html, self.CELL_LINK.format(href=re.escape(href)))
 
-    @unittest.expectedFailure
     def test_case_d_un_jour_sans_note(self):
         href = f"{reverse('note_taking:new_note')}?date=2025-11-12"
 

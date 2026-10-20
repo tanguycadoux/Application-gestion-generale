@@ -38,30 +38,30 @@
                 <div class="px-1.5 text-sm font-semibold {% if forloop.counter > 5 %}text-slate-400{% else %}text-slate-600{% endif %}">{{ label }}</div>
             {% endfor %}
 
+            {% partialdef day_classes %}group flex min-h-24 min-w-0 flex-col gap-1 rounded-lg border border-slate-200 p-1.5 {% if day.is_weekend %}bg-slate-100{% else %}bg-white{% endif %}{% if not day.in_month %} opacity-40{% endif %}{% if day.is_today %} ring-2 ring-primary-60{% endif %}{% endpartialdef %}
+            {% partialdef day_number %}<span class="text-sm {% if day.is_today %}font-bold text-primary-40{% elif day.is_weekend %}text-slate-400{% else %}text-slate-600{% endif %}">{{ day.date.day }}</span>{% endpartialdef %}
+
             {% for week in calendar.weeks %}
                 {% for day in week %}
-                    <div class="group flex min-h-24 min-w-0 flex-col gap-1 rounded-lg border border-slate-200 p-1.5 {% if day.is_weekend %}bg-slate-100{% else %}bg-white{% endif %}{% if not day.in_month %} opacity-40{% endif %}{% if day.is_today %} ring-2 ring-primary-60{% endif %}">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm {% if day.is_today %}font-bold text-primary-40{% elif day.is_weekend %}text-slate-400{% else %}text-slate-600{% endif %}">{{ day.date.day }}</span>
-                            {% if day.can_create %}
-                                <span class="opacity-0 group-hover:opacity-100 focus-within:opacity-100">
-                                    {% with iso=day.date|date:"Y-m-d" %}
-                                        {% button "Créer la note de ce jour" icon="add" href=new_url|add:"?date="|add:iso variant="ghost" icon_only=True %}
-                                    {% endwith %}
-                                </span>
+                    {% if day.note %}
+                        <a class="{% partial day_classes %} hover:bg-primary-95" href="{% url 'note_taking:note_detail' day.note.pk %}">
+                            {% partial day_number %}
+                            {% if day.projects %}
+                                {% tag_list day.projects %}
+                            {% else %}
+                                <span class="text-sm">Note</span>
                             {% endif %}
+                        </a>
+                    {% elif day.can_create %}
+                        <a class="{% partial day_classes %} hover:bg-primary-95" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date:'j F Y' }}">
+                            {% partial day_number %}
+                            <span class="material-symbols-rounded m-auto text-primary-40 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">add</span>
+                        </a>
+                    {% else %}
+                        <div class="{% partial day_classes %}">
+                            {% partial day_number %}
                         </div>
-
-                        {% if day.note %}
-                            <a class="flex flex-1 flex-col gap-1 rounded-md p-1 hover:bg-primary-95" href="{% url 'note_taking:note_detail' day.note.pk %}">
-                                {% if day.projects %}
-                                    {% tag_list day.projects %}
-                                {% else %}
-                                    <span class="text-sm">Note</span>
-                                {% endif %}
-                            </a>
-                        {% endif %}
-                    </div>
+                    {% endif %}
                 {% endfor %}
             {% endfor %}
         </div>
