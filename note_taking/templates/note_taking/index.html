@@ -9,5 +9,6 @@
 {% block content %}
     <h1>Gestion des notes</h1>
 
-    {% nav_link "note_taking:new_note" "Nouvelle note" "add" %}
+    {% url 'note_taking:new_note' as url %}
+    {% button "Nouvelle note" icon="add" href=url %}
 {% endblock content %}
