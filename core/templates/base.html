@@ -97,7 +97,7 @@
 
     <script>
         {% for message in messages %}
-            Alert.toast("{{ message|escapejs }}");
+            Alert.toast("{{ message|escapejs }}", { type: "{{ message.level_tag|escapejs }}" });
         {% endfor %}
     </script>
 </body>
