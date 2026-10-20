@@ -74,6 +74,8 @@
     <script src="{% static 'core/alert_system.js' %}"></script>
     <script src="{% static 'core/confirm.js' %}" defer></script>
     
+    {# Titre d'onglet « Page · Section » (#130) : la section vient du gabarit de base de l'app. #}
+    <title>{% block title %}{% endblock title %}{% block title_suffix %}{% endblock title_suffix %}</title>
     {% block extra_head %}{% endblock extra_head %}
 </head>
 

@@ -1,10 +1,7 @@
 {% extends "note_taking/base.html" %}
 {% load ui %}
 
-{% block extra_head %}
-    {{ block.super }}
-    <title>Détail de la note</title>
-{% endblock extra_head %}
+{% block title %}Note du {{ object.date|date_text:"moyen" }}{% endblock title %}
 
 {% block content %}
     <header class="flex items-start mb-4">

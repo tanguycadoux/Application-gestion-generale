@@ -1,15 +1,13 @@
 {% extends "base.html" %}
 {% load ui %}
 
-{% block extra_head %}
-    <title>Gestion générale</title>
-{% endblock extra_head %}
+{% block title %}Gestion générale{% endblock title %}
 
 {% block nav %}
     <ul>
         <li>{% nav_link "note_taking:index" "Prise de notes" "docs" %}</li>
 
-        <li>{% nav_link "todolist:index" "TODO list" "checklist" %}</li>
+        <li>{% nav_link "todolist:index" "Tâches" "checklist" %}</li>
     </ul>
 {% endblock nav %}
 

@@ -75,7 +75,7 @@ class TodoDeleteTests(DeleteFormTestCase):
         ).content.decode()
 
         self.assert_delete_form(
-            html, self.url, "Supprimer définitivement la TODO « Relire » ?"
+            html, self.url, "Supprimer définitivement la tâche « Relire » ?"
         )
 
     def test_pas_de_page_de_confirmation(self):
@@ -89,5 +89,5 @@ class TodoDeleteTests(DeleteFormTestCase):
         self.assertFalse(Todo.objects.filter(pk=self.todo.pk).exists())
         self.assertEqual(
             [str(m) for m in get_messages(response.wsgi_request)],
-            ["La TODO « Relire » a été supprimée."],
+            ["La tâche « Relire » a été supprimée."],
         )

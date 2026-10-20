@@ -1,16 +1,13 @@
 {% extends "todolist/base.html" %}
 {% load ui %}
 
-{% block extra_head %}
-    {{ block.super }}
-    <title>TODO</title>
-{% endblock extra_head %}
+{% block title %}{% if object %}Modifier la tâche « {{ object.title }} »{% else %}Nouvelle tâche{% endif %}{% endblock title %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
-        <h1 class="flex-1">{{ object|default:'Créer une Todo' }}</h1>
+        <h1 class="flex-1">{% if object %}Modifier la tâche « {{ object.title }} »{% else %}Nouvelle tâche{% endif %}</h1>
 
-        {% button "Enregistrer la TODO" icon="save" variant="ghost" icon_only=True form="todo-form" %}
+        {% button "Enregistrer la tâche" icon="save" variant="ghost" icon_only=True form="todo-form" %}
     </header>
 
     <form id="todo-form" method="post" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">

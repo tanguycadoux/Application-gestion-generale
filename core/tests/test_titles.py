@@ -5,7 +5,6 @@ base de l'application. Vocabulaire : « tâche », pas « TODO ».
 """
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -72,19 +71,16 @@ class PageTitlesTests(TestCase):
         html = self.client.get(url).content.decode()
         return [t.strip() for t in TITLE_REGEX.findall(html)]
 
-    @unittest.expectedFailure
     def test_titre_de_chaque_page(self):
         for url, title in self.pages().items():
             with self.subTest(url=url):
                 self.assertEqual(self.titles(url), [title])
 
-    @unittest.expectedFailure
     def test_titres_tous_differents(self):
         titles = [tuple(self.titles(url)) for url in self.pages()]
 
         self.assertEqual(len(titles), len(set(titles)))
 
-    @unittest.expectedFailure
     def test_compte_rendu_d_import(self):
         response = self.client.post(
             reverse("note_taking:import_files"),
@@ -103,7 +99,6 @@ class PageTitlesTests(TestCase):
 
 
 class VocabularyTests(TestCase):
-    @unittest.expectedFailure
     def test_tache_et_pas_todo_dans_les_pages(self):
         todo = Todo.objects.create(title="Relire")
         urls = [
@@ -119,7 +114,6 @@ class VocabularyTests(TestCase):
                 text = visible_text(self.client.get(url).content.decode())
                 self.assertNotRegex(text, r"\b(?:TODO|Todos?)\b")
 
-    @unittest.expectedFailure
     def test_libelles_du_formulaire_en_francais(self):
         labels = {name: str(field.label) for name, field in TodoForm().fields.items()}
 
@@ -137,7 +131,6 @@ class VocabularyTests(TestCase):
             },
         )
 
-    @unittest.expectedFailure
     def test_modifier_une_note_accentue(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
