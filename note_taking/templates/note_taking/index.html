@@ -9,6 +9,61 @@
 {% block content %}
     <h1>Gestion des notes</h1>
 
-    {% url 'note_taking:new_note' as url %}
-    {% button "Nouvelle note" icon="add" href=url %}
+    {% url 'note_taking:new_note' as new_url %}
+    <div class="my-4 flex flex-wrap items-center gap-2">
+        {% if today_note %}
+            {% url 'note_taking:note_detail' today_note.pk as url %}
+            {% button "Ouvrir la note du jour" icon="today" href=url %}
+        {% else %}
+            {% with day=today|date:"Y-m-d" %}
+                {% button "Créer la note du jour" icon="today" href=new_url|add:"?date="|add:day %}
+            {% endwith %}
+        {% endif %}
+        {% button "Nouvelle note" icon="add" href=new_url variant="ghost" %}
+    </div>
+
+    <section id="calendar">
+        <header class="mb-2 flex items-center gap-2" hx-boost="true" hx-target="#calendar" hx-select="#calendar" hx-swap="outerHTML">
+            <h2 class="flex-1 text-xl font-semibold">{{ calendar.month|date:"F Y"|capfirst }}</h2>
+            {% url 'note_taking:index' as index_url %}
+            {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
+                {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
+                {% button "Aujourd'hui" href=index_url variant="ghost" %}
+                {% button "Mois suivant" icon="chevron_right" href="?mois="|add:next variant="ghost" icon_only=True %}
+            {% endwith %}
+        </header>
+
+        <div class="grid grid-cols-7 gap-1">
+            {% for label in calendar.weekday_labels %}
+                <div class="px-1.5 text-sm font-semibold {% if forloop.counter > 5 %}text-slate-400{% else %}text-slate-600{% endif %}">{{ label }}</div>
+            {% endfor %}
+
+            {% for week in calendar.weeks %}
+                {% for day in week %}
+                    <div class="group flex min-h-24 min-w-0 flex-col gap-1 rounded-lg border border-slate-200 p-1.5 {% if day.is_weekend %}bg-slate-100{% else %}bg-white{% endif %}{% if not day.in_month %} opacity-40{% endif %}{% if day.is_today %} ring-2 ring-primary-60{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm {% if day.is_today %}font-bold text-primary-40{% elif day.is_weekend %}text-slate-400{% else %}text-slate-600{% endif %}">{{ day.date.day }}</span>
+                            {% if day.can_create %}
+                                <span class="opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                                    {% with iso=day.date|date:"Y-m-d" %}
+                                        {% button "Créer la note de ce jour" icon="add" href=new_url|add:"?date="|add:iso variant="ghost" icon_only=True %}
+                                    {% endwith %}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if day.note %}
+                            <a class="flex flex-1 flex-col gap-1 rounded-md p-1 hover:bg-primary-95" href="{% url 'note_taking:note_detail' day.note.pk %}">
+                                {% if day.projects %}
+                                    {% tag_list day.projects %}
+                                {% else %}
+                                    <span class="text-sm">Note</span>
+                                {% endif %}
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </section>
 {% endblock content %}

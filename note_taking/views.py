@@ -10,6 +10,7 @@ from images.services import import_image
 
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
+from .note_calendar import requested_month_calendar
 from .qmd.parser import parse_note
 from .rendering import render_note_body
 from .services import (
@@ -20,9 +21,18 @@ from .services import (
 
 
 def index(request):
-    context = {}
+    """Accueil : note du jour et calendrier du mois demandé (?mois=AAAA-MM)."""
+    today, calendar = requested_month_calendar(request.GET.get("mois", ""))
 
-    return render(request, "note_taking/index.html", context)
+    return render(
+        request,
+        "note_taking/index.html",
+        {
+            "today": today,
+            "today_note": Note.objects.filter(date=today).first(),
+            "calendar": calendar,
+        },
+    )
 
 
 class NoteDetail(DetailView):
