@@ -18,26 +18,26 @@ CARD_OUTLINE = (
     " after:rounded-[.6rem] after:border-[.2rem]"
 )
 CARD_CLASSES = {
-    "soon": CARD + " bg-primary-95",
-    "today": CARD + " bg-primary-95" + CARD_OUTLINE + " after:border-primary-60",
-    "overdue": CARD + " bg-alert-90" + CARD_OUTLINE + " after:border-alert-60",
+    "soon": CARD + " bg-blue-50",
+    "today": CARD + " bg-blue-50" + CARD_OUTLINE + " after:border-blue-500",
+    "overdue": CARD + " bg-red-200" + CARD_OUTLINE + " after:border-red-500",
 }
-CARD_DEFAULT = CARD + " bg-neutral-95"
+CARD_DEFAULT = CARD + " bg-slate-100"
 
 LINE = "grid grid-cols-[1fr_auto] items-baseline"
 LINE_CLASSES = {
-    "soon": LINE + " font-semibold text-primary-40",
-    "today": LINE + " font-semibold text-primary-40",
-    "overdue": LINE + " font-semibold text-alert-40",
+    "soon": LINE + " font-semibold text-blue-800",
+    "today": LINE + " font-semibold text-blue-800",
+    "overdue": LINE + " font-semibold text-red-800",
 }
 
-CHILD = "p-[.4rem] not-first:border-t not-first:border-neutral-50"
+CHILD = "p-[.4rem] not-first:border-t not-first:border-slate-500"
 CHILD_CLASSES = {
-    "soon": CHILD + " bg-primary-95",
-    "today": CHILD + " bg-primary-95",
-    "overdue": CHILD + " bg-alert-90",
+    "soon": CHILD + " bg-blue-50",
+    "today": CHILD + " bg-blue-50",
+    "overdue": CHILD + " bg-red-200",
 }
-CHILD_DEFAULT = CHILD + " bg-neutral-95"
+CHILD_DEFAULT = CHILD + " bg-slate-100"
 
 
 @register.filter

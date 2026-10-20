@@ -10,6 +10,6 @@
     </div>
     {{ form.body.errors }}
     <label for="body" class="sr-only">Contenu de la note</label>
-    <textarea name="body" id="body" class="w-full h-96 border border-gray-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
+    <textarea name="body" id="body" class="w-full h-96 border border-slate-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
     {% button "Enregistrer" icon="save" icon_only=True %}
 </form>

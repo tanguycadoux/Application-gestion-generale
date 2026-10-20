@@ -6,11 +6,11 @@ from django.urls import reverse
 
 PRIMARY = (
     "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-    " font-semibold bg-primary-93 text-primary-40 hover:bg-primary-95"
+    " font-semibold bg-blue-100 text-blue-800 hover:bg-blue-50"
 )
 DANGER = (
     "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-    " font-semibold bg-alert-93 text-alert-40 hover:bg-alert-95"
+    " font-semibold bg-red-100 text-red-800 hover:bg-red-50"
 )
 GHOST = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200"
 GHOST_DANGER = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200"
@@ -121,7 +121,7 @@ class ButtonTests(SimpleTestCase):
 
 class TagListTests(SimpleTestCase):
     TAG = (
-        "rounded-2xl border border-[oklch(80%_0_0)] bg-[oklch(92%_0_0)]"
+        "rounded-2xl border border-slate-300 bg-slate-200"
         " px-[.4rem] py-[.1rem] text-[.8rem] font-semibold"
     )
 

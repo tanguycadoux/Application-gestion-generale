@@ -46,7 +46,7 @@ Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées
 
 Règle de style : tout le style est en classes Tailwind (#79), dans les gabarits, les composants ou les scripts qui créent des éléments. Il ne reste que deux feuilles CSS propres, pour ce que Tailwind ne couvre pas : `note_taking/static/note_taking/style.css` (HTML produit par le Markdown des notes, sur lequel on ne peut pas mettre de classes : listes, titres, tableaux, callouts) et `core/static/core/alert_system.css` (alertes créées en JavaScript, avec leurs animations), rangée dans `@layer components` pour que les classes Tailwind puissent la surcharger. Une nouvelle feuille CSS ne se justifie que dans un cas semblable ; une feuille hors `@layer` l'emporte sur toutes les classes Tailwind. Les classes Tailwind sont écrites en entier, sans les construire par morceaux, pour rester compatibles avec une future étape de build.
 
-Palette : couleurs `primary`, `alert`, `warning` et `neutral`, le nombre donnant la luminosité (`bg-primary-93`, `var(--color-primary-93)`), définies dans le bloc `@theme` de `core/templates/base.html`.
+Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate` pour les gris, `blue` pour la couleur principale, `red` pour le danger et les erreurs, `amber` pour les avertissements, `green` pour les succès, plus `white` et `black`. Pas de couleur en dur, ni en classe arbitraire (`bg-[oklch(…)]`), ni dans les feuilles CSS propres, qui utilisent les variables de Tailwind (`var(--color-slate-200)`). Ces variables existent toutes grâce à `@import "tailwindcss" theme(static)` dans `core/templates/base.html`. Seules exceptions : les couleurs des callouts reprises de Quarto (`note_taking/static/note_taking/style.css`), et les ombres et voiles noirs transparents. `core/tests/test_colors.py` vérifie la règle.
 
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
@@ -286,6 +286,6 @@ Milestones terminés :
 | Milestone | Contenu |
 |---|---|
 | M8 · Cohérence de l'interface | défauts et incohérences relevés à la revue de l'interface : en-tête HTML, messages, formulaires, suppression, liens, couleurs, dates, vocabulaire, icônes |
-| M9 · Interface des TODO | refonte de l'affichage des TODO sur les composants et la palette de l'application |
+| M9 · Interface des TODO | refonte de l'affichage des TODO sur les composants et les couleurs de l'application |
 | M10 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
 | M11 · Éditeur d'images | création et modification d'images vectorielles et matricielles |

@@ -65,7 +65,7 @@ class LayoutRenderingTests(SimpleTestCase):
             '<div class="min-w-0"><p><img alt="A" src="a.png"></p></div>'
             '<div class="min-w-0"><p><img alt="B" id="fig-banc-b" src="b.png"></p></div>'
             "</div>"
-            '<figcaption class="mt-2 text-sm text-center text-gray-600">'
+            '<figcaption class="mt-2 text-sm text-center text-slate-600">'
             "<p>Légende du <em>banc</em></p>"
             "</figcaption>"
             "</figure>",

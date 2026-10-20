@@ -39,13 +39,13 @@
         padding: 10px 16px;
         border: none;
         border-radius: 6px;
-        background: #333;
+        background: var(--color-slate-800);
         color: white;
         cursor: pointer;
     }
 
     .alert__buttons button.alert__cancel {
-        background: #999;
+        background: var(--color-slate-400);
     }
 
     /* --- Toasts --- */
@@ -63,9 +63,9 @@
     .alert__toast {
         --bg-color: white;
         --progress-bar-h: 5px;
-        --main-color-darken: oklch(50% .10 270);
-        --main-color:        oklch(75% .09 270);
-        --main-color-faded:  oklch(94% .08 270);
+        --main-color-darken: var(--color-blue-700);
+        --main-color:        var(--color-blue-400);
+        --main-color-faded:  var(--color-blue-100);
 
         background-color: var(--bg-color);
         border: 1px solid var(--main-color);
@@ -94,8 +94,6 @@
     }
 
     .alert__toast-text{
-        color: var(--color-primary-dark-blue-oklch-700);
-
         font-weight: 400;
         font-size: 1rem;
         line-height: 1.2;
@@ -110,21 +108,21 @@
 
     /* TYPES */
     .alert__toast-success {
-        --main-color-darken: oklch(50% 0.20 148);
-        --main-color:        oklch(75% 0.15 148);
-        --main-color-faded:  oklch(94% 0.08 148);
+        --main-color-darken: var(--color-green-700);
+        --main-color:        var(--color-green-500);
+        --main-color-faded:  var(--color-green-200);
     }
 
     .alert__toast-error {
-        --main-color-darken: oklch(50% 0.20 28);
-        --main-color:        oklch(75% 0.20 28);
-        --main-color-faded:  oklch(94% 0.08 28);
+        --main-color-darken: var(--color-red-700);
+        --main-color:        var(--color-red-400);
+        --main-color-faded:  var(--color-red-100);
     }
 
     .alert__toast-warning {
-        --main-color-darken: oklch(50% 0.20 68);
-        --main-color:        oklch(80% 0.15 68);
-        --main-color-faded:  oklch(96% 0.08 68);
+        --main-color-darken: var(--color-amber-800);
+        --main-color:        var(--color-amber-400);
+        --main-color-faded:  var(--color-amber-100);
     }
 
     /* Progress bar */
@@ -156,7 +154,7 @@
         --shadow-v-length: calc(var(--shadow-length)*sin(var(--shadow-angle)));
     
         box-shadow: var(--shadow-h-length) var(--shadow-v-length) var(--shadow-blur) oklch(0 0 0 / .10);
-        border: 1px solid var(--color-primary-dark-blue-oklch-200);
+        border: 1px solid var(--color-slate-200);
 
         font-size: 1rem;
         position: absolute;
@@ -186,8 +184,8 @@
     }
 
     .alert__popover-buttons button {
-        --bg_color:  oklch(93% 0.015 270);
-        --txt_color: oklch(40% 0.080 240);
+        --bg_color:  var(--color-slate-200);
+        --txt_color: var(--color-blue-800);
 
         border: 2px solid var(--bg_color);
         color: var(--txt_color);
@@ -206,8 +204,8 @@
     }
 
     .alert__popover-buttons button.alert__pop-ok {
-        --bg_color:  oklch(93% 0.015 35);
-        --txt_color: oklch(40% 0.080 28);
+        --bg_color:  var(--color-red-100);
+        --txt_color: var(--color-red-800);
     }
 
     @keyframes fadeIn {

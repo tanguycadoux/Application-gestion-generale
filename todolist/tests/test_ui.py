@@ -19,11 +19,11 @@ def render(source: str, status: str | None) -> str:
 class DueClassesTests(SimpleTestCase):
     def test_carte_principale(self):
         expected = {
-            None: "bg-neutral-95",
-            "normal": "bg-neutral-95",
-            "soon": "bg-primary-95",
-            "today": "bg-primary-95",
-            "overdue": "bg-alert-90",
+            None: "bg-slate-100",
+            "normal": "bg-slate-100",
+            "soon": "bg-blue-50",
+            "today": "bg-blue-50",
+            "overdue": "bg-red-200",
         }
         for status in STATUSES:
             with self.subTest(status=status):
@@ -33,7 +33,7 @@ class DueClassesTests(SimpleTestCase):
                 self.assertIn(expected[status], classes)
 
     def test_contour_pour_aujourd_hui_et_en_retard(self):
-        for status, border in (("today", "primary-60"), ("overdue", "alert-60")):
+        for status, border in (("today", "blue-500"), ("overdue", "red-500")):
             with self.subTest(status=status):
                 classes = render("{{ status|todo_card_classes }}", status).split()
 
@@ -48,9 +48,9 @@ class DueClassesTests(SimpleTestCase):
 
     def test_ligne_en_gras_et_en_couleur_si_echeance_proche(self):
         expected = {
-            "soon": "text-primary-40",
-            "today": "text-primary-40",
-            "overdue": "text-alert-40",
+            "soon": "text-blue-800",
+            "today": "text-blue-800",
+            "overdue": "text-red-800",
         }
         for status in STATUSES:
             with self.subTest(status=status):
@@ -65,11 +65,11 @@ class DueClassesTests(SimpleTestCase):
 
     def test_sous_tache(self):
         expected = {
-            None: "bg-neutral-95",
-            "normal": "bg-neutral-95",
-            "soon": "bg-primary-95",
-            "today": "bg-primary-95",
-            "overdue": "bg-alert-90",
+            None: "bg-slate-100",
+            "normal": "bg-slate-100",
+            "soon": "bg-blue-50",
+            "today": "bg-blue-50",
+            "overdue": "bg-red-200",
         }
         for status in STATUSES:
             with self.subTest(status=status):
@@ -90,8 +90,8 @@ class TodoPagesTests(TestCase):
     def test_liste_sans_classes_maison(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
-        self.assertIn("bg-alert-90", html)
-        self.assertIn("after:border-alert-60", html)
+        self.assertIn("bg-red-200", html)
+        self.assertIn("after:border-red-500", html)
         for legacy in ("todo-list__", "todo-line-item", "todo--", "h2-like"):
             with self.subTest(legacy=legacy):
                 self.assertNotIn(legacy, html)

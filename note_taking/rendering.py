@@ -213,7 +213,7 @@ def render_layout(start: re.Match[str], body: list[str]) -> str:
         f'<div class="min-w-0">{render_markdown(cell)}</div>' for cell in cells
     )
     caption_html = (
-        '<figcaption class="mt-2 text-sm text-center text-gray-600">'
+        '<figcaption class="mt-2 text-sm text-center text-slate-600">'
         f"{render_markdown(caption)}</figcaption>"
         if caption is not None
         else ""

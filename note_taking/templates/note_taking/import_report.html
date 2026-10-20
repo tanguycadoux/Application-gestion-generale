@@ -26,7 +26,7 @@
 
             {% if report.failed %}
                 <details open>
-                    <summary class="cursor-pointer font-semibold text-alert-40">Notes en erreur ({{ report.failed|length }})</summary>
+                    <summary class="cursor-pointer font-semibold text-red-800">Notes en erreur ({{ report.failed|length }})</summary>
                     <ul class="list-disc pl-6">
                         {% for name, error in report.failed %}
                             <li><code>{{ name }}</code> : {{ error }}</li>
