@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {% load static %}
@@ -7,25 +8,14 @@
 
 {% block nav %}
     <ul class="mb-4">
-        <li><a class="button-tw button-with-icon" href="{% url 'core:index' %}">
-            <span class="material-symbols-rounded">apps</span>
-            <span>Toutes les apps</span>
-        </a></li>
+        <li>{% nav_link "core:index" "Toutes les apps" "apps" %}</li>
     </ul>
 
     <hr class="hidden">
 
     <ul>
-        {% url 'todolist:index' as url %}
-        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-            <span class="material-symbols-rounded">home</span>
-            <span>Accueil</span>
-        </a></li>
+        <li>{% nav_link "todolist:index" "Accueil" "home" %}</li>
 
-        {% url 'todolist:todo_list' as url %}
-        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-            <span class="material-symbols-rounded">checklist</span>
-            <span>Liste des TODO</span>
-        </a></li>
+        <li>{% nav_link "todolist:todo_list" "Liste des TODO" "checklist" %}</li>
     </ul>
 {% endblock nav %}

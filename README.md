@@ -44,7 +44,21 @@ Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées
 | [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` |
 | [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes) | unpkg, version 1.9.11, dans `note_taking/templates/note_taking/base.html` |
 
-Règle de style : les classes Tailwind sont utilisées en priorité ; les feuilles CSS propres (`core/static/core/`, `<app>/static/<app>/`) sont réservées à ce que Tailwind ne couvre pas (par exemple le rendu des callouts). La migration complète vers Tailwind et des composants réutilisables sont prévus dans le milestone M4 (#78, #79).
+Règle de style : les classes Tailwind sont utilisées en priorité ; les feuilles CSS propres (`core/static/core/`, `<app>/static/<app>/`) sont réservées à ce que Tailwind ne couvre pas (par exemple le rendu des callouts). Les classes Tailwind sont écrites en entier, sans les construire par morceaux, pour rester compatibles avec une future étape de build.
+
+Palette : couleurs `primary`, `alert`, `warning` et `neutral`, le nombre donnant la luminosité (`bg-primary-93`, `var(--color-primary-93)`), définies dans le bloc `@theme` de `core/templates/base.html`.
+
+Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
+
+| Balise | Rendu |
+|---|---|
+| `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
+| `{% button "Libellé" icon="…" variant="danger" type="submit" icon_only=True %}` | bouton de formulaire (`primary` par défaut) |
+| `{% link_button url "Libellé" icon="…" variant="danger" %}` | lien présenté comme un bouton |
+| `{% icon_link url "Libellé" "icône" variant="danger" %}` | lien réduit à une icône, libellé pour les lecteurs d'écran |
+| `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
+
+La migration complète vers Tailwind est prévue dans le milestone M4 (#79).
 
 Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`) :
 

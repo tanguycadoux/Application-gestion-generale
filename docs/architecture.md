@@ -11,7 +11,7 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 
 - Rendu côté serveur par les gabarits Django ; pas d'étape de build JS.
 - **Tailwind CSS** v4 (version navigateur, sur CDN) pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
-- Règle de style : classes Tailwind en priorité ; CSS propre réservé à ce que Tailwind ne couvre pas (rendu des callouts…). Les éléments d'interface récurrents sont destinés à devenir des composants partagés dans `core` (#78).
+- Règle de style : classes Tailwind en priorité ; CSS propre réservé à ce que Tailwind ne couvre pas (rendu des callouts…). Les éléments d'interface récurrents sont des composants partagés : balises d'inclusion de `core/templatetags/ui.py` (`{% load ui %}`), gabarits dans `core/templates/core/components/`. La palette est définie dans le thème Tailwind de `core/templates/base.html`.
 
 ## Apps et dépendances
 

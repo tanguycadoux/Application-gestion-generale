@@ -1,7 +1,5 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
-import unittest
-
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -23,7 +21,6 @@ def render(source: str, path: str = "/", **context) -> str:
 
 
 class NavLinkTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_lien_de_navigation(self):
         html = render('{% nav_link "todolist:index" "Accueil" "home" %}')
 
@@ -36,7 +33,6 @@ class NavLinkTests(SimpleTestCase):
             "</a>",
         )
 
-    @unittest.expectedFailure
     def test_lien_actif_sur_la_page_courante(self):
         url = reverse("todolist:index")
 
@@ -47,7 +43,6 @@ class NavLinkTests(SimpleTestCase):
 
 
 class ButtonTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_bouton_principal(self):
         html = render('{% button "Importer" %}')
 
@@ -55,7 +50,6 @@ class ButtonTests(SimpleTestCase):
             html, f'<button type="submit" class="{PRIMARY}">Importer</button>'
         )
 
-    @unittest.expectedFailure
     def test_bouton_danger(self):
         html = render('{% button "Supprimer" variant="danger" %}')
 
@@ -63,7 +57,6 @@ class ButtonTests(SimpleTestCase):
             html, f'<button type="submit" class="{DANGER}">Supprimer</button>'
         )
 
-    @unittest.expectedFailure
     def test_bouton_icone_seule(self):
         html = render('{% button "Enregistrer" icon="save" icon_only=True %}')
 
@@ -76,13 +69,11 @@ class ButtonTests(SimpleTestCase):
 
 
 class LinkButtonTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_lien_en_forme_de_bouton(self):
         html = render('{% link_button "/todo/" "Modifier" %}')
 
         self.assertHTMLEqual(html, f'<a class="{PRIMARY}" href="/todo/">Modifier</a>')
 
-    @unittest.expectedFailure
     def test_lien_danger(self):
         html = render('{% link_button "/todo/" "Supprimer" variant="danger" %}')
 
@@ -90,7 +81,6 @@ class LinkButtonTests(SimpleTestCase):
 
 
 class IconLinkTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_lien_icone(self):
         html = render('{% icon_link "/edit/" "Modifier" "edit" %}')
 
@@ -102,7 +92,6 @@ class IconLinkTests(SimpleTestCase):
             "</a>",
         )
 
-    @unittest.expectedFailure
     def test_lien_icone_danger(self):
         html = render(
             '{% icon_link "/delete/" "Supprimer" "delete" variant="danger" %}'
@@ -117,7 +106,6 @@ class TagListTests(SimpleTestCase):
         " px-[.4rem] py-[.1rem] text-[.8rem] font-semibold"
     )
 
-    @unittest.expectedFailure
     def test_liste_de_tags(self):
         html = render("{% tag_list tags %}", tags=["a", "<b>"])
 
@@ -129,7 +117,6 @@ class TagListTests(SimpleTestCase):
             "</ul>",
         )
 
-    @unittest.expectedFailure
     def test_liste_vide(self):
         html = render("{% tag_list tags %}", tags=[])
 
@@ -137,7 +124,6 @@ class TagListTests(SimpleTestCase):
 
 
 class LoadUiLibraryTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_bibliotheque_chargee_sans_requete(self):
         """Les composants hors navigation n'ont pas besoin de la requête."""
         html = Template('{% load ui %}{% button "OK" %}').render(Context())

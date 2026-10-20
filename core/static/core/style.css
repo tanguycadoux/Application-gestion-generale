@@ -8,81 +8,9 @@
 
 /* | VARIABLES | */
 
-:root {
-    --color-neutral--10: oklch(10% 0 0);
-    --color-neutral--20: oklch(20% 0 0);
-    --color-neutral--30: oklch(30% 0 0);
-    --color-neutral--40: oklch(40% 0 0);
-    --color-neutral--50: oklch(50% 0 0);
-    --color-neutral--60: oklch(60% 0 0);
-    --color-neutral--70: oklch(70% 0 0);
-    --color-neutral--80: oklch(80% 0 0);
-    --color-neutral--90: oklch(90% 0 0);
-    --color-neutral--95: oklch(95% 0 0);
-
-    --color-alert--20: oklch(20% 0.07  15);
-    --color-alert--30: oklch(30% 0.11  15);
-    --color-alert--40: oklch(40% 0.15  15);
-    --color-alert--50: oklch(50% 0.19  15);
-    --color-alert--60: oklch(60% 0.23  15);
-    --color-alert--70: oklch(70% 0.19  15);
-    --color-alert--80: oklch(80% 0.11  15);
-    --color-alert--90: oklch(90% 0.05  15);
-    --color-alert--93: oklch(93% 0.035 15);
-    --color-alert--95: oklch(95% 0.02  15);
-
-    --color-warning--20: oklch(20% 0.04 90);
-    --color-warning--30: oklch(30% 0.06 90);
-    --color-warning--40: oklch(40% 0.08 90);
-    --color-warning--50: oklch(50% 0.10 90);
-    --color-warning--60: oklch(60% 0.12 90);
-    --color-warning--70: oklch(70% 0.14 90);
-    --color-warning--80: oklch(80% 0.16 90);
-    --color-warning--90: oklch(90% 0.12 90);
-    --color-warning--95: oklch(95% 0.06 90);
-
-    --color-primary--30: oklch(30% 0.06   265);
-    --color-primary--40: oklch(40% 0.08   265);
-    --color-primary--50: oklch(50% 0.10   265);
-    --color-primary--60: oklch(60% 0.12   265);
-    --color-primary--70: oklch(70% 0.12   265);
-    --color-primary--80: oklch(80% 0.12   265);
-    --color-primary--90: oklch(90% 0.05   265);
-    --color-primary--93: oklch(93% 0.033  265);
-    --color-primary--95: oklch(95% 0.023  265);
-}
+/* La palette (--color-primary-93…) est définie dans le thème Tailwind de base.html. */
 
 /* | BASE | */
-
-@layer components {
-    .button-tw {
-        --color: black;
-        --bg-color: none;
-
-        background-color: var(--bg-color);
-        padding: .5rem .75rem .5rem .5rem;
-        border-radius: 1rem;
-        display: block;
-        text-decoration: none;
-    }
-    .button-tw:hover, .button-tw--active{
-        --color: black;
-        --bg-color: white;
-        
-        text-decoration: none;
-    }
-
-    .button-with-icon {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: .5rem;
-    }
-
-    .button-with-icon > span {
-        font-weight: 500;
-    }
-}
 
 table {
     border: 1px solid;
@@ -118,7 +46,7 @@ th, td {
     height: 100%;
     box-sizing: border-box;
     overflow: auto;
-    background-color: var(--color-neutral--95);
+    background-color: var(--color-neutral-95);
     padding: 1rem;
 }
 
@@ -145,71 +73,9 @@ th, td {
     display: none;
 }
 
-button, .button{
-    --color: var(--color-primary--40);
-    --bg-color: var(--color-primary--93);
-
-    background-color: var(--bg-color);
-    color: var(--color);
-
-    font-size: 1rem;
-    display: inline-block;
-    font-weight: 600;
-    padding: .6rem;
-    margin: .4rem 0;
-    text-decoration: none;
-    border-radius: .8rem;
-    border: none;
-}
-button:hover, .button:hover{
-    --color:    var(--color-primary--40);
-    --bg-color: var(--color-primary--95);
-    text-decoration: none;
-}
-.button--danger{
-    --color:    var(--color-alert--40);
-    --bg-color: var(--color-alert--93);
-}
-.button--danger:hover{
-    --color:    var(--color-alert--40);
-    --bg-color: var(--color-alert--95);
-}
-
 .h2-like{
     font-size: 1.5rem;
     font-weight: 600;
-}
-
-.tags-list{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: .4rem;
-    height: fit-content;
-}
-
-.tag{
-    --bg-color:     oklch(92% 0 0);
-    --border-color: oklch(80% 0 0);
-    --color:       black;
-    --color-hover: black;
-
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-
-    padding: .1rem .4rem;
-    border-radius: 1rem;
-    font-size: .8rem;
-    font-weight: 600;
-}
-.tag:hover{
-    --color: var(--color-hover);
-
-    text-decoration: none;
-}
-.tag:visited{
-    color: var(--color);
 }
 
 .table-column-head{
