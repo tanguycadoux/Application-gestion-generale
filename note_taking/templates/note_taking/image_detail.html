@@ -12,7 +12,7 @@
             <h1 class="flex-1">{{ image.name }}</h1>
             <form class="flex flex-col items-end" method="post" action="{% url 'note_taking:delete_image' image.pk %}" data-confirm="Supprimer définitivement l'image {{ image.name }} ?">
                 {% csrf_token %}
-                {% button "Supprimer l'image" icon="delete" variant="danger" disabled=notes.exists %}
+                {% button "Supprimer l'image" icon="delete" variant="ghost-danger" disabled=notes.exists %}
                 {% if notes %}
                     <p class="max-w-64 text-right text-sm text-slate-600">Suppression impossible : l'image est utilisée par {{ notes|length }} note{{ notes|length|pluralize }}.</p>
                 {% endif %}
