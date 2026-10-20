@@ -8,7 +8,7 @@ from django.utils.html import escape
 
 from images.models import Image
 
-MARKDOWN_EXTENSIONS = ["fenced_code", "tables"]
+MARKDOWN_EXTENSIONS = ["fenced_code", "tables", "attr_list"]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
 

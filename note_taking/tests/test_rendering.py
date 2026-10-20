@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -31,14 +29,12 @@ class NotePartRenderingTests(TestCase):
 
         self.assertIn('<code class="language-python">x = 1', html)
 
-    @unittest.expectedFailure
     def test_largeur_d_image_appliquee(self):
         html = self.render("![a](image:999){width=50%}")
 
         self.assertIn('width="50%"', html)
         self.assertNotIn("{width", html)
 
-    @unittest.expectedFailure
     def test_identifiant_de_figure_applique(self):
         html = self.render("![a](image:999){#fig-banc}")
 
