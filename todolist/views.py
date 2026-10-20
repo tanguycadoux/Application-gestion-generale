@@ -1,18 +1,14 @@
 import json
 
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Min, Q
-from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
-    ListView,
     UpdateView,
 )
 
@@ -20,6 +16,7 @@ from note_taking.models import Note
 
 from .forms import TodoForm
 from .models import Todo
+from .tree import TaskGroup, descendant_rows, task_groups
 
 
 def index(request):
@@ -28,34 +25,18 @@ def index(request):
     return render(request, "todolist/index.html", context)
 
 
-class TodoListView(ListView):
-    model = Todo
-    template_name = "todolist/todo_list.html"
-
-    def get_queryset(self):
-        return (
-            Todo.objects.filter(parent__isnull=True)
-            .annotate(
-                earliest_child_due_date=Min(
-                    "children__due_date", filter=Q(children__done=False)
-                ),
-                sort_due_date=Coalesce(
-                    Min("children__due_date", filter=Q(children__done=False)),
-                    "due_date",
-                ),
-            )
-            .order_by("sort_due_date")
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-
-        context["todo_pending"] = qs.filter(done=False)
-        context["todo_completed"] = qs.filter(done=True)
-
-        context["today"] = timezone.localdate()
-        return context
+def todo_list(request):
+    """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
+    les arbres dont la racine est terminée dans une section repliée."""
+    groups = task_groups(Todo.objects.filter(parent__isnull=True))
+    return render(
+        request,
+        "todolist/todo_list.html",
+        {
+            "pending_groups": [g for g in groups if not g.root.done],
+            "done_groups": [g for g in groups if g.root.done],
+        },
+    )
 
 
 class TodoDetailView(DetailView):
@@ -70,7 +51,8 @@ class TodoDetailView(DetailView):
             if todo.created_from_note
             else None
         )
-        context["children"] = todo.children.all()
+        context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
+        context["children"] = context["children_groups"][0].rows
         return context
 
 

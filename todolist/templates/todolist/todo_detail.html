@@ -3,6 +3,12 @@
 
 {% block title %}Tâche « {{ object.title }} »{% endblock title %}
 
+{% block extra_head %}
+    {{ block.super }}
+    {% load static %}
+    <script src="{% static 'todolist/todo.js' %}"></script>
+{% endblock extra_head %}
+
 {% block content %}
     <article>
         <header class="mb-4 flex items-start">
@@ -78,7 +84,7 @@
                 {% button "Ajouter une sous-tâche" icon="add" href=url|add:query %}
             </header>
             {% if children %}
-                {% include "todolist/todo_item.html" with children=children %}
+                {% include "todolist/task_table.html" with groups=children_groups show_project=False %}
             {% else %}
                 <p>Aucune sous-tâche.</p>
             {% endif %}
