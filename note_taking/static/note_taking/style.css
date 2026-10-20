@@ -44,6 +44,25 @@
     background-color: var(--bg-color--odd);
 }
 
+/* CONTENU RENDU (Markdown des notes) */
+
+/* Le reset de Tailwind retire puces, numérotation et retrait des listes (#80). */
+.rendered-content ul,
+.rendered-content ol {
+    padding-left: 1.5rem;
+    margin: .5rem 0;
+}
+
+.rendered-content li > ul,
+.rendered-content li > ol {
+    margin: 0;
+}
+
+.rendered-content ul       { list-style-type: disc; }
+.rendered-content ul ul    { list-style-type: circle; }
+.rendered-content ul ul ul { list-style-type: square; }
+.rendered-content ol       { list-style-type: decimal; }
+
 /* CALLOUTS (rendu inspiré de Quarto) */
 
 .callout {

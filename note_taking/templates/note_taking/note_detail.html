@@ -56,7 +56,9 @@
                 {% endif %}
             </header>
 
-            {{ note_part.rendered_content|safe }}
+            <div class="rendered-content">
+                {{ note_part.rendered_content|safe }}
+            </div>
         </article>
     {% endfor %}
 {% endblock content %}

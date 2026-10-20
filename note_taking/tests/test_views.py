@@ -3,7 +3,6 @@
 import re
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -279,7 +278,6 @@ class RenderedContentContainerTests(ViewTestCase):
         self.note = Note.objects.create(date="2025-11-24", body=self.RAW)
         process_note_parts(self.note)
 
-    @unittest.expectedFailure
     def test_detail_de_la_note(self):
         response = self.client.get(
             reverse("note_taking:note_detail", args=[self.note.pk])
@@ -287,7 +285,6 @@ class RenderedContentContainerTests(ViewTestCase):
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
 
-    @unittest.expectedFailure
     def test_resultats_de_recherche(self):
         response = self.client.post(
             reverse("note_taking:notes_search"), {"subjects": ["S"]}
@@ -295,7 +292,6 @@ class RenderedContentContainerTests(ViewTestCase):
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
 
-    @unittest.expectedFailure
     def test_vue_markdown_complete(self):
         response = self.client.get(reverse("note_taking:note_md", args=[self.note.pk]))
 
