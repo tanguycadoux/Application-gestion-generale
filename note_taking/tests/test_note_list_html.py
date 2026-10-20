@@ -1,7 +1,6 @@
 """Tests du tableau de la liste des notes : en-têtes de colonne valides (#123)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -23,13 +22,11 @@ class NoteListColumnHeadsTests(TestCase):
     def test_en_tetes_date_et_projets(self):
         self.assertEqual(self.heads, ["a", "button"])
 
-    @unittest.expectedFailure
     def test_pas_de_paragraphe_dans_les_en_tetes(self):
         for head in self.heads_html:
             with self.subTest(head=head[:40]):
                 self.assertNotRegex(head, r"<p[\s>]")
 
-    @unittest.expectedFailure
     def test_libelles_dans_des_span(self):
         for label in ("Date", "Projets"):
             with self.subTest(label=label):
