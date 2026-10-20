@@ -55,3 +55,19 @@ def remaining_class(task) -> str:
 @register.filter
 def indent_class(level: int) -> str:
     return INDENT_CLASSES[min(level, len(INDENT_CLASSES) - 1)]
+
+
+PROGRESS_BAR = (
+    "block h-1.5 w-full appearance-none overflow-hidden rounded-full bg-slate-200"
+    " [&::-webkit-progress-bar]:bg-slate-200"
+)
+PROGRESS_FILL = {
+    "pending": " [&::-webkit-progress-value]:bg-blue-500 [&::-moz-progress-bar]:bg-blue-500",
+    "full": " [&::-webkit-progress-value]:bg-green-600 [&::-moz-progress-bar]:bg-green-600",
+}
+
+
+@register.filter
+def progress_classes(task) -> str:
+    """Barre d'avancement (#182) : bleue en cours, verte à 100 %."""
+    return PROGRESS_BAR + PROGRESS_FILL["full" if task.progress == 100 else "pending"]

@@ -1,7 +1,6 @@
 """Tests de la complétion d'un parent, calculée à partir de ses enfants (#164)."""
 
 import json
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -139,7 +138,6 @@ class ToggleTests(ParentProgressTestCase):
         self.assertNotIn("confirm(", script)
         self.assertNotIn("force", script)
 
-    @unittest.expectedFailure
     def test_case_d_un_parent_active_avec_son_avancement(self):
         self.grandchild.progress = 100
         self.grandchild.save()

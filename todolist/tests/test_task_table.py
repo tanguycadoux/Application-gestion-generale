@@ -1,7 +1,6 @@
 """Tests de la liste des tâches en tableau arborescent (#166)."""
 
 import re
-import unittest
 from datetime import timedelta
 
 from django.test import SimpleTestCase, TestCase
@@ -118,7 +117,7 @@ class TaskListPageTests(TestCase):
 
         self.assertEqual(table.count("<tbody"), 1)
         self.assertRegex(
-            table, r'<th scope="rowgroup" colspan="4"[^>]*>\s*<span class="inline-flex'
+            table, r'<th scope="rowgroup" colspan="5"[^>]*>\s*<span class="inline-flex'
         )
         self.assertIn("bg-teal-500", table)
         self.assertLess(table.index(">Parent<"), table.index(">Enfant<"))
@@ -167,13 +166,11 @@ class ProgressBarTests(TestCase):
     def html(self) -> str:
         return self.client.get(reverse("todolist:todo_list")).content.decode()
 
-    @unittest.expectedFailure
     def test_colonne_avancement(self):
         self.assertIn(
             '<th scope="col" class="w-24 p-2 font-medium">Avancement</th>', self.html()
         )
 
-    @unittest.expectedFailure
     def test_barre_de_chaque_tache(self):
         html = self.html()
 
@@ -187,16 +184,15 @@ class ProgressBarTests(TestCase):
         # Le parent : moyenne de son unique enfant.
         self.assertEqual(html.count('aria-label="Avancement : 40 %"'), 2)
 
-    @unittest.expectedFailure
     def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
         self.assertNotIn("(40 %)", self.html())
 
-    @unittest.expectedFailure
     def test_verte_a_cent_pour_cent(self):
         self.child.progress = 100
         self.child.save()
 
         html = self.html()
 
-        self.assertIn("[&::-webkit-progress-value]:bg-green-600", html)
+        # & est échappé dans l'attribut ; le navigateur le décode.
+        self.assertIn("[&amp;::-webkit-progress-value]:bg-green-600", html)
         self.assertIn("· à valider", html)
