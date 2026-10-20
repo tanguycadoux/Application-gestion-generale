@@ -71,7 +71,7 @@ class ProjectBadgeTests(TestCase):
 
 
 class ProjectPagesTests(TestCase):
-    def create_projects(self):
+    def setUp(self):
         self.used = Project.objects.create(name="Utilisé", color="teal")
         note = Note.objects.create(date="2025-11-24", body="# Utilisé\nx")
         process_note_parts(note)
@@ -84,13 +84,11 @@ class ProjectPagesTests(TestCase):
         return [str(m) for m in get_messages(response.wsgi_request)]
 
     def test_lien_depuis_l_accueil_general(self):
-        self.create_projects()
         html = self.client.get("/").content.decode()
 
         self.assertIn(f'href="{reverse("core:projects")}"', html)
 
     def test_liste(self):
-        self.create_projects()
         html = self.client.get(reverse("core:projects")).content.decode()
 
         self.assertIn("<title>Liste des projets · Projets</title>", html)
@@ -100,7 +98,6 @@ class ProjectPagesTests(TestCase):
         self.assertIn("1 tâche", html)
 
     def test_creation(self):
-        self.create_projects()
         response = self.client.post(
             reverse("core:project_create"),
             {"name": "Nouveau", "color": "violet", "description": "D"},
@@ -112,7 +109,6 @@ class ProjectPagesTests(TestCase):
         self.assertEqual(self.messages(response), ["Le projet « Nouveau » est créé."])
 
     def test_creation_d_un_nom_deja_pris_refusee(self):
-        self.create_projects()
         response = self.client.post(
             reverse("core:project_create"), {"name": "Libre", "color": "violet"}
         )
@@ -121,7 +117,6 @@ class ProjectPagesTests(TestCase):
         self.assertEqual(Project.objects.filter(name="Libre").count(), 1)
 
     def test_modification_de_la_couleur_et_de_la_description(self):
-        self.create_projects()
         url = reverse("core:project_edit", args=[self.unused.pk])
 
         form_html = self.client.get(url).content.decode()
@@ -136,7 +131,6 @@ class ProjectPagesTests(TestCase):
         )
 
     def test_suppression_d_un_projet_inutilise(self):
-        self.create_projects()
         url = reverse("core:project_delete", args=[self.unused.pk])
 
         self.assertEqual(self.client.get(url).status_code, 405)
@@ -147,7 +141,6 @@ class ProjectPagesTests(TestCase):
         self.assertEqual(self.messages(response), ["Le projet « Libre » est supprimé."])
 
     def test_suppression_refusee_si_le_projet_est_utilise(self):
-        self.create_projects()
         response = self.client.post(reverse("core:project_delete", args=[self.used.pk]))
 
         self.assertRedirects(response, reverse("core:projects"))
@@ -158,7 +151,6 @@ class ProjectPagesTests(TestCase):
         )
 
     def test_bouton_desactive_avec_la_raison(self):
-        self.create_projects()
         html = self.client.get(reverse("core:projects")).content.decode()
 
         self.assertIn(
@@ -173,7 +165,6 @@ class ProjectPagesTests(TestCase):
     def test_raison_reliee_au_bouton_et_boutons_groupes(self):
         """La raison est dans la colonne d'informations, reliée au bouton désactivé :
         les boutons restent côte à côte, sans texte entre eux."""
-        self.create_projects()
         html = self.client.get(reverse("core:projects")).content.decode()
 
         self.assertIn(f'aria-describedby="project-{self.used.pk}-usage"', html)

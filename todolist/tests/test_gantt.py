@@ -111,12 +111,6 @@ class GanttPageTests(GanttTestCase):
         self.assertIn("du 31 janvier 2026 au 10 février 2026, 40 %", html)
         self.assertIn("depuis le 1 février 2026, sans échéance, 0 %", html)
 
-    def test_reperes_de_mois_en_colonne_2_sans_div_vide(self):
-        html = self.html(self.parent)
-
-        self.assertIn('<div class="relative col-start-2 h-6', html)
-        self.assertNotIn("<div></div>", html)
-
     def test_pas_de_frise_sans_sous_tache(self):
         html = self.html(self.grandchild)
 

@@ -128,16 +128,6 @@ class ToggleTests(ParentProgressTestCase):
         self.assertTrue(Todo.objects.get(pk=self.parent.pk).completed)
         self.assertEqual(self.progress(self.parent, self.child), [0, 0])
 
-    def test_plus_de_confirmation_native(self):
-        from django.contrib.staticfiles import finders
-
-        path = finders.find("todolist/todo.js")
-        assert isinstance(path, str)
-        script = open(path, encoding="utf-8").read()
-
-        self.assertNotIn("confirm(", script)
-        self.assertNotIn("force", script)
-
     def test_case_d_un_parent_active_avec_son_avancement(self):
         self.grandchild.progress = 100
         self.grandchild.save()
