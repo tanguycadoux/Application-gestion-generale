@@ -1,5 +1,7 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -126,6 +128,38 @@ class ImageMissingTests(SimpleTestCase):
 
     def test_image_de_remplacement_presente(self):
         self.assertIsNotNone(finders.find(IMAGE_MISSING_PATH))
+
+
+class SetextHeadingTests(SimpleTestCase):
+    """Pas de titres « setext » : seuls les titres en # comptent (#124)."""
+
+    @unittest.expectedFailure
+    def test_element_de_liste_vide_apres_un_element(self):
+        html = render_markdown("- Deux exemples montrent la demande\n- ")
+
+        self.assertHTMLEqual(
+            html, "<ul><li>Deux exemples montrent la demande</li><li></li></ul>"
+        )
+
+    @unittest.expectedFailure
+    def test_texte_souligne_de_tirets_pas_un_titre(self):
+        html = render_markdown("Texte\n---")
+
+        self.assertNotIn("<h2>", html)
+
+    @unittest.expectedFailure
+    def test_texte_souligne_de_egal_pas_un_titre(self):
+        html = render_markdown("Titre\n=====")
+
+        self.assertNotIn("<h1>", html)
+
+    def test_trait_horizontal_isole_conserve(self):
+        html = render_markdown("Texte\n\n---\n\nSuite")
+
+        self.assertHTMLEqual(html, "<p>Texte</p><hr><p>Suite</p>")
+
+    def test_titres_en_diese_conserves(self):
+        self.assertHTMLEqual(render_markdown("## Titre"), "<h2>Titre</h2>")
 
 
 class CalloutRenderingTests(SimpleTestCase):
