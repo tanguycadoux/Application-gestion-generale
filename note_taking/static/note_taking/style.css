@@ -70,13 +70,25 @@
     margin: 1rem 0 .5rem;
 }
 
-.rendered-content :is(h1, h2, h3, h4, h5, h6):first-child {
-    margin-top: 0;
-}
-
 .rendered-content h1 { font-size: 1.5rem; font-weight: 700; }
 .rendered-content h2 { font-size: 1.25rem; }
 .rendered-content h3 { font-size: 1.125rem; }
+
+/* Espacement entre blocs, retiré lui aussi par le reset. */
+.rendered-content :is(p, pre, table, blockquote) {
+    margin: .5rem 0;
+}
+
+/* Pas de marge au bord du conteneur ni à celui du corps d'un callout. */
+.rendered-content > :first-child,
+.rendered-content .callout-body > :first-child {
+    margin-top: 0;
+}
+
+.rendered-content > :last-child,
+.rendered-content .callout-body > :last-child {
+    margin-bottom: 0;
+}
 
 /* CALLOUTS (rendu inspiré de Quarto) */
 
