@@ -71,6 +71,20 @@ Exemples :
 
 Usage des variantes de bouton (#145) : un bouton **plein** (`primary`, `danger`) pour l'action principale d'une page ou d'une zone, en général une seule (Importer, Ouvrir la note du jour…) ; un bouton **`ghost`** pour la barre d'outils à côté du titre : actions sur l'objet affiché (exporter, modifier, et supprimer en `ghost-danger`) et enregistrement d'un formulaire ; et pour la navigation (mois précédent/suivant, retour). Toutes les variantes ont la même forme, sans marge : l'espacement revient au conteneur. Au survol, le fond d'un bouton plein s'éclaircit ; un `ghost`, sans fond, en prend un. Les suppressions (`danger`, `ghost-danger`) ont le texte en rouge.
 
+Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais un caractère dans le libellé comme « + »), une par action, la même partout (`core/tests/test_icons.py` le vérifie) :
+
+| Action | Icône |
+|---|---|
+| créer, ajouter | `add` |
+| modifier | `edit` |
+| supprimer | `delete` |
+| enregistrer | `save` |
+| exporter | `download` |
+| importer | `upload` |
+| retour | `arrow_back` |
+| mois précédent, suivant | `chevron_left`, `chevron_right` |
+| aujourd'hui, note du jour | `today` |
+
 Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi, avec « Annuler » en `ghost` puis « Supprimer » en `danger` (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement. Toute suppression passe par là (#126) : un bouton `ghost-danger` dans un formulaire POST portant `data-confirm`, vers une vue limitée à POST ; il n'y a pas de page de confirmation.
 
 Les principes de ces composants (un composant par rôle, l'apparence en variante, des paramètres ajoutés seulement quand une page en a besoin) sont décrits dans `docs/architecture.md`, section « Composants d'interface ».
