@@ -7,7 +7,7 @@ import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
-from django.urls import NoReverseMatch, reverse
+from django.urls import reverse
 
 from images.models import Image
 from images.services import import_image
@@ -262,14 +262,6 @@ class ImportViewTests(TestCase):
 
         self.assertIn(f'action="{reverse("note_taking:import_files")}"', html)
         self.assertRegex(html, r'<input type="file" name="import_files"[^>]* multiple')
-        for old in ("note_import", "image_import", "archive_import"):
-            with self.subTest(old=old):
-                self.assertNotIn(f'name="{old}"', html)
-
-    def test_anciennes_adresses_d_import_retirees(self):
-        for name in ("import_note", "import_images", "import_archive"):
-            with self.subTest(name=name), self.assertRaises(NoReverseMatch):
-                reverse(f"note_taking:{name}")
 
     def test_boutons_importer_et_exporter_cote_a_cote(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()

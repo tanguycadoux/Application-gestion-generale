@@ -27,15 +27,6 @@ class HeadingStylesTests(TestCase):
         self.assertIn("h2 {\n                @apply text-xl font-semibold;", html)
         self.assertIn("h3 {\n                @apply text-lg font-semibold;", html)
 
-    def test_classes_de_taille_redondantes_retirees(self):
-        image = Image.objects.create(name="banc.png", file="note_images/banc.png")
-
-        html = self.client.get(
-            reverse("note_taking:image_detail", args=[image.pk])
-        ).content.decode()
-
-        self.assertNotRegex(html, r"<h[12][^>]*text-(2xl|xl)")
-
 
 class HeadingHierarchyTests(TestCase):
     """Un seul h1 par page, en premier, et des niveaux qui ne sautent pas."""

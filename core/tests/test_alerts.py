@@ -134,6 +134,12 @@ class AlertStylesheetTests(SimpleTestCase):
     La barre est donc animée par la feuille, chargée au départ.
     """
 
+    def test_feuille_dans_le_layer_components(self):
+        """Hors layer, ces règles l'emporteraient sur toute classe Tailwind."""
+        css = read_static("core/alert_system.css")
+
+        self.assertTrue(css.lstrip().startswith("@layer components {"))
+
     def test_feuille_reduite_aux_animations(self):
         css = read_static("core/alert_system.css")
 
