@@ -6,10 +6,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
 from images.models import Image
+from images.services import delete_image as delete_image_service
 from images.services import import_image
 
 from .forms import NewNoteForm, NoteSearchForm
@@ -104,6 +106,20 @@ class ImageDetail(DetailView):
             Note.objects.filter(parts__images=self.object).distinct().order_by("date")
         )
         return context
+
+
+@require_POST
+def delete_image(request, pk):
+    """Supprime une image inutilisée ; une image utilisée est refusée."""
+    image = get_object_or_404(Image, pk=pk)
+    name = image.name
+    try:
+        delete_image_service(image)
+    except AppError as e:
+        messages.error(request, str(e))
+        return redirect("note_taking:image_detail", pk=pk)
+    messages.success(request, f"L'image {name} a été supprimée.")
+    return redirect("note_taking:images_list")
 
 
 def note_md(request, pk):

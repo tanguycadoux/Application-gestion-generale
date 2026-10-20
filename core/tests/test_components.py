@@ -1,7 +1,5 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
-import unittest
-
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -104,7 +102,6 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn(f'class="{GHOST_DANGER}"', html)
 
-    @unittest.expectedFailure
     def test_bouton_desactive(self):
         html = render('{% button "Supprimer" variant="danger" disabled=True %}')
 
@@ -113,7 +110,6 @@ class ButtonTests(SimpleTestCase):
         self.assertIn("opacity-50", html)
         self.assertNotIn("hover:", html)
 
-    @unittest.expectedFailure
     def test_lien_desactive_refuse(self):
         with self.assertRaises(ValueError):
             render('{% button "Supprimer" href="/x/" disabled=True %}')

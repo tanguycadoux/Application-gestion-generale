@@ -110,6 +110,8 @@ Un objet utilisé ne peut pas être supprimé (`on_delete=PROTECT`) :
 
 Django refuse la suppression (`ProtectedError`) et l'admin liste les éléments concernés.
 
+Dans l'interface, une image se supprime depuis sa page de détail (#85) : le bouton est désactivé, avec la raison, tant que l'image est utilisée. Le service `images.services.delete_image` s'appuie sur la même protection : il traduit la `ProtectedError` en erreur métier (`ImageInUseError`), sans connaître les apps qui utilisent les images, et n'efface les fichiers qu'une fois la suppression validée en base.
+
 ### Analyse des notes
 
 Les règles d'analyse sont décrites dans le README. Choix notables :

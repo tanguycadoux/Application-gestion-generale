@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -67,7 +66,6 @@ class DeleteImageTests(TestCase):
         )
         NotePartImageLink.objects.create(note_part=part, image=image)
 
-    @unittest.expectedFailure
     def test_image_inutilisee_supprimee_avec_son_fichier(self):
         from images.services import delete_image
 
@@ -80,7 +78,6 @@ class DeleteImageTests(TestCase):
         self.assertFalse(Image.objects.filter(pk=image.pk).exists())
         self.assertFalse(storage.exists(name))
 
-    @unittest.expectedFailure
     def test_image_utilisee_refusee(self):
         from images.exceptions import ImageInUseError
         from images.services import delete_image

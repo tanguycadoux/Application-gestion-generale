@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.contrib.staticfiles import finders
@@ -45,7 +44,6 @@ class ImageDeleteTests(TestCase):
         url = reverse("note_taking:image_detail", args=[self.image.pk])
         return self.client.get(url).content.decode()
 
-    @unittest.expectedFailure
     def test_suppression_d_une_image_inutilisee(self):
         response = self.delete()
 
@@ -56,7 +54,6 @@ class ImageDeleteTests(TestCase):
             [m.message for m in get_messages(response.wsgi_request)],
         )
 
-    @unittest.expectedFailure
     def test_suppression_refusee_si_l_image_est_utilisee(self):
         self.use()
 
@@ -70,7 +67,6 @@ class ImageDeleteTests(TestCase):
             [m.level_tag for m in get_messages(response.wsgi_request)], ["error"]
         )
 
-    @unittest.expectedFailure
     def test_suppression_uniquement_en_post(self):
         response = self.client.get(
             reverse("note_taking:delete_image", args=[self.image.pk])
@@ -78,7 +74,6 @@ class ImageDeleteTests(TestCase):
 
         self.assertEqual(response.status_code, 405)
 
-    @unittest.expectedFailure
     def test_bouton_actif_avec_confirmation_pour_une_image_inutilisee(self):
         html = self.detail()
 
@@ -89,7 +84,6 @@ class ImageDeleteTests(TestCase):
         self.assertIn("data-confirm=", html)
         self.assertNotRegex(html, r"<button[^>]*disabled")
 
-    @unittest.expectedFailure
     def test_bouton_desactive_avec_la_raison_si_l_image_est_utilisee(self):
         self.use("2025-11-24")
         self.use("2026-02-03")
@@ -99,7 +93,6 @@ class ImageDeleteTests(TestCase):
         self.assertRegex(html, r"<button[^>]*disabled")
         self.assertIn("utilisée par 2 notes", html)
 
-    @unittest.expectedFailure
     def test_script_de_confirmation_charge(self):
         html = self.detail()
 
