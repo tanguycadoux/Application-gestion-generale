@@ -4,7 +4,7 @@
         <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
                 {% if part.subject %}
-                    <h3 class="text-lg font-medium">{{ part.subject }}</h3>
+                    <h2 class="text-lg font-medium">{{ part.subject }}</h2>
                 {% endif %}
                 {% tag_list part.tags.all %}
                 <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a>

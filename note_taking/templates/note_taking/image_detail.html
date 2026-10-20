@@ -9,7 +9,7 @@
 {% block content %}
     <article>
         <header class="mb-4 flex flex-wrap items-start gap-2">
-            <h1 class="flex-1 text-2xl font-semibold">{{ image.name }}</h1>
+            <h1 class="flex-1">{{ image.name }}</h1>
             <form class="flex flex-col items-end" method="post" action="{% url 'note_taking:delete_image' image.pk %}" data-confirm="Supprimer définitivement l'image {{ image.name }} ?">
                 {% csrf_token %}
                 {% button "Supprimer l'image" icon="delete" variant="danger" disabled=notes.exists %}
@@ -36,7 +36,7 @@
         </dl>
 
         <section aria-labelledby="image-notes-title">
-            <h2 id="image-notes-title" class="mb-2 text-xl font-semibold">Notes qui utilisent cette image</h2>
+            <h2 id="image-notes-title" class="mb-2">Notes qui utilisent cette image</h2>
             {% if notes %}
                 <ul class="list-disc pl-6">
                     {% for note in notes %}

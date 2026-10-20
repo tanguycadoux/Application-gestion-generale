@@ -241,7 +241,7 @@ class NoteMarkdownViewTests(TestCase):
 
         response = self.client.get(reverse("note_taking:note_md", args=[note.pk]))
 
-        self.assertContains(response, "<h1>P</h1>", html=True)
+        self.assertContains(response, "<h2>P</h2>", html=True)
         self.assertContains(response, "<td>1</td>", html=True)
         self.assertEqual(str(response.context["date"]), "2025-11-24")
 
