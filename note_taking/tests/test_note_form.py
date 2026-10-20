@@ -1,7 +1,6 @@
 """Tests du formulaire d'une note : chaque champ a un label relié (#122)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -30,13 +29,11 @@ class NoteFormLabelsTests(TestCase):
             ),
         }
 
-    @unittest.expectedFailure
     def test_champ_date_relie_a_son_label(self):
         for page, response in self.pages().items():
             with self.subTest(page=page):
                 self.assert_labelled(response.content.decode(), "input", "date")
 
-    @unittest.expectedFailure
     def test_corps_relie_a_un_label(self):
         for page, response in self.pages().items():
             with self.subTest(page=page):
