@@ -1,14 +1,11 @@
 {% extends "note_taking/base.html" %}
 {% load ui %}
 
-{% block extra_head %}
-    {{ block.super }}
-    <title>Editer la note</title>
-{% endblock extra_head %}
+{% block title %}Modifier la note du {{ note.date|date_text:"moyen" }}{% endblock title %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
-        <h1 class="flex-1">Editer la note</h1>
+        <h1 class="flex-1">Modifier la note du {% date_time note.date "long" %}</h1>
 
         {% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}
     </header>

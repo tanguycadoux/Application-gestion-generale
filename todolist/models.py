@@ -18,38 +18,47 @@ class Todo(models.Model):
         ("high", "Haute"),
     ]
 
-    title = models.CharField(max_length=200)
+    title = models.CharField("titre", max_length=200)
     project = models.ForeignKey(
         Project,
+        verbose_name="projet",
         on_delete=models.PROTECT,
         related_name="todos",
         null=True,
         blank=True,
     )
-    tags = models.ManyToManyField(Tag, related_name="todos", blank=True)
-    description = models.TextField(blank=True)
-    completed = models.BooleanField(default=False)
+    tags = models.ManyToManyField(
+        Tag, verbose_name="tags", related_name="todos", blank=True
+    )
+    description = models.TextField("description", blank=True)
+    completed = models.BooleanField("terminée", default=False)
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
     note_part_text = models.CharField(max_length=200, blank=True, default="")
 
     priority = models.CharField(
-        max_length=10, choices=PRIORITY_CHOICES, default="medium"
+        "priorité", max_length=10, choices=PRIORITY_CHOICES, default="medium"
     )
 
-    due_date = models.DateField(null=True, blank=True)
+    due_date = models.DateField("échéance", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
+        "self",
+        verbose_name="tâche parente",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="children",
     )
 
     if TYPE_CHECKING:
         children: QuerySet[Todo]
 
     class Meta:
+        verbose_name = "tâche"
         constraints = [
             models.UniqueConstraint(
                 fields=["created_from_note", "note_part_date", "note_part_text"],

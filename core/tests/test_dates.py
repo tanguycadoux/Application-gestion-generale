@@ -107,7 +107,9 @@ class DatesInPagesTests(TestCase):
             reverse("note_taking:note_md", args=[self.note.pk])
         ).content.decode()
 
-        self.assertIn("<title>Note du lundi 24 novembre 2025</title>", html)
+        self.assertIn(
+            "<title>Note du 24 novembre 2025 en Markdown · Notes</title>", html
+        )
         self.assertInHTML(f"<h1>Note du {self.LONG}</h1>", html)
 
     def test_tableau_des_notes_en_format_court(self):

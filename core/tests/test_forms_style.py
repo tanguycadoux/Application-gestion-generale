@@ -48,7 +48,7 @@ class FormGridTemplateTests(TestCase):
 
         self.assertNotIn("<p>", html)
         self.assertInHTML(
-            '<label for="id_title">Title :</label>', html.replace("\xa0", " ")
+            '<label for="id_title">Titre :</label>', html.replace("\xa0", " ")
         )
         self.assertIn('<div class="min-w-0">', html)
 
@@ -114,7 +114,7 @@ class SaveInHeaderTests(TestCase):
     def test_formulaire_de_todo(self):
         html = self.client.get(reverse("todolist:todo_create")).content.decode()
 
-        self.assert_save_in_header(html, "todo-form", "Enregistrer la TODO")
+        self.assert_save_in_header(html, "todo-form", "Enregistrer la tâche")
 
 
 class FormPagesTests(TestCase):

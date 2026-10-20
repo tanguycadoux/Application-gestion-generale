@@ -1,9 +1,10 @@
 {% extends "note_taking/base.html" %}
 {% load ui %}
 
+{% block title %}Liste des notes{% endblock title %}
+
 {% block extra_head %}
     {{ block.super }}
-    <title>Liste des notes</title>
     {% load static %}
     <script src="{% static 'note_taking/table.js' %}" defer></script>
 {% endblock extra_head %}

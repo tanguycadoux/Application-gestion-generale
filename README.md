@@ -54,6 +54,8 @@ Formulaires (#132) : les champs ont un style de base (`@layer base` de `core/tem
 
 Dates (#129) : trois formats d'affichage, selon l'usage, définis dans `core/templatetags/ui.py` (`DATE_FORMATS`) : **long** « lundi 24 novembre 2025 » quand la date nomme une note (titres, liens « Note du … »), **moyen** « 24 novembre 2025 » dans un texte ou une fiche (échéance, dates d'une image, messages), **court** « lun. 24 nov. 2025 » dans les tableaux et les listes. Dans une page, `{% date_time valeur "long" %}` produit `<time datetime="2025-11-24">lundi 24 novembre 2025</time>` ; dans un attribut ou un message, le filtre `{{ valeur|date_text:"moyen" }}`. Le filtre `date` de Django ne sert plus qu'aux formats techniques (`Y-m-d`, `c`, `Y-m`) et au mois du calendrier (`F Y`).
 
+Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Section » (« Liste des notes · Notes », « Tâche « Relire » · Tâches ») ; une page définit `{% block title %}`, le gabarit de base de son application ajoute la section (`{% block title_suffix %}`), et l'accueil général s'appelle « Gestion générale ». Une date dans un titre d'onglet est au format moyen. Un élément de la liste de l'app des TODO est une **tâche** (« Créer une tâche », « sous-tâche ») ; le marqueur TODO écrit dans les notes garde son nom.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |

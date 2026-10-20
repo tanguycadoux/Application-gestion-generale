@@ -1,21 +1,18 @@
 {% extends "todolist/base.html" %}
 {% load ui %}
 
-{% block extra_head %}
-    {{ block.super }}
-    <title>TODO</title>
-{% endblock extra_head %}
+{% block title %}Tâche « {{ object.title }} »{% endblock title %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
         <h1 class="flex-1">{{ object.title }}</h1>
 
         {% url 'todolist:todo_edit' object.pk as url %}
-        {% button "Modifier la TODO" icon="edit" href=url variant="ghost" icon_only=True %}
+        {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la TODO « {{ object.title }} » ?">
+        <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la tâche « {{ object.title }} » ?">
             {% csrf_token %}
-            {% button "Supprimer la TODO" icon="delete" variant="ghost-danger" icon_only=True %}
+            {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
         </form>
     </header>
     

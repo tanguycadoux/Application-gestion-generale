@@ -89,12 +89,12 @@ class TodoUpdateView(UpdateView):
 
 
 class TodoDeleteView(SuccessMessageMixin, DeleteView):
-    """Supprime une TODO ; la confirmation se fait par popover (data-confirm)."""
+    """Supprime une tâche ; la confirmation se fait par popover (data-confirm)."""
 
     model = Todo
     http_method_names = ["post"]
     success_url = reverse_lazy("todolist:todo_list")
-    success_message = "La TODO « %(title)s » a été supprimée."
+    success_message = "La tâche « %(title)s » a été supprimée."
 
     def get_success_message(self, cleaned_data):
         return self.success_message % {"title": self.object.title}
