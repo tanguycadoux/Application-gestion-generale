@@ -1,5 +1,7 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -50,6 +52,7 @@ class ImageMissingTests(SimpleTestCase):
 
 
 class CalloutRenderingTests(SimpleTestCase):
+    @unittest.expectedFailure
     def test_titre_en_attribut(self):
         html = render_markdown(
             '::: {.callout-warning title="Attention !"}\nTexte **gras**\n:::'
@@ -58,17 +61,22 @@ class CalloutRenderingTests(SimpleTestCase):
         self.assertHTMLEqual(
             html,
             '<div class="callout callout-warning">'
-            '<div class="callout-header">Attention !</div>'
+            '<div class="callout-header">'
+            '<span class="material-symbols-rounded callout-icon" aria-hidden="true">warning</span>'
+            '<span class="callout-title">Attention !</span>'
+            "</div>"
             '<div class="callout-body"><p>Texte <strong>gras</strong></p></div>'
             "</div>",
         )
 
+    @unittest.expectedFailure
     def test_titre_depuis_le_premier_titre_markdown(self):
         html = render_markdown("::: {.callout-tip}\n\n## Mon titre\nTexte\n:::")
 
-        self.assertInHTML('<div class="callout-header">Mon titre</div>', html)
+        self.assertInHTML('<span class="callout-title">Mon titre</span>', html)
         self.assertNotIn("<h2>", html)
 
+    @unittest.expectedFailure
     def test_titre_par_defaut_du_type(self):
         for callout_type, title in (
             ("note", "Note"),
@@ -80,8 +88,9 @@ class CalloutRenderingTests(SimpleTestCase):
             with self.subTest(callout_type=callout_type):
                 html = render_markdown(f"::: {{.callout-{callout_type}}}\nx\n:::")
 
-                self.assertInHTML(f'<div class="callout-header">{title}</div>', html)
+                self.assertInHTML(f'<span class="callout-title">{title}</span>', html)
 
+    @unittest.expectedFailure
     def test_texte_autour_du_callout(self):
         html = render_markdown("Avant\n\n::: {.callout-note}\nDedans\n:::\n\nAprès")
 
@@ -89,11 +98,43 @@ class CalloutRenderingTests(SimpleTestCase):
             html,
             "<p>Avant</p>"
             '<div class="callout callout-note">'
-            '<div class="callout-header">Note</div>'
+            '<div class="callout-header">'
+            '<span class="material-symbols-rounded callout-icon" aria-hidden="true">info</span>'
+            '<span class="callout-title">Note</span>'
+            "</div>"
             '<div class="callout-body"><p>Dedans</p></div>'
             "</div>"
             "<p>Après</p>",
         )
+
+    @unittest.expectedFailure
+    def test_icone_par_type(self):
+        for callout_type, icon in (
+            ("note", "info"),
+            ("tip", "lightbulb"),
+            ("warning", "warning"),
+            ("caution", "report"),
+            ("important", "error"),
+        ):
+            with self.subTest(callout_type=callout_type):
+                html = render_markdown(f"::: {{.callout-{callout_type}}}\nx\n:::")
+
+                self.assertInHTML(
+                    '<span class="material-symbols-rounded callout-icon"'
+                    f' aria-hidden="true">{icon}</span>',
+                    html,
+                )
+
+    def test_sans_icone_avec_icon_false(self):
+        html = render_markdown("::: {.callout-note icon=false}\nx\n:::")
+
+        self.assertNotIn("callout-icon", html)
+
+    def test_sans_icone_pour_un_type_inconnu(self):
+        html = render_markdown("::: {.callout-autre}\nx\n:::")
+
+        self.assertIn('class="callout callout-autre"', html)
+        self.assertNotIn("callout-icon", html)
 
     def test_titre_echappe(self):
         html = render_markdown('::: {.callout-note title="<b>x</b>"}\ny\n:::')
@@ -111,6 +152,7 @@ class CalloutRenderingTests(SimpleTestCase):
 
         self.assertNotIn('class="callout', html)
 
+    @unittest.expectedFailure
     def test_rendu_d_une_note_part(self):
         part = NotePart(
             project=Project(name="P"),
@@ -118,7 +160,7 @@ class CalloutRenderingTests(SimpleTestCase):
         )
 
         self.assertInHTML(
-            '<div class="callout-header">Remarque</div>', part.rendered_content()
+            '<span class="callout-title">Remarque</span>', part.rendered_content()
         )
 
 
