@@ -1,7 +1,11 @@
+from datetime import date
+
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
@@ -217,8 +221,29 @@ def new_note(request):
                 )
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
-        form = NewNoteForm()
+        note_date = parse_date_param(request.GET.get("date", ""))
+        existing = Note.objects.filter(date=note_date).first() if note_date else None
+        if existing:
+            return redirect("note_taking:note_detail", pk=existing.pk)
+        form = NewNoteForm(initial={"date": note_date} if note_date else None)
     return render(request, "note_taking/note_new.html", {"form": form})
+
+
+def parse_date_param(value: str) -> date | None:
+    """Date au format AAAA-MM-JJ, ou None si la valeur n'en est pas une."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def note_today(request):
+    """Ouvre la note du jour, ou le formulaire de création à la date du jour."""
+    today = timezone.localdate()
+    note = Note.objects.filter(date=today).first()
+    if note:
+        return redirect("note_taking:note_detail", pk=note.pk)
+    return redirect(f"{reverse('note_taking:new_note')}?date={today.isoformat()}")
 
 
 def edit_note(request, pk):
