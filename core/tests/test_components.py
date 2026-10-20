@@ -102,6 +102,18 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn(f'class="{GHOST_DANGER}"', html)
 
+    def test_bouton_desactive(self):
+        html = render('{% button "Supprimer" variant="danger" disabled=True %}')
+
+        self.assertIn(" disabled", html)
+        self.assertIn("cursor-not-allowed", html)
+        self.assertIn("opacity-50", html)
+        self.assertNotIn("hover:", html)
+
+    def test_lien_desactive_refuse(self):
+        with self.assertRaises(ValueError):
+            render('{% button "Supprimer" href="/x/" disabled=True %}')
+
     def test_variante_inconnue_refusee(self):
         with self.assertRaises(ValueError):
             render('{% button "OK" variant="autre" %}')

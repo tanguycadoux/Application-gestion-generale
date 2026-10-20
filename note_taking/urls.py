@@ -25,4 +25,5 @@ urlpatterns = [
     path("note/import_images/", views.import_images, name="import_images"),
     path("images/", views.ImageList.as_view(), name="images_list"),
     path("images/<int:pk>/", views.ImageDetail.as_view(), name="image_detail"),
+    path("images/<int:pk>/delete/", views.delete_image, name="delete_image"),
 ]

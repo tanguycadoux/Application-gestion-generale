@@ -9,3 +9,7 @@ class ImageError(AppError):
 
 class ImageAlreadyExistsError(ImageError):
     """Image déjà importée sous ce nom de fichier."""
+
+
+class ImageInUseError(ImageError):
+    """Image utilisée par au moins une note : elle ne peut pas être supprimée."""

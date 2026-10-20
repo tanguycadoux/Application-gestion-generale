@@ -48,23 +48,36 @@ def button(
     variant: str = "primary",
     type: str = "submit",
     icon_only: bool = False,
+    disabled: bool = False,
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
     - `variant` : `primary`, `danger`, `ghost` (fond transparent) ou
       `ghost-danger` ;
     - `type` : type du `<button>`, ignoré pour un lien ;
-    - `icon_only` : n'affiche que l'icône, le libellé passe en `aria-label`.
+    - `icon_only` : n'affiche que l'icône, le libellé passe en `aria-label` ;
+    - `disabled` : bouton désactivé, sans effet de survol (pas pour un lien,
+      qui n'a pas d'état désactivé en HTML).
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
+    if disabled and href:
+        raise ValueError("Un lien ne peut pas être désactivé : retirer href.")
+
+    classes = BUTTON_VARIANTS[variant]
+    if disabled:
+        classes = " ".join(
+            [c for c in classes.split() if not c.startswith("hover:")]
+            + ["cursor-not-allowed", "opacity-50"]
+        )
     return {
         "label": label,
         "href": href,
         "icon": icon,
-        "classes": BUTTON_VARIANTS[variant],
+        "classes": classes,
         "type": type,
         "icon_only": icon_only,
+        "disabled": disabled,
     }
 
 
