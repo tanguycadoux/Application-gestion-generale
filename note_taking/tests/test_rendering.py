@@ -1,5 +1,7 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -40,6 +42,86 @@ class NotePartRenderingTests(TestCase):
 
         self.assertIn('id="fig-banc"', html)
         self.assertNotIn("{#fig", html)
+
+
+class LayoutRenderingTests(SimpleTestCase):
+    """Blocs de mise en page Quarto : layout-ncol et columns (#101)."""
+
+    FIGURE = (
+        "::: {#fig-banc layout-ncol=2}\n\n"
+        "![A](a.png)\n\n"
+        "![B](b.png){#fig-banc-b}\n\n"
+        "Légende du *banc*\n"
+        ":::"
+    )
+
+    @unittest.expectedFailure
+    def test_figure_en_colonnes_avec_legende(self):
+        html = render_markdown(self.FIGURE)
+
+        self.assertHTMLEqual(
+            html,
+            '<figure class="my-2" id="fig-banc">'
+            '<div class="grid grid-cols-2 gap-4 items-start">'
+            '<div class="min-w-0"><p><img alt="A" src="a.png"></p></div>'
+            '<div class="min-w-0"><p><img alt="B" id="fig-banc-b" src="b.png"></p></div>'
+            "</div>"
+            '<figcaption class="mt-2 text-sm text-center text-gray-600">'
+            "<p>Légende du <em>banc</em></p>"
+            "</figcaption>"
+            "</figure>",
+        )
+
+    @unittest.expectedFailure
+    def test_colonnes_sans_identifiant_ni_legende(self):
+        html = render_markdown("::: {layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n:::")
+
+        self.assertIn('class="grid grid-cols-2 gap-4 items-start"', html)
+        self.assertEqual(html.count('<div class="min-w-0">'), 2)
+        self.assertNotIn("<figcaption", html)
+        self.assertNotIn(":::", html)
+
+    @unittest.expectedFailure
+    def test_nombre_de_colonnes(self):
+        html = render_markdown("::: {layout-ncol=3}\n![A](a.png)\n:::")
+
+        self.assertIn("grid-cols-3", html)
+
+    @unittest.expectedFailure
+    def test_columns(self):
+        html = render_markdown(
+            "::: {.columns}\n"
+            "::: {.column}\nGauche\n:::\n"
+            '::: {.column width="40%"}\nDroite\n:::\n'
+            ":::"
+        )
+
+        self.assertHTMLEqual(
+            html,
+            '<div class="flex gap-4 my-2">'
+            '<div class="flex-1 min-w-0"><p>Gauche</p></div>'
+            '<div class="min-w-0" style="flex: 0 1 40%"><p>Droite</p></div>'
+            "</div>",
+        )
+
+    @unittest.expectedFailure
+    def test_bloc_imbrique_dans_un_callout(self):
+        html = render_markdown(
+            "::: {.callout-note}\n"
+            "::: {layout-ncol=2}\n![A](a.png)\n:::\n"
+            "Après la figure\n"
+            ":::"
+        )
+
+        self.assertIn("grid-cols-2", html)
+        self.assertNotIn(":::", html)
+        self.assertRegex(html, r'class="callout-body">.*Après la figure.*</div></div>$')
+
+    def test_bloc_dans_un_bloc_de_code_non_interprete(self):
+        html = render_markdown("```\n::: {layout-ncol=2}\nx\n:::\n```")
+
+        self.assertNotIn("grid", html)
+        self.assertIn("::: {layout-ncol=2}", html)
 
 
 class ImageMissingTests(SimpleTestCase):
