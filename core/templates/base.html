@@ -6,6 +6,56 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
     <style type="text/tailwindcss">
         /* Thème et styles de base Tailwind : seul endroit où les déclarer. */
+
+        /* Palette de l'application (le nombre est la luminosité), utilisable en
+           classes (bg-primary-93) et en variables CSS (var(--color-primary-93)),
+           d'où « static » : les variables existent même sans classe qui les utilise. */
+        @theme static {
+            /* Remplace le neutral de Tailwind, dont les nuances vont à l'inverse. */
+            --color-neutral-*: initial;
+            --color-neutral-10: oklch(10% 0 0);
+            --color-neutral-20: oklch(20% 0 0);
+            --color-neutral-30: oklch(30% 0 0);
+            --color-neutral-40: oklch(40% 0 0);
+            --color-neutral-50: oklch(50% 0 0);
+            --color-neutral-60: oklch(60% 0 0);
+            --color-neutral-70: oklch(70% 0 0);
+            --color-neutral-80: oklch(80% 0 0);
+            --color-neutral-90: oklch(90% 0 0);
+            --color-neutral-95: oklch(95% 0 0);
+
+            --color-alert-20: oklch(20% 0.07 15);
+            --color-alert-30: oklch(30% 0.11 15);
+            --color-alert-40: oklch(40% 0.15 15);
+            --color-alert-50: oklch(50% 0.19 15);
+            --color-alert-60: oklch(60% 0.23 15);
+            --color-alert-70: oklch(70% 0.19 15);
+            --color-alert-80: oklch(80% 0.11 15);
+            --color-alert-90: oklch(90% 0.05 15);
+            --color-alert-93: oklch(93% 0.035 15);
+            --color-alert-95: oklch(95% 0.02 15);
+
+            --color-warning-20: oklch(20% 0.04 90);
+            --color-warning-30: oklch(30% 0.06 90);
+            --color-warning-40: oklch(40% 0.08 90);
+            --color-warning-50: oklch(50% 0.10 90);
+            --color-warning-60: oklch(60% 0.12 90);
+            --color-warning-70: oklch(70% 0.14 90);
+            --color-warning-80: oklch(80% 0.16 90);
+            --color-warning-90: oklch(90% 0.12 90);
+            --color-warning-95: oklch(95% 0.06 90);
+
+            --color-primary-30: oklch(30% 0.06 265);
+            --color-primary-40: oklch(40% 0.08 265);
+            --color-primary-50: oklch(50% 0.10 265);
+            --color-primary-60: oklch(60% 0.12 265);
+            --color-primary-70: oklch(70% 0.12 265);
+            --color-primary-80: oklch(80% 0.12 265);
+            --color-primary-90: oklch(90% 0.05 265);
+            --color-primary-93: oklch(93% 0.033 265);
+            --color-primary-95: oklch(95% 0.023 265);
+        }
+
         @layer base {
             /* Tailwind v4 ne met plus le curseur main sur les boutons (comportement de v3 conservé). */
             button:not(:disabled), [role="button"]:not(:disabled) {

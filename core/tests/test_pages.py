@@ -29,3 +29,10 @@ class CommonPagesTests(TestCase):
         for name in STATIC_FILES:
             with self.subTest(name=name):
                 self.assertIsNotNone(finders.find(name))
+
+    def test_navigation_signale_la_page_courante(self):
+        for url in (reverse("note_taking:index"), reverse("todolist:todo_list")):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+
+                self.assertContains(response, 'aria-current="page"', count=1)

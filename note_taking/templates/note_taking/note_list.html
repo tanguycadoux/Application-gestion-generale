@@ -1,4 +1,5 @@
 {% extends "note_taking/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -21,7 +22,7 @@
             <label for="note_import">Importer une ou plusieurs notes</label>
             <input type="file" name="note_import" id="note_import" accept=".qmd" multiple>
         </p>
-        <button class="button-tw" type="submit">Importer</button>
+        {% button "Importer" %}
     </form>
 
     <form method="post" action="{% url 'note_taking:import_images' %}" enctype="multipart/form-data">
@@ -30,7 +31,7 @@
             <label for="image_import">Importer une ou plusieurs images</label>
             <input type="file" name="image_import" id="image_import" accept="image/*" multiple>
         </p>
-        <button class="button-tw" type="submit">Importer</button>
+        {% button "Importer" %}
     </form>
     <hr class="hidden">
 
@@ -78,7 +79,7 @@
                     </a></th>
                     <td>
                         {% if note.projects %}
-                            <ul class="tags-list">
+                            <ul class="m-0 flex h-fit list-none gap-[.4rem] p-0">
                                 {% for project in note.projects %}
                                     <li>{{ project }}</li>    
                                 {% endfor%}

@@ -30,6 +30,9 @@
 }
 
 .alert__buttons button {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: .4rem 0;
     padding: 10px 16px;
     border: none;
     border-radius: 6px;

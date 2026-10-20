@@ -1,4 +1,5 @@
 {% extends "note_taking/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -10,14 +11,10 @@
         <h1 class="flex-1">Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
         {% url 'note_taking:edit_note' note.pk as url %}
-        <a class="p-2 rounded-2xl hover:bg-slate-200 inline-flex" href="{{ url }}">
-            <span class="material-symbols-rounded">edit</span>
-        </a>
-        
+        {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
+
         {% url 'note_taking:delete_note' note.pk as url %}
-        <a class="p-2 rounded-2xl hover:bg-red-200 inline-flex" href="{{ url }}">
-            <span class="material-symbols-rounded">delete</span>
-        </a>
+        {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
     </form>
     </header>
 
@@ -28,7 +25,7 @@
                 <label for="note_update_source_file">Modifier le fichier source de la note</label>
                 <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
             </p>
-            <button type="submit">Modifier</button>
+            {% button "Modifier" %}
         </form>
     </div>
 
@@ -47,13 +44,7 @@
                         <span> / {{ note_part.subject }}</span>
                     {% endif %}
                 </h2>
-                {% if note_part.tags.all %}
-                    <ul class="tags-list">
-                        {% for tag in note_part.tags.all %}
-                            <li class="tag">{{ tag }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
+                {% tag_list note_part.tags.all %}
             </header>
 
             <div class="rendered-content">

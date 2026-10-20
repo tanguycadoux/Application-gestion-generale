@@ -1,4 +1,5 @@
 {% extends "todolist/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -10,7 +11,7 @@
 
     <form method="post">
         {% csrf_token %}
-        <button type="submit">Oui, supprimer</button>
+        {% button "Oui, supprimer" %}
     </form>
 
     <a href="{% url 'todolist:todo_detail' object.pk %}">Annuler</a>

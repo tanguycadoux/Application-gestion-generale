@@ -1,4 +1,5 @@
 {% extends "todolist/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -33,7 +34,11 @@
         </div>
     {% endif %}
     
-    <a class="button" href="{% url 'todolist:todo_create' %}?parent={{ object.pk }}">+ Ajouter une sous-tâche</a>
-    <a class="button" href="{% url 'todolist:todo_edit' object.pk %}">Modifier</a>
-    <a class="button button--danger" href="{% url 'todolist:todo_delete' object.pk %}">Supprimer</a>
+    {% url 'todolist:todo_create' as url %}
+    {% querystring parent=object.pk as query %}
+    {% button "+ Ajouter une sous-tâche" href=url|add:query %}
+    {% url 'todolist:todo_edit' object.pk as url %}
+    {% button "Modifier" href=url %}
+    {% url 'todolist:todo_delete' object.pk as url %}
+    {% button "Supprimer" href=url variant="danger" %}
 {% endblock content %}

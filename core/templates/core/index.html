@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load ui %}
 
 {% block head %}
     <title>Gestion générale</title>
@@ -6,17 +7,9 @@
 
 {% block nav %}
     <ul>
-        {% url 'note_taking:index' as url %}
-        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-            <span class="material-symbols-rounded">docs</span>
-            <span>Prise de notes</span>
-        </a></li>
+        <li>{% nav_link "note_taking:index" "Prise de notes" "docs" %}</li>
 
-        {% url 'todolist:index' as url %}
-        <li><a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-            <span class="material-symbols-rounded">checklist</span>
-            <span>TODO list</span>
-        </a></li>
+        <li>{% nav_link "todolist:index" "TODO list" "checklist" %}</li>
     </ul>
 {% endblock nav %}
 

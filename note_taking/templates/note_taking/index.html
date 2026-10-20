@@ -1,4 +1,5 @@
 {% extends "note_taking/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
@@ -9,8 +10,5 @@
     <h1>Gestion des notes</h1>
 
     {% url 'note_taking:new_note' as url %}
-    <a class="button-tw {% if request.path == url %}button-tw--active{% endif %} button-with-icon" href="{{ url }}">
-        <span class="material-symbols-rounded">add</span>
-        <span>Nouvelle note</span>
-    </a>
+    {% button "Nouvelle note" icon="add" href=url %}
 {% endblock content %}

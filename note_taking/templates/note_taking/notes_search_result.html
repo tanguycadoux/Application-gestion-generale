@@ -1,3 +1,4 @@
+{% load ui %}
 {% if results %}
     {% for part in results %}
         <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
@@ -5,13 +6,7 @@
                 {% if part.subject %}
                     <h3 class="text-lg font-medium">{{ part.subject }}</h3>
                 {% endif %}
-                {% if part.tags.all %}
-                    <ul class="tags-list">
-                        {% for tag in part.tags.all %}
-                            <li class="tag">{{ tag }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
+                {% tag_list part.tags.all %}
                 <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a>
             </header>
 

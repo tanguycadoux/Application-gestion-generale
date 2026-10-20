@@ -44,7 +44,30 @@ Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées
 | [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` |
 | [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes) | unpkg, version 1.9.11, dans `note_taking/templates/note_taking/base.html` |
 
-Règle de style : les classes Tailwind sont utilisées en priorité ; les feuilles CSS propres (`core/static/core/`, `<app>/static/<app>/`) sont réservées à ce que Tailwind ne couvre pas (par exemple le rendu des callouts). La migration complète vers Tailwind et des composants réutilisables sont prévus dans le milestone M4 (#78, #79).
+Règle de style : les classes Tailwind sont utilisées en priorité ; les feuilles CSS propres (`core/static/core/`, `<app>/static/<app>/`) sont réservées à ce que Tailwind ne couvre pas (par exemple le rendu des callouts). Les classes Tailwind sont écrites en entier, sans les construire par morceaux, pour rester compatibles avec une future étape de build.
+
+Palette : couleurs `primary`, `alert`, `warning` et `neutral`, le nombre donnant la luminosité (`bg-primary-93`, `var(--color-primary-93)`), définies dans le bloc `@theme` de `core/templates/base.html`.
+
+Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
+
+| Balise | Rendu |
+|---|---|
+| `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
+| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` ; avec `icon_only`, le libellé passe en `aria-label` |
+| `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
+
+Exemples :
+
+```django
+{% load ui %}
+{% button "Importer" %}
+{% url 'todolist:todo_edit' todo.pk as url %}{% button "Modifier" href=url %}
+{% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
+```
+
+Les principes de ces composants (un composant par rôle, l'apparence en variante, des paramètres ajoutés seulement quand une page en a besoin) sont décrits dans `docs/architecture.md`, section « Composants d'interface ».
+
+La migration complète vers Tailwind est prévue dans le milestone M4 (#79).
 
 Le type checking se fait avec `mypy` et `django-stubs` (configuration dans `mypy.ini`) :
 

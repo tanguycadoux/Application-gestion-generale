@@ -1,4 +1,5 @@
 {% extends "todolist/base.html" %}
+{% load ui %}
 
 
 {% block extra_head %}
@@ -11,7 +12,8 @@
 {% block content %}
     <h1>Mes Todos</h1>
 
-    <a class="button" href="{% url 'todolist:todo_create' %}">+ Créer une TODO</a>
+    {% url 'todolist:todo_create' as url %}
+    {% button "+ Créer une TODO" href=url %}
 
     <details open>
         <summary class="h2-like">A faire</summary>
