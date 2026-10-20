@@ -1,0 +1,132 @@
+"""Tests du calendrier mensuel des notes, sur l'accueil de note_taking (#88)."""
+
+import unittest
+from datetime import date
+
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from note_taking.models import Note
+from note_taking.services import process_note_parts
+
+
+class MonthCalendarTests(TestCase):
+    def build(self, year: int, month: int, today: date = date(2026, 10, 20)):
+        from note_taking.note_calendar import month_calendar
+
+        return month_calendar(year, month, today)
+
+    @unittest.expectedFailure
+    def test_semaines_du_lundi_au_dimanche(self):
+        calendar = self.build(2026, 10)
+
+        self.assertTrue(all(len(week) == 7 for week in calendar.weeks))
+        self.assertEqual(calendar.weeks[0][0].date, date(2026, 9, 28))
+        self.assertEqual(calendar.weeks[-1][-1].date, date(2026, 11, 1))
+
+    @unittest.expectedFailure
+    def test_jours_hors_du_mois_week_end_et_aujourd_hui(self):
+        days = {day.date: day for week in self.build(2026, 10).weeks for day in week}
+
+        self.assertFalse(days[date(2026, 9, 30)].in_month)
+        self.assertTrue(days[date(2026, 10, 1)].in_month)
+        self.assertTrue(days[date(2026, 10, 24)].is_weekend)
+        self.assertFalse(days[date(2026, 10, 23)].is_weekend)
+        self.assertTrue(days[date(2026, 10, 20)].is_today)
+        self.assertTrue(days[date(2026, 10, 20)].can_create)
+        self.assertFalse(days[date(2026, 10, 21)].can_create)
+
+    @unittest.expectedFailure
+    def test_notes_et_projets_du_mois(self):
+        note = Note.objects.create(date="2026-10-14", body="# Beta\nx\n# Alpha\ny")
+        process_note_parts(note)
+
+        days = {day.date: day for week in self.build(2026, 10).weeks for day in week}
+
+        self.assertEqual(days[date(2026, 10, 14)].note, note)
+        self.assertEqual(days[date(2026, 10, 14)].projects, ["Alpha", "Beta"])
+        self.assertFalse(days[date(2026, 10, 14)].can_create)
+        self.assertIsNone(days[date(2026, 10, 13)].note)
+
+    @unittest.expectedFailure
+    def test_mois_precedent_et_suivant(self):
+        calendar = self.build(2026, 1)
+
+        self.assertEqual(calendar.previous, date(2025, 12, 1))
+        self.assertEqual(calendar.next, date(2026, 2, 1))
+        self.assertEqual(calendar.month, date(2026, 1, 1))
+
+
+class IndexCalendarTests(TestCase):
+    def get(self, query: str = ""):
+        return self.client.get(reverse("note_taking:index") + query)
+
+    @unittest.expectedFailure
+    def test_mois_courant_par_defaut(self):
+        today = timezone.localdate()
+
+        response = self.get()
+
+        self.assertEqual(response.context["calendar"].month, today.replace(day=1))
+
+    @unittest.expectedFailure
+    def test_mois_demande(self):
+        note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
+        process_note_parts(note)
+
+        response = self.get("?mois=2025-11")
+
+        self.assertContains(
+            response, f'href="{reverse("note_taking:note_detail", args=[note.pk])}"'
+        )
+        self.assertContains(response, "Projet A")
+        self.assertContains(response, 'href="?mois=2025-10"')
+        self.assertContains(response, 'href="?mois=2025-12"')
+
+    @unittest.expectedFailure
+    def test_mois_invalide_ignore(self):
+        response = self.get("?mois=n-importe")
+
+        self.assertEqual(
+            response.context["calendar"].month, timezone.localdate().replace(day=1)
+        )
+
+    @unittest.expectedFailure
+    def test_creation_d_une_note_pour_un_jour_passe_sans_note(self):
+        response = self.get("?mois=2025-11")
+
+        self.assertContains(
+            response, f'href="{reverse("note_taking:new_note")}?date=2025-11-12"'
+        )
+
+    @unittest.expectedFailure
+    def test_bouton_creer_la_note_du_jour(self):
+        today = timezone.localdate()
+
+        response = self.get()
+
+        self.assertContains(response, "Créer la note du jour")
+        self.assertContains(
+            response,
+            f'href="{reverse("note_taking:new_note")}?date={today.isoformat()}"',
+        )
+
+    @unittest.expectedFailure
+    def test_bouton_ouvrir_la_note_du_jour(self):
+        note = Note.objects.create(date=timezone.localdate())
+
+        response = self.get()
+
+        self.assertContains(response, "Ouvrir la note du jour")
+        self.assertContains(
+            response, f'href="{reverse("note_taking:note_detail", args=[note.pk])}"'
+        )
+
+    @unittest.expectedFailure
+    def test_navigation_entre_les_mois_par_htmx(self):
+        response = self.get("?mois=2025-11")
+
+        self.assertContains(response, 'id="calendar"')
+        self.assertContains(response, 'hx-boost="true"')
+        self.assertContains(response, 'hx-select="#calendar"')
