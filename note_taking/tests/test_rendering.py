@@ -128,6 +128,35 @@ class ImageMissingTests(SimpleTestCase):
         self.assertIsNotNone(finders.find(IMAGE_MISSING_PATH))
 
 
+class SetextHeadingTests(SimpleTestCase):
+    """Pas de titres « setext » : seuls les titres en # comptent (#124)."""
+
+    def test_element_de_liste_vide_apres_un_element(self):
+        html = render_markdown("- Deux exemples montrent la demande\n- ")
+
+        self.assertHTMLEqual(
+            html, "<ul><li>Deux exemples montrent la demande</li><li></li></ul>"
+        )
+
+    def test_texte_souligne_de_tirets_pas_un_titre(self):
+        html = render_markdown("Texte\n---")
+
+        self.assertNotIn("<h2>", html)
+
+    def test_texte_souligne_de_egal_pas_un_titre(self):
+        html = render_markdown("Titre\n=====")
+
+        self.assertNotIn("<h1>", html)
+
+    def test_trait_horizontal_isole_conserve(self):
+        html = render_markdown("Texte\n\n---\n\nSuite")
+
+        self.assertHTMLEqual(html, "<p>Texte</p><hr><p>Suite</p>")
+
+    def test_titres_en_diese_conserves(self):
+        self.assertHTMLEqual(render_markdown("## Titre"), "<h2>Titre</h2>")
+
+
 class CalloutRenderingTests(SimpleTestCase):
     def test_titre_en_attribut(self):
         html = render_markdown(

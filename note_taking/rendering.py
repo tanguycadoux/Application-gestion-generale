@@ -11,7 +11,25 @@ from images.models import Image
 
 from .qmd.parser import BLOCK_END, METADATA_BLOCK_START
 
-MARKDOWN_EXTENSIONS = ["fenced_code", "tables", "attr_list"]
+
+class NoSetextHeadingsExtension(markdown.Extension):
+    """Désactive les titres « setext » (texte souligné de - ou de =).
+
+    Les notes n'utilisent que les titres en #, sur lesquels repose le découpage en
+    note parts. Sans cela, un élément de liste vide (« - ») après un élément de
+    liste ferait de celui-ci un titre, là où Quarto affiche une liste (#124).
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        md.parser.blockprocessors.deregister("setextheader")
+
+
+MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
+    "fenced_code",
+    "tables",
+    "attr_list",
+    NoSetextHeadingsExtension(),
+]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
 
