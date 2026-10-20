@@ -40,7 +40,7 @@ Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées
 
 | Outil | Rôle | Chargement |
 |---|---|---|
-| [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | Play CDN `cdn.tailwindcss.com`, dans `core/templates/base.html` |
+| [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | version 4.3.3, `@tailwindcss/browser` sur jsDelivr, dans `core/templates/base.html` ; thème et styles de base dans le bloc `<style type="text/tailwindcss">` du même gabarit |
 | [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` |
 | [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes) | unpkg, version 1.9.11, dans `note_taking/templates/note_taking/base.html` |
 
