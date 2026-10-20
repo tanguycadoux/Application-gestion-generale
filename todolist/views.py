@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Min, Q
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
@@ -87,10 +88,16 @@ class TodoUpdateView(UpdateView):
     success_url = reverse_lazy("todolist:todo_list")
 
 
-class TodoDeleteView(DeleteView):
+class TodoDeleteView(SuccessMessageMixin, DeleteView):
+    """Supprime une TODO ; la confirmation se fait par popover (data-confirm)."""
+
     model = Todo
-    template_name = "todolist/todo_confirm_delete.html"
+    http_method_names = ["post"]
     success_url = reverse_lazy("todolist:todo_list")
+    success_message = "La TODO « %(title)s » a été supprimée."
+
+    def get_success_message(self, cleaned_data):
+        return self.success_message % {"title": self.object.title}
 
 
 @require_POST

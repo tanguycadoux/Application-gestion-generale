@@ -5,7 +5,6 @@ et des vues limitées à POST, sans page de confirmation.
 """
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -45,7 +44,6 @@ class NoteDeleteTests(DeleteFormTestCase):
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
         self.url = reverse("note_taking:delete_note", args=[self.note.pk])
 
-    @unittest.expectedFailure
     def test_formulaire_de_suppression_avec_confirmation(self):
         html = self.client.get(
             reverse("note_taking:note_detail", args=[self.note.pk])
@@ -55,7 +53,6 @@ class NoteDeleteTests(DeleteFormTestCase):
             html, self.url, "Supprimer définitivement la note du 24 novembre 2025 ?"
         )
 
-    @unittest.expectedFailure
     def test_pas_de_page_de_confirmation(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.assertTrue(Note.objects.filter(pk=self.note.pk).exists())
@@ -72,7 +69,6 @@ class TodoDeleteTests(DeleteFormTestCase):
         self.todo = Todo.objects.create(title="Relire")
         self.url = reverse("todolist:todo_delete", args=[self.todo.pk])
 
-    @unittest.expectedFailure
     def test_formulaire_de_suppression_avec_confirmation(self):
         html = self.client.get(
             reverse("todolist:todo_detail", args=[self.todo.pk])
@@ -82,12 +78,10 @@ class TodoDeleteTests(DeleteFormTestCase):
             html, self.url, "Supprimer définitivement la TODO « Relire » ?"
         )
 
-    @unittest.expectedFailure
     def test_pas_de_page_de_confirmation(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
         self.assertTrue(Todo.objects.filter(pk=self.todo.pk).exists())
 
-    @unittest.expectedFailure
     def test_suppression_par_post_avec_message(self):
         response = self.client.post(self.url)
 

@@ -13,8 +13,10 @@
         {% url 'todolist:todo_edit' object.pk as url %}
         {% button "Modifier la TODO" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        {% url 'todolist:todo_delete' object.pk as url %}
-        {% button "Supprimer la TODO" icon="delete" href=url variant="ghost-danger" icon_only=True %}
+        <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la TODO « {{ object.title }} » ?">
+            {% csrf_token %}
+            {% button "Supprimer la TODO" icon="delete" variant="ghost-danger" icon_only=True %}
+        </form>
     </header>
     
     {% if object.project %}

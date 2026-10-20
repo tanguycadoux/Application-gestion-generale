@@ -16,8 +16,10 @@
         {% url 'note_taking:edit_note' note.pk as url %}
         {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        {% url 'note_taking:delete_note' note.pk as url %}
-        {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
+        <form method="post" action="{% url 'note_taking:delete_note' note.pk %}" data-confirm="Supprimer définitivement la note du {{ object.date|date:'j F Y' }} ?">
+            {% csrf_token %}
+            {% button "Supprimer la note" icon="delete" variant="ghost-danger" icon_only=True %}
+        </form>
     </header>
 
     <div class="border border-red-500 p-1">
