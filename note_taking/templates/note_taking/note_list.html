@@ -11,10 +11,6 @@
 {% block content %}
     <h1>Liste des notes</h1>
 
-    <p>
-        {{ notes.count }} notes dans la base de données.
-    </p>
-
     <section aria-label="Import et export" class="my-4 flex flex-wrap items-end gap-2">
         <form class="flex flex-wrap items-end gap-2" method="post" action="{% url 'note_taking:import_files' %}" enctype="multipart/form-data">
             {% csrf_token %}
@@ -25,7 +21,15 @@
             {% button "Importer" icon="upload" %}
         </form>
         {% url 'note_taking:export_notes' as export_url %}
-        {% button "Exporter toutes les notes" icon="download" href=export_url %}
+        {% with count=notes.count %}
+            {% if count == 1 %}
+                {% button "Exporter la note" icon="download" href=export_url %}
+            {% else %}
+                {% with count_text=count|stringformat:"s" %}
+                    {% button "Exporter les "|add:count_text|add:" notes" icon="download" href=export_url %}
+                {% endwith %}
+            {% endif %}
+        {% endwith %}
     </section>
     <hr class="hidden">
 
