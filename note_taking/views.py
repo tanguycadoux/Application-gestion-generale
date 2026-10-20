@@ -1,5 +1,6 @@
 import tempfile
 from datetime import date
+from functools import partial
 
 from django.contrib import messages
 from django.http import FileResponse, HttpResponse, JsonResponse
@@ -18,7 +19,7 @@ from images.services import import_image
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
-from .qmd.export import write_notes_archive
+from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
 from .services import (
@@ -320,12 +321,20 @@ def delete_note(request, pk):
 
 def export_notes(request):
     """Télécharge l'archive zip de toutes les notes et de leurs images."""
+    return zip_response(write_notes_archive, f"notes-{timezone.localdate()}.zip")
+
+
+def export_note(request, pk):
+    """Télécharge l'archive zip d'une note et des images qu'elle référence."""
+    note = get_object_or_404(Note, pk=pk)
+    return zip_response(partial(write_note_archive, note), f"{note.date}.zip")
+
+
+def zip_response(write, filename: str) -> FileResponse:
+    """Réponse de téléchargement d'une archive écrite par `write(fichier)`."""
     archive = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
-    write_notes_archive(archive)
+    write(archive)
     archive.seek(0)
     return FileResponse(
-        archive,
-        as_attachment=True,
-        filename=f"notes-{timezone.localdate().isoformat()}.zip",
-        content_type="application/zip",
+        archive, as_attachment=True, filename=filename, content_type="application/zip"
     )

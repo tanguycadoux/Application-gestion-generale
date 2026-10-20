@@ -21,6 +21,7 @@ urlpatterns = [
     path("note/<int:pk>/", views.NoteDetail.as_view(), name="note_detail"),
     path("note/<int:pk>/md/", views.note_md, name="note_md"),
     path("note/<int:pk>/json/", views.note_json, name="note_json"),
+    path("note/<int:pk>/export/", views.export_note, name="export_note"),
     path("note/<int:pk>/edit/", views.edit_note, name="edit_note"),
     path("note/<int:pk>/delete/", views.delete_note, name="delete_note"),
     path("note/import_images/", views.import_images, name="import_images"),
