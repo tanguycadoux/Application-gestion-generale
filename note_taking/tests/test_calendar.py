@@ -1,6 +1,8 @@
 """Tests du calendrier mensuel des notes, sur l'accueil de note_taking (#88)."""
 
-from datetime import date
+import re
+import unittest
+from datetime import date, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -118,3 +120,38 @@ class IndexCalendarTests(TestCase):
         self.assertContains(response, 'id="calendar"')
         self.assertContains(response, 'hx-boost="true"')
         self.assertContains(response, 'hx-select="#calendar"')
+
+
+class CalendarDayLinkTests(TestCase):
+    """La case entière d'un jour est cliquable, pas un élément de la case."""
+
+    CELL_LINK = r'<a class="[^"]*min-h-24[^"]*" href="{href}"'
+
+    def get(self, query: str) -> str:
+        return self.client.get(reverse("note_taking:index") + query).content.decode()
+
+    @unittest.expectedFailure
+    def test_case_d_un_jour_avec_note(self):
+        note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
+        process_note_parts(note)
+        href = reverse("note_taking:note_detail", args=[note.pk])
+
+        html = self.get("?mois=2025-11")
+
+        self.assertRegex(html, self.CELL_LINK.format(href=re.escape(href)))
+
+    @unittest.expectedFailure
+    def test_case_d_un_jour_sans_note(self):
+        href = f"{reverse('note_taking:new_note')}?date=2025-11-12"
+
+        html = self.get("?mois=2025-11")
+
+        self.assertRegex(html, self.CELL_LINK.format(href=re.escape(href)))
+        self.assertIn('aria-label="Créer la note du 12 novembre 2025"', html)
+
+    def test_jour_futur_non_cliquable(self):
+        future = timezone.localdate().replace(day=1) + timedelta(days=62)
+
+        html = self.get(f"?mois={future:%Y-%m}")
+
+        self.assertNotIn(f"?date={future.isoformat()}", html)
