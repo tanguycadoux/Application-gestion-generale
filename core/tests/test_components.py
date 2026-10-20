@@ -130,6 +130,15 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn('<button type="submit" form="note-form"', html)
 
+    def test_bouton_decrit_par_un_element(self):
+        """Un bouton désactivé reste relié au texte qui explique pourquoi."""
+        html = render(
+            '{% button "Supprimer" variant="ghost-danger" disabled=True'
+            ' describedby="raison" %}'
+        )
+
+        self.assertIn('aria-describedby="raison"', html)
+
     def test_lien_relie_a_un_formulaire_refuse(self):
         with self.assertRaises(ValueError):
             render('{% button "Enregistrer" href="/x/" form="note-form" %}')

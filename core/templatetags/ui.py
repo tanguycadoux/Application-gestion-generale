@@ -61,6 +61,7 @@ def button(
     icon_only: bool = False,
     disabled: bool = False,
     form: str = "",
+    describedby: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -71,7 +72,9 @@ def button(
     - `disabled` : bouton désactivé, sans effet de survol (pas pour un lien,
       qui n'a pas d'état désactivé en HTML) ;
     - `form` : identifiant du formulaire que le bouton envoie, quand il est
-      placé hors de ce formulaire (barre d'outils de l'en-tête) ; pas pour un lien.
+      placé hors de ce formulaire (barre d'outils de l'en-tête) ; pas pour un lien ;
+    - `describedby` : identifiant du texte qui décrit le bouton (`aria-describedby`),
+      par exemple la raison pour laquelle il est désactivé.
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
@@ -95,6 +98,7 @@ def button(
         "icon_only": icon_only,
         "disabled": disabled,
         "form": form,
+        "describedby": describedby,
     }
 
 
@@ -145,3 +149,31 @@ def date_time(value, style: str = "moyen") -> str:
     return format_html(
         '<time datetime="{}">{}</time>', value.isoformat(), date_text(value, style)
     )
+
+
+# Point de couleur de chaque famille de projet (core.models.PROJECT_COLORS),
+# écrit en entier pour que Tailwind trouve les classes.
+PROJECT_DOT_CLASSES = {
+    "orange": "bg-orange-500",
+    "yellow": "bg-yellow-500",
+    "lime": "bg-lime-500",
+    "emerald": "bg-emerald-500",
+    "teal": "bg-teal-500",
+    "cyan": "bg-cyan-500",
+    "sky": "bg-sky-500",
+    "indigo": "bg-indigo-500",
+    "violet": "bg-violet-500",
+    "purple": "bg-purple-500",
+    "fuchsia": "bg-fuchsia-500",
+    "pink": "bg-pink-500",
+    "rose": "bg-rose-500",
+}
+
+
+@register.inclusion_tag("core/components/project_badge.html")
+def project_badge(project) -> dict:
+    """Pastille d'un projet : un point de sa couleur devant son nom ; rien sans projet."""
+    return {
+        "project": project,
+        "dot_class": PROJECT_DOT_CLASSES.get(project.color, "") if project else "",
+    }

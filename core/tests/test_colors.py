@@ -12,9 +12,29 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 
+from core import models
+
 APPS = ("core", "images", "note_taking", "todolist")
 
 ALLOWED_COLORS = {"slate", "blue", "red", "amber", "green", "white", "black"}
+
+# Familles des projets (#162) : seule la pastille de projet les emploie.
+PROJECT_COLORS = {
+    "orange",
+    "yellow",
+    "lime",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "rose",
+}
+PROJECT_COLORS_SOURCE = Path(settings.BASE_DIR) / "core" / "templatetags" / "ui.py"
 
 TAILWIND_COLORS = ALLOWED_COLORS | {
     "gray",
@@ -110,7 +130,15 @@ class ColorClassesTests(SimpleTestCase):
                     )
                     if match.group("color") in TAILWIND_COLORS
                 }
-                self.assertLessEqual(colors, ALLOWED_COLORS)
+                allowed = ALLOWED_COLORS
+                if path == PROJECT_COLORS_SOURCE:
+                    allowed = ALLOWED_COLORS | PROJECT_COLORS
+                self.assertLessEqual(colors, allowed)
+
+    def test_familles_des_projets(self):
+        """Réservées aux projets (#162), hors gris et hors familles à un rôle."""
+        self.assertEqual({value for value, _ in models.PROJECT_COLORS}, PROJECT_COLORS)
+        self.assertFalse(PROJECT_COLORS & ALLOWED_COLORS)
 
 
 class StylesheetColorsTests(SimpleTestCase):
