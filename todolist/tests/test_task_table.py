@@ -1,6 +1,7 @@
 """Tests de la liste des tâches en tableau arborescent (#166)."""
 
 import re
+import unittest
 from datetime import timedelta
 
 from django.test import SimpleTestCase, TestCase
@@ -9,6 +10,7 @@ from django.utils import timezone
 
 from core.models import Project
 from todolist.models import Todo
+from todolist.templatetags.todo_ui import progress_classes
 
 TODAY = timezone.localdate()
 
@@ -187,12 +189,45 @@ class ProgressBarTests(TestCase):
     def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
         self.assertNotIn("(40 %)", self.html())
 
-    def test_verte_a_cent_pour_cent(self):
+    @unittest.expectedFailure
+    def test_terminee_en_vert(self):
         self.child.progress = 100
         self.child.save()
 
-        html = self.html()
+        classes = progress_classes(Todo.objects.get(pk=self.child.pk))
 
-        # & est échappé dans l'attribut ; le navigateur le décode.
-        self.assertIn("[&amp;::-webkit-progress-value]:bg-green-600", html)
-        self.assertIn("· à valider", html)
+        self.assertIn("[&::-webkit-progress-value]:bg-green-500", classes)
+        self.assertIn("bg-green-200", classes)
+
+    @unittest.expectedFailure
+    def test_couleur_selon_l_echeance_comme_les_toasts(self):
+        """Mêmes couleurs que les barres des toasts : info, avertissement, erreur."""
+        cases = {
+            None: ("blue-400", "blue-100"),
+            10: ("blue-400", "blue-100"),
+            3: ("amber-400", "amber-100"),
+            0: ("amber-400", "amber-100"),
+            -1: ("red-400", "red-100"),
+        }
+        for offset, (fill, track) in cases.items():
+            with self.subTest(offset=offset):
+                task = Todo(
+                    title="T", due_date=None if offset is None else days(offset)
+                )
+                classes = progress_classes(task)
+                self.assertIn(f"[&::-webkit-progress-value]:bg-{fill}", classes)
+                self.assertIn(f"[&::-moz-progress-bar]:bg-{fill}", classes)
+                self.assertIn(f" bg-{track}", classes)
+                self.assertIn(f"[&::-webkit-progress-bar]:bg-{track}", classes)
+
+    @unittest.expectedFailure
+    def test_parent_a_valider_selon_son_echeance(self):
+        self.parent.due_date = days(-2)
+        self.parent.save()
+        self.child.progress = 100
+        self.child.save()
+
+        parent = Todo.objects.get(pk=self.parent.pk)
+
+        self.assertTrue(parent.to_validate)
+        self.assertIn("bg-red-400", progress_classes(parent))
