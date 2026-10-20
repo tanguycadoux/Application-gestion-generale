@@ -271,21 +271,20 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 - recherche des note parts par projet(s) et sujet(s) (`/note_taking/notes/search/`), les sujets proposés étant filtrés selon les projets cochés,
 - suppression d'une note.
 
-## Gestion des TODO
+## Gestion des tâches
 
-Les TODO peuvent être créées manuellement ou générées depuis les notes. Une TODO possède :
+Les tâches peuvent être créées manuellement ou générées depuis les notes (lignes d'une section marquée du tag TODO). Une tâche possède :
 
 - un titre et une description,
-- un projet et des tags,
+- un projet (obligatoire), un sujet facultatif et des tags ; une tâche issue d'une note reprend le projet, le sujet et les tags de sa note part,
 - une priorité (basse, moyenne, haute),
-- une date d'échéance,
-- une TODO parente éventuelle (sous-tâches).
+- une date d'échéance facultative,
+- un avancement de 0 à 100 % ; elle est terminée à 100 %,
+- une tâche parente éventuelle (sous-tâches).
 
-Une sous-tâche hérite du projet de sa parente, ainsi que de son échéance si elle n'en a pas.
+Une tâche qui a des sous-tâches a un avancement **calculé** : la moyenne de celui de ses enfants, recalculée à chaque changement d'un enfant, sur tous les niveaux (#164). Elle est donc terminée quand tous ses enfants le sont, et son avancement ne se saisit pas. Le formulaire d'une sous-tâche propose le projet et l'échéance de sa parente, sans les imposer. Seule une boucle parent-enfant est refusée.
 
-La liste (`/todolist/todos`) sépare les TODO en cours des TODO terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours).
-
-Valider une TODO valide aussi ses sous-tâches, après confirmation si certaines ne sont pas terminées.
+La liste (`/todolist/todos`) sépare les tâches en cours des tâches terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours). La case d'une tâche la passe à 100 % ou à 0 % ; celle d'une tâche qui a des sous-tâches est désactivée, son avancement affiché à côté.
 
 ## Orientations
 

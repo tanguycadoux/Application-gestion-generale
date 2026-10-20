@@ -25,3 +25,10 @@ class TodoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["due_date"].input_formats = [r"%Y-%m-%d"]
+        if self.instance.pk and self.instance.children.exists():
+            self.fields["progress"].disabled = True
+            self.fields[
+                "progress"
+            ].help_text = (
+                "Calculé à partir des sous-tâches : la moyenne de leur avancement."
+            )

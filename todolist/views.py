@@ -111,18 +111,18 @@ def toggle_todo(request, pk):
     if not isinstance(data, dict):
         return JsonResponse({"error": "Corps de requête JSON invalide."}, status=400)
 
-    completed = bool(data.get("completed", False))
-    force = bool(data.get("force", False))
-
-    incomplete_children = todo.children.filter(progress__lt=100)
-    if completed and not force and incomplete_children.exists():
+    # L'avancement d'un parent se calcule à partir de ses enfants (#164).
+    if todo.children.exists():
         return JsonResponse(
             {
-                "status": "needs_confirmation",
-                "message": "Cette tâche contient des sous-tâches non complétées.",
-                "children_count": incomplete_children.count(),
-            }
+                "error": "L'avancement d'une tâche qui a des sous-tâches se calcule "
+                "à partir d'elles."
+            },
+            status=400,
         )
 
-    toggled_ids = todo.set_completed(completed)
-    return JsonResponse({"status": "ok", "toggled_ids": toggled_ids})
+    todo.progress = 100 if data.get("completed") else 0
+    todo.save()
+    return JsonResponse(
+        {"status": "ok", "toggled_ids": [todo.pk, *todo.updated_ancestor_ids]}
+    )

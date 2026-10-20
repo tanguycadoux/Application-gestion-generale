@@ -27,8 +27,8 @@
                         <div class="{{ todo.due_status|todo_line_classes }}">
                             <div>
                                 <label>
-                                    <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
-                                    {{ todo.title }}
+                                    <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}{% if todo.children.exists %} disabled{% endif %}>
+                                    {{ todo.title }}{% if todo.children.exists %} <span class="text-sm text-slate-600">({{ todo.progress }} %)</span>{% endif %}
                                 </label>
                                 <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
                             </div>
@@ -58,8 +58,8 @@
                         <h3>{{ todo.project }}</h3>
                         <div>
                             <label>
-                                <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
-                                {{ todo.title }}
+                                <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}{% if todo.children.exists %} disabled{% endif %}>
+                                {{ todo.title }}{% if todo.children.exists %} <span class="text-sm text-slate-600">({{ todo.progress }} %)</span>{% endif %}
                             </label>
                             <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
                         </div>
