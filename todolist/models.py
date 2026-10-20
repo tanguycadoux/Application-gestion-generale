@@ -44,6 +44,10 @@ class Todo(models.Model):
     progress = models.PositiveSmallIntegerField(
         "avancement (%)", default=0, validators=[MaxValueValidator(100)]
     )
+    # Terminée : suit l'avancement (100 %) pour une tâche sans sous-tâche ; se
+    # coche à la main pour un parent, et se décoche dès qu'un de ses enfants
+    # n'est plus terminé (#164).
+    done = models.BooleanField("terminée", default=False)
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
@@ -102,6 +106,8 @@ class Todo(models.Model):
             computed = self.children_progress()
             if computed is not None:
                 self.progress = computed
+        if not self.pk or not self.children.exists():
+            self.done = self.progress == 100
 
         super().save(*args, **kwargs)
 
@@ -118,7 +124,12 @@ class Todo(models.Model):
 
     @property
     def completed(self) -> bool:
-        return self.progress == 100
+        return self.done
+
+    @property
+    def to_validate(self) -> bool:
+        """Parent dont tous les enfants sont terminés, pas encore coché."""
+        return self.progress == 100 and not self.done
 
     def clean(self):
         if self.parent:
@@ -150,7 +161,8 @@ class Todo(models.Model):
 def update_ancestors_progress(parent_id: int | None) -> list[int]:
     """Recalcule l'avancement des ancêtres, du parent jusqu'à la racine (#164).
 
-    Un parent sans plus d'enfant garde sa dernière valeur. Renvoie les
+    Un parent coché se décoche dès qu'un de ses enfants n'est plus terminé ; un
+    parent sans plus d'enfant garde ses dernières valeurs. Renvoie les
     identifiants des tâches modifiées.
     """
     updated = []
@@ -159,9 +171,12 @@ def update_ancestors_progress(parent_id: int | None) -> list[int]:
         if parent is None:
             break
         computed = parent.children_progress()
-        if computed is None or computed == parent.progress:
+        if computed is None:
             break
-        Todo.objects.filter(pk=parent.pk).update(progress=computed)
+        done = parent.done and not parent.children.filter(done=False).exists()
+        if (computed, done) == (parent.progress, parent.done):
+            break
+        Todo.objects.filter(pk=parent.pk).update(progress=computed, done=done)
         updated.append(parent.pk)
         parent_id = parent.parent_id
     return updated

@@ -279,12 +279,13 @@ Les tâches peuvent être créées manuellement ou générées depuis les notes 
 - un projet (obligatoire), un sujet facultatif et des tags ; une tâche issue d'une note reprend le projet, le sujet et les tags de sa note part,
 - une priorité (basse, moyenne, haute),
 - une date d'échéance facultative,
-- un avancement de 0 à 100 % ; elle est terminée à 100 %,
+- un avancement de 0 à 100 %,
+- un état « terminée »,
 - une tâche parente éventuelle (sous-tâches).
 
-Une tâche qui a des sous-tâches a un avancement **calculé** : la moyenne de celui de ses enfants, recalculée à chaque changement d'un enfant, sur tous les niveaux (#164). Elle est donc terminée quand tous ses enfants le sont, et son avancement ne se saisit pas. Le formulaire d'une sous-tâche propose le projet et l'échéance de sa parente, sans les imposer. Seule une boucle parent-enfant est refusée.
+Une tâche sans sous-tâche est terminée à 100 % d'avancement. Une tâche qui a des sous-tâches a un avancement **calculé** : la moyenne de celui de ses enfants, recalculée à chaque changement d'un enfant, sur tous les niveaux (#164) ; il ne se saisit pas. Elle se **valide à la main** : la cocher la marque terminée, à tout moment (une validation alors que des enfants sont en cours est une incohérence, signalée). Tant qu'elle n'est pas cochée, elle reste en cours, « à valider » quand tous ses enfants sont terminés ; et elle se décoche d'elle-même dès qu'un de ses enfants n'est plus terminé. Le formulaire d'une sous-tâche propose le projet et l'échéance de sa parente, sans les imposer. Seule une boucle parent-enfant est refusée.
 
-La liste (`/todolist/todos`) sépare les tâches en cours des tâches terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours). La case d'une tâche la passe à 100 % ou à 0 % ; celle d'une tâche qui a des sous-tâches est désactivée, son avancement affiché à côté.
+La liste (`/todolist/todos`) sépare les tâches en cours des tâches terminées et les trie par échéance, en prenant en compte l'échéance la plus proche des sous-tâches non terminées. L'affichage dépend de l'échéance : dépassée, pour aujourd'hui, prochainement (sous 3 jours). La case d'une tâche sans sous-tâche la passe à 100 % ou à 0 % ; celle d'une tâche qui a des sous-tâches la valide ou non, son avancement étant affiché à côté.
 
 ## Orientations
 

@@ -1,7 +1,6 @@
 """Tests de la complétion d'un parent, calculée à partir de ses enfants (#164)."""
 
 import json
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -41,7 +40,6 @@ class ComputedProgressTests(ParentProgressTestCase):
         # Enfant = 60 (son seul enfant), Parent = moyenne(60, 0) = 30.
         self.assertEqual(self.progress(self.child, self.parent), [60, 30])
 
-    @unittest.expectedFailure
     def test_parent_a_100_sans_etre_termine(self):
         """Un parent se valide à la main, même quand tous ses enfants sont finis."""
         for todo in (self.grandchild, self.other):
@@ -105,7 +103,6 @@ class ParentFormTests(ParentProgressTestCase):
     def test_avancement_d_une_tache_sans_sous_tache_modifiable(self):
         self.assertFalse(TodoForm(instance=self.other).fields["progress"].disabled)
 
-    @unittest.expectedFailure
     def test_case_terminee_seulement_pour_un_parent(self):
         self.assertIn("done", TodoForm(instance=self.parent).fields)
         self.assertNotIn("done", TodoForm(instance=self.other).fields)
@@ -122,7 +119,6 @@ class ToggleTests(ParentProgressTestCase):
             [100, 100, 50, 0],
         )
 
-    @unittest.expectedFailure
     def test_cocher_un_parent_a_tout_moment(self):
         """Ne rien empêcher : un parent se coche même si ses enfants ne sont pas
         finis (l'incohérence est signalée, #165)."""
@@ -142,7 +138,6 @@ class ToggleTests(ParentProgressTestCase):
         self.assertNotIn("confirm(", script)
         self.assertNotIn("force", script)
 
-    @unittest.expectedFailure
     def test_case_d_un_parent_active_avec_son_avancement(self):
         self.grandchild.progress = 100
         self.grandchild.save()
@@ -170,7 +165,6 @@ class ParentValidationTests(ParentProgressTestCase):
         self.other.save()
         self.assertEqual(self.done(self.other), [False])
 
-    @unittest.expectedFailure
     def test_parent_a_valider_dans_la_liste(self):
         self.finish_children()
 

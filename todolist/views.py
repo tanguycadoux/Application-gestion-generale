@@ -35,10 +35,10 @@ class TodoListView(ListView):
             Todo.objects.filter(parent__isnull=True)
             .annotate(
                 earliest_child_due_date=Min(
-                    "children__due_date", filter=Q(children__progress__lt=100)
+                    "children__due_date", filter=Q(children__done=False)
                 ),
                 sort_due_date=Coalesce(
-                    Min("children__due_date", filter=Q(children__progress__lt=100)),
+                    Min("children__due_date", filter=Q(children__done=False)),
                     "due_date",
                 ),
             )
@@ -49,8 +49,8 @@ class TodoListView(ListView):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
 
-        context["todo_pending"] = qs.filter(progress__lt=100)
-        context["todo_completed"] = qs.filter(progress=100)
+        context["todo_pending"] = qs.filter(done=False)
+        context["todo_completed"] = qs.filter(done=True)
 
         context["today"] = timezone.localdate()
         return context
@@ -111,17 +111,12 @@ def toggle_todo(request, pk):
     if not isinstance(data, dict):
         return JsonResponse({"error": "Corps de requête JSON invalide."}, status=400)
 
-    # L'avancement d'un parent se calcule à partir de ses enfants (#164).
+    completed = bool(data.get("completed"))
     if todo.children.exists():
-        return JsonResponse(
-            {
-                "error": "L'avancement d'une tâche qui a des sous-tâches se calcule "
-                "à partir d'elles."
-            },
-            status=400,
-        )
-
-    todo.progress = 100 if data.get("completed") else 0
+        # Un parent se coche à la main ; son avancement reste calculé (#164).
+        todo.done = completed
+    else:
+        todo.progress = 100 if completed else 0
     todo.save()
     return JsonResponse(
         {"status": "ok", "toggled_ids": [todo.pk, *todo.updated_ancestor_ids]}
