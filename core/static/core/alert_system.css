@@ -1,211 +1,35 @@
 @layer components {
-    /* Dans le layer components, les classes Tailwind (layer utilities) peuvent surcharger ces règles. */
+    /* Animations des alertes (#154) ; leur apparence est en classes Tailwind,
+       dans core/static/core/alert_system.js. Dans le layer components, les
+       classes Tailwind (layer utilities) peuvent surcharger ces règles. */
 
-    .alert__overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.2);
-        backdrop-filter: blur(1em);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999999;
-    }
-
-    .alert__modal {
-        background: white;
-        padding: 20px 25px;
-        border-radius: 8px;
-        max-width: 320px;
-        width: 90%;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-
-    .alert__message {
-        margin-bottom: 20px;
-    }
-
-    .alert__buttons {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-    }
-
-    .alert__buttons button {
-        font-size: 1rem;
-        font-weight: 600;
-        margin: .4rem 0;
-        padding: 10px 16px;
-        border: none;
-        border-radius: 6px;
-        background: var(--color-slate-800);
-        color: white;
-        cursor: pointer;
-    }
-
-    .alert__buttons button.alert__cancel {
-        background: var(--color-slate-400);
-    }
-
-    /* --- Toasts --- */
-
-    .alert__toast-container {
-        position: fixed;
-        top: 1em;
-        right: 1em;
-        display: flex;
-        flex-direction: column;
-        gap: .5em;
-        z-index: 999999;
-    }
-
+    /* Apparition d'un toast */
     .alert__toast {
-        --bg-color: white;
-        --progress-bar-h: 5px;
-        --main-color-darken: var(--color-blue-700);
-        --main-color:        var(--color-blue-400);
-        --main-color-faded:  var(--color-blue-100);
-
-        background-color: var(--bg-color);
-        border: 1px solid var(--main-color);
-
-        position: relative;
-        color: black;
         opacity: 0;
         transform: translateY(-1em);
         transition: opacity 0.25s ease-out, transform 0.25s ease-out;
-        min-width: 180px;
-        max-width: 300px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
     }
-
-    .alert__toast-content{
-        padding: .4rem;
-    }
-
-    .alert__toast-title{
-        color: var(--main-color-darken);
-
-        font-weight: 600;
-        font-size: 1rem;
-        line-height: 1.2;
-        margin: 0 0 .4rem;
-    }
-
-    .alert__toast-text{
-        font-weight: 400;
-        font-size: 1rem;
-        line-height: 1.2;
-        margin: 0;
-    }
-
-    /* Apparition */
     .alert__toast.show {
         opacity: 1;
         transform: translateY(0);
     }
 
-    /* TYPES */
-    .alert__toast-success {
-        --main-color-darken: var(--color-green-700);
-        --main-color:        var(--color-green-500);
-        --main-color-faded:  var(--color-green-200);
-    }
-
-    .alert__toast-error {
-        --main-color-darken: var(--color-red-700);
-        --main-color:        var(--color-red-400);
-        --main-color-faded:  var(--color-red-100);
-    }
-
-    .alert__toast-warning {
-        --main-color-darken: var(--color-amber-800);
-        --main-color:        var(--color-amber-400);
-        --main-color-faded:  var(--color-amber-100);
-    }
-
-    /* Progress bar */
-
-    .alert__toast-progress-behind {
-        right: 0;
-        bottom: 0;
-        height: var(--progress-bar-h);
-        width: 100%;
-        background-color: var(--main-color-faded);
-    }
-
+    /* Barre de progression d'un toast : de toute la largeur à rien, sur la durée
+       du toast (animation-duration, donnée par le script). Ici plutôt qu'en
+       classes Tailwind, générées après coup pour un élément ajouté par script. */
     .alert__toast-progress {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        height: var(--progress-bar-h);
         width: 100%;
-        background-color: var(--main-color);
+        animation: alert-toast-progress linear forwards;
     }
 
-    /* --- POPOVER --- */
+    @keyframes alert-toast-progress {
+        from { width: 100%; }
+        to   { width: 0; }
+    }
+
+    /* Apparition de la popover */
     .alert__popover {
-        --shadow-length: .2rem;
-        --shadow-blur-factor: 3;
-        --shadow-angle: 75deg;
-        --shadow-blur: calc(var(--shadow-blur-factor)*var(--shadow-length));
-        --shadow-h-length: calc(var(--shadow-length)*cos(var(--shadow-angle)));
-        --shadow-v-length: calc(var(--shadow-length)*sin(var(--shadow-angle)));
-    
-        box-shadow: var(--shadow-h-length) var(--shadow-v-length) var(--shadow-blur) oklch(0 0 0 / .10);
-        border: 1px solid var(--color-slate-200);
-
-        font-size: 1rem;
-        position: absolute;
-        background: white;
-        border-radius: 2px;
-        padding: .4rem;
-        z-index: 999999;
-        min-width: 180px;
         animation: fadeIn .1s ease-out;
-        -webkit-user-select: none; /* Safari */
-        -ms-user-select: none; /* IE 10 and IE 11 */
-        user-select: none; /* Standard syntax */
-    }
-
-    .alert__popover-message {
-        font-weight: 600;
-        line-height: 1.2;
-        margin-top: 0;
-        margin-bottom: .4rem;
-    }
-
-    .alert__popover-buttons {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        gap: .4rem;
-    }
-
-    .alert__popover-buttons button {
-        --bg_color:  var(--color-slate-200);
-        --txt_color: var(--color-blue-800);
-
-        border: 2px solid var(--bg_color);
-        color: var(--txt_color);
-
-        margin: 0;
-        flex: 1;
-        font-weight: 600;
-        padding: .4rem;
-        font-size: 1rem;
-        border-radius: .6rem;
-        cursor: pointer;
-        background: white;
-    }
-    .alert__popover-buttons button:hover{
-        background: var(--bg_color);
-    }
-
-    .alert__popover-buttons button.alert__pop-ok {
-        --bg_color:  var(--color-red-100);
-        --txt_color: var(--color-red-800);
     }
 
     @keyframes fadeIn {

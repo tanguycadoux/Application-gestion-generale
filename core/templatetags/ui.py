@@ -8,6 +8,7 @@ des noms de Material Symbols Rounded.
 
 from django import template
 from django.urls import reverse
+from django.utils.html import json_script
 
 register = template.Library()
 
@@ -37,6 +38,13 @@ BUTTON_VARIANTS = {
     "ghost": BUTTON_SHAPE + " hover:bg-slate-200",
     "ghost-danger": BUTTON_SHAPE + " text-red-800 hover:bg-red-100",
 }
+
+
+@register.simple_tag
+def button_variants_json() -> str:
+    """Classes des variantes de bouton pour les scripts qui créent des boutons
+    (alertes, #154), dans un `<script id="button-variants" type="application/json">`."""
+    return json_script(BUTTON_VARIANTS, "button-variants")
 
 
 @register.inclusion_tag("core/components/button.html")

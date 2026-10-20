@@ -10,50 +10,34 @@ function alertElement(tag, className, text = null, children = []) {
   return element;
 }
 
+// Forme commune des alertes (#154), celle des boutons pour les coins.
+const ALERT_SHAPE = "rounded-xl border border-slate-200 bg-white p-3 shadow-lg";
+
+// Classes des variantes du composant button, transmises par le gabarit de base
+// (core/templatetags/ui.py, BUTTON_VARIANTS) plutôt que recopiées ici.
+function buttonVariants() {
+  return JSON.parse(document.getElementById("button-variants").textContent);
+}
+
 window.Alert = (function () {
-  /* --- SYSTEME DE MODAL (alert/confirm) --- */
-
-  function createModal({ message, showCancel = false }) {
-    return new Promise((resolve) => {
-
-      const overlay = document.createElement("div");
-      overlay.className = "alert__overlay";
-
-      const buttons = [alertElement("button", "alert__ok", "OK")];
-      if (showCancel) {
-        buttons.push(alertElement("button", "alert__cancel", "Annuler"));
-      }
-      const modal = alertElement("div", "alert__modal", null, [
-        alertElement("p", "alert__message", message),
-        alertElement("div", "alert__buttons", null, buttons),
-      ]);
-
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-
-      modal.querySelector(".alert__ok").onclick = () => {
-        overlay.remove();
-        resolve(true);
-      };
-
-      const cancelBtn = modal.querySelector(".alert__cancel");
-      if (cancelBtn) {
-        cancelBtn.onclick = () => {
-          overlay.remove();
-          resolve(false);
-        };
-      }
-    });
-  }
-
   /* --- TOASTS --- */
+
+  // Par type : titre, icône, liseré, couleur du titre et de l'icône, barre de progression.
+  // Classes écrites en entier, pour que Tailwind les trouve.
+  const TOAST_TYPES = {
+    info: { title: "Info", icon: "info", border: "border-l-blue-700", text: "text-blue-800", bar: "bg-blue-500" },
+    success: { title: "Succès", icon: "check_circle", border: "border-l-green-700", text: "text-green-800", bar: "bg-green-500" },
+    warning: { title: "Attention", icon: "warning", border: "border-l-amber-500", text: "text-amber-800", bar: "bg-amber-400" },
+    error: { title: "Erreur", icon: "error", border: "border-l-red-700", text: "text-red-800", bar: "bg-red-500" },
+  };
 
   let toastContainer = null;
 
   function ensureToastContainer() {
     if (!toastContainer) {
-      toastContainer = document.createElement("div");
-      toastContainer.className = "alert__toast-container";
+      toastContainer = alertElement(
+        "div", "fixed top-4 right-4 z-[999999] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2"
+      );
       document.body.appendChild(toastContainer);
     }
   }
@@ -67,55 +51,32 @@ window.Alert = (function () {
       title = "",
       duration = 5
     } = options;
-
-    let display_title;
-    switch (type) {
-      case "info":
-        display_title = "Info";
-        break;
-      case "success":
-        display_title = "Succès";
-        break;
-      case "error":
-        display_title = "Erreur";
-        break;
-      case "warning":
-        display_title = "Attention";
-        break;
-      default:
-        display_title = "Titre";
-        break;
-    }
-
-    if (title != "") {
-      display_title = title
-    }
-
+    const style = TOAST_TYPES[type] ?? TOAST_TYPES.info;
     const duration_ms = duration * 1000;
 
-    const content = [];
+    const text = [];
     if (has_title) {
-      content.push(alertElement("h6", "alert__toast-title", display_title));
+      text.push(alertElement("p", `font-semibold ${style.text}`, title || style.title));
     }
-    content.push(alertElement("p", "alert__toast-text", message));
+    text.push(alertElement("p", "", message));
 
-    const toast = alertElement("div", `alert__toast alert__toast-${type}`, null, [
-      alertElement("div", "alert__toast-content", null, content),
-      alertElement("div", "alert__toast-progress-behind"),
-      alertElement("div", "alert__toast-progress"),
-    ]);
+    const icon = alertElement("span", `material-symbols-rounded ${style.text}`, style.icon);
+    icon.setAttribute("aria-hidden", "true");
+
+    // Barre animée par alert_system.css : le script ne donne que la durée.
+    const progressBar = alertElement("div", `alert__toast-progress absolute bottom-0 left-0 h-1 ${style.bar}`);
+    progressBar.style.animationDuration = `${duration_ms}ms`;
+    const toast = alertElement(
+      "div",
+      `alert__toast relative overflow-hidden ${ALERT_SHAPE} border-l-4 ${style.border}`,
+      null,
+      [alertElement("div", "flex items-start gap-2", null, [icon, alertElement("div", "min-w-0", null, text)]), progressBar]
+    );
+    toast.setAttribute("role", type === "error" ? "alert" : "status");
     toastContainer.appendChild(toast);
 
     requestAnimationFrame(() => {
       toast.classList.add("show");
-    });
-
-    const progressBar = toast.querySelector(".alert__toast-progress");
-    progressBar.style.transition = `width ${duration_ms}ms linear`;
-    void progressBar.offsetWidth;
-    progressBar.style.width = "0%";
-    requestAnimationFrame(() => {
-      progressBar.style.width = "0%";
     });
 
     setTimeout(() => {
@@ -125,48 +86,30 @@ window.Alert = (function () {
   }
 
   /* --- POPOVER --- */
-  async function confirmAt(element, message, {
-    ok_data = {
-      message: "Supprimer",
-      class_suffix: 'pop-ok',
-      order: 0
-    },
-    cancel_data = {
-      message: "Annuler",
-      class_suffix: 'pop-cancel',
-      order: 1
-    }
-  } = {}) {
-    const buttons_data = [ok_data, cancel_data]
-    const ordered_buttons = Array(buttons_data.length)
-    for (const button_data of buttons_data) {
-      ordered_buttons[button_data.order] = button_data
+
+  // Confirmation à côté d'un élément : « Annuler » (ghost) puis l'action (danger).
+  async function confirmAt(element, message, { ok_label = "Supprimer", cancel_label = "Annuler" } = {}) {
+    const variants = buttonVariants();
+    const cancelButton = alertElement("button", variants.ghost, cancel_label);
+    const okButton = alertElement("button", variants.danger, ok_label);
+    for (const button of [cancelButton, okButton]) {
+      button.type = "button";
     }
 
-    const buttons = [];
-    for (const button_data of ordered_buttons) {
-      if (typeof button_data == 'undefined') {
-        throw new Error(`Le bouton est vide.`);
-      }
-
-      buttons.push(
-        alertElement("button", `alert__${button_data.class_suffix}`, button_data.message)
-      );
-    }
     const content = [
-      alertElement("p", "alert__popover-message", message),
-      alertElement("div", "alert__popover-buttons", null, buttons),
+      alertElement("p", "mb-3 font-semibold", message),
+      alertElement("div", "flex justify-end gap-2", null, [cancelButton, okButton]),
     ];
     const { pop, ready, close } = createPopoverBase(element, content);
 
     await ready;
 
     return new Promise((resolve) => {
-      pop.querySelector(".alert__pop-ok").onclick = () => {
+      okButton.onclick = () => {
         pop.remove();
         resolve(true);
       };
-      pop.querySelector(".alert__pop-cancel").onclick = () => {
+      cancelButton.onclick = () => {
         pop.remove();
         resolve(false);
       };
@@ -176,12 +119,6 @@ window.Alert = (function () {
   }
 
   return {
-    alert(message) {
-      return createModal({ message, showCancel: false });
-    },
-    confirm(message) {
-      return createModal({ message, showCancel: true });
-    },
     toast,
     confirmAt,
   };
@@ -200,7 +137,7 @@ function createPopoverBase(
   const close = new Promise((resolveClose) => {
     document.querySelectorAll(".alert__popover").forEach(el => el.remove());
 
-    pop = alertElement("div", "alert__popover", null, content);
+    pop = alertElement("div", `alert__popover absolute z-[999999] min-w-48 max-w-80 select-none ${ALERT_SHAPE}`, null, content);
 
     document.body.appendChild(pop);
 
