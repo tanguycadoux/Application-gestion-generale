@@ -4,7 +4,7 @@ from django.contrib.staticfiles import finders
 from django.test import TestCase
 from django.urls import reverse
 
-STATIC_FILES = ("core/style.css", "core/alert_system.css", "core/alert_system.js")
+STATIC_FILES = ("core/alert_system.css", "core/alert_system.js")
 
 
 class CommonPagesTests(TestCase):
