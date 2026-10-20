@@ -27,7 +27,7 @@
         <p>Parent : <a href="{% url 'todolist:todo_detail' object.parent.pk %}">{{ object.parent }}</a></p>
     {% endif %}
     {% if object.children.all %}
-        <div class="todo-list__children-wrapper">
+        <div>
             {% with children=object.children.all %}
                 {% include "todolist/todo_item.html" with children=children %}
             {% endwith %}

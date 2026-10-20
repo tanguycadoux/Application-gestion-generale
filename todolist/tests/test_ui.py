@@ -1,6 +1,5 @@
 """Tests du style des TODO selon leur échéance (classes Tailwind, #79)."""
 
-import unittest
 from datetime import date, timedelta
 
 from django.template import Context, Template
@@ -18,7 +17,6 @@ def render(source: str, status: str | None) -> str:
 
 
 class DueClassesTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_carte_principale(self):
         expected = {
             None: "bg-neutral-95",
@@ -34,7 +32,6 @@ class DueClassesTests(SimpleTestCase):
                 self.assertIn("grid-cols-subgrid", classes)
                 self.assertIn(expected[status], classes)
 
-    @unittest.expectedFailure
     def test_contour_pour_aujourd_hui_et_en_retard(self):
         for status, border in (("today", "primary-60"), ("overdue", "alert-60")):
             with self.subTest(status=status):
@@ -49,7 +46,6 @@ class DueClassesTests(SimpleTestCase):
 
                 self.assertNotIn("after:", html)
 
-    @unittest.expectedFailure
     def test_ligne_en_gras_et_en_couleur_si_echeance_proche(self):
         expected = {
             "soon": "text-primary-40",
@@ -67,7 +63,6 @@ class DueClassesTests(SimpleTestCase):
                 else:
                     self.assertNotIn("font-semibold", classes)
 
-    @unittest.expectedFailure
     def test_sous_tache(self):
         expected = {
             None: "bg-neutral-95",
@@ -92,7 +87,6 @@ class TodoPagesTests(TestCase):
             title="Enfant", parent=self.parent, due_date=yesterday
         )
 
-    @unittest.expectedFailure
     def test_liste_sans_classes_maison(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
@@ -102,7 +96,6 @@ class TodoPagesTests(TestCase):
             with self.subTest(legacy=legacy):
                 self.assertNotIn(legacy, html)
 
-    @unittest.expectedFailure
     def test_detail_sans_classes_maison(self):
         response = self.client.get(
             reverse("todolist:todo_detail", args=[self.parent.pk])
@@ -113,7 +106,6 @@ class TodoPagesTests(TestCase):
         self.assertNotIn("todo-list__", html)
         self.assertNotIn("todo-line-item", html)
 
-    @unittest.expectedFailure
     def test_feuille_de_style_de_l_app_retiree(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
