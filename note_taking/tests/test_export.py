@@ -3,6 +3,7 @@
 import io
 import shutil
 import tempfile
+import unittest
 import zipfile
 
 from django.core.files.base import ContentFile
@@ -121,3 +122,50 @@ class ExportViewTests(TestCase):
 
         self.assertContains(response, f'href="{reverse("note_taking:export_notes")}"')
         self.assertContains(response, "Exporter toutes les notes")
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class NoteExportTests(TestCase):
+    def setUp(self):
+        import_image(SimpleUploadedFile("banc.png", b"banc"))
+        import_image(SimpleUploadedFile("autre.png", b"autre"))
+        self.note = Note.objects.create(
+            date="2025-11-24",
+            body="# P\n![A](images/banc.png)\n![X](images/absente.png)",
+        )
+        Note.objects.create(date="2026-02-03", body="# Q\n![B](images/autre.png)")
+
+    @unittest.expectedFailure
+    def test_archive_de_la_note_et_de_ses_seules_images(self):
+        from note_taking.qmd.export import write_note_archive
+
+        buffer = io.BytesIO()
+        write_note_archive(self.note, buffer)
+        archive = zipfile.ZipFile(buffer)
+
+        self.assertEqual(
+            sorted(archive.namelist()), ["2025-11-24.qmd", "images/banc.png"]
+        )
+
+    @unittest.expectedFailure
+    def test_telechargement_depuis_la_page_de_la_note(self):
+        response = self.client.get(
+            reverse("note_taking:export_note", args=[self.note.pk])
+        )
+
+        self.assertEqual(response["Content-Type"], "application/zip")
+        self.assertEqual(
+            response["Content-Disposition"], 'attachment; filename="2025-11-24.zip"'
+        )
+
+    @unittest.expectedFailure
+    def test_bouton_dans_l_en_tete_de_la_note(self):
+        response = self.client.get(
+            reverse("note_taking:note_detail", args=[self.note.pk])
+        )
+
+        self.assertContains(
+            response,
+            f'href="{reverse("note_taking:export_note", args=[self.note.pk])}"',
+        )
+        self.assertContains(response, 'aria-label="Exporter la note"')
