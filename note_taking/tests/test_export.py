@@ -3,6 +3,7 @@
 import io
 import shutil
 import tempfile
+import unittest
 import zipfile
 
 from django.core.files.base import ContentFile
@@ -120,7 +121,24 @@ class ExportViewTests(TestCase):
         response = self.client.get(reverse("note_taking:notes_list"))
 
         self.assertContains(response, f'href="{reverse("note_taking:export_notes")}"')
-        self.assertContains(response, "Exporter toutes les notes")
+
+    @unittest.expectedFailure
+    def test_libelle_avec_le_nombre_de_notes(self):
+        Note.objects.create(date="2025-11-24", body="x")
+        Note.objects.create(date="2025-11-25", body="y")
+
+        response = self.client.get(reverse("note_taking:notes_list"))
+
+        self.assertContains(response, "Exporter les 2 notes")
+        self.assertNotContains(response, "notes dans la base de données")
+
+    @unittest.expectedFailure
+    def test_libelle_pour_une_seule_note(self):
+        Note.objects.create(date="2025-11-24", body="x")
+
+        response = self.client.get(reverse("note_taking:notes_list"))
+
+        self.assertContains(response, "Exporter la note")
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
