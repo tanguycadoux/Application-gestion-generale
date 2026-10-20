@@ -55,7 +55,7 @@ Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templa
 | Balise | Rendu |
 |---|---|
 | `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
-| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) |
+| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
 
 Exemples :
@@ -66,6 +66,8 @@ Exemples :
 {% url 'todolist:todo_edit' todo.pk as url %}{% button "Modifier" href=url %}
 {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
 ```
+
+Usage des variantes de bouton (#145) : un bouton **plein** (`primary`, `danger`) pour l'action principale d'une page ou d'une zone, en général une seule (Enregistrer, Importer, Ouvrir la note du jour…) ; un bouton **`ghost`** pour les actions sur l'objet affiché, en barre d'outils à côté du titre (exporter, modifier, et supprimer en `ghost-danger`), et pour la navigation (mois précédent/suivant, retour). Toutes les variantes ont la même forme, sans marge : l'espacement revient au conteneur. Au survol, le fond d'un bouton plein s'éclaircit ; un `ghost`, sans fond, en prend un. Les suppressions (`danger`, `ghost-danger`) ont le texte en rouge.
 
 Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement.
 
