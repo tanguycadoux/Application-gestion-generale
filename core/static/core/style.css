@@ -12,16 +12,6 @@
 
 /* | BASE | */
 
-table {
-    border: 1px solid;
-    border-collapse: collapse;
-}
-
-th, td {
-    border: 1px solid;
-    padding: .2rem;
-}
-
 /* | BLOCK | */
 
 .nav-link{
@@ -74,49 +64,3 @@ th, td {
 }
 
 
-.table-column-head{
-    --color:    black;
-    --bg-color: inherit;
-    --bg-color-hover: oklch(92% 0 0);
-
-    background-color: var(--bg-color);
-    color: var(--color);
-
-    display: grid;
-    text-align: left;
-    grid-template-columns: 1fr auto;
-    align-items: baseline;
-    font-weight: 600;
-    padding: .4rem;
-    margin: 0;
-    text-decoration: none;
-    border-radius: .6rem;
-    cursor: pointer;
-    width: 100%;
-}
-.table-column-head:hover, .table-column-head--active-popover{
-    --bg-color: var(--bg-color-hover);
-    --color: var(--color);
-
-    text-decoration: none;
-}
-
-.table-column-head__options{
-    --bg-color: inherit;
-    --bg-color-hover: oklch(95% 0 0);
-
-    background-color: var(--bg-color);
-
-    color: inherit;
-    padding: .2rem;
-    border-radius: .2rem;
-    margin: 0;
-    cursor: pointer;
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Standard syntax */
-}
-.table-column-head__options:hover{
-    --bg-color: var(--bg-color-hover);
-}

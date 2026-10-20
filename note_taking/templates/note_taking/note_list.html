@@ -35,11 +35,11 @@
     </form>
     <hr class="hidden">
 
-    <table class="notes-list-table">
-        <thead>
+    <table class="border-collapse rounded-[.6rem] text-left outline outline-[oklch(86%_0_0)]">
+        <thead class="border-b border-[oklch(86%_0_0)]">
             <tr>
-                <th scope="col">
-                    <a class="table-column-head"
+                <th scope="col" class="bg-[oklch(96%_0_0)] px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
+                    <a class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-[oklch(92%_0_0)] data-active:bg-[oklch(92%_0_0)]"
                         {% if next_sort %}
                             href="?sort={{ next_sort }}&direction={{ next_direction }}"
                         {% else %}
@@ -56,15 +56,15 @@
                                 {% endif %}
                             {% endif %}
                         </p>
-                        <span class="table-column-head__options">
+                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-[oklch(95%_0_0)]">
                             &centerdot;&centerdot;&centerdot;
                         </span>
                     </a>
                 </th>
-                <th scope="col">
-                    <button class="table-column-head">
+                <th scope="col" class="bg-[oklch(96%_0_0)] px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
+                    <button class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-[oklch(92%_0_0)] data-active:bg-[oklch(92%_0_0)]">
                         <p>Projets</p>
-                        <span class="table-column-head__options">
+                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-[oklch(95%_0_0)]">
                             &centerdot;&centerdot;&centerdot;
                         </span>
                     </button>
@@ -73,11 +73,11 @@
         </thead>
         <tbody>
             {% for note in notes %}
-                <tr>
-                    <th scope="row"><a href="{% url 'note_taking:note_detail' note.pk %}">
+                <tr class="odd:bg-white even:bg-[oklch(96%_0_0)]">
+                    <th scope="row" class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]"><a href="{% url 'note_taking:note_detail' note.pk %}">
                         {{ note.date|date:'D. j M. Y' }}
                     </a></th>
-                    <td>
+                    <td class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
                         {% if note.projects %}
                             <ul class="m-0 flex h-fit list-none gap-[.4rem] p-0">
                                 {% for project in note.projects %}
