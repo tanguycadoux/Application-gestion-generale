@@ -1,7 +1,5 @@
 """Tests du style des pages de note_taking en classes Tailwind (#79)."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 from django.urls import reverse
@@ -39,7 +37,6 @@ class StylesheetsTests(TestCase):
         with open(path, encoding="utf-8") as file:
             return file.read()
 
-    @unittest.expectedFailure
     def test_popover_des_colonnes_en_classes_tailwind(self):
         js = self.read("note_taking/table.js")
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()

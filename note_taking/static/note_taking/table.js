@@ -7,7 +7,11 @@ async function tableColumnOptions(columnButton) {
     );
     
     await ready;
-    pop.classList.add("table-column-options-popover");
+    // Classes écrites en entier ; la popover de base est dans le layer components.
+    pop.classList.add(
+        "w-fit", "min-w-auto", "rounded-[0.6rem]", "border",
+        "border-[oklch(86%_0_0)]", "text-[0.85rem]",
+    );
     columnButton.dataset.active = "";
 
     return new Promise((resolve) => {
