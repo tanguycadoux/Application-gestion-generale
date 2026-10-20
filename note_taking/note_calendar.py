@@ -8,7 +8,16 @@ from django.utils import timezone
 
 from .models import Note, NotePart
 
-WEEKDAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+# Jours de la semaine, du lundi au dimanche : (abréviation, nom complet).
+WEEKDAY_LABELS = [
+    ("Lun", "lundi"),
+    ("Mar", "mardi"),
+    ("Mer", "mercredi"),
+    ("Jeu", "jeudi"),
+    ("Ven", "vendredi"),
+    ("Sam", "samedi"),
+    ("Dim", "dimanche"),
+]
 
 
 @dataclass
@@ -33,7 +42,9 @@ class MonthCalendar:
     weeks: list[list[CalendarDay]]
     previous: date
     next: date
-    weekday_labels: list[str] = field(default_factory=lambda: list(WEEKDAY_LABELS))
+    weekday_labels: list[tuple[str, str]] = field(
+        default_factory=lambda: list(WEEKDAY_LABELS)
+    )
 
 
 def month_calendar(year: int, month: int, today: date) -> MonthCalendar:

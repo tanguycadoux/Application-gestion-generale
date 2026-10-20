@@ -1,7 +1,6 @@
 """Tests du calendrier mensuel des notes, sur l'accueil de note_taking (#88)."""
 
 import re
-import unittest
 from datetime import date, timedelta
 
 from django.test import TestCase
@@ -161,35 +160,30 @@ class CalendarMarkupTests(TestCase):
     def get(self, query: str = "") -> str:
         return self.client.get(reverse("note_taking:index") + query).content.decode()
 
-    @unittest.expectedFailure
     def test_tableau_avec_jours_de_la_semaine_en_en_tete(self):
         html = self.get("?mois=2025-11")
 
         self.assertIn("<table", html)
         self.assertIn('<caption class="sr-only">', html)
         self.assertEqual(html.count('<th scope="col"'), 7)
-        self.assertIn('<abbr title="lundi">Lun</abbr>', html)
+        self.assertRegex(html, r'<abbr title="lundi"[^>]*>Lun</abbr>')
         self.assertEqual(html.count("<tr"), 1 + 5)
 
-    @unittest.expectedFailure
     def test_dates_balisees(self):
         html = self.get("?mois=2025-11")
 
         self.assertIn('<time datetime="2025-11-12">12</time>', html)
 
-    @unittest.expectedFailure
     def test_aujourd_hui_signale(self):
         html = self.get()
 
         self.assertEqual(html.count('aria-current="date"'), 1)
 
-    @unittest.expectedFailure
     def test_navigation_entre_les_mois(self):
         html = self.get("?mois=2025-11")
 
         self.assertIn('<nav aria-label="Mois"', html)
 
-    @unittest.expectedFailure
     def test_jours_futurs_visiblement_inactifs(self):
         future = timezone.localdate().replace(day=1) + timedelta(days=62)
 
