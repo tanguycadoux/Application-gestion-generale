@@ -1,49 +1,3 @@
-/* BLOCK */
-
-.notes-list-table{
-    --bg-color--even: oklch(96%  0 0);
-    --bg-color--odd:  oklch(100% 0 0);
-    --border-color:   oklch(86%  0 0);
-    --padding: .4rem;
-
-    outline: 1px solid var(--border-color);
-
-    border: none;
-    border-radius: .6rem;
-}
-
-.notes-list-table{
-    text-align: left;
-}
-
-.notes-list-table td, .notes-list-table th {
-    padding: var(--padding);
-    
-    border: none;
-}
-.notes-list-table td:not(:last-child), .notes-list-table th:not(:last-child) {
-    padding-right: calc(var(--padding)/2);
-}
-.notes-list-table td:not(:first-child), .notes-list-table th:not(:first-child) {
-    padding-left: calc(var(--padding)/2);
-}
-
-.notes-list-table thead {
-    border-bottom: 1px solid var(--border-color);
-}
-
-.notes-list-table thead tr th {
-    background-color: var(--bg-color--even);
-}
-
-.notes-list-table tr:nth-child(even) {
-    background-color: var(--bg-color--even);
-}
-
-.notes-list-table tr:nth-child(odd) {
-    background-color: var(--bg-color--odd);
-}
-
 /* CONTENU RENDU (Markdown des notes) */
 
 /* Le reset de Tailwind retire puces, numérotation et retrait des listes (#80). */
@@ -62,6 +16,17 @@
 .rendered-content ul ul    { list-style-type: circle; }
 .rendered-content ul ul ul { list-style-type: square; }
 .rendered-content ol       { list-style-type: decimal; }
+
+/* Tableaux encadrés, cellules comprises. */
+.rendered-content table {
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+.rendered-content :is(th, td) {
+    border: 1px solid;
+    padding: .2rem;
+}
 
 /* Le reset de Tailwind ramène aussi les titres à la taille du texte. */
 .rendered-content :is(h1, h2, h3, h4, h5, h6) {
