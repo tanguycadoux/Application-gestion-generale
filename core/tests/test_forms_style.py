@@ -1,5 +1,7 @@
 """Tests du style des formulaires : champs communs, libellés à gauche en grille (#132)."""
 
+import unittest
+
 from django import forms
 from django.test import TestCase
 from django.urls import reverse
@@ -18,6 +20,15 @@ class FieldBaseStyleTests(TestCase):
     def test_style_de_base_des_champs(self):
         self.assertIn(
             "@apply rounded-lg border border-slate-300 bg-white px-2 py-1;", self.html
+        )
+
+    @unittest.expectedFailure
+    def test_champs_bornes_a_leur_cellule(self):
+        """Un <select> prend la largeur de sa plus longue option : sans borne, une
+        longue option élargit la grille au-delà de l'écran."""
+        self.assertIn(
+            "@apply max-w-full rounded-lg border border-slate-300 bg-white px-2 py-1;",
+            self.html,
         )
 
     def test_focus_et_erreur_des_champs(self):
