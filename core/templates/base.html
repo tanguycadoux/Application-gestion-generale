@@ -32,6 +32,16 @@
             h3 {
                 @apply text-lg font-semibold;
             }
+
+            /* Liens de texte (#127) : tout lien sans classe, y compris dans le contenu
+               des notes. Un lien qui a sa propre apparence (bouton, menu, carte) porte
+               des classes et n'est pas concerné. */
+            a:not([class]) {
+                @apply text-blue-700 underline underline-offset-2 hover:text-blue-900 hover:decoration-2;
+            }
+            a:not([class]):focus-visible {
+                @apply rounded-sm outline-2 outline-offset-2 outline-blue-700;
+            }
         }
     </style>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />

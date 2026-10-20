@@ -1,7 +1,6 @@
 """Tests du style des liens : un style de base commun aux liens de texte (#127)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -27,7 +26,6 @@ class LinkStyleTests(TestCase):
     def setUp(self):
         self.html = self.client.get("/").content.decode()
 
-    @unittest.expectedFailure
     def test_style_de_base_des_liens_de_texte(self):
         self.assertIn("a:not([class]) {", self.html)
         self.assertIn(
@@ -36,7 +34,6 @@ class LinkStyleTests(TestCase):
             self.html,
         )
 
-    @unittest.expectedFailure
     def test_focus_visible_des_liens(self):
         self.assertIn(
             "@apply rounded-sm outline-2 outline-offset-2 outline-blue-700",
@@ -46,7 +43,6 @@ class LinkStyleTests(TestCase):
     def test_gabarits_trouves(self):
         self.assertGreater(len(templates()), 20)
 
-    @unittest.expectedFailure
     def test_pas_de_style_de_lien_propre_dans_les_gabarits(self):
         for path in templates():
             with self.subTest(path=str(path)):

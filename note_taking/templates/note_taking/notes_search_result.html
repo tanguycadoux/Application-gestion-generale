@@ -7,7 +7,7 @@
                     <h2 class="text-lg font-medium">{{ part.subject }}</h2>
                 {% endif %}
                 {% tag_list part.tags.all %}
-                <a class="text-sm text-blue-700 font-medium underline" href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a>
+                <p class="text-sm font-medium"><a href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {{ part.note }}</a></p>
             </header>
 
             <div class="rendered-content">
