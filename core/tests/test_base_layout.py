@@ -1,7 +1,5 @@
 """Tests de la mise en page du gabarit de base : sans panneau admin (#125)."""
 
-import unittest
-
 from django.test import TestCase
 
 
@@ -9,12 +7,10 @@ class BaseLayoutTests(TestCase):
     def setUp(self):
         self.html = self.client.get("/").content.decode()
 
-    @unittest.expectedFailure
     def test_pas_de_panneau_admin(self):
         self.assertNotIn("Admin panel", self.html)
         self.assertNotIn('href="/admin/"', self.html)
 
-    @unittest.expectedFailure
     def test_grille_a_deux_colonnes(self):
         self.assertIn('<body class="font-sans grid grid-cols-[auto_1fr]', self.html)
 
