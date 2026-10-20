@@ -41,7 +41,7 @@
                 <ul class="list-disc pl-6">
                     {% for note in notes %}
                         <li>
-                            <a class="text-blue-800 underline" href="{% url 'note_taking:note_detail' note.pk %}">
+                            <a href="{% url 'note_taking:note_detail' note.pk %}">
                                 Note du <time datetime="{{ note.date|date:'Y-m-d' }}">{{ note.date|date:'l j F Y' }}</time>
                             </a>
                         </li>
