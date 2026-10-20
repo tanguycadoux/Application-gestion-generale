@@ -10,7 +10,7 @@ from images.models import Image
 
 MARKDOWN_EXTENSIONS = ["fenced_code", "tables"]
 
-IMAGE_MISSING_PATH = "img/image-missing.png"
+IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
 
 # Image telle qu'écrite dans une note : ![légende](chemin/vers/image.png)
 IMAGE_PATH_REGEX = re.compile(r"\!\[[^\]]*\]\((?P<path>[^)]+)\)")

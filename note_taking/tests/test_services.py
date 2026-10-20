@@ -9,6 +9,7 @@ import tempfile
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.templatetags.static import static
 from django.test import TestCase, override_settings
 
 from core.models import Project
@@ -20,6 +21,7 @@ from note_taking.exceptions import (
     NoteParseError,
 )
 from note_taking.models import Note, NotePart
+from note_taking.rendering import IMAGE_MISSING_PATH
 from note_taking.services import (
     insert_note_in_table,
     process_note_parts,
@@ -338,4 +340,4 @@ class ImageTests(ServiceTestCase):
     def test_rendu_image_supprimee(self):
         part = NotePart(project=Project(name="P"), content="![Banc](image:999)")
 
-        self.assertIn("image-missing.png", part.rendered_content())
+        self.assertIn(f'src="{static(IMAGE_MISSING_PATH)}"', part.rendered_content())
