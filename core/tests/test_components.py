@@ -118,7 +118,7 @@ class TagListTests(SimpleTestCase):
 
         self.assertHTMLEqual(
             html,
-            '<ul class="m-0 flex h-fit list-none gap-[.4rem] p-0">'
+            '<ul class="m-0 flex h-fit list-none flex-wrap gap-[.4rem] p-0">'
             f'<li class="{self.TAG}">a</li>'
             f'<li class="{self.TAG}">&lt;b&gt;</li>'
             "</ul>",
