@@ -1,7 +1,5 @@
 """Tests du style des formulaires : champs communs, libellés à gauche en grille (#132)."""
 
-import unittest
-
 from django import forms
 from django.test import TestCase
 from django.urls import reverse
@@ -99,13 +97,11 @@ class SaveInHeaderTests(TestCase):
         )
         self.assertNotIn("col-start-2", html)
 
-    @unittest.expectedFailure
     def test_nouvelle_note(self):
         html = self.client.get(reverse("note_taking:new_note")).content.decode()
 
         self.assert_save_in_header(html, "note-form", "Enregistrer la note")
 
-    @unittest.expectedFailure
     def test_modification_d_une_note(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -115,7 +111,6 @@ class SaveInHeaderTests(TestCase):
 
         self.assert_save_in_header(html, "note-form", "Enregistrer la note")
 
-    @unittest.expectedFailure
     def test_formulaire_de_todo(self):
         html = self.client.get(reverse("todolist:todo_create")).content.decode()
 
@@ -126,8 +121,7 @@ class FormPagesTests(TestCase):
     def test_formulaire_de_todo_en_grille(self):
         html = self.client.get(reverse("todolist:todo_create")).content.decode()
 
-        self.assertIn(f'<form method="post" class="{FORM_GRID}">', html)
-        self.assertIn('<div class="col-start-2">', html)
+        self.assertIn(f'<form id="todo-form" method="post" class="{FORM_GRID}">', html)
 
     def test_formulaire_de_note_en_grille(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")

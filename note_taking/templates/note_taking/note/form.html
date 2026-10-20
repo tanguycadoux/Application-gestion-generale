@@ -1,6 +1,5 @@
 
-{% load ui %}
-<form method="post" action="{{ form_action }}" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
+<form id="note-form" method="post" action="{{ form_action }}" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="col-span-2">{{ form.non_field_errors }}</div>{% endif %}
     <label for="date">Date :</label>
@@ -11,5 +10,4 @@
     {% if form.body.errors %}<div class="col-span-2">{{ form.body.errors }}</div>{% endif %}
     <label for="body" class="sr-only">Contenu de la note</label>
     <textarea name="body" id="body" class="col-span-2 h-96 w-full font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
-    <div class="col-start-2">{% button "Enregistrer" icon="save" icon_only=True %}</div>
 </form>
