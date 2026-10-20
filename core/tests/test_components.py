@@ -1,7 +1,5 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
-import unittest
-
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -132,7 +130,6 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn('<button type="submit" form="note-form"', html)
 
-    @unittest.expectedFailure
     def test_bouton_decrit_par_un_element(self):
         """Un bouton désactivé reste relié au texte qui explique pourquoi."""
         html = render(

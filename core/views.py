@@ -40,6 +40,8 @@ def projects(request):
     project_list = list(with_usage(Project.objects.all()))
     for project in project_list:
         project.usage = usage_text(project.notes_count, project.tasks_count)
+        # Texte qui décrit le bouton de suppression désactivé (aria-describedby).
+        project.usage_id = f"project-{project.pk}-usage"
     return render(request, "core/projects.html", {"projects": project_list})
 
 

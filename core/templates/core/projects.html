@@ -20,19 +20,27 @@
                         {% if project.description %}
                             <p>{{ project.description }}</p>
                         {% endif %}
-                        <p class="text-sm text-slate-600">{{ project.usage|default:"Inutilisé" }}</p>
+                        {% if project.usage %}
+                            <p id="{{ project.usage_id }}" class="text-sm text-slate-600">Utilisé par {{ project.usage }} : suppression impossible.</p>
+                        {% else %}
+                            <p class="text-sm text-slate-600">Inutilisé</p>
+                        {% endif %}
                     </div>
 
-                    {% url 'core:project_edit' project.pk as url %}
-                    {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
+                    {# Barre d'outils compacte ; la raison d'une suppression impossible est dans la colonne d'informations, reliée au bouton. #}
+                    <div class="flex items-center gap-1">
+                        {% url 'core:project_edit' project.pk as url %}
+                        {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
 
-                    <form class="flex flex-col items-end" method="post" action="{% url 'core:project_delete' project.pk %}" data-confirm="Supprimer définitivement le projet « {{ project.name }} » ?">
-                        {% csrf_token %}
-                        {% button "Supprimer le projet" icon="delete" variant="ghost-danger" icon_only=True disabled=project.usage %}
-                        {% if project.usage %}
-                            <p class="max-w-48 text-right text-sm text-slate-600">Utilisé par {{ project.usage }}.</p>
-                        {% endif %}
-                    </form>
+                        <form method="post" action="{% url 'core:project_delete' project.pk %}" data-confirm="Supprimer définitivement le projet « {{ project.name }} » ?">
+                            {% csrf_token %}
+                            {% if project.usage %}
+                                {% button "Supprimer le projet" icon="delete" variant="ghost-danger" icon_only=True disabled=True describedby=project.usage_id %}
+                            {% else %}
+                                {% button "Supprimer le projet" icon="delete" variant="ghost-danger" icon_only=True %}
+                            {% endif %}
+                        </form>
+                    </div>
                 </article>
             </li>
         {% empty %}
