@@ -172,7 +172,8 @@ class CalendarMarkupTests(TestCase):
     def test_dates_balisees(self):
         html = self.get("?mois=2025-11")
 
-        self.assertIn('<time datetime="2025-11-12">12</time>', html)
+        self.assertRegex(html, r'<time datetime="2025-11-12"[^>]*>12</time>')
+        self.assertNotRegex(html, r"<span[^>]*><time")
 
     def test_aujourd_hui_signale(self):
         html = self.get()
