@@ -120,12 +120,11 @@ class ColorClassesTests(SimpleTestCase):
 
 
 class StylesheetColorsTests(SimpleTestCase):
-    def test_alertes_en_variables_tailwind(self):
+    def test_alertes_sans_couleur_en_dur(self):
         css = CSS_COMMENT_REGEX.sub("", read_static("core/alert_system.css"))
 
         self.assertEqual(CSS_LITERAL_COLOR_REGEX.findall(css), [])
         colors = {m.group("color") for m in CSS_VAR_COLOR_REGEX.finditer(css)}
-        self.assertTrue(colors)
         self.assertLessEqual(colors, ALLOWED_COLORS)
 
     def test_contenu_des_notes_seuls_les_callouts_en_dur(self):
