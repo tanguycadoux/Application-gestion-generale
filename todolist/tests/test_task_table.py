@@ -1,6 +1,7 @@
 """Tests de la liste des tâches en tableau arborescent (#166)."""
 
 import re
+import unittest
 from datetime import timedelta
 
 from django.test import SimpleTestCase, TestCase
@@ -151,3 +152,51 @@ class TaskListPageTests(TestCase):
         self.assertIn("<table", section)
         self.assertIn(">Enfant<", section)
         self.assertNotIn('scope="rowgroup"', section)
+
+
+class ProgressBarTests(TestCase):
+    """Avancement en barre dans sa colonne (#182)."""
+
+    def setUp(self):
+        project = Project.objects.create(name="ASTERICS", color="teal")
+        self.parent = Todo.objects.create(title="Parent", project=project)
+        self.child = Todo.objects.create(
+            title="Enfant", project=project, parent=self.parent, progress=40
+        )
+
+    def html(self) -> str:
+        return self.client.get(reverse("todolist:todo_list")).content.decode()
+
+    @unittest.expectedFailure
+    def test_colonne_avancement(self):
+        self.assertIn(
+            '<th scope="col" class="w-24 p-2 font-medium">Avancement</th>', self.html()
+        )
+
+    @unittest.expectedFailure
+    def test_barre_de_chaque_tache(self):
+        html = self.html()
+
+        self.assertRegex(
+            html, r'<progress value="40" max="100"[^>]*aria-label="Avancement : 40 %"'
+        )
+        self.assertRegex(
+            html,
+            r'<progress value="40" max="100"[^>]*aria-label="Avancement : 40 %"[^>]*>',
+        )
+        # Le parent : moyenne de son unique enfant.
+        self.assertEqual(html.count('aria-label="Avancement : 40 %"'), 2)
+
+    @unittest.expectedFailure
+    def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
+        self.assertNotIn("(40 %)", self.html())
+
+    @unittest.expectedFailure
+    def test_verte_a_cent_pour_cent(self):
+        self.child.progress = 100
+        self.child.save()
+
+        html = self.html()
+
+        self.assertIn("[&::-webkit-progress-value]:bg-green-600", html)
+        self.assertIn("· à valider", html)
