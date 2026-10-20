@@ -3,7 +3,6 @@
 import io
 import shutil
 import tempfile
-import unittest
 import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -54,7 +53,6 @@ class ImportTestCase(TestCase):
 class ImportArchiveTests(ImportTestCase):
     """Un zip est l'archive de l'export : qmd à la racine, images/<nom>."""
 
-    @unittest.expectedFailure
     def test_notes_et_images_nouvelles_importees(self):
         report = self.run_import(
             archive(
@@ -70,7 +68,6 @@ class ImportArchiveTests(ImportTestCase):
         note = Note.objects.get(date="2025-11-24")
         self.assertEqual(note.parts.get().images.get().name, "banc.png")
 
-    @unittest.expectedFailure
     def test_note_existante_ignoree_sans_modification(self):
         existing = Note.objects.create(date="2025-11-24", body="# P\nVersion en base")
 
@@ -83,7 +80,6 @@ class ImportArchiveTests(ImportTestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.body, "# P\nVersion en base")
 
-    @unittest.expectedFailure
     def test_image_existante_gardee(self):
         image = import_image(image_file("banc.png", b"en base"))
 
@@ -94,7 +90,6 @@ class ImportArchiveTests(ImportTestCase):
             self.assertEqual(file.read(), b"en base")
         self.assertEqual(Image.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_une_note_en_erreur_n_empeche_pas_les_autres(self):
         report = self.run_import(
             archive(
@@ -111,7 +106,6 @@ class ImportArchiveTests(ImportTestCase):
         self.assertEqual([name for name, _ in report.failed], ["2025-11-24.qmd"])
         self.assertFalse(Note.objects.filter(date="2025-11-24").exists())
 
-    @unittest.expectedFailure
     def test_entrees_non_reconnues_ignorees(self):
         report = self.run_import(
             archive(
@@ -134,7 +128,6 @@ class ImportArchiveTests(ImportTestCase):
         self.assertFalse(Note.objects.exists())
         self.assertFalse(Image.objects.exists())
 
-    @unittest.expectedFailure
     def test_zip_invalide_signale_sans_bloquer_les_autres_fichiers(self):
         report = self.run_import(
             SimpleUploadedFile("notes.zip", b"pas un zip"),
@@ -144,7 +137,6 @@ class ImportArchiveTests(ImportTestCase):
         self.assertEqual([name for name, _ in report.failed], ["notes.zip"])
         self.assertEqual(len(report.created), 1)
 
-    @unittest.expectedFailure
     def test_export_puis_reimport_dans_une_base_vide(self):
         from note_taking.qmd.export import write_notes_archive
 
@@ -165,20 +157,17 @@ class ImportArchiveTests(ImportTestCase):
 class ImportFilesTests(ImportTestCase):
     """Des fichiers sélectionnés directement : notes qmd et images."""
 
-    @unittest.expectedFailure
     def test_note_seule(self):
         report = self.run_import(qmd_file("2025-11-24", "# P\nx"))
 
         self.assertEqual([n.date.isoformat() for n in report.created], ["2025-11-24"])
 
-    @unittest.expectedFailure
     def test_image_seule(self):
         report = self.run_import(image_file("banc.png"))
 
         self.assertEqual(report.images_imported, ["banc.png"])
         self.assertTrue(Image.objects.filter(name="banc.png").exists())
 
-    @unittest.expectedFailure
     def test_note_et_ses_images_selectionnees_ensemble(self):
         """Les images sont importées avant les notes, quel que soit l'ordre choisi."""
         report = self.run_import(
@@ -189,7 +178,6 @@ class ImportFilesTests(ImportTestCase):
         note = Note.objects.get(date="2025-11-24")
         self.assertEqual(note.parts.get().images.get().name, "banc.png")
 
-    @unittest.expectedFailure
     def test_image_deja_en_base_gardee_sans_doublon(self):
         import_image(image_file("banc.png", b"en base"))
 
@@ -199,7 +187,6 @@ class ImportFilesTests(ImportTestCase):
         self.assertEqual(report.failed, [])
         self.assertEqual(Image.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_note_deja_en_base_ignoree(self):
         existing = Note.objects.create(date="2025-11-24", body="# P\nen base")
 
@@ -209,7 +196,6 @@ class ImportFilesTests(ImportTestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.body, "# P\nen base")
 
-    @unittest.expectedFailure
     def test_nom_de_note_invalide_en_erreur(self):
         report = self.run_import(
             qmd_file("2025-11-24", "# P\nx", name="note.qmd"),
@@ -219,13 +205,11 @@ class ImportFilesTests(ImportTestCase):
         self.assertEqual([name for name, _ in report.failed], ["note.qmd"])
         self.assertEqual(len(report.created), 1)
 
-    @unittest.expectedFailure
     def test_fichier_d_un_autre_type_ignore(self):
         report = self.run_import(SimpleUploadedFile("LISEZMOI.txt", b"x"))
 
         self.assertEqual(report.ignored, ["LISEZMOI.txt"])
 
-    @unittest.expectedFailure
     def test_archive_fichiers_et_images_melanges(self):
         report = self.run_import(
             archive(**{"2025-11-24.qmd": qmd("2025-11-24", "# P\nx")}),
@@ -245,7 +229,6 @@ class ImportViewTests(TestCase):
         data = {"import_files": list(files)} if files else {}
         return self.client.post(reverse("note_taking:import_files"), data)
 
-    @unittest.expectedFailure
     def test_compte_rendu_affiche(self):
         existing = Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -259,25 +242,21 @@ class ImportViewTests(TestCase):
             response, f'href="{reverse("note_taking:note_detail", args=[existing.pk])}"'
         )
 
-    @unittest.expectedFailure
     def test_compte_rendu_aussi_pour_un_seul_fichier(self):
         response = self.post(image_file("banc.png"))
 
         self.assertContains(response, "Images importées (1)")
 
-    @unittest.expectedFailure
     def test_sans_fichier(self):
         response = self.post()
 
         self.assertRedirects(response, reverse("note_taking:notes_list"))
 
-    @unittest.expectedFailure
     def test_post_seulement(self):
         response = self.client.get(reverse("note_taking:import_files"))
 
         self.assertEqual(response.status_code, 405)
 
-    @unittest.expectedFailure
     def test_un_seul_formulaire_d_import_sur_la_liste_des_notes(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
@@ -287,7 +266,6 @@ class ImportViewTests(TestCase):
             with self.subTest(old=old):
                 self.assertNotIn(f'name="{old}"', html)
 
-    @unittest.expectedFailure
     def test_anciennes_adresses_d_import_retirees(self):
         for name in ("import_note", "import_images", "import_archive"):
             with self.subTest(name=name), self.assertRaises(NoReverseMatch):

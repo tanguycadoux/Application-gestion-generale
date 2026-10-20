@@ -14,17 +14,15 @@ from django.views.generic import DetailView, ListView
 from core.exceptions import AppError
 from images.models import Image
 from images.services import delete_image as delete_image_service
-from images.services import import_image
 
+from . import importing
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
-from .qmd.archive_import import import_notes_archive
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
 from .services import (
-    insert_note_in_table,
     process_note_parts,
     update_note_from_source_file,
 )
@@ -142,47 +140,15 @@ def note_md(request, pk):
     return render(request, "note_taking/note_md.html", context)
 
 
-def import_files(request, files, import_file, success_message):
-    """Importe chaque fichier indépendamment et affiche un message récapitulatif."""
-    imported = 0
-    for file in files:
-        try:
-            import_file(file)
-        except AppError as e:
-            messages.error(request, f"Échec pour {file.name} : {e}")
-        else:
-            imported += 1
-
-    if imported:
-        messages.success(request, success_message(imported))
-    elif not files:
-        messages.warning(request, "Aucun fichier sélectionné.")
-
-
-def import_note(request):
-    if request.method == "POST":
-        import_files(
-            request,
-            request.FILES.getlist("note_import"),
-            insert_note_in_table,
-            lambda n: f"{n} note(s) importée(s).",
-        )
-    return redirect(request.META.get("HTTP_REFERER", "/"))
-
-
 @require_POST
-def import_archive(request):
-    """Réimporte une archive de notes et affiche le compte rendu."""
-    file = request.FILES.get("archive_import")
-    if file is None:
-        messages.warning(request, "Choisir une archive.")
+def import_files(request):
+    """Importe notes, images et archives selon leur type, puis le compte rendu."""
+    files = request.FILES.getlist("import_files")
+    if not files:
+        messages.warning(request, "Aucun fichier sélectionné.")
         return redirect("note_taking:notes_list")
-    try:
-        report = import_notes_archive(file)
-    except AppError as e:
-        messages.error(request, f"Échec pour {file.name} : {e}")
-        return redirect("note_taking:notes_list")
-    return render(request, "note_taking/archive_import_report.html", {"report": report})
+    report = importing.import_files(files)
+    return render(request, "note_taking/import_report.html", {"report": report})
 
 
 def update_source_file(request, pk):
@@ -251,17 +217,6 @@ def get_subjects(request):
 
     html = render_to_string("note_taking/subjects_block.html", {"form": form})
     return HttpResponse(html)
-
-
-def import_images(request):
-    if request.method == "POST":
-        import_files(
-            request,
-            request.FILES.getlist("image_import"),
-            import_image,
-            lambda n: f"{n} image(s) importée(s).",
-        )
-    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 def new_note(request):

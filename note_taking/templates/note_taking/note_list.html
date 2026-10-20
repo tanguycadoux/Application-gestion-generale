@@ -18,29 +18,11 @@
     {% url 'note_taking:export_notes' as export_url %}
     {% button "Exporter toutes les notes" icon="download" href=export_url %}
 
-    <form method="post" action="{% url 'note_taking:import_note' %}" enctype="multipart/form-data">
+    <form method="post" action="{% url 'note_taking:import_files' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <p>
-            <label for="note_import">Importer une ou plusieurs notes</label>
-            <input type="file" name="note_import" id="note_import" accept=".qmd" multiple>
-        </p>
-        {% button "Importer" %}
-    </form>
-
-    <form method="post" action="{% url 'note_taking:import_archive' %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <p>
-            <label for="archive_import">Réimporter une archive de notes (zip de l'export)</label>
-            <input type="file" name="archive_import" id="archive_import" accept=".zip,application/zip">
-        </p>
-        {% button "Réimporter" %}
-    </form>
-
-    <form method="post" action="{% url 'note_taking:import_images' %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <p>
-            <label for="image_import">Importer une ou plusieurs images</label>
-            <input type="file" name="image_import" id="image_import" accept="image/*" multiple>
+            <label for="import_files">Importer des notes (.qmd), des images ou une archive de l'export (.zip)</label>
+            <input type="file" name="import_files" id="import_files" accept=".qmd,.zip,application/zip,image/*" multiple>
         </p>
         {% button "Importer" %}
     </form>
