@@ -29,10 +29,17 @@ class NotePartRenderingTests(TestCase):
 
         self.assertIn('<code class="language-python">x = 1', html)
 
-    def test_attributs_d_image_conserves_apres_le_lien(self):
+    def test_largeur_d_image_appliquee(self):
         html = self.render("![a](image:999){width=50%}")
 
-        self.assertIn("{width=50%}", html)
+        self.assertIn('width="50%"', html)
+        self.assertNotIn("{width", html)
+
+    def test_identifiant_de_figure_applique(self):
+        html = self.render("![a](image:999){#fig-banc}")
+
+        self.assertIn('id="fig-banc"', html)
+        self.assertNotIn("{#fig", html)
 
 
 class ImageMissingTests(SimpleTestCase):
