@@ -314,11 +314,12 @@ Milestones terminés :
 | M6 · Images | page détail d'une image avec les notes liées, suppression des images inutilisées |
 | M7 · Export et import qmd | export des notes et de leurs images en archive zip, import unifié (notes, images, archives) |
 | M8 · Cohérence de l'interface | couleurs Tailwind, styles communs des liens, boutons, formulaires et alertes, suppression par popover, formats de date, titres d'onglet et vocabulaire, icônes ; règles décrites dans la section Front |
+| M9 · Interface des tâches | page Projets et couleur par projet, modèle des tâches (sujet, avancement, validation d'un parent), incohérences signalées, tableau arborescent avec barre d'avancement, calendrier partagé avec les notes, frise de type Gantt |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M9 · Interface des tâches | refonte de l'affichage des tâches sur les composants et les couleurs de l'application |
-| M10 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
-| M11 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
+| M10 · Qualité du code | dépendances entre apps sans cycle, performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
+| M11 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
+| M12 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
