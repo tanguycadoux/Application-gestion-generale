@@ -86,7 +86,7 @@
     {% block extra_head %}{% endblock extra_head %}
 </head>
 
-<body class="font-sans grid grid-cols-[auto_1fr_auto] h-screen relative">
+<body class="font-sans grid grid-cols-[auto_1fr] h-screen relative">
     <nav class="p-4 bg-slate-200">
         {% block nav %}{% endblock nav %}
     </nav>
@@ -94,16 +94,6 @@
     <main class="p-4 h-full box-border overflow-auto">
         {% block content %}{% endblock content %}
     </main>
-    
-    <div class="h-full overflow-auto bg-neutral-95 p-4">
-        <h2>Admin</h2>
-        
-        <a href="{% url 'admin:index' %}" target="_blank">Admin panel</a>
-        
-        <hr>
-        
-        {% block admin %}{% endblock admin %}
-    </div>
 
     <script>
         {% for message in messages %}
