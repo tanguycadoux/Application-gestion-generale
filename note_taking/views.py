@@ -281,13 +281,13 @@ def edit_note(request, pk):
     return render(request, "note_taking/note_edit.html", {"form": form, "note": note})
 
 
+@require_POST
 def delete_note(request, pk):
+    """Supprime une note ; la confirmation se fait par popover (data-confirm)."""
     note = get_object_or_404(Note, pk=pk)
-    if request.method == "POST":
-        note.delete()
-        messages.success(request, "La note a été supprimée.")
-        return redirect("note_taking:notes_list")
-    return render(request, "note_taking/note_confirm_delete.html", {"note": note})
+    note.delete()
+    messages.success(request, "La note a été supprimée.")
+    return redirect("note_taking:notes_list")
 
 
 def export_notes(request):

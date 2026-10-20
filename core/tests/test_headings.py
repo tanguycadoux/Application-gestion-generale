@@ -66,7 +66,6 @@ class HeadingHierarchyTests(TestCase):
             reverse("todolist:todo_list"),
             reverse("todolist:todo_detail", args=[self.todo.pk]),
             reverse("todolist:todo_create"),
-            reverse("todolist:todo_delete", args=[self.todo.pk]),
         ]
 
     def assertHierarchy(self, html: str) -> None:

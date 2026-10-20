@@ -75,7 +75,6 @@ class ButtonUsageTests(TestCase):
             toolbar,
         )
         self.assertIn(
-            f'<a class="{BUTTON_VARIANTS["ghost-danger"]}"'
-            f' href="{reverse("todolist:todo_delete", args=[todo.pk])}"',
+            f'<button type="submit" class="{BUTTON_VARIANTS["ghost-danger"]}"',
             toolbar,
         )
