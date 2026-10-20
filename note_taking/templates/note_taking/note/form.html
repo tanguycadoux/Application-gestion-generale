@@ -5,10 +5,11 @@
     {{ form.non_field_errors }}
     <div>
         <label for="date">Date :</label>
-        <input type="date" name="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}">
+        <input type="date" name="date" id="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}">
         {{ form.date.errors }}
     </div>
     {{ form.body.errors }}
-    <textarea name="body" class="w-full h-96 border border-gray-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
+    <label for="body" class="sr-only">Contenu de la note</label>
+    <textarea name="body" id="body" class="w-full h-96 border border-gray-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
     {% button "Enregistrer" icon="save" icon_only=True %}
 </form>
