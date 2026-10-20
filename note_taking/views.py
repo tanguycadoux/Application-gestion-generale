@@ -11,7 +11,7 @@ from images.services import import_image
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .qmd.parser import parse_note
-from .rendering import render_markdown
+from .rendering import render_note_body
 from .services import (
     insert_note_in_table,
     process_note_parts,
@@ -83,7 +83,7 @@ def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
 
     if note.body:
-        html_content = render_markdown(note.body)
+        html_content = render_note_body(note.body)
     else:
         html_content = "<p>Aucun contenu disponible.</p>"
 
