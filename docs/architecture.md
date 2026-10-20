@@ -74,6 +74,8 @@ Todo >── Project, Todo >─< Tag, Todo >── Todo (parent)
 
 On ne stocke pas la note sous forme structurée (arbre de sections) : le découpage en note parts perd de l'information (ordre, origine des tags, mise en forme) et ne permet pas de régénérer la note. Le texte reste la source.
 
+Export et réimport (#64, #114) : une archive zip à la disposition d'un dossier Quarto (`AAAA-MM-JJ.qmd` à la racine, `images/<nom>`), qui forme un projet Quarto valide une fois dézippée. Chaque fichier est généré depuis la base (`note_taking/qmd/export.py`). Au réimport (`note_taking/qmd/archive_import.py`), la base fait foi : les images absentes sont importées et les existantes gardées ; une note dont la date existe déjà n'est jamais remplacée sans confirmation : pour l'instant elle est ignorée et signalée dans le compte rendu (choix entre les deux versions : #115).
+
 ### Les note parts sont dérivées et recalculées
 
 `process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire). Conséquences :

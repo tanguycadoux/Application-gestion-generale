@@ -27,6 +27,15 @@
         {% button "Importer" %}
     </form>
 
+    <form method="post" action="{% url 'note_taking:import_archive' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label for="archive_import">Réimporter une archive de notes (zip de l'export)</label>
+            <input type="file" name="archive_import" id="archive_import" accept=".zip,application/zip">
+        </p>
+        {% button "Réimporter" %}
+    </form>
+
     <form method="post" action="{% url 'note_taking:import_images' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <p>

@@ -19,6 +19,7 @@ from images.services import import_image
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
+from .qmd.archive_import import import_notes_archive
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
@@ -167,6 +168,21 @@ def import_note(request):
             lambda n: f"{n} note(s) importée(s).",
         )
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@require_POST
+def import_archive(request):
+    """Réimporte une archive de notes et affiche le compte rendu."""
+    file = request.FILES.get("archive_import")
+    if file is None:
+        messages.warning(request, "Choisir une archive.")
+        return redirect("note_taking:notes_list")
+    try:
+        report = import_notes_archive(file)
+    except AppError as e:
+        messages.error(request, f"Échec pour {file.name} : {e}")
+        return redirect("note_taking:notes_list")
+    return render(request, "note_taking/archive_import_report.html", {"report": report})
 
 
 def update_source_file(request, pk):

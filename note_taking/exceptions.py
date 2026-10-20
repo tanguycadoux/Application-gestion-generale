@@ -21,3 +21,7 @@ class NoteAlreadyExistsError(NoteError):
 
 class ImageNotFoundError(NoteError):
     """Image référencée dans une note mais non importée."""
+
+
+class InvalidArchiveError(NoteError):
+    """Fichier qui n'est pas une archive zip de notes lisible."""

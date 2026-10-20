@@ -1,0 +1,9 @@
+{% if names %}
+    <ul class="list-disc pl-6">
+        {% for name in names %}
+            <li><code>{{ name }}</code></li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-sm text-slate-600">Aucune.</p>
+{% endif %}

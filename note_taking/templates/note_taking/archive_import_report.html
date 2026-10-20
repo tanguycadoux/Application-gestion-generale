@@ -1,0 +1,66 @@
+{% extends "note_taking/base.html" %}
+{% load ui %}
+
+{% block extra_head %}
+    {{ block.super }}
+    <title>Réimport de l'archive</title>
+{% endblock extra_head %}
+
+{% block content %}
+    <article class="flex flex-col gap-4">
+        <h1 class="text-2xl font-semibold">Réimport de l'archive</h1>
+
+        <section aria-labelledby="report-notes" class="flex flex-col gap-2">
+            <h2 id="report-notes" class="text-xl font-semibold">Notes</h2>
+
+            <details{% if report.created %} open{% endif %}>
+                <summary class="cursor-pointer font-semibold">Notes créées ({{ report.created|length }})</summary>
+                {% include "note_taking/archive_import_notes.html" with notes=report.created %}
+            </details>
+
+            <details>
+                <summary class="cursor-pointer font-semibold">Notes ignorées, déjà en base ({{ report.skipped|length }})</summary>
+                <p class="text-sm text-slate-600">La version en base est conservée : celle de l'archive n'a pas été importée.</p>
+                {% include "note_taking/archive_import_notes.html" with notes=report.skipped %}
+            </details>
+
+            {% if report.failed %}
+                <details open>
+                    <summary class="cursor-pointer font-semibold text-alert-40">Notes en erreur ({{ report.failed|length }})</summary>
+                    <ul class="list-disc pl-6">
+                        {% for name, error in report.failed %}
+                            <li><code>{{ name }}</code> : {{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            {% endif %}
+        </section>
+
+        <section aria-labelledby="report-images" class="flex flex-col gap-2">
+            <h2 id="report-images" class="text-xl font-semibold">Images</h2>
+
+            <details>
+                <summary class="cursor-pointer font-semibold">Images importées ({{ report.images_imported|length }})</summary>
+                {% include "note_taking/archive_import_names.html" with names=report.images_imported %}
+            </details>
+
+            <details>
+                <summary class="cursor-pointer font-semibold">Images gardées, déjà en base ({{ report.images_kept|length }})</summary>
+                {% include "note_taking/archive_import_names.html" with names=report.images_kept %}
+            </details>
+        </section>
+
+        {% if report.ignored %}
+            <section aria-labelledby="report-ignored" class="flex flex-col gap-2">
+                <h2 id="report-ignored" class="text-xl font-semibold">Fichiers non reconnus ({{ report.ignored|length }})</h2>
+                <p class="text-sm text-slate-600">Ni une note à la racine (AAAA-MM-JJ.qmd), ni une image dans images/ : non importés.</p>
+                {% include "note_taking/archive_import_names.html" with names=report.ignored %}
+            </section>
+        {% endif %}
+
+        <p>
+            {% url 'note_taking:notes_list' as url %}
+            {% button "Retour à la liste des notes" icon="arrow_back" href=url variant="ghost" %}
+        </p>
+    </article>
+{% endblock content %}
