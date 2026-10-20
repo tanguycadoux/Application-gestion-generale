@@ -85,7 +85,7 @@ class GanttChartTests(GanttTestCase):
     @unittest.expectedFailure
     def test_debuts_de_mois(self):
         self.assertEqual(
-            [label for label, _ in self.chart().ticks], ["janv.", "févr.", "mars"]
+            [label for label, _ in self.chart().ticks], ["jan.", "fév.", "mars"]
         )
 
 
