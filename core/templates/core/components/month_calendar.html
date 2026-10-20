@@ -1,0 +1,41 @@
+{% load ui %}
+{% comment %}
+Calendrier mensuel partagé (#167), à inclure avec :
+- calendar : core.month_calendar.MonthCalendar ;
+- index_url : page du calendrier (lien « Aujourd'hui », base de ?mois=) ;
+- caption : début du titre du tableau pour les lecteurs d'écran, suivi du mois
+  (« Notes de » donne « Notes de octobre 2026 ») ;
+- day_template : gabarit de l'app qui rend le contenu d'une case (variable `day`).
+{% endcomment %}
+<section id="calendar" aria-labelledby="calendar-title" data-component="month-calendar">
+    <header class="mb-2 flex items-center gap-2">
+        <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
+        <nav aria-label="Mois" class="flex items-center gap-1" hx-boost="true" hx-target="#calendar" hx-select="#calendar" hx-swap="outerHTML">
+            {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
+                {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
+                {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}
+                {% button "Mois suivant" icon="chevron_right" href="?mois="|add:next variant="ghost" icon_only=True %}
+            {% endwith %}
+        </nav>
+    </header>
+
+    <table class="w-full table-fixed border-separate border-spacing-1">
+        <caption class="sr-only">{{ caption }} {{ calendar.month|date:"F Y" }}</caption>
+        <thead>
+            <tr>
+                {% for short, full in calendar.weekday_labels %}
+                    <th scope="col" class="px-1.5 text-left text-sm font-semibold {% if forloop.counter > 5 %}text-slate-400{% else %}text-slate-600{% endif %}"><abbr title="{{ full }}" class="no-underline">{{ short }}</abbr></th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in calendar.weeks %}
+                <tr>
+                    {% for day in week %}
+                        <td class="h-24 p-0 align-top">{% include day_template %}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>

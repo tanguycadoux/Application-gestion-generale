@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 from core.models import Project, Subject, Tag
 from core.templatetags.ui import date_text
@@ -50,6 +51,11 @@ class Todo(models.Model):
     # coche à la main pour un parent, et se décoche dès qu'un de ses enfants
     # n'est plus terminé (#164).
     done = models.BooleanField("terminée", default=False)
+    # Moment où la tâche est passée à terminée ; vide tant qu'elle est en cours
+    # (#167, calendrier : une tâche terminée se place à cette date).
+    completed_at = models.DateTimeField(
+        "terminée le", null=True, blank=True, editable=False
+    )
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
@@ -110,6 +116,10 @@ class Todo(models.Model):
                 self.progress = computed
         if not self.pk or not self.children.exists():
             self.done = self.progress == 100
+        if not self.done:
+            self.completed_at = None
+        elif self.completed_at is None:
+            self.completed_at = timezone.now()
 
         super().save(*args, **kwargs)
 
@@ -191,7 +201,11 @@ def update_ancestors_progress(parent_id: int | None) -> list[int]:
         done = parent.done and not parent.children.filter(done=False).exists()
         if (computed, done) == (parent.progress, parent.done):
             break
-        Todo.objects.filter(pk=parent.pk).update(progress=computed, done=done)
+        Todo.objects.filter(pk=parent.pk).update(
+            progress=computed,
+            done=done,
+            completed_at=parent.completed_at if done else None,
+        )
         updated.append(parent.pk)
         parent_id = parent.parent_id
     return updated

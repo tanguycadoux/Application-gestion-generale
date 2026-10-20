@@ -1,0 +1,22 @@
+{% load ui %}
+{# Case d'un jour du calendrier des notes (#88), dans le composant partagé (#167). #}
+{% if day.note %}
+    <a class="{% calendar_cell_classes day %}" href="{% url 'note_taking:note_detail' day.note.pk %}"{% if day.is_today %} aria-current="date"{% endif %}>
+        <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time>
+        {% if day.projects %}
+            {% tag_list day.projects %}
+        {% else %}
+            <span class="text-sm">Note</span>
+        {% endif %}
+    </a>
+{% elif day.can_create %}
+    {% url 'note_taking:new_note' as new_url %}
+    <a class="{% calendar_cell_classes day %}" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date_text:"moyen" }}"{% if day.is_today %} aria-current="date"{% endif %}>
+        <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time>
+        <span class="material-symbols-rounded pointer-events-none absolute inset-0 m-auto size-fit text-4xl! text-blue-800 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">add</span>
+    </a>
+{% else %}
+    <div class="{% calendar_cell_classes day inactive=True %}"{% if day.is_today %} aria-current="date"{% endif %}>
+        <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day inactive=True %}">{{ day.date.day }}</time>
+    </div>
+{% endif %}

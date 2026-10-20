@@ -1,0 +1,26 @@
+{% load ui %}
+{# Case d'un jour du calendrier des tâches (#167), dans le composant partagé de core. #}
+<div class="{% calendar_cell_classes day clickable=False %}"{% if day.is_today %} aria-current="date"{% endif %}>
+    <div class="flex items-center">
+        <time datetime="{{ day.date|date:'Y-m-d' }}" class="flex-1 {% calendar_number_classes day %}">{{ day.date.day }}</time>
+        {% if day.can_create %}
+            {% url 'todolist:todo_create' as create_url %}
+            <a class="rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-blue-50" href="{{ create_url }}?due={{ day.date|date:'Y-m-d' }}" aria-label="Créer une tâche pour le {{ day.date|date_text:"moyen" }}">
+                <span class="material-symbols-rounded align-middle text-base! text-blue-800" aria-hidden="true">add</span>
+            </a>
+        {% endif %}
+    </div>
+    {% if day.tasks %}
+        <ul class="flex min-w-0 flex-col gap-0.5 text-sm">
+            {% for task in day.visible_tasks %}
+                <li class="flex min-w-0 items-center gap-1">
+                    <span class="size-2 shrink-0 rounded-full {{ task.project|project_dot_class }}" aria-hidden="true"></span>
+                    <a class="truncate rounded px-0.5 hover:bg-slate-100 {% if task.done %}text-slate-500{% elif task.due_status == 'overdue' %}text-red-800{% else %}text-slate-800{% endif %}" href="{% url 'todolist:todo_detail' task.pk %}">{{ task.title }}</a>
+                </li>
+            {% endfor %}
+            {% if day.more %}
+                <li class="text-slate-600">+ {{ day.more }} autre{{ day.more|pluralize }}</li>
+            {% endif %}
+        </ul>
+    {% endif %}
+</div>
