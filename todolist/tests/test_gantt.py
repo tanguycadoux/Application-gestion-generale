@@ -1,6 +1,7 @@
 """Tests de la frise de type Gantt des sous-tâches, dans le détail (#168)."""
 
 import re
+import unittest
 from datetime import date, datetime
 
 from django.test import TestCase
@@ -45,13 +46,16 @@ class GanttTestCase(TestCase):
 
 
 class GanttChartTests(GanttTestCase):
-    def test_lignes_dans_l_ordre_du_tableau(self):
+    @unittest.expectedFailure
+    def test_tache_observee_puis_ses_sous_taches(self):
+        """La tâche observée a sa propre barre, ses sous-tâches indentées dessous."""
         rows = self.chart().rows
 
         self.assertEqual(
             [(row.task.title, row.level) for row in rows],
-            [("Enfant", 0), ("Petit-enfant", 1), ("Sans échéance", 0)],
+            [("Parent", 0), ("Enfant", 1), ("Petit-enfant", 2), ("Sans échéance", 1)],
         )
+        self.assertEqual((rows[0].start, rows[0].width), (0.0, 100.0))
 
     def test_axe_de_la_premiere_creation_a_la_derniere_date(self):
         chart = self.chart()
@@ -64,15 +68,17 @@ class GanttChartTests(GanttTestCase):
         self.assertEqual(chart.today, 66.3)
         self.assertEqual(chart.parent_due, 100.0)
 
+    @unittest.expectedFailure
     def test_position_longueur_et_avancement_d_une_barre(self):
-        grandchild = self.chart().rows[1]
+        grandchild = self.chart().rows[2]
 
         self.assertEqual((grandchild.start, grandchild.width), (33.7, 11.2))
         self.assertEqual(grandchild.progress, 40)
         self.assertFalse(grandchild.open_end)
 
+    @unittest.expectedFailure
     def test_barre_ouverte_jusqu_a_aujourd_hui_sans_echeance(self):
-        open_row = self.chart().rows[2]
+        open_row = self.chart().rows[3]
 
         self.assertTrue(open_row.open_end)
         self.assertEqual(open_row.start + open_row.width, self.chart().today)
@@ -89,6 +95,7 @@ class GanttPageTests(GanttTestCase):
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()
 
+    @unittest.expectedFailure
     def test_frise_dans_le_detail_d_un_parent(self):
         html = self.html(self.parent)
 
@@ -96,7 +103,7 @@ class GanttPageTests(GanttTestCase):
             r'<figure aria-labelledby="gantt-title".*?</figure>', html, re.DOTALL
         )
         assert figure is not None
-        self.assertEqual(figure.group().count("data-gantt-row"), 3)
+        self.assertEqual(figure.group().count("data-gantt-row"), 4)
         self.assertIn("left-(--start) w-(--width)", figure.group())
         # La page utilise la vraie date du jour : seules les variables sont vérifiées.
         self.assertRegex(figure.group(), r'style="--start: [\d.]+%; --width: [\d.]+%;')
@@ -108,6 +115,13 @@ class GanttPageTests(GanttTestCase):
 
         self.assertIn("du 31 janvier 2026 au 10 février 2026, 40 %", html)
         self.assertIn("depuis le 1 février 2026, sans échéance, 0 %", html)
+
+    @unittest.expectedFailure
+    def test_reperes_de_mois_en_colonne_2_sans_div_vide(self):
+        html = self.html(self.parent)
+
+        self.assertIn('<div class="relative col-start-2 h-6', html)
+        self.assertNotIn("<div></div>", html)
 
     def test_pas_de_frise_sans_sous_tache(self):
         html = self.html(self.grandchild)
