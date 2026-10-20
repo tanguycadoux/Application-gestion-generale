@@ -1,7 +1,8 @@
+import tempfile
 from datetime import date
 
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -17,6 +18,7 @@ from images.services import import_image
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
+from .qmd.export import write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
 from .services import (
@@ -314,3 +316,16 @@ def delete_note(request, pk):
         messages.success(request, "La note a été supprimée.")
         return redirect("note_taking:notes_list")
     return render(request, "note_taking/note_confirm_delete.html", {"note": note})
+
+
+def export_notes(request):
+    """Télécharge l'archive zip de toutes les notes et de leurs images."""
+    archive = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
+    write_notes_archive(archive)
+    archive.seek(0)
+    return FileResponse(
+        archive,
+        as_attachment=True,
+        filename=f"notes-{timezone.localdate().isoformat()}.zip",
+        content_type="application/zip",
+    )

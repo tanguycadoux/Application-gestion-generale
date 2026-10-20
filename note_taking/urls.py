@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("notes/", views.NoteList.as_view(), name="notes_list"),
     path("notes/search/", views.notes_search, name="notes_search"),
+    path("notes/export/", views.export_notes, name="export_notes"),
     path("get-subjects/", views.get_subjects, name="get_subjects"),
     path("note/new/", views.new_note, name="new_note"),
     path("note/today/", views.note_today, name="note_today"),

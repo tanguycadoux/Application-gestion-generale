@@ -3,7 +3,6 @@
 import io
 import shutil
 import tempfile
-import unittest
 import zipfile
 
 from django.core.files.base import ContentFile
@@ -29,20 +28,17 @@ class NoteToQmdTests(TestCase):
 
         return note_to_qmd(Note(date=note_date, body=body))
 
-    @unittest.expectedFailure
     def test_bloc_d_en_tete_regenere(self):
         self.assertEqual(
             self.to_qmd("# P\nTexte"), "---\ndate: 2025-11-24\n---\n\n# P\nTexte"
         )
 
-    @unittest.expectedFailure
     def test_fins_de_ligne_du_corps_conservees(self):
         self.assertEqual(
             self.to_qmd("# P\r\nTexte"),
             "---\r\ndate: 2025-11-24\r\n---\r\n\r\n# P\r\nTexte",
         )
 
-    @unittest.expectedFailure
     def test_chemins_d_images_normalises(self):
         qmd = self.to_qmd(
             "![A](images/a.png){width=80%}\n![B](../autre/dossier/b.png)\n"
@@ -53,7 +49,6 @@ class NoteToQmdTests(TestCase):
         self.assertIn("![B](images/b.png)", qmd)
         self.assertIn("![C](https://example.com/c.png)", qmd)
 
-    @unittest.expectedFailure
     def test_relu_a_l_identique_par_l_import(self):
         """Le fichier exporté redonne la même date et le même corps."""
         body = "# P\r\n\r\n::: {.metadata}\r\ntags: [a]\r\n:::\r\nTexte\r\n"
@@ -85,7 +80,6 @@ class NotesArchiveTests(TestCase):
         write_notes_archive(buffer)
         return zipfile.ZipFile(buffer)
 
-    @unittest.expectedFailure
     def test_une_note_par_fichier_et_les_images(self):
         archive = self.archive()
 
@@ -99,7 +93,6 @@ class NotesArchiveTests(TestCase):
             "---\ndate: 2026-02-03\n---\n\n# Q\nTexte",
         )
 
-    @unittest.expectedFailure
     def test_image_sous_son_nom_d_origine(self):
         """Le fichier stocké peut avoir été renommé : l'archive garde le nom des notes."""
         image = Image.objects.create(name="Capture d’écran 1.png")
@@ -110,7 +103,6 @@ class NotesArchiveTests(TestCase):
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class ExportViewTests(TestCase):
-    @unittest.expectedFailure
     def test_telechargement_de_l_archive(self):
         Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -124,7 +116,6 @@ class ExportViewTests(TestCase):
         archive = zipfile.ZipFile(io.BytesIO(b"".join(response.streaming_content)))
         self.assertEqual(archive.namelist(), ["2025-11-24.qmd"])
 
-    @unittest.expectedFailure
     def test_bouton_sur_la_liste_des_notes(self):
         response = self.client.get(reverse("note_taking:notes_list"))
 
