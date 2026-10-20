@@ -16,7 +16,7 @@
             {% button "Ouvrir la note du jour" icon="today" href=url %}
         {% else %}
             {% with day=today|date:"Y-m-d" %}
-                {% button "Créer la note du jour" icon="today" href=new_url|add:"?date="|add:day %}
+                {% button "Créer la note du jour" icon="add" href=new_url|add:"?date="|add:day %}
             {% endwith %}
         {% endif %}
     </div>
@@ -28,7 +28,7 @@
                 {% url 'note_taking:index' as index_url %}
                 {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
                     {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
-                    {% button "Aujourd'hui" href=index_url variant="ghost" %}
+                    {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}
                     {% button "Mois suivant" icon="chevron_right" href="?mois="|add:next variant="ghost" icon_only=True %}
                 {% endwith %}
             </nav>

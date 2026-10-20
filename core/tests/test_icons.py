@@ -1,7 +1,6 @@
 """Tests des icônes : tout bouton a une icône, une par action (#131)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -37,19 +36,16 @@ class IconTests(SimpleTestCase):
     def test_boutons_trouves(self):
         self.assertGreater(len(button_tags()), 15)
 
-    @unittest.expectedFailure
     def test_tout_bouton_a_une_icone(self):
         for path, tag in button_tags():
             with self.subTest(path=path.name, tag=tag):
                 self.assertRegex(tag, ICON_REGEX)
 
-    @unittest.expectedFailure
     def test_pas_d_icone_ecrite_dans_le_libelle(self):
         for path, tag in button_tags():
             with self.subTest(path=path.name, tag=tag):
                 self.assertNotRegex(tag, r'\{% button "[+✓×]')
 
-    @unittest.expectedFailure
     def test_une_icone_par_action(self):
         for path, tag in button_tags():
             label = re.match(r'\{% button "(?P<label>[^"]*)"', tag)

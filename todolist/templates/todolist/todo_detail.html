@@ -46,5 +46,5 @@
     
     {% url 'todolist:todo_create' as url %}
     {% querystring parent=object.pk as query %}
-    {% button "+ Ajouter une sous-tâche" href=url|add:query %}
+    {% button "Ajouter une sous-tâche" icon="add" href=url|add:query %}
 {% endblock content %}
