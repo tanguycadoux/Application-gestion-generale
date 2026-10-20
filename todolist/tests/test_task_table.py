@@ -1,7 +1,6 @@
 """Tests de la liste des tâches en tableau arborescent (#166)."""
 
 import re
-import unittest
 from datetime import timedelta
 
 from django.test import SimpleTestCase, TestCase
@@ -189,7 +188,6 @@ class ProgressBarTests(TestCase):
     def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
         self.assertNotIn("(40 %)", self.html())
 
-    @unittest.expectedFailure
     def test_terminee_en_vert(self):
         self.child.progress = 100
         self.child.save()
@@ -199,7 +197,6 @@ class ProgressBarTests(TestCase):
         self.assertIn("[&::-webkit-progress-value]:bg-green-500", classes)
         self.assertIn("bg-green-200", classes)
 
-    @unittest.expectedFailure
     def test_couleur_selon_l_echeance_comme_les_toasts(self):
         """Mêmes couleurs que les barres des toasts : info, avertissement, erreur."""
         cases = {
@@ -220,7 +217,6 @@ class ProgressBarTests(TestCase):
                 self.assertIn(f" bg-{track}", classes)
                 self.assertIn(f"[&::-webkit-progress-bar]:bg-{track}", classes)
 
-    @unittest.expectedFailure
     def test_parent_a_valider_selon_son_echeance(self):
         self.parent.due_date = days(-2)
         self.parent.save()
