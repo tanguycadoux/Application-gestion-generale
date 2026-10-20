@@ -1,0 +1,48 @@
+{% load l10n ui todo_ui %}
+{% comment %}
+Frise de type Gantt des sous-tâches (#168). Les positions sont des données : elles
+passent par des variables CSS (--start, --width…) que lisent les classes Tailwind,
+sans localisation (unlocalize) : en français, 33.7 s'afficherait 33,7, invalide en CSS.
+{% endcomment %}
+<figure aria-labelledby="gantt-title" class="mt-6">
+    <figcaption id="gantt-title" class="mb-2 text-lg font-semibold">Chronologie de la tâche et de ses sous-tâches</figcaption>
+
+    <div class="grid grid-cols-[minmax(8rem,14rem)_1fr] gap-x-3 text-sm">
+        <div class="relative col-start-2 h-6 text-xs text-slate-600">
+            {% for label, position in chart.ticks %}
+                <span class="absolute bottom-0 left-(--position) border-l border-slate-300 pl-1" style="--position: {{ position|unlocalize }}%;">{{ label }}</span>
+            {% endfor %}
+            <span role="img" aria-label="Aujourd'hui" class="absolute inset-y-0 left-(--position) w-0.5 bg-slate-700" style="--position: {{ chart.today|unlocalize }}%;"></span>
+            {% if chart.parent_due is not None %}
+                <span role="img" aria-label="Échéance de la tâche" class="absolute inset-y-0 left-(--position) border-l-2 border-dashed border-red-500" style="--position: {{ chart.parent_due|unlocalize }}%;"></span>
+            {% endif %}
+        </div>
+
+        {% for row in chart.rows %}
+            <div data-gantt-row class="truncate py-1 {{ row.level|indent_class }}">
+                {% if forloop.first %}
+                    {# La tâche observée : déjà sur sa page. #}
+                    <span class="font-semibold">{{ row.task.title }}</span>
+                {% else %}
+                    <a href="{% url 'todolist:todo_detail' row.task.pk %}">{{ row.task.title }}</a>
+                {% endif %}
+            </div>
+            <div class="relative h-7">
+                <span aria-hidden="true" class="absolute inset-y-0 left-(--position) w-0.5 bg-slate-700" style="--position: {{ chart.today|unlocalize }}%;"></span>
+                {% if chart.parent_due is not None %}
+                    <span aria-hidden="true" class="absolute inset-y-0 left-(--position) border-l-2 border-dashed border-red-500" style="--position: {{ chart.parent_due|unlocalize }}%;"></span>
+                {% endif %}
+                <div class="absolute inset-y-1.5 left-(--start) w-(--width) min-w-1 overflow-hidden {{ row.task|signal_track_class }} {% if row.open_end %}rounded-l-full border-r-2 border-dashed border-slate-500{% else %}rounded-full{% endif %}" style="--start: {{ row.start|unlocalize }}%; --width: {{ row.width|unlocalize }}%;">
+                    <div class="h-full w-(--progress) {{ row.task|signal_fill_class }}" style="--progress: {{ row.progress|unlocalize }}%;"></div>
+                </div>
+                <span class="sr-only">{% if row.open_end %}depuis le {{ row.begin|date_text:"moyen" }}, sans échéance{% else %}du {{ row.begin|date_text:"moyen" }} au {{ row.finish|date_text:"moyen" }}{% endif %}, {{ row.progress }} %</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <p class="mt-2 flex flex-wrap gap-x-4 text-xs text-slate-600" aria-hidden="true">
+        <span class="inline-flex items-center gap-1"><span class="inline-block h-3 w-0.5 bg-slate-700"></span>Aujourd'hui</span>
+        {% if chart.parent_due is not None %}<span class="inline-flex items-center gap-1"><span class="inline-block h-3 border-l-2 border-dashed border-red-500"></span>Échéance de la tâche</span>{% endif %}
+        <span class="inline-flex items-center gap-1"><span class="inline-block h-3 w-3 border-r-2 border-dashed border-slate-500"></span>Sans échéance</span>
+    </p>
+</figure>

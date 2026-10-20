@@ -103,3 +103,29 @@ PROGRESS_COLORS = {
 def progress_classes(task) -> str:
     """Barre d'avancement (#182) aux couleurs du signal de son échéance."""
     return PROGRESS_BAR + PROGRESS_COLORS[due_signal(task)]
+
+
+# Barres de la frise (#168) : fond sur toute la durée et remplissage selon
+# l'avancement, aux couleurs du signal de l'échéance.
+SIGNAL_TRACK_CLASSES = {
+    "normal": "bg-blue-100",
+    "soon": "bg-amber-100",
+    "overdue": "bg-red-100",
+    "done": "bg-green-200",
+}
+SIGNAL_FILL_CLASSES = {
+    "normal": "bg-blue-400",
+    "soon": "bg-amber-400",
+    "overdue": "bg-red-400",
+    "done": "bg-green-500",
+}
+
+
+@register.filter
+def signal_track_class(task) -> str:
+    return SIGNAL_TRACK_CLASSES[due_signal(task)]
+
+
+@register.filter
+def signal_fill_class(task) -> str:
+    return SIGNAL_FILL_CLASSES[due_signal(task)]

@@ -85,6 +85,9 @@
             </header>
             {% if children %}
                 {% include "todolist/task_table.html" with groups=children_groups show_project=False %}
+                {% if gantt %}
+                    {% include "todolist/gantt.html" with chart=gantt %}
+                {% endif %}
             {% else %}
                 <p>Aucune sous-tâche.</p>
             {% endif %}
