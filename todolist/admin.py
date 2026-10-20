@@ -11,7 +11,7 @@ class TodoAdmin(admin.ModelAdmin):
         "project",
         "description",
         "due_date",
-        "completed",
+        "progress",
         "priority",
         "parent",
         "created_at",

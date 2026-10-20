@@ -35,7 +35,9 @@ class PageTitlesTests(TestCase):
             note=self.note, project=Project.objects.create(name="P"), content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
-        self.todo = Todo.objects.create(title="Relire")
+        self.todo = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0], title="Relire"
+        )
 
     def pages(self) -> dict[str, str]:
         note, todo = self.note.pk, self.todo.pk
@@ -100,7 +102,9 @@ class PageTitlesTests(TestCase):
 
 class VocabularyTests(TestCase):
     def test_tache_et_pas_todo_dans_les_pages(self):
-        todo = Todo.objects.create(title="Relire")
+        todo = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0], title="Relire"
+        )
         urls = [
             "/",
             reverse("todolist:index"),
@@ -122,10 +126,11 @@ class VocabularyTests(TestCase):
             {
                 "title": "Titre",
                 "description": "Description",
-                "completed": "Terminée",
+                "progress": "Avancement (%)",
                 "priority": "Priorité",
                 "due_date": "Échéance",
                 "project": "Projet",
+                "subject": "Sujet",
                 "tags": "Tags",
                 "parent": "Tâche parente",
             },

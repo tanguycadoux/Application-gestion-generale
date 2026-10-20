@@ -4,6 +4,7 @@ from django import forms
 from django.test import TestCase
 from django.urls import reverse
 
+from core.models import Project
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
 from todolist.forms import TodoForm
@@ -149,7 +150,9 @@ class FormPagesTests(TestCase):
         self.assertIn('<p class="flex items-baseline gap-2">', html)
 
     def test_modification_d_une_todo_accessible(self):
-        todo = Todo.objects.create(title="T")
+        todo = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0], title="T"
+        )
 
         response = self.client.get(reverse("todolist:todo_edit", args=[todo.pk]))
 

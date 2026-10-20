@@ -1,10 +1,15 @@
-from core.models import Project, Tag
+from core.models import Project, Subject, Tag
 
 from .models import Todo
 
 
 def create_todo_from_dict(todo_data: dict) -> Todo:
     project, _ = Project.objects.get_or_create(name=todo_data["project"])
+    subject = (
+        Subject.objects.get_or_create(name=todo_data["subject"])[0]
+        if todo_data.get("subject")
+        else None
+    )
 
     todo, created = Todo.objects.get_or_create(
         created_from_note=True,
@@ -13,7 +18,7 @@ def create_todo_from_dict(todo_data: dict) -> Todo:
         defaults={
             "title": todo_data["content"],
             "project": project,
-            "description": todo_data["description"],
+            "subject": subject,
             "due_date": todo_data["date"],
         },
     )
