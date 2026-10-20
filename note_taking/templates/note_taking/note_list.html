@@ -73,7 +73,7 @@
             {% for note in notes %}
                 <tr class="odd:bg-white even:bg-slate-100">
                     <th scope="row" class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]"><a href="{% url 'note_taking:note_detail' note.pk %}">
-                        {{ note.date|date:'D. j M. Y' }}
+                        {% date_time note.date "court" %}
                     </a></th>
                     <td class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
                         {% if note.projects %}

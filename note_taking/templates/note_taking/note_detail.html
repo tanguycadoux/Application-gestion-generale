@@ -8,7 +8,7 @@
 
 {% block content %}
     <header class="flex items-start mb-4">
-        <h1 class="flex-1">Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
+        <h1 class="flex-1">Note du {% date_time object.date "long" %}</h1>
 
         {% url 'note_taking:export_note' note.pk as url %}
         {% button "Exporter la note" icon="download" href=url variant="ghost" icon_only=True %}
@@ -16,7 +16,7 @@
         {% url 'note_taking:edit_note' note.pk as url %}
         {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        <form method="post" action="{% url 'note_taking:delete_note' note.pk %}" data-confirm="Supprimer définitivement la note du {{ object.date|date:'j F Y' }} ?">
+        <form method="post" action="{% url 'note_taking:delete_note' note.pk %}" data-confirm="Supprimer définitivement la note du {{ object.date|date_text:"moyen" }} ?">
             {% csrf_token %}
             {% button "Supprimer la note" icon="delete" variant="ghost-danger" icon_only=True %}
         </form>

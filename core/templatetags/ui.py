@@ -6,9 +6,13 @@ toujours écrites en entier (sans les construire par morceaux). Les icônes sont
 des noms de Material Symbols Rounded.
 """
 
+import datetime
+
 from django import template
+from django.template.defaultfilters import date as format_date
 from django.urls import reverse
-from django.utils.html import json_script
+from django.utils import timezone
+from django.utils.html import format_html, json_script
 
 register = template.Library()
 
@@ -98,3 +102,46 @@ def button(
 def tag_list(tags) -> dict:
     """Liste de tags en pastilles ; rien n'est rendu si elle est vide."""
     return {"tags": tags}
+
+
+# Formats d'affichage des dates (#129), selon l'usage :
+# - long : la date nomme une note (titres, liens « Note du … ») ;
+# - moyen : une date dans un texte ou une fiche (échéance, dates d'une image) ;
+# - court : tableaux et listes.
+# N plutôt que M pour le mois abrégé : en français, M donne « Jui » pour juin et juillet.
+DATE_FORMATS = {
+    "long": "l j F Y",
+    "moyen": "j F Y",
+    "court": "D. j N Y",
+}
+
+
+def _local(value):
+    """Une date et heure dans le fuseau de l'application (TIME_ZONE)."""
+    if isinstance(value, datetime.datetime) and timezone.is_aware(value):
+        return timezone.localtime(value)
+    return value
+
+
+@register.filter
+def date_text(value, style: str = "moyen") -> str:
+    """Date en texte selon son format d'affichage (`long`, `moyen`, `court`).
+
+    Pour un attribut ou un message ; dans une page, préférer `{% date_time %}`.
+    """
+    if style not in DATE_FORMATS:
+        raise ValueError(f"Format de date inconnu : {style}")
+    if value in (None, ""):
+        return ""
+    return format_date(_local(value), DATE_FORMATS[style])
+
+
+@register.simple_tag
+def date_time(value, style: str = "moyen") -> str:
+    """Date affichée selon son format, dans un `<time datetime="…">`."""
+    if value in (None, ""):
+        return ""
+    value = _local(value)
+    return format_html(
+        '<time datetime="{}">{}</time>', value.isoformat(), date_text(value, style)
+    )

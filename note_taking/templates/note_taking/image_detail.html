@@ -30,9 +30,9 @@
 
         <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             <dt class="font-semibold">Importée le</dt>
-            <dd><time datetime="{{ image.created_at|date:'c' }}">{{ image.created_at|date:'j F Y' }}</time></dd>
+            <dd>{% date_time image.created_at "moyen" %}</dd>
             <dt class="font-semibold">Modifiée le</dt>
-            <dd><time datetime="{{ image.updated_at|date:'c' }}">{{ image.updated_at|date:'j F Y' }}</time></dd>
+            <dd>{% date_time image.updated_at "moyen" %}</dd>
         </dl>
 
         <section aria-labelledby="image-notes-title">
@@ -42,7 +42,7 @@
                     {% for note in notes %}
                         <li>
                             <a href="{% url 'note_taking:note_detail' note.pk %}">
-                                Note du <time datetime="{{ note.date|date:'Y-m-d' }}">{{ note.date|date:'l j F Y' }}</time>
+                                Note du {% date_time note.date "long" %}
                             </a>
                         </li>
                     {% endfor %}
