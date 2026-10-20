@@ -25,18 +25,17 @@ def nav_link(context, url_name: str, label: str, icon: str) -> dict:
     }
 
 
-# Classes de chaque variante de bouton, écrites en entier.
+# Forme commune à toutes les variantes de bouton (#145).
+BUTTON_SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
+
+# Classes de chaque variante de bouton, écrites en entier. Pleins : l'action
+# principale, le fond s'éclaircit au survol. Ghost : les actions sur l'objet
+# affiché et la navigation, sans fond sauf au survol.
 BUTTON_VARIANTS = {
-    "primary": (
-        "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-        " font-semibold bg-blue-100 text-blue-800 hover:bg-blue-50"
-    ),
-    "danger": (
-        "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-        " font-semibold bg-red-100 text-red-800 hover:bg-red-50"
-    ),
-    "ghost": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200",
-    "ghost-danger": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200",
+    "primary": BUTTON_SHAPE + " bg-blue-100 text-blue-800 hover:bg-blue-50",
+    "danger": BUTTON_SHAPE + " bg-red-100 text-red-800 hover:bg-red-50",
+    "ghost": BUTTON_SHAPE + " hover:bg-slate-200",
+    "ghost-danger": BUTTON_SHAPE + " text-red-800 hover:bg-red-100",
 }
 
 

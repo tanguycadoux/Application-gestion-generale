@@ -1,7 +1,6 @@
 """Tests des variantes de bouton : forme commune, survol, usage (#145)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -18,7 +17,6 @@ def classes(variant: str) -> list[str]:
 
 
 class ButtonVariantsTests(TestCase):
-    @unittest.expectedFailure
     def test_forme_commune_a_toutes_les_variantes(self):
         for variant in BUTTON_VARIANTS:
             with self.subTest(variant=variant):
@@ -30,7 +28,6 @@ class ButtonVariantsTests(TestCase):
                 self.assertIn(f"bg-{color}-100", classes(variant))
                 self.assertIn(f"hover:bg-{color}-50", classes(variant))
 
-    @unittest.expectedFailure
     def test_ghost_prend_un_fond_au_survol(self):
         self.assertIn("hover:bg-slate-200", classes("ghost"))
         self.assertIn("hover:bg-red-100", classes("ghost-danger"))
@@ -38,7 +35,6 @@ class ButtonVariantsTests(TestCase):
             with self.subTest(variant=variant):
                 self.assertFalse([c for c in classes(variant) if c.startswith("bg-")])
 
-    @unittest.expectedFailure
     def test_suppressions_en_texte_rouge(self):
         for variant in ("danger", "ghost-danger"):
             with self.subTest(variant=variant):
@@ -54,7 +50,6 @@ def header(html: str) -> str:
 class ButtonUsageTests(TestCase):
     """Actions sur l'objet affiché : barre d'outils ghost à côté du titre."""
 
-    @unittest.expectedFailure
     def test_suppression_d_une_image_en_ghost_danger(self):
         image = Image.objects.create(name="banc.png", file="note_images/banc.png")
 
@@ -63,9 +58,8 @@ class ButtonUsageTests(TestCase):
         ).content.decode()
 
         self.assertIn(BUTTON_VARIANTS["ghost-danger"], header(html))
-        self.assertIn("Supprimer l&#x27;image", header(html))
+        self.assertRegex(header(html), r"Supprimer l(&#x27;|')image")
 
-    @unittest.expectedFailure
     def test_barre_d_outils_d_une_todo(self):
         todo = Todo.objects.create(title="T")
 

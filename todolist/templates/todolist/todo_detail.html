@@ -7,7 +7,15 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>{{ object.title }}</h1>
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">{{ object.title }}</h1>
+
+        {% url 'todolist:todo_edit' object.pk as url %}
+        {% button "Modifier la TODO" icon="edit" href=url variant="ghost" icon_only=True %}
+
+        {% url 'todolist:todo_delete' object.pk as url %}
+        {% button "Supprimer la TODO" icon="delete" href=url variant="ghost-danger" icon_only=True %}
+    </header>
     
     {% if object.project %}
         <p>{{ object.project }}</p>
@@ -37,8 +45,4 @@
     {% url 'todolist:todo_create' as url %}
     {% querystring parent=object.pk as query %}
     {% button "+ Ajouter une sous-tâche" href=url|add:query %}
-    {% url 'todolist:todo_edit' object.pk as url %}
-    {% button "Modifier" href=url %}
-    {% url 'todolist:todo_delete' object.pk as url %}
-    {% button "Supprimer" href=url variant="danger" %}
 {% endblock content %}

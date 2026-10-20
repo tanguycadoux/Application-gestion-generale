@@ -4,16 +4,11 @@ from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
 
-PRIMARY = (
-    "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-    " font-semibold bg-blue-100 text-blue-800 hover:bg-blue-50"
-)
-DANGER = (
-    "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-    " font-semibold bg-red-100 text-red-800 hover:bg-red-50"
-)
-GHOST = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200"
-GHOST_DANGER = "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200"
+SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
+PRIMARY = SHAPE + " bg-blue-100 text-blue-800 hover:bg-blue-50"
+DANGER = SHAPE + " bg-red-100 text-red-800 hover:bg-red-50"
+GHOST = SHAPE + " hover:bg-slate-200"
+GHOST_DANGER = SHAPE + " text-red-800 hover:bg-red-100"
 
 
 def render(source: str, path: str = "/", **context) -> str:
