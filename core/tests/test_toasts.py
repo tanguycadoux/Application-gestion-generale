@@ -1,6 +1,6 @@
 """Tests des toasts : le niveau du message Django est transmis au toast (#120)."""
 
-import unittest
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -12,13 +12,13 @@ from django.urls import reverse
 
 class ToastLevelTests(TestCase):
     def render_with_message(self, level: int, text: str) -> str:
-        request = RequestFactory().get("/")
+        # Any : le stockage des messages est un attribut privé, absent du type.
+        request: Any = RequestFactory().get("/")
         request.session = SessionStore()
         request._messages = FallbackStorage(request)
         messages.add_message(request, level, text)
         return render_to_string("base.html", request=request)
 
-    @unittest.expectedFailure
     def test_type_du_toast_selon_le_niveau(self):
         levels = {
             messages.INFO: "info",
@@ -34,7 +34,6 @@ class ToastLevelTests(TestCase):
                     f'Alert.toast("Message", {{ type: "{toast_type}" }});', html
                 )
 
-    @unittest.expectedFailure
     def test_avertissement_d_un_import_sans_fichier(self):
         response = self.client.post(reverse("note_taking:import_files"), follow=True)
 
