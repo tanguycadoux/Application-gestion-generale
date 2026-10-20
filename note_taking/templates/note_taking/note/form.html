@@ -1,15 +1,13 @@
 
-{% load ui %}
-<form method="post" action="{{ form_action }}">
+<form id="note-form" method="post" action="{{ form_action }}" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
     {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div>
-        <label for="date">Date :</label>
-        <input type="date" name="date" id="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}">
+    {% if form.non_field_errors %}<div class="col-span-2">{{ form.non_field_errors }}</div>{% endif %}
+    <label for="date">Date :</label>
+    <div class="min-w-0">
+        <input type="date" name="date" id="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
         {{ form.date.errors }}
     </div>
-    {{ form.body.errors }}
+    {% if form.body.errors %}<div class="col-span-2">{{ form.body.errors }}</div>{% endif %}
     <label for="body" class="sr-only">Contenu de la note</label>
-    <textarea name="body" id="body" class="w-full h-96 border border-slate-200 font-mono focus-visible:outline-hidden">{{ form.body.value|default:'' }}</textarea>
-    {% button "Enregistrer" icon="save" icon_only=True %}
+    <textarea name="body" id="body" class="col-span-2 h-96 w-full font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
 </form>

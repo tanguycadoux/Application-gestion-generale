@@ -50,12 +50,14 @@ Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate`
 
 Liens (#127) : un style de base pour tout lien sans classe (`a:not([class])`, bloc `@layer base` de `core/templates/base.html`), y compris dans le contenu des notes : `blue-700` souligné, plus foncé avec un soulignement épaissi au survol, contour visible au focus clavier. Un lien de texte s'écrit donc sans classe ; un lien qui a sa propre apparence (bouton, menu, case du calendrier) porte ses classes et n'est pas concerné.
 
+Formulaires (#132) : les champs ont un style de base (`@layer base` de `core/templates/base.html`) : largeur bornée à leur conteneur (`max-w-full`, sans quoi une longue option de `<select>` élargit la page), bordure `slate-300`, contour `blue-700` au focus, bordure rouge si `aria-invalid="true"` (posé par Django sur un champ en erreur), erreurs `.errorlist` en `red-800`, cases en `blue-700`, bouton « Parcourir » des champs fichier à l'image d'un bouton `ghost`. Un formulaire à plusieurs champs est une grille, libellés à gauche : le `<form>` porte `grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3`, `{{ form }}` y rend deux cellules par champ (`core/templates/core/forms/grid.html`, via `FORM_RENDERER`). Le bouton d'envoi n'est pas dans la grille : il est en haut à droite, dans l'en-tête de la page, en `ghost` à icône seule comme la barre d'outils d'une note, et envoie le formulaire par son identifiant (`{% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}`). Un formulaire à un seul champ garde libellé et champ sur une ligne.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |
 |---|---|
 | `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
-| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) |
+| `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True form="id" %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) ; `form="id"` relie un `<button>` placé hors de son formulaire (pas un lien) |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
 
 Exemples :
@@ -67,7 +69,7 @@ Exemples :
 {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
 ```
 
-Usage des variantes de bouton (#145) : un bouton **plein** (`primary`, `danger`) pour l'action principale d'une page ou d'une zone, en général une seule (Enregistrer, Importer, Ouvrir la note du jour…) ; un bouton **`ghost`** pour les actions sur l'objet affiché, en barre d'outils à côté du titre (exporter, modifier, et supprimer en `ghost-danger`), et pour la navigation (mois précédent/suivant, retour). Toutes les variantes ont la même forme, sans marge : l'espacement revient au conteneur. Au survol, le fond d'un bouton plein s'éclaircit ; un `ghost`, sans fond, en prend un. Les suppressions (`danger`, `ghost-danger`) ont le texte en rouge.
+Usage des variantes de bouton (#145) : un bouton **plein** (`primary`, `danger`) pour l'action principale d'une page ou d'une zone, en général une seule (Importer, Ouvrir la note du jour…) ; un bouton **`ghost`** pour la barre d'outils à côté du titre : actions sur l'objet affiché (exporter, modifier, et supprimer en `ghost-danger`) et enregistrement d'un formulaire ; et pour la navigation (mois précédent/suivant, retour). Toutes les variantes ont la même forme, sans marge : l'espacement revient au conteneur. Au survol, le fond d'un bouton plein s'éclaircit ; un `ghost`, sans fond, en prend un. Les suppressions (`danger`, `ghost-danger`) ont le texte en rouge.
 
 Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement.
 

@@ -69,6 +69,9 @@ TEMPLATES = [
     },
 ]
 
+# `{{ form }}` rend les formulaires en grille, libellés à gauche (#132).
+FORM_RENDERER = "core.forms.GridFormRenderer"
+
 WSGI_APPLICATION = "app_gestion.wsgi.application"
 
 

@@ -7,11 +7,14 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>{{ object|default:'Créer une Todo' }}</h1>
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">{{ object|default:'Créer une Todo' }}</h1>
 
-    <form method="post">
+        {% button "Enregistrer la TODO" icon="save" variant="ghost" icon_only=True form="todo-form" %}
+    </header>
+
+    <form id="todo-form" method="post" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
         {% csrf_token %}
-        {{ form.as_p }}
-        {% button "Enregistrer" %}
+        {{ form }}
     </form>
 {% endblock content %}

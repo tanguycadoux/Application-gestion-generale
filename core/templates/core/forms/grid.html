@@ -1,0 +1,20 @@
+{% comment %}
+Formulaire en grille (#132) : deux cellules par champ, le libellé puis le champ
+avec ses erreurs et son aide. Le <form> porte la grille :
+grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3.
+{% endcomment %}
+{% if errors %}<div class="col-span-2">{{ errors }}</div>{% endif %}
+{% for field, errors in fields %}
+    {% if field.use_fieldset %}
+        <span id="{{ field.auto_id }}_label">{{ field.label }}&nbsp;:</span>
+        <div class="min-w-0" role="group" aria-labelledby="{{ field.auto_id }}_label">
+    {% else %}
+        {{ field.label_tag }}
+        <div class="min-w-0">
+    {% endif %}
+        {{ field }}
+        {{ field.errors }}
+        {% if field.help_text %}<div class="helptext text-sm text-slate-600"{% if field.auto_id %} id="{{ field.auto_id }}_helptext"{% endif %}>{{ field.help_text|safe }}</div>{% endif %}
+    </div>
+{% endfor %}
+{% for field in hidden_fields %}{{ field }}{% endfor %}

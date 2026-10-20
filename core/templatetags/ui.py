@@ -48,6 +48,7 @@ def button(
     type: str = "submit",
     icon_only: bool = False,
     disabled: bool = False,
+    form: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -56,12 +57,16 @@ def button(
     - `type` : type du `<button>`, ignoré pour un lien ;
     - `icon_only` : n'affiche que l'icône, le libellé passe en `aria-label` ;
     - `disabled` : bouton désactivé, sans effet de survol (pas pour un lien,
-      qui n'a pas d'état désactivé en HTML).
+      qui n'a pas d'état désactivé en HTML) ;
+    - `form` : identifiant du formulaire que le bouton envoie, quand il est
+      placé hors de ce formulaire (barre d'outils de l'en-tête) ; pas pour un lien.
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
     if disabled and href:
         raise ValueError("Un lien ne peut pas être désactivé : retirer href.")
+    if form and href:
+        raise ValueError("Un lien n'envoie pas de formulaire : retirer href.")
 
     classes = BUTTON_VARIANTS[variant]
     if disabled:
@@ -77,6 +82,7 @@ def button(
         "type": type,
         "icon_only": icon_only,
         "disabled": disabled,
+        "form": form,
     }
 
 

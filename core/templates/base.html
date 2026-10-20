@@ -42,6 +42,27 @@
             a:not([class]):focus-visible {
                 @apply rounded-sm outline-2 outline-offset-2 outline-blue-700;
             }
+
+            /* Champs de formulaire (#132), écrits à la main ou rendus par Django. */
+            input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select, textarea {
+                @apply max-w-full rounded-lg border border-slate-300 bg-white px-2 py-1;
+            }
+            input:focus-visible, select:focus-visible, textarea:focus-visible {
+                @apply outline-2 outline-offset-2 outline-blue-700;
+            }
+            [aria-invalid="true"] {
+                @apply border-red-800;
+            }
+            .errorlist {
+                @apply text-sm text-red-800;
+            }
+            input[type="checkbox"], input[type="radio"] {
+                @apply accent-blue-700;
+            }
+            /* Bouton « Parcourir » d'un champ fichier, à l'image d'un bouton ghost. */
+            input[type="file"]::file-selector-button {
+                @apply mr-2 cursor-pointer rounded-xl p-2 font-semibold hover:bg-slate-200;
+            }
         }
     </style>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
