@@ -9,9 +9,9 @@
 {% block content %}
     <h1>{{ object|default:'Créer une Todo' }}</h1>
 
-    <form method="post">
+    <form method="post" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
         {% csrf_token %}
-        {{ form.as_p }}
-        {% button "Enregistrer" %}
+        {{ form }}
+        <div class="col-start-2">{% button "Enregistrer" %}</div>
     </form>
 {% endblock content %}

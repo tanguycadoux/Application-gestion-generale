@@ -1,7 +1,6 @@
 """Tests du style des formulaires : champs communs, libellés à gauche en grille (#132)."""
 
-import unittest
-
+from django import forms
 from django.test import TestCase
 from django.urls import reverse
 
@@ -16,19 +15,16 @@ class FieldBaseStyleTests(TestCase):
     def setUp(self):
         self.html = self.client.get("/").content.decode()
 
-    @unittest.expectedFailure
     def test_style_de_base_des_champs(self):
         self.assertIn(
             "@apply rounded-lg border border-slate-300 bg-white px-2 py-1;", self.html
         )
 
-    @unittest.expectedFailure
     def test_focus_et_erreur_des_champs(self):
         self.assertIn("outline-blue-700", self.html)
         self.assertIn('[aria-invalid="true"]', self.html)
         self.assertIn(".errorlist", self.html)
 
-    @unittest.expectedFailure
     def test_cases_et_bouton_de_fichier(self):
         self.assertIn("@apply accent-blue-700;", self.html)
         self.assertIn("::file-selector-button", self.html)
@@ -37,7 +33,6 @@ class FieldBaseStyleTests(TestCase):
 class FormGridTemplateTests(TestCase):
     """`{{ form }}` rend chaque champ en deux cellules de grille : libellé, champ."""
 
-    @unittest.expectedFailure
     def test_libelle_puis_cellule_du_champ(self):
         html = str(TodoForm())
 
@@ -47,7 +42,6 @@ class FormGridTemplateTests(TestCase):
         )
         self.assertIn('<div class="min-w-0">', html)
 
-    @unittest.expectedFailure
     def test_erreurs_dans_la_cellule_du_champ(self):
         form = TodoForm(data={"title": ""})
         form.is_valid()
@@ -57,23 +51,26 @@ class FormGridTemplateTests(TestCase):
         self.assertIn('aria-invalid="true"', cell)
         self.assertLess(cell.index("<input"), cell.index('class="errorlist"'))
 
-    @unittest.expectedFailure
-    def test_choix_multiples_en_groupe_nomme(self):
-        html = str(TodoForm())
+    def test_cases_a_cocher_en_groupe_nomme(self):
+        class ChoicesForm(forms.Form):
+            tags = forms.MultipleChoiceField(
+                choices=[("a", "A"), ("b", "B")],
+                widget=forms.CheckboxSelectMultiple,
+            )
 
-        self.assertIn('<span id="id_tags_label"', html)
+        html = str(ChoicesForm())
+
+        self.assertIn('<span id="id_tags_label">Tags&nbsp;:</span>', html)
         self.assertIn('role="group" aria-labelledby="id_tags_label"', html)
 
 
 class FormPagesTests(TestCase):
-    @unittest.expectedFailure
     def test_formulaire_de_todo_en_grille(self):
         html = self.client.get(reverse("todolist:todo_create")).content.decode()
 
         self.assertIn(f'<form method="post" class="{FORM_GRID}">', html)
         self.assertIn('<div class="col-start-2">', html)
 
-    @unittest.expectedFailure
     def test_formulaire_de_note_en_grille(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -85,14 +82,12 @@ class FormPagesTests(TestCase):
         self.assertIn('class="col-span-2 h-96 w-full font-mono"', html)
         self.assertNotIn("focus-visible:outline-hidden", html)
 
-    @unittest.expectedFailure
     def test_import_libelle_a_gauche(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
         self.assertNotIn('<p class="flex flex-col">', html)
         self.assertIn('<p class="flex items-baseline gap-2">', html)
 
-    @unittest.expectedFailure
     def test_fichier_source_libelle_a_gauche(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 

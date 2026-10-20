@@ -50,6 +50,8 @@ Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate`
 
 Liens (#127) : un style de base pour tout lien sans classe (`a:not([class])`, bloc `@layer base` de `core/templates/base.html`), y compris dans le contenu des notes : `blue-700` souligné, plus foncé avec un soulignement épaissi au survol, contour visible au focus clavier. Un lien de texte s'écrit donc sans classe ; un lien qui a sa propre apparence (bouton, menu, case du calendrier) porte ses classes et n'est pas concerné.
 
+Formulaires (#132) : les champs ont un style de base (`@layer base` de `core/templates/base.html`) : bordure `slate-300`, contour `blue-700` au focus, bordure rouge si `aria-invalid="true"` (posé par Django sur un champ en erreur), erreurs `.errorlist` en `red-800`, cases en `blue-700`, bouton « Parcourir » des champs fichier à l'image d'un bouton `ghost`. Un formulaire à plusieurs champs est une grille, libellés à gauche : le `<form>` porte `grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3`, `{{ form }}` y rend deux cellules par champ (`core/templates/core/forms/grid.html`, via `FORM_RENDERER`), et le bouton d'envoi se place dans la colonne des champs (`<div class="col-start-2">`). Un formulaire à un seul champ garde libellé et champ sur une ligne.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |

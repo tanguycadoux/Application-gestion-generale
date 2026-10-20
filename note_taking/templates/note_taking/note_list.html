@@ -14,7 +14,7 @@
     <section aria-label="Import et export" class="my-4 flex flex-wrap items-end gap-2">
         <form class="flex flex-wrap items-end gap-2" method="post" action="{% url 'note_taking:import_files' %}" enctype="multipart/form-data">
             {% csrf_token %}
-            <p class="flex flex-col">
+            <p class="flex items-baseline gap-2">
                 <label for="import_files">Importer des notes (.qmd), des images ou une archive de l'export (.zip)</label>
                 <input type="file" name="import_files" id="import_files" accept=".qmd,.zip,application/zip,image/*" multiple>
             </p>

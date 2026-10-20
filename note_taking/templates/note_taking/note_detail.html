@@ -23,7 +23,7 @@
     <div class="border border-red-500 p-1">
         <form method="post" action="{% url 'note_taking:update_source_file' object.pk %}" enctype="multipart/form-data">
             {% csrf_token %}
-            <p>
+            <p class="flex items-baseline gap-2">
                 <label for="note_update_source_file">Modifier le fichier source de la note</label>
                 <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
             </p>
