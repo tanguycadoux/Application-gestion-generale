@@ -313,6 +313,6 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M9 · Interface des TODO | refonte de l'affichage des TODO sur les composants et les couleurs de l'application |
+| M9 · Interface des tâches | refonte de l'affichage des tâches sur les composants et les couleurs de l'application |
 | M10 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
 | M11 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
