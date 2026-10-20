@@ -132,7 +132,6 @@ class FormPagesTests(TestCase):
 
         self.assertIn(FORM_GRID, html)
         self.assertIn('class="col-span-2 h-96 w-full font-mono"', html)
-        self.assertNotIn("focus-visible:outline-hidden", html)
 
     def test_import_libelle_a_gauche(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()

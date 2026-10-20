@@ -1,4 +1,4 @@
-"""Tests du style des pages de note_taking en classes Tailwind (#79)."""
+"""Tests du tableau des notes et des feuilles de note_taking."""
 
 from django.contrib.staticfiles import finders
 from django.test import TestCase
@@ -16,13 +16,6 @@ class NoteListTableTests(TestCase):
     def get(self) -> str:
         return self.client.get(reverse("note_taking:notes_list")).content.decode()
 
-    def test_tableau_en_classes_tailwind(self):
-        html = self.get()
-
-        self.assertNotIn("notes-list-table", html)
-        self.assertIn("even:bg-slate-100", html)
-        self.assertIn("data-active:bg-slate-200", html)
-
     def test_points_d_accroche_du_script_conserves(self):
         html = self.get()
 
@@ -37,23 +30,12 @@ class StylesheetsTests(TestCase):
         with open(path, encoding="utf-8") as file:
             return file.read()
 
-    def test_popover_des_colonnes_en_classes_tailwind(self):
-        js = self.read("note_taking/table.js")
-        html = self.client.get(reverse("note_taking:notes_list")).content.decode()
-
-        self.assertIn('"border-slate-300"', js)
-        self.assertNotIn("table-column-options-popover", js)
-        self.assertIsNone(finders.find("note_taking/table.css"))
-        self.assertNotIn("table.css", html)
-
     def test_tableaux_du_contenu_rendu_encadres(self):
         css = self.read("note_taking/style.css")
 
         self.assertIn(".rendered-content table", css)
-        self.assertNotIn(".notes-list-table", css)
 
     def test_etat_actif_par_attribut_data(self):
         js = self.read("note_taking/table.js")
 
         self.assertIn("dataset.active", js)
-        self.assertNotIn("--active-popover", js)

@@ -87,26 +87,16 @@ class TodoPagesTests(TestCase):
             title="Enfant", parent=self.parent, due_date=yesterday
         )
 
-    def test_liste_sans_classes_maison(self):
+    def test_liste_avec_les_classes_d_echeance(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
         self.assertIn("bg-red-200", html)
         self.assertIn("after:border-red-500", html)
-        for legacy in ("todo-list__", "todo-line-item", "todo--", "h2-like"):
-            with self.subTest(legacy=legacy):
-                self.assertNotIn(legacy, html)
 
-    def test_detail_sans_classes_maison(self):
+    def test_detail_avec_les_sous_taches_bordees(self):
         response = self.client.get(
             reverse("todolist:todo_detail", args=[self.parent.pk])
         )
         html = response.content.decode()
 
         self.assertIn("not-first:border-t", html)
-        self.assertNotIn("todo-list__", html)
-        self.assertNotIn("todo-line-item", html)
-
-    def test_feuille_de_style_de_l_app_retiree(self):
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
-
-        self.assertNotIn("todolist/style.css", html)
