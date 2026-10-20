@@ -1,0 +1,17 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}{% if object %}Modifier le projet « {{ object.name }} »{% else %}Nouveau projet{% endif %}{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">{% if object %}Modifier le projet « {{ object.name }} »{% else %}Nouveau projet{% endif %}</h1>
+
+        {% button "Enregistrer le projet" icon="save" variant="ghost" icon_only=True form="project-form" %}
+    </header>
+
+    <form id="project-form" method="post" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
+        {% csrf_token %}
+        {{ form }}
+    </form>
+{% endblock content %}

@@ -1,0 +1,42 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}Liste des projets{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">Projets</h1>
+
+        {% url 'core:project_create' as url %}
+        {% button "Créer un projet" icon="add" href=url %}
+    </header>
+
+    <ul class="divide-y divide-slate-200">
+        {% for project in projects %}
+            <li>
+                <article class="flex items-start gap-4 py-3">
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-base">{% project_badge project %}</h2>
+                        {% if project.description %}
+                            <p>{{ project.description }}</p>
+                        {% endif %}
+                        <p class="text-sm text-slate-600">{{ project.usage|default:"Inutilisé" }}</p>
+                    </div>
+
+                    {% url 'core:project_edit' project.pk as url %}
+                    {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
+
+                    <form class="flex flex-col items-end" method="post" action="{% url 'core:project_delete' project.pk %}" data-confirm="Supprimer définitivement le projet « {{ project.name }} » ?">
+                        {% csrf_token %}
+                        {% button "Supprimer le projet" icon="delete" variant="ghost-danger" icon_only=True disabled=project.usage %}
+                        {% if project.usage %}
+                            <p class="max-w-48 text-right text-sm text-slate-600">Utilisé par {{ project.usage }}.</p>
+                        {% endif %}
+                    </form>
+                </article>
+            </li>
+        {% empty %}
+            <li><p>Aucun projet.</p></li>
+        {% endfor %}
+    </ul>
+{% endblock content %}
