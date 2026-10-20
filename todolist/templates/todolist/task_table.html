@@ -9,6 +9,7 @@ Tableau arborescent des tâches (#166), partagé par la liste et le détail d'un
         <tr class="text-sm text-slate-600">
             <th scope="col" class="w-8 p-2"><span class="sr-only">Terminée</span></th>
             <th scope="col" class="p-2 font-medium">Tâche</th>
+            <th scope="col" class="w-24 p-2 font-medium">Avancement</th>
             <th scope="col" class="p-2 font-medium">Restant</th>
             <th scope="col" class="p-2 font-medium">Échéance</th>
         </tr>
@@ -17,7 +18,7 @@ Tableau arborescent des tâches (#166), partagé par la liste et le détail d'un
         <tbody class="border-t border-slate-200">
             {% if show_project %}
                 <tr>
-                    <th scope="rowgroup" colspan="4" class="px-2 pt-3 pb-1 text-left font-semibold">{% project_badge group.root.project %}</th>
+                    <th scope="rowgroup" colspan="5" class="px-2 pt-3 pb-1 text-left font-semibold">{% project_badge group.root.project %}</th>
                 </tr>
             {% endif %}
             {% for row in group.rows %}
@@ -29,9 +30,12 @@ Tableau arborescent des tâches (#166), partagé par la liste et le détail d'un
                         <td class="p-2 align-baseline">
                             <div class="{{ row.level|indent_class }}">
                                 <a href="{% url 'todolist:todo_detail' todo.pk %}">{{ todo.title }}</a>
-                                {% if row.has_children %}<span class="text-sm text-slate-600">({{ todo.progress }} %{% if todo.to_validate %} · à valider{% endif %})</span>{% endif %}
+                                {% if todo.to_validate %}<span class="text-sm text-slate-600">· à valider</span>{% endif %}
                                 {% include "todolist/incoherence_flag.html" %}
                             </div>
+                        </td>
+                        <td class="p-2 align-middle">
+                            <progress value="{{ todo.progress }}" max="100" class="{{ todo|progress_classes }}" aria-label="Avancement : {{ todo.progress }} %">{{ todo.progress }} %</progress>
                         </td>
                         <td class="whitespace-nowrap p-2 align-baseline text-sm {{ todo|remaining_class }}">{{ todo|remaining_text }}</td>
                         <td class="whitespace-nowrap p-2 align-baseline text-sm">{% if todo.due_date %}{% date_time todo.due_date "court" %}{% else %}—{% endif %}</td>

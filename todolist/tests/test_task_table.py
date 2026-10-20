@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from core.models import Project
 from todolist.models import Todo
+from todolist.templatetags.todo_ui import progress_classes
 
 TODAY = timezone.localdate()
 
@@ -117,7 +118,7 @@ class TaskListPageTests(TestCase):
 
         self.assertEqual(table.count("<tbody"), 1)
         self.assertRegex(
-            table, r'<th scope="rowgroup" colspan="4"[^>]*>\s*<span class="inline-flex'
+            table, r'<th scope="rowgroup" colspan="5"[^>]*>\s*<span class="inline-flex'
         )
         self.assertIn("bg-teal-500", table)
         self.assertLess(table.index(">Parent<"), table.index(">Enfant<"))
@@ -151,3 +152,78 @@ class TaskListPageTests(TestCase):
         self.assertIn("<table", section)
         self.assertIn(">Enfant<", section)
         self.assertNotIn('scope="rowgroup"', section)
+
+
+class ProgressBarTests(TestCase):
+    """Avancement en barre dans sa colonne (#182)."""
+
+    def setUp(self):
+        project = Project.objects.create(name="ASTERICS", color="teal")
+        self.parent = Todo.objects.create(title="Parent", project=project)
+        self.child = Todo.objects.create(
+            title="Enfant", project=project, parent=self.parent, progress=40
+        )
+
+    def html(self) -> str:
+        return self.client.get(reverse("todolist:todo_list")).content.decode()
+
+    def test_colonne_avancement(self):
+        self.assertIn(
+            '<th scope="col" class="w-24 p-2 font-medium">Avancement</th>', self.html()
+        )
+
+    def test_barre_de_chaque_tache(self):
+        html = self.html()
+
+        self.assertRegex(
+            html, r'<progress value="40" max="100"[^>]*aria-label="Avancement : 40 %"'
+        )
+        self.assertRegex(
+            html,
+            r'<progress value="40" max="100"[^>]*aria-label="Avancement : 40 %"[^>]*>',
+        )
+        # Le parent : moyenne de son unique enfant.
+        self.assertEqual(html.count('aria-label="Avancement : 40 %"'), 2)
+
+    def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
+        self.assertNotIn("(40 %)", self.html())
+
+    def test_terminee_en_vert(self):
+        self.child.progress = 100
+        self.child.save()
+
+        classes = progress_classes(Todo.objects.get(pk=self.child.pk))
+
+        self.assertIn("[&::-webkit-progress-value]:bg-green-500", classes)
+        self.assertIn("bg-green-200", classes)
+
+    def test_couleur_selon_l_echeance_comme_les_toasts(self):
+        """Mêmes couleurs que les barres des toasts : info, avertissement, erreur."""
+        cases = {
+            None: ("blue-400", "blue-100"),
+            10: ("blue-400", "blue-100"),
+            3: ("amber-400", "amber-100"),
+            0: ("amber-400", "amber-100"),
+            -1: ("red-400", "red-100"),
+        }
+        for offset, (fill, track) in cases.items():
+            with self.subTest(offset=offset):
+                task = Todo(
+                    title="T", due_date=None if offset is None else days(offset)
+                )
+                classes = progress_classes(task)
+                self.assertIn(f"[&::-webkit-progress-value]:bg-{fill}", classes)
+                self.assertIn(f"[&::-moz-progress-bar]:bg-{fill}", classes)
+                self.assertIn(f" bg-{track}", classes)
+                self.assertIn(f"[&::-webkit-progress-bar]:bg-{track}", classes)
+
+    def test_parent_a_valider_selon_son_echeance(self):
+        self.parent.due_date = days(-2)
+        self.parent.save()
+        self.child.progress = 100
+        self.child.save()
+
+        parent = Todo.objects.get(pk=self.parent.pk)
+
+        self.assertTrue(parent.to_validate)
+        self.assertIn("bg-red-400", progress_classes(parent))

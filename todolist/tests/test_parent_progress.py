@@ -145,7 +145,7 @@ class ToggleTests(ParentProgressTestCase):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
         self.assertNotRegex(html, rf'data-id="{self.parent.pk}"[^>]*disabled')
-        self.assertIn("(50 %)", html)
+        self.assertIn('aria-label="Avancement : 50 %"', html)
 
 
 class ParentValidationTests(ParentProgressTestCase):
@@ -173,7 +173,7 @@ class ParentValidationTests(ParentProgressTestCase):
         self.assertIn(
             self.parent.pk, [g.root.pk for g in response.context["pending_groups"]]
         )
-        self.assertContains(response, "(100 % · à valider)")
+        self.assertContains(response, "· à valider")
 
     def test_parent_valide_parmi_les_terminees(self):
         self.finish_children()
