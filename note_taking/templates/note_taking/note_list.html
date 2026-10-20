@@ -15,6 +15,9 @@
         {{ notes.count }} notes dans la base de données.
     </p>
 
+    {% url 'note_taking:export_notes' as export_url %}
+    {% button "Exporter toutes les notes" icon="download" href=export_url %}
+
     <form method="post" action="{% url 'note_taking:import_note' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <p>

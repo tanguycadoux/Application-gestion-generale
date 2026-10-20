@@ -10,6 +10,9 @@
     <header class="flex items-start mb-4">
         <h1 class="flex-1">Note du <time datetime="{{ object.date }}">{{ object.date|date:'l j F Y' }}</time></h1>
 
+        {% url 'note_taking:export_note' note.pk as url %}
+        {% button "Exporter la note" icon="download" href=url variant="ghost" icon_only=True %}
+
         {% url 'note_taking:edit_note' note.pk as url %}
         {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
