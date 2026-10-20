@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -140,7 +138,6 @@ class NoteMarkdownViewTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body=body)
         return self.client.get(reverse("note_taking:note_md", args=[note.pk]))
 
-    @unittest.expectedFailure
     def test_image_resolue_par_nom_de_fichier(self):
         image = Image.objects.create(name="banc.png", file="note_images/banc.png")
 
@@ -150,7 +147,6 @@ class NoteMarkdownViewTests(TestCase):
             response, f'<img alt="Banc" src="{image.file.url}" width="80%">', html=True
         )
 
-    @unittest.expectedFailure
     def test_image_inconnue_remplacee(self):
         response = self.get("![Banc](images/inconnue.png)")
 
@@ -165,7 +161,6 @@ class NoteMarkdownViewTests(TestCase):
             response, '<img alt="Logo" src="https://example.com/logo.png">', html=True
         )
 
-    @unittest.expectedFailure
     def test_bloc_metadata_retire(self):
         response = self.get("Avant\n\n::: {.metadata}\ntags: a\n:::\n\nAprès")
 
