@@ -304,12 +304,12 @@ Milestones terminés :
 | M5 · Navigation dans les notes | accès direct à la note du jour, vue calendrier |
 | M6 · Images | page détail d'une image avec les notes liées, suppression des images inutilisées |
 | M7 · Export et import qmd | export des notes et de leurs images en archive zip, import unifié (notes, images, archives) |
+| M8 · Cohérence de l'interface | couleurs Tailwind, styles communs des liens, boutons, formulaires et alertes, suppression par popover, formats de date, titres d'onglet et vocabulaire, icônes ; règles décrites dans la section Front |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M8 · Cohérence de l'interface | défauts et incohérences relevés à la revue de l'interface : en-tête HTML, messages, formulaires, suppression, liens, couleurs, dates, vocabulaire, icônes |
 | M9 · Interface des TODO | refonte de l'affichage des TODO sur les composants et les couleurs de l'application |
 | M10 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
 | M11 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
