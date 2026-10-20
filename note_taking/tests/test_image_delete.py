@@ -2,7 +2,6 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.contrib.staticfiles import finders
@@ -100,7 +99,6 @@ class ImageDeleteTests(TestCase):
         self.assertIsNotNone(finders.find("core/confirm.js"))
         self.assertIn("core/confirm.js", html)
 
-    @unittest.expectedFailure
     def test_raison_juste_sous_le_bouton(self):
         self.use()
 

@@ -8,17 +8,15 @@
 
 {% block content %}
     <article>
-        <header class="mb-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <h1 class="flex-1 text-2xl font-semibold">{{ image.name }}</h1>
-                <form method="post" action="{% url 'note_taking:delete_image' image.pk %}" data-confirm="Supprimer définitivement l'image {{ image.name }} ?">
-                    {% csrf_token %}
-                    {% button "Supprimer l'image" icon="delete" variant="danger" disabled=notes.exists %}
-                </form>
-            </div>
-            {% if notes %}
-                <p class="text-sm text-slate-600">Suppression impossible : l'image est utilisée par {{ notes|length }} note{{ notes|length|pluralize }}.</p>
-            {% endif %}
+        <header class="mb-4 flex flex-wrap items-start gap-2">
+            <h1 class="flex-1 text-2xl font-semibold">{{ image.name }}</h1>
+            <form class="flex flex-col items-end" method="post" action="{% url 'note_taking:delete_image' image.pk %}" data-confirm="Supprimer définitivement l'image {{ image.name }} ?">
+                {% csrf_token %}
+                {% button "Supprimer l'image" icon="delete" variant="danger" disabled=notes.exists %}
+                {% if notes %}
+                    <p class="max-w-64 text-right text-sm text-slate-600">Suppression impossible : l'image est utilisée par {{ notes|length }} note{{ notes|length|pluralize }}.</p>
+                {% endif %}
+            </form>
         </header>
 
         <figure class="mb-4">
