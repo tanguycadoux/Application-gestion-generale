@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import JsonResponse
@@ -12,17 +13,31 @@ from django.views.generic import (
     UpdateView,
 )
 
+from core.month_calendar import requested_month
 from note_taking.models import Note
 
 from .forms import TodoForm
 from .models import Todo
+from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups
 
 
 def index(request):
-    context = {}
+    """Accueil : calendrier des tâches du mois demandé (?mois=AAAA-MM), #167."""
+    today, year, month = requested_month(request.GET.get("mois", ""))
+    return render(
+        request,
+        "todolist/index.html",
+        {"calendar": task_calendar(year, month, today)},
+    )
 
-    return render(request, "todolist/index.html", context)
+
+def parse_date_param(value: str):
+    """Date au format AAAA-MM-JJ, ou None."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 def todo_list(request):
@@ -64,6 +79,9 @@ class TodoCreateView(CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
+        due = parse_date_param(self.request.GET.get("due", ""))
+        if due:
+            initial["due_date"] = due
         parent_id = self.request.GET.get("parent")
         if parent_id:
             try:

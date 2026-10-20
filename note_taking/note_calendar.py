@@ -1,32 +1,15 @@
-"""Calendrier mensuel des notes, construit côté serveur (#88)."""
+"""Calendrier mensuel des notes (#88), sur la grille partagée de core (#167)."""
 
-import calendar
 from dataclasses import dataclass, field
 from datetime import date
 
-from django.utils import timezone
+from core.month_calendar import CalendarDay, MonthCalendar, month_grid, requested_month
 
 from .models import Note, NotePart
 
-# Jours de la semaine, du lundi au dimanche : (abréviation, nom complet).
-WEEKDAY_LABELS = [
-    ("Lun", "lundi"),
-    ("Mar", "mardi"),
-    ("Mer", "mercredi"),
-    ("Jeu", "jeudi"),
-    ("Ven", "vendredi"),
-    ("Sam", "samedi"),
-    ("Dim", "dimanche"),
-]
-
 
 @dataclass
-class CalendarDay:
-    date: date
-    in_month: bool
-    is_today: bool
-    is_weekend: bool
-    is_future: bool = False
+class NoteCalendarDay(CalendarDay):
     note: Note | None = None
     projects: list[str] = field(default_factory=list)
 
@@ -36,73 +19,28 @@ class CalendarDay:
         return self.note is None and self.in_month and not self.is_future
 
 
-@dataclass
-class MonthCalendar:
-    month: date
-    weeks: list[list[CalendarDay]]
-    previous: date
-    next: date
-    weekday_labels: list[tuple[str, str]] = field(
-        default_factory=lambda: list(WEEKDAY_LABELS)
-    )
-
-
 def month_calendar(year: int, month: int, today: date) -> MonthCalendar:
     """Mois en semaines du lundi au dimanche, avec les notes et leurs projets."""
-    weeks = calendar.Calendar(firstweekday=calendar.MONDAY).monthdatescalendar(
-        year, month
-    )
-    first, last = weeks[0][0], weeks[-1][-1]
+    calendar = month_grid(year, month, today, day_class=NoteCalendarDay)
+    period = (calendar.first, calendar.last)
 
-    notes = {note.date: note for note in Note.objects.filter(date__range=(first, last))}
+    notes = {note.date: note for note in Note.objects.filter(date__range=period)}
     projects: dict[date, list[str]] = {}
     for note_date, name in (
-        NotePart.objects.filter(note__date__range=(first, last))
+        NotePart.objects.filter(note__date__range=period)
         .values_list("note__date", "project__name")
         .distinct()
         .order_by("note__date", "project__name")
     ):
         projects.setdefault(note_date, []).append(name)
 
-    return MonthCalendar(
-        month=date(year, month, 1),
-        weeks=[
-            [
-                CalendarDay(
-                    date=day,
-                    in_month=day.month == month,
-                    is_today=day == today,
-                    is_weekend=day.weekday() >= calendar.SATURDAY,
-                    is_future=day > today,
-                    note=notes.get(day),
-                    projects=projects.get(day, []),
-                )
-                for day in week
-            ]
-            for week in weeks
-        ],
-        previous=shift_month(year, month, -1),
-        next=shift_month(year, month, 1),
-    )
-
-
-def shift_month(year: int, month: int, delta: int) -> date:
-    """Premier jour du mois décalé de `delta` mois."""
-    index = year * 12 + (month - 1) + delta
-    return date(index // 12, index % 12 + 1, 1)
-
-
-def parse_month_param(value: str) -> tuple[int, int] | None:
-    """Mois au format AAAA-MM, ou None si la valeur n'en est pas un."""
-    try:
-        parsed = date.fromisoformat(f"{value}-01")
-    except ValueError:
-        return None
-    return parsed.year, parsed.month
+    for day in calendar.days():
+        day.note = notes.get(day.date)
+        day.projects = projects.get(day.date, [])
+    return calendar
 
 
 def requested_month_calendar(month_param: str) -> tuple[date, MonthCalendar]:
     """Date du jour et calendrier du mois demandé (AAAA-MM), le mois courant sinon."""
-    today = timezone.localdate()
-    year, month = parse_month_param(month_param) or (today.year, today.month)
+    today, year, month = requested_month(month_param)
     return today, month_calendar(year, month, today)

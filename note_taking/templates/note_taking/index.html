@@ -18,63 +18,6 @@
         {% endif %}
     </div>
 
-    <section id="calendar" aria-labelledby="calendar-title">
-        <header class="mb-2 flex items-center gap-2">
-            <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
-            <nav aria-label="Mois" class="flex items-center gap-1" hx-boost="true" hx-target="#calendar" hx-select="#calendar" hx-swap="outerHTML">
-                {% url 'note_taking:index' as index_url %}
-                {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
-                    {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
-                    {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}
-                    {% button "Mois suivant" icon="chevron_right" href="?mois="|add:next variant="ghost" icon_only=True %}
-                {% endwith %}
-            </nav>
-        </header>
-
-        {# Classes d'une case : « inactive » pour un jour non cliquable (futur, ou hors du mois sans note). #}
-        {% partialdef day_classes %}group relative flex h-full min-h-24 min-w-0 flex-col gap-1 rounded-lg border p-1.5 {% if inactive %}cursor-not-allowed border-dashed border-slate-300 {% if day.is_weekend %}bg-slate-100{% else %}bg-transparent{% endif %}{% else %}border-slate-200 hover:bg-blue-50 {% if day.is_weekend %}bg-slate-100{% else %}bg-white{% endif %}{% endif %}{% if not day.in_month %} opacity-40{% endif %}{% if day.is_today %} ring-2 ring-blue-500{% endif %}{% endpartialdef %}
-        {% partialdef day_number %}<time datetime="{{ day.date|date:'Y-m-d' }}" class="text-sm {% if day.is_today %}font-bold text-blue-800{% elif inactive %}text-slate-300{% elif day.is_weekend %}text-slate-400{% else %}text-slate-600{% endif %}">{{ day.date.day }}</time>{% endpartialdef %}
-
-        <table class="w-full table-fixed border-separate border-spacing-1">
-            <caption class="sr-only">Notes de {{ calendar.month|date:"F Y" }}</caption>
-            <thead>
-                <tr>
-                    {% for short, full in calendar.weekday_labels %}
-                        <th scope="col" class="px-1.5 text-left text-sm font-semibold {% if forloop.counter > 5 %}text-slate-400{% else %}text-slate-600{% endif %}"><abbr title="{{ full }}" class="no-underline">{{ short }}</abbr></th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for week in calendar.weeks %}
-                    <tr>
-                        {% for day in week %}
-                            <td class="h-24 p-0 align-top">
-                                {% if day.note %}
-                                    <a class="{% partial day_classes %}" href="{% url 'note_taking:note_detail' day.note.pk %}"{% if day.is_today %} aria-current="date"{% endif %}>
-                                        {% partial day_number %}
-                                        {% if day.projects %}
-                                            {% tag_list day.projects %}
-                                        {% else %}
-                                            <span class="text-sm">Note</span>
-                                        {% endif %}
-                                    </a>
-                                {% elif day.can_create %}
-                                    <a class="{% partial day_classes %}" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date_text:"moyen" }}"{% if day.is_today %} aria-current="date"{% endif %}>
-                                        {% partial day_number %}
-                                        <span class="material-symbols-rounded pointer-events-none absolute inset-0 m-auto size-fit text-4xl! text-blue-800 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">add</span>
-                                    </a>
-                                {% else %}
-                                    {% with inactive=True %}
-                                        <div class="{% partial day_classes %}"{% if day.is_today %} aria-current="date"{% endif %}>
-                                            {% partial day_number %}
-                                        </div>
-                                    {% endwith %}
-                                {% endif %}
-                            </td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+    {% url 'note_taking:index' as index_url %}
+    {% include "core/components/month_calendar.html" with caption="Notes de" day_template="note_taking/calendar_day.html" %}
 {% endblock content %}

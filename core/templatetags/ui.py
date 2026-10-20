@@ -170,6 +170,12 @@ PROJECT_DOT_CLASSES = {
 }
 
 
+@register.filter
+def project_dot_class(project) -> str:
+    """Classe du point de couleur d'un projet, pour un affichage compact."""
+    return PROJECT_DOT_CLASSES.get(project.color, "") if project else ""
+
+
 @register.inclusion_tag("core/components/project_badge.html")
 def project_badge(project) -> dict:
     """Pastille d'un projet : un point de sa couleur devant son nom ; rien sans projet."""
@@ -177,3 +183,40 @@ def project_badge(project) -> dict:
         "project": project,
         "dot_class": PROJECT_DOT_CLASSES.get(project.color, "") if project else "",
     }
+
+
+@register.simple_tag
+def calendar_cell_classes(day, inactive: bool = False, clickable: bool = True) -> str:
+    """Classes d'une case du calendrier mensuel (#88, #167), communes aux apps.
+
+    `inactive` : jour sans action possible (pointillés) ; `clickable` : la case
+    entière est un lien (fond au survol).
+    """
+    classes = [
+        "group relative flex h-full min-h-24 min-w-0 flex-col gap-1 rounded-lg border p-1.5"
+    ]
+    if inactive:
+        classes.append("cursor-not-allowed border-dashed border-slate-300")
+        classes.append("bg-slate-100" if day.is_weekend else "bg-transparent")
+    else:
+        classes.append("border-slate-200")
+        if clickable:
+            classes.append("hover:bg-blue-50")
+        classes.append("bg-slate-100" if day.is_weekend else "bg-white")
+    if not day.in_month:
+        classes.append("opacity-40")
+    if day.is_today:
+        classes.append("ring-2 ring-blue-500")
+    return " ".join(classes)
+
+
+@register.simple_tag
+def calendar_number_classes(day, inactive: bool = False) -> str:
+    """Classes du numéro d'un jour dans sa case."""
+    if day.is_today:
+        return "text-sm font-bold text-blue-800"
+    if inactive:
+        return "text-sm text-slate-300"
+    if day.is_weekend:
+        return "text-sm text-slate-400"
+    return "text-sm text-slate-600"

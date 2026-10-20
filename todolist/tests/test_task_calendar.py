@@ -1,6 +1,5 @@
 """Tests du calendrier des tâches et de leur date de complétion (#167)."""
 
-import unittest
 from datetime import date, datetime, timedelta
 
 from django.test import TestCase
@@ -20,7 +19,6 @@ class CompletedAtTests(TestCase):
     def task(self, **fields) -> Todo:
         return Todo.objects.create(title="T", project=self.project, **fields)
 
-    @unittest.expectedFailure
     def test_date_de_completion_a_la_completion(self):
         task = self.task()
         self.assertIsNone(task.completed_at)
@@ -33,7 +31,6 @@ class CompletedAtTests(TestCase):
         task.save()
         self.assertIsNone(task.completed_at)
 
-    @unittest.expectedFailure
     def test_date_conservee_si_la_tache_reste_terminee(self):
         moment = timezone.make_aware(datetime(2025, 11, 24, 10, 0))
         task = self.task(progress=100)
@@ -45,7 +42,6 @@ class CompletedAtTests(TestCase):
 
         self.assertEqual(task.completed_at, moment)
 
-    @unittest.expectedFailure
     def test_parent_decoche_automatiquement_perd_sa_date(self):
         parent = self.task()
         child = self.task(parent=parent, progress=100)
@@ -72,7 +68,6 @@ class TaskCalendarTests(TestCase):
         calendar = task_calendar(when.year, when.month, TODAY)
         return {day.date: day for week in calendar.weeks for day in week}[when]
 
-    @unittest.expectedFailure
     def test_en_cours_a_l_echeance_terminee_a_la_completion(self):
         pending = self.task("En cours", due_date=TODAY + timedelta(days=2))
         done = self.task("Finie", due_date=TODAY + timedelta(days=2), progress=100)
@@ -80,7 +75,6 @@ class TaskCalendarTests(TestCase):
         self.assertEqual(self.day(TODAY + timedelta(days=2)).tasks, [pending])
         self.assertEqual(self.day(TODAY).tasks, [done])
 
-    @unittest.expectedFailure
     def test_page_d_accueil_des_taches(self):
         self.task("Relire", due_date=TODAY)
 
@@ -90,7 +84,6 @@ class TaskCalendarTests(TestCase):
         self.assertIn(">Relire<", html)
         self.assertIn("bg-teal-500", html)
 
-    @unittest.expectedFailure
     def test_au_plus_trois_taches_par_case(self):
         for index in range(5):
             self.task(f"Tâche {index}", due_date=TODAY)
@@ -101,7 +94,6 @@ class TaskCalendarTests(TestCase):
         self.assertNotIn(">Tâche 3<", html)
         self.assertIn("+ 2 autres", html)
 
-    @unittest.expectedFailure
     def test_retard_et_terminee(self):
         self.task("En retard", due_date=TODAY - timedelta(days=1))
         self.task("Finie", progress=100)
@@ -111,7 +103,6 @@ class TaskCalendarTests(TestCase):
         self.assertRegex(html, r'class="[^"]*text-red-800[^"]*"[^>]*>En retard<')
         self.assertRegex(html, r'class="[^"]*text-slate-500[^"]*"[^>]*>Finie<')
 
-    @unittest.expectedFailure
     def test_creation_d_une_tache_a_une_echeance(self):
         html = self.client.get(reverse("todolist:index")).content.decode()
         url = reverse("todolist:todo_create") + f"?due={TODAY.isoformat()}"

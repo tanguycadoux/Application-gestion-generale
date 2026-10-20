@@ -1,7 +1,16 @@
 {% extends "todolist/base.html" %}
+{% load ui %}
 
 {% block title %}Accueil{% endblock title %}
 
 {% block content %}
-    <h1>Gestion des tâches</h1>
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">Gestion des tâches</h1>
+
+        {% url 'todolist:todo_create' as url %}
+        {% button "Créer une tâche" icon="add" href=url %}
+    </header>
+
+    {% url 'todolist:index' as index_url %}
+    {% include "core/components/month_calendar.html" with caption="Tâches de" day_template="todolist/calendar_day.html" %}
 {% endblock content %}
