@@ -1,7 +1,6 @@
 """Tests de la frise de type Gantt des sous-tâches, dans le détail (#168)."""
 
 import re
-import unittest
 from datetime import date, datetime
 
 from django.test import TestCase
@@ -46,7 +45,6 @@ class GanttTestCase(TestCase):
 
 
 class GanttChartTests(GanttTestCase):
-    @unittest.expectedFailure
     def test_tache_observee_puis_ses_sous_taches(self):
         """La tâche observée a sa propre barre, ses sous-tâches indentées dessous."""
         rows = self.chart().rows
@@ -68,7 +66,6 @@ class GanttChartTests(GanttTestCase):
         self.assertEqual(chart.today, 66.3)
         self.assertEqual(chart.parent_due, 100.0)
 
-    @unittest.expectedFailure
     def test_position_longueur_et_avancement_d_une_barre(self):
         grandchild = self.chart().rows[2]
 
@@ -76,7 +73,6 @@ class GanttChartTests(GanttTestCase):
         self.assertEqual(grandchild.progress, 40)
         self.assertFalse(grandchild.open_end)
 
-    @unittest.expectedFailure
     def test_barre_ouverte_jusqu_a_aujourd_hui_sans_echeance(self):
         open_row = self.chart().rows[3]
 
@@ -95,7 +91,6 @@ class GanttPageTests(GanttTestCase):
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()
 
-    @unittest.expectedFailure
     def test_frise_dans_le_detail_d_un_parent(self):
         html = self.html(self.parent)
 
@@ -116,7 +111,6 @@ class GanttPageTests(GanttTestCase):
         self.assertIn("du 31 janvier 2026 au 10 février 2026, 40 %", html)
         self.assertIn("depuis le 1 février 2026, sans échéance, 0 %", html)
 
-    @unittest.expectedFailure
     def test_reperes_de_mois_en_colonne_2_sans_div_vide(self):
         html = self.html(self.parent)
 

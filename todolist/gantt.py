@@ -1,6 +1,7 @@
-"""Frise de type Gantt des sous-tâches d'une tâche (#168).
+"""Frise de type Gantt d'une tâche et de ses sous-tâches (#168).
 
-Une ligne par descendant, dans l'ordre du tableau des sous-tâches. Chaque barre
+La tâche observée en première ligne, puis une ligne par descendant, indentée,
+dans l'ordre du tableau des sous-tâches. Chaque barre
 va de la création de la tâche à son échéance, ou jusqu'à aujourd'hui sans
 échéance (bord ouvert). L'axe va de la création la plus ancienne à la date la
 plus tardive parmi les échéances, celle du parent et aujourd'hui. Les positions
@@ -16,7 +17,7 @@ from django.utils import timezone
 from core.month_calendar import shift_month
 
 from .models import Todo
-from .tree import descendant_rows
+from .tree import TaskRow, descendant_rows
 
 
 @dataclass
@@ -47,9 +48,12 @@ class GanttChart:
 def gantt_chart(task: Todo, today: date | None = None) -> GanttChart | None:
     """Frise des descendants de `task` ; None s'il n'en a pas."""
     today = today or timezone.localdate()
-    rows = descendant_rows(task)
-    if not rows:
+    descendants = descendant_rows(task)
+    if not descendants:
         return None
+    rows = [TaskRow(task, 0, True)] + [
+        TaskRow(row.task, row.level + 1, row.has_children) for row in descendants
+    ]
 
     spans = []
     for row in rows:
