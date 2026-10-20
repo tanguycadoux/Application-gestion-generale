@@ -6,7 +6,6 @@ contenu des notes, reprises de Quarto.
 """
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -49,6 +48,7 @@ COLOR_CLASS_REGEX = re.compile(
 CUSTOM_PALETTE_REGEX = re.compile(r"\b(?:neutral|primary|alert|warning)-\d+\b")
 ARBITRARY_COLOR_REGEX = re.compile(r"-\[(?:oklch|rgb|hsl|#)")
 
+CSS_COMMENT_REGEX = re.compile(r"/\*.*?\*/", re.DOTALL)
 CSS_VAR_COLOR_REGEX = re.compile(r"var\(--color-(?P<color>[a-z]+)(?:-\d+)?\)")
 # Couleurs écrites en dur ; seules les ombres et voiles noirs transparents passent.
 CSS_LITERAL_COLOR_REGEX = re.compile(
@@ -79,12 +79,10 @@ class TailwindThemeTests(TestCase):
     def setUp(self):
         self.html = self.client.get("/").content.decode()
 
-    @unittest.expectedFailure
     def test_variables_de_couleur_de_tailwind_toujours_emises(self):
         """Les feuilles CSS propres utilisent var(--color-…) sans classe dans la page."""
         self.assertIn('@import "tailwindcss" theme(static);', self.html)
 
-    @unittest.expectedFailure
     def test_plus_de_palette_maison(self):
         self.assertNotIn("--color-primary-", self.html)
         self.assertNotIn("--color-neutral-", self.html)
@@ -96,21 +94,18 @@ class ColorClassesTests(SimpleTestCase):
     def test_sources_trouvees(self):
         self.assertGreater(len(app_sources()), 50)
 
-    @unittest.expectedFailure
     def test_pas_de_couleur_de_la_palette_maison(self):
         for path in app_sources():
             with self.subTest(path=str(path)):
                 text = path.read_text(encoding="utf-8")
                 self.assertEqual(CUSTOM_PALETTE_REGEX.findall(text), [])
 
-    @unittest.expectedFailure
     def test_pas_de_couleur_en_dur_dans_les_classes(self):
         for path in app_sources():
             with self.subTest(path=str(path)):
                 text = path.read_text(encoding="utf-8")
                 self.assertEqual(ARBITRARY_COLOR_REGEX.findall(text), [])
 
-    @unittest.expectedFailure
     def test_familles_de_couleurs_autorisees(self):
         for path in app_sources():
             with self.subTest(path=str(path)):
@@ -125,20 +120,18 @@ class ColorClassesTests(SimpleTestCase):
 
 
 class StylesheetColorsTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_alertes_en_variables_tailwind(self):
-        css = read_static("core/alert_system.css")
+        css = CSS_COMMENT_REGEX.sub("", read_static("core/alert_system.css"))
 
         self.assertEqual(CSS_LITERAL_COLOR_REGEX.findall(css), [])
         colors = {m.group("color") for m in CSS_VAR_COLOR_REGEX.finditer(css)}
         self.assertTrue(colors)
         self.assertLessEqual(colors, ALLOWED_COLORS)
 
-    @unittest.expectedFailure
     def test_contenu_des_notes_seuls_les_callouts_en_dur(self):
         css = read_static("note_taking/style.css")
 
-        for line in css.splitlines():
+        for line in CSS_COMMENT_REGEX.sub("", css).splitlines():
             if CSS_LITERAL_COLOR_REGEX.search(line):
                 with self.subTest(line=line.strip()):
                     self.assertRegex(line, r"^\.callout-\w+\s*\{ --callout-color: #")

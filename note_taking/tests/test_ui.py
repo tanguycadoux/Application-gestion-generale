@@ -20,8 +20,8 @@ class NoteListTableTests(TestCase):
         html = self.get()
 
         self.assertNotIn("notes-list-table", html)
-        self.assertIn("even:bg-[oklch(96%_0_0)]", html)
-        self.assertIn("data-active:bg-[oklch(92%_0_0)]", html)
+        self.assertIn("even:bg-slate-100", html)
+        self.assertIn("data-active:bg-slate-200", html)
 
     def test_points_d_accroche_du_script_conserves(self):
         html = self.get()
@@ -41,7 +41,7 @@ class StylesheetsTests(TestCase):
         js = self.read("note_taking/table.js")
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
-        self.assertIn('"border-[oklch(86%_0_0)]"', js)
+        self.assertIn('"border-slate-300"', js)
         self.assertNotIn("table-column-options-popover", js)
         self.assertIsNone(finders.find("note_taking/table.css"))
         self.assertNotIn("table.css", html)

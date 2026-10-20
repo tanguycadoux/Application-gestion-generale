@@ -10,7 +10,7 @@ async function tableColumnOptions(columnButton) {
     // Classes écrites en entier ; la popover de base est dans le layer components.
     pop.classList.add(
         "w-fit", "min-w-auto", "rounded-[0.6rem]", "border",
-        "border-[oklch(86%_0_0)]", "text-[0.85rem]",
+        "border-slate-300", "text-[0.85rem]",
     );
     columnButton.dataset.active = "";
 

@@ -1,5 +1,5 @@
 {% load todo_ui %}
-<ul class="mt-[.4rem] overflow-hidden rounded-[.2rem] border border-neutral-50">
+<ul class="mt-[.4rem] overflow-hidden rounded-[.2rem] border border-slate-500">
     {% for todo in children %}
         <li class="{{ todo.due_status|todo_child_classes }}">
             <div class="{{ todo.due_status|todo_line_classes }}">

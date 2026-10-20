@@ -58,10 +58,10 @@
 /* CALLOUTS (rendu inspiré de Quarto) */
 
 .callout {
-    --callout-color: #adb5bd;
+    --callout-color: var(--color-slate-400);
 
     margin: 1rem 0;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--color-slate-200);
     border-left: 5px solid var(--callout-color);
     border-radius: .25rem;
     overflow: hidden;
@@ -85,6 +85,7 @@
     padding: .5rem .75rem;
 }
 
+/* Couleurs des callouts de Quarto : seule exception aux couleurs de Tailwind (#128). */
 .callout-note      { --callout-color: #0758e5; }
 .callout-tip       { --callout-color: #00a047; }
 .callout-important { --callout-color: #cc1914; }

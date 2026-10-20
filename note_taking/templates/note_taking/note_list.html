@@ -33,11 +33,11 @@
     </section>
     <hr class="hidden">
 
-    <table class="border-collapse rounded-[.6rem] text-left outline outline-[oklch(86%_0_0)]">
-        <thead class="border-b border-[oklch(86%_0_0)]">
+    <table class="border-collapse rounded-[.6rem] text-left outline outline-slate-300">
+        <thead class="border-b border-slate-300">
             <tr>
-                <th scope="col" class="bg-[oklch(96%_0_0)] px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
-                    <a class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-[oklch(92%_0_0)] data-active:bg-[oklch(92%_0_0)]"
+                <th scope="col" class="bg-slate-100 px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
+                    <a class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-slate-200 data-active:bg-slate-200"
                         {% if next_sort %}
                             href="?sort={{ next_sort }}&direction={{ next_direction }}"
                         {% else %}
@@ -54,15 +54,15 @@
                                 {% endif %}
                             {% endif %}
                         </span>
-                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-[oklch(95%_0_0)]">
+                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-slate-100">
                             &centerdot;&centerdot;&centerdot;
                         </span>
                     </a>
                 </th>
-                <th scope="col" class="bg-[oklch(96%_0_0)] px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
-                    <button class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-[oklch(92%_0_0)] data-active:bg-[oklch(92%_0_0)]">
+                <th scope="col" class="bg-slate-100 px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
+                    <button class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-slate-200 data-active:bg-slate-200">
                         <span>Projets</span>
-                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-[oklch(95%_0_0)]">
+                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-slate-100">
                             &centerdot;&centerdot;&centerdot;
                         </span>
                     </button>
@@ -71,7 +71,7 @@
         </thead>
         <tbody>
             {% for note in notes %}
-                <tr class="odd:bg-white even:bg-[oklch(96%_0_0)]">
+                <tr class="odd:bg-white even:bg-slate-100">
                     <th scope="row" class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]"><a href="{% url 'note_taking:note_detail' note.pk %}">
                         {{ note.date|date:'D. j M. Y' }}
                     </a></th>

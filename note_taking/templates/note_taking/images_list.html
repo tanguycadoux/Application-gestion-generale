@@ -12,12 +12,12 @@
     <ul role="list" class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
         {% for img in images %}
             <li>
-                <a class="block h-full rounded-lg p-2 hover:bg-primary-95" href="{% url 'note_taking:image_detail' img.pk %}">
+                <a class="block h-full rounded-lg p-2 hover:bg-blue-50" href="{% url 'note_taking:image_detail' img.pk %}">
                     <figure>
                         {% if img.file %}
-                            <img src="{{ img.file.url }}" alt="" class="aspect-[4/3] w-full rounded-md bg-neutral-95 object-contain">
+                            <img src="{{ img.file.url }}" alt="" class="aspect-[4/3] w-full rounded-md bg-slate-100 object-contain">
                         {% else %}
-                            <p class="text-alert-40">Pas de fichier associé</p>
+                            <p class="text-red-800">Pas de fichier associé</p>
                         {% endif %}
                         <figcaption class="mt-1 break-all text-sm">{{ img.name }}</figcaption>
                     </figure>

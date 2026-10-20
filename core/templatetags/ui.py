@@ -29,11 +29,11 @@ def nav_link(context, url_name: str, label: str, icon: str) -> dict:
 BUTTON_VARIANTS = {
     "primary": (
         "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-        " font-semibold bg-primary-93 text-primary-40 hover:bg-primary-95"
+        " font-semibold bg-blue-100 text-blue-800 hover:bg-blue-50"
     ),
     "danger": (
         "inline-flex items-center gap-2 my-[.4rem] rounded-[.8rem] p-[.6rem]"
-        " font-semibold bg-alert-93 text-alert-40 hover:bg-alert-95"
+        " font-semibold bg-red-100 text-red-800 hover:bg-red-50"
     ),
     "ghost": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-slate-200",
     "ghost-danger": "inline-flex items-center gap-2 rounded-2xl p-2 hover:bg-red-200",
