@@ -2,7 +2,6 @@
 
 import datetime
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -28,7 +27,6 @@ def render(source: str, **context) -> str:
 
 
 class DateFormatsTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_trois_formats(self):
         day = datetime.date(2025, 11, 24)
 
@@ -40,7 +38,6 @@ class DateFormatsTests(SimpleTestCase):
             render('{{ d|date_text:"court" }}', d=day), "lun. 24 nov. 2025"
         )
 
-    @unittest.expectedFailure
     def test_mois_abreges_en_francais(self):
         """Le code M de Django abrège juin et juillet en « Jui » : le format court
         utilise N, aux abréviations françaises."""
@@ -53,7 +50,6 @@ class DateFormatsTests(SimpleTestCase):
             "dim. 7 juin 2026",
         )
 
-    @unittest.expectedFailure
     def test_balise_time(self):
         html = render('{% date_time d "long" %}', d=datetime.date(2025, 11, 24))
 
@@ -61,7 +57,6 @@ class DateFormatsTests(SimpleTestCase):
             html, '<time datetime="2025-11-24">lundi 24 novembre 2025</time>'
         )
 
-    @unittest.expectedFailure
     def test_date_et_heure_dans_le_fuseau_de_l_application(self):
         moment = datetime.datetime(2025, 11, 24, 23, 30, tzinfo=datetime.UTC)
 
@@ -72,18 +67,15 @@ class DateFormatsTests(SimpleTestCase):
             '<time datetime="2025-11-25T00:30:00+01:00">25 novembre 2025</time>',
         )
 
-    @unittest.expectedFailure
     def test_format_inconnu_refuse(self):
         with self.assertRaises(ValueError):
             render('{{ d|date_text:"autre" }}', d=datetime.date(2025, 11, 24))
 
-    @unittest.expectedFailure
     def test_date_vide(self):
         self.assertEqual(render('{% date_time d "long" %}', d=None).strip(), "")
 
 
 class DatesInTemplatesTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_pas_de_format_d_affichage_propre_aux_gabarits(self):
         for app in APPS:
             for path in (Path(settings.BASE_DIR) / app).glob("**/templates/**/*.html"):
@@ -99,11 +91,9 @@ class DatesInPagesTests(TestCase):
 
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        NotePart.objects.create(
-            note=self.note, project=Project.objects.create(name="P"), content="x"
-        )
+        self.project = Project.objects.create(name="P")
+        NotePart.objects.create(note=self.note, project=self.project, content="x")
 
-    @unittest.expectedFailure
     def test_titre_d_une_note(self):
         html = self.client.get(
             reverse("note_taking:note_detail", args=[self.note.pk])
@@ -112,7 +102,6 @@ class DatesInPagesTests(TestCase):
         self.assertInHTML(f"<h1 class='flex-1'>Note du {self.LONG}</h1>", html)
         self.assertIn('data-confirm="Supprimer définitivement la note du 24', html)
 
-    @unittest.expectedFailure
     def test_vue_markdown(self):
         html = self.client.get(
             reverse("note_taking:note_md", args=[self.note.pk])
@@ -121,7 +110,6 @@ class DatesInPagesTests(TestCase):
         self.assertIn("<title>Note du lundi 24 novembre 2025</title>", html)
         self.assertInHTML(f"<h1>Note du {self.LONG}</h1>", html)
 
-    @unittest.expectedFailure
     def test_tableau_des_notes_en_format_court(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
@@ -129,13 +117,13 @@ class DatesInPagesTests(TestCase):
             '<time datetime="2025-11-24">lun. 24 nov. 2025</time>', html, count=1
         )
 
-    @unittest.expectedFailure
     def test_resultats_de_recherche(self):
-        html = self.client.get(reverse("note_taking:notes_search")).content.decode()
+        html = self.client.post(
+            reverse("note_taking:notes_search"), {"projects": [self.project.pk]}
+        ).content.decode()
 
         self.assertIn(f"Note du {self.LONG}", html)
 
-    @unittest.expectedFailure
     def test_echeance_d_une_todo(self):
         todo = Todo.objects.create(title="T", due_date="2025-11-24")
 

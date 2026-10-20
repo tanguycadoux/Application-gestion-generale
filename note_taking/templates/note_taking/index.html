@@ -62,7 +62,7 @@
                                         {% endif %}
                                     </a>
                                 {% elif day.can_create %}
-                                    <a class="{% partial day_classes %}" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date:'j F Y' }}"{% if day.is_today %} aria-current="date"{% endif %}>
+                                    <a class="{% partial day_classes %}" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date_text:"moyen" }}"{% if day.is_today %} aria-current="date"{% endif %}>
                                         {% partial day_number %}
                                         <span class="material-symbols-rounded pointer-events-none absolute inset-0 m-auto size-fit text-4xl! text-blue-800 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">add</span>
                                     </a>

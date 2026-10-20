@@ -28,7 +28,7 @@
         <p>Tags : {% for t in object.tags.all %} {{ t.name }} {% endfor %}</p>
     {% endif %}
     {% if object.due_date %}
-        <p>{{ object.due_date }}</p>
+        <p>{% date_time object.due_date "moyen" %}</p>
     {% endif %}
     {% if object.description %}
         <p>{{ object.description }}</p>

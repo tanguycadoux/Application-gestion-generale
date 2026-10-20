@@ -1,3 +1,4 @@
+{% load ui %}
 {% load todo_ui %}
 <ul class="mt-[.4rem] overflow-hidden rounded-[.2rem] border border-slate-500">
     {% for todo in children %}
@@ -10,7 +11,7 @@
                     </label>
                     <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
                 </div>
-                <time class="text-[.8rem]" datetime="{{ todo.due_date|date:'c' }}">{{ todo.due_date|date:'d M Y' }}</time>
+                <span class="text-[.8rem]">{% date_time todo.due_date "court" %}</span>
             </div>
             {% if todo.children.all %}
                 {% with children_2=todo.children.all %}

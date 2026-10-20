@@ -1,11 +1,12 @@
 {% extends "note_taking/base.html" %}
+{% load ui %}
 
 {% block extra_head %}
     {{ block.super }}
-    <title>Note du {{ date }}</title>
+    <title>Note du {{ date|date_text:"long" }}</title>
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Note du {{ date }}</h1>
+    <h1>Note du {% date_time date "long" %}</h1>
     <div class="rendered-content">{{ content|safe }}</div>
 {% endblock content %}
