@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -55,7 +53,6 @@ class LayoutRenderingTests(SimpleTestCase):
         ":::"
     )
 
-    @unittest.expectedFailure
     def test_figure_en_colonnes_avec_legende(self):
         html = render_markdown(self.FIGURE)
 
@@ -72,7 +69,6 @@ class LayoutRenderingTests(SimpleTestCase):
             "</figure>",
         )
 
-    @unittest.expectedFailure
     def test_colonnes_sans_identifiant_ni_legende(self):
         html = render_markdown("::: {layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n:::")
 
@@ -81,13 +77,11 @@ class LayoutRenderingTests(SimpleTestCase):
         self.assertNotIn("<figcaption", html)
         self.assertNotIn(":::", html)
 
-    @unittest.expectedFailure
     def test_nombre_de_colonnes(self):
         html = render_markdown("::: {layout-ncol=3}\n![A](a.png)\n:::")
 
         self.assertIn("grid-cols-3", html)
 
-    @unittest.expectedFailure
     def test_columns(self):
         html = render_markdown(
             "::: {.columns}\n"
@@ -104,7 +98,6 @@ class LayoutRenderingTests(SimpleTestCase):
             "</div>",
         )
 
-    @unittest.expectedFailure
     def test_bloc_imbrique_dans_un_callout(self):
         html = render_markdown(
             "::: {.callout-note}\n"
@@ -115,7 +108,9 @@ class LayoutRenderingTests(SimpleTestCase):
 
         self.assertIn("grid-cols-2", html)
         self.assertNotIn(":::", html)
-        self.assertRegex(html, r'class="callout-body">.*Après la figure.*</div></div>$')
+        self.assertRegex(
+            html, r'(?s)class="callout-body">.*<p>Après la figure</p></div></div>$'
+        )
 
     def test_bloc_dans_un_bloc_de_code_non_interprete(self):
         html = render_markdown("```\n::: {layout-ncol=2}\nx\n:::\n```")
