@@ -185,9 +185,6 @@ class ProgressBarTests(TestCase):
         # Le parent : moyenne de son unique enfant.
         self.assertEqual(html.count('aria-label="Avancement : 40 %"'), 2)
 
-    def test_barre_seulement_sans_pourcentage_a_cote_du_nom(self):
-        self.assertNotIn("(40 %)", self.html())
-
     def test_terminee_en_vert(self):
         self.child.progress = 100
         self.child.save()

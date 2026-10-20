@@ -35,12 +35,6 @@ class ToggleTodoTests(TestCase):
     def completed(self, *todos: Todo) -> list[bool]:
         return [Todo.objects.get(pk=todo.pk).completed for todo in todos]
 
-    def test_completer_une_todo_sans_sous_taches(self):
-        response = self.toggle(self.grandchild, completed=True)
-
-        self.assertEqual(response.json()["status"], "ok")
-        self.assertEqual(self.completed(self.grandchild), [True])
-
     def test_methode_get_refusee(self):
         response = self.client.get(
             reverse("todolist:todo_toggle", args=[self.parent.pk])

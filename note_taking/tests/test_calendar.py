@@ -17,13 +17,6 @@ class MonthCalendarTests(TestCase):
 
         return month_calendar(year, month, today)
 
-    def test_semaines_du_lundi_au_dimanche(self):
-        calendar = self.build(2026, 10)
-
-        self.assertTrue(all(len(week) == 7 for week in calendar.weeks))
-        self.assertEqual(calendar.weeks[0][0].date, date(2026, 9, 28))
-        self.assertEqual(calendar.weeks[-1][-1].date, date(2026, 11, 1))
-
     def test_jours_hors_du_mois_week_end_et_aujourd_hui(self):
         days = {day.date: day for week in self.build(2026, 10).weeks for day in week}
 
@@ -45,13 +38,6 @@ class MonthCalendarTests(TestCase):
         self.assertEqual(days[date(2026, 10, 14)].projects, ["Alpha", "Beta"])
         self.assertFalse(days[date(2026, 10, 14)].can_create)
         self.assertIsNone(days[date(2026, 10, 13)].note)
-
-    def test_mois_precedent_et_suivant(self):
-        calendar = self.build(2026, 1)
-
-        self.assertEqual(calendar.previous, date(2025, 12, 1))
-        self.assertEqual(calendar.next, date(2026, 2, 1))
-        self.assertEqual(calendar.month, date(2026, 1, 1))
 
 
 class IndexCalendarTests(TestCase):

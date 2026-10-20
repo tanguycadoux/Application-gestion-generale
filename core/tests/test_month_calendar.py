@@ -18,7 +18,17 @@ class MonthGridTests(SimpleTestCase):
             (calendar.previous, calendar.next), (date(2026, 9, 1), date(2026, 11, 1))
         )
         self.assertEqual(calendar.weeks[0][0].date, date(2026, 9, 28))
+        self.assertEqual(calendar.weeks[-1][-1].date, date(2026, 11, 1))
         self.assertTrue(all(len(week) == 7 for week in calendar.weeks))
+
+    def test_changement_d_annee(self):
+        from core.month_calendar import month_grid
+
+        calendar = month_grid(2026, 1, today=date(2026, 10, 20))
+
+        self.assertEqual(
+            (calendar.previous, calendar.next), (date(2025, 12, 1), date(2026, 2, 1))
+        )
 
     def test_type_de_case_fourni_par_l_app(self):
         from core.month_calendar import CalendarDay, month_grid
