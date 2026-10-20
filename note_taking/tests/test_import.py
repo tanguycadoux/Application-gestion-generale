@@ -3,7 +3,6 @@
 import io
 import shutil
 import tempfile
-import unittest
 import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -272,7 +271,6 @@ class ImportViewTests(TestCase):
             with self.subTest(name=name), self.assertRaises(NoReverseMatch):
                 reverse(f"note_taking:{name}")
 
-    @unittest.expectedFailure
     def test_boutons_importer_et_exporter_cote_a_cote(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
