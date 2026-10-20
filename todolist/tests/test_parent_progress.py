@@ -1,6 +1,7 @@
 """Tests de la complétion d'un parent, calculée à partir de ses enfants (#164)."""
 
 import json
+import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -40,13 +41,15 @@ class ComputedProgressTests(ParentProgressTestCase):
         # Enfant = 60 (son seul enfant), Parent = moyenne(60, 0) = 30.
         self.assertEqual(self.progress(self.child, self.parent), [60, 30])
 
-    def test_parent_termine_quand_tous_ses_enfants_le_sont(self):
+    @unittest.expectedFailure
+    def test_parent_a_100_sans_etre_termine(self):
+        """Un parent se valide à la main, même quand tous ses enfants sont finis."""
         for todo in (self.grandchild, self.other):
             todo.progress = 100
             todo.save()
 
         self.assertEqual(self.progress(self.child, self.parent), [100, 100])
-        self.assertTrue(Todo.objects.get(pk=self.parent.pk).completed)
+        self.assertFalse(Todo.objects.get(pk=self.parent.pk).completed)
 
     def test_avancement_saisi_d_un_parent_ignore(self):
         self.parent.progress = 100
@@ -102,6 +105,12 @@ class ParentFormTests(ParentProgressTestCase):
     def test_avancement_d_une_tache_sans_sous_tache_modifiable(self):
         self.assertFalse(TodoForm(instance=self.other).fields["progress"].disabled)
 
+    @unittest.expectedFailure
+    def test_case_terminee_seulement_pour_un_parent(self):
+        self.assertIn("done", TodoForm(instance=self.parent).fields)
+        self.assertNotIn("done", TodoForm(instance=self.other).fields)
+        self.assertNotIn("done", TodoForm().fields)
+
 
 class ToggleTests(ParentProgressTestCase):
     def test_cocher_une_tache_met_a_jour_ses_ancetres_seulement(self):
@@ -113,10 +122,14 @@ class ToggleTests(ParentProgressTestCase):
             [100, 100, 50, 0],
         )
 
-    def test_basculer_un_parent_refuse(self):
+    @unittest.expectedFailure
+    def test_cocher_un_parent_a_tout_moment(self):
+        """Ne rien empêcher : un parent se coche même si ses enfants ne sont pas
+        finis (l'incohérence est signalée, #165)."""
         response = self.toggle(self.parent, completed=True)
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["status"], "ok")
+        self.assertTrue(Todo.objects.get(pk=self.parent.pk).completed)
         self.assertEqual(self.progress(self.parent, self.child), [0, 0])
 
     def test_plus_de_confirmation_native(self):
@@ -129,11 +142,71 @@ class ToggleTests(ParentProgressTestCase):
         self.assertNotIn("confirm(", script)
         self.assertNotIn("force", script)
 
-    def test_case_d_un_parent_desactivee_avec_son_avancement(self):
+    @unittest.expectedFailure
+    def test_case_d_un_parent_active_avec_son_avancement(self):
         self.grandchild.progress = 100
         self.grandchild.save()
 
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
-        self.assertRegex(html, rf'data-id="{self.parent.pk}"[^>]*disabled')
-        self.assertIn("50 %", html)
+        self.assertNotRegex(html, rf'data-id="{self.parent.pk}"[^>]*disabled')
+        self.assertIn("(50 %)", html)
+
+
+class ParentValidationTests(ParentProgressTestCase):
+    def finish_children(self):
+        for todo in (self.grandchild, self.other):
+            self.toggle(todo, completed=True)
+
+    def done(self, *todos: Todo) -> list[bool]:
+        return [Todo.objects.get(pk=todo.pk).completed for todo in todos]
+
+    def test_tache_sans_sous_tache_terminee_a_100(self):
+        self.other.progress = 100
+        self.other.save()
+        self.assertEqual(self.done(self.other), [True])
+
+        self.other.progress = 50
+        self.other.save()
+        self.assertEqual(self.done(self.other), [False])
+
+    @unittest.expectedFailure
+    def test_parent_a_valider_dans_la_liste(self):
+        self.finish_children()
+
+        response = self.client.get(reverse("todolist:todo_list"))
+
+        self.assertIn(self.parent.pk, [t.pk for t in response.context["todo_pending"]])
+        self.assertContains(response, "(100 % · à valider)")
+
+    def test_parent_valide_parmi_les_terminees(self):
+        self.finish_children()
+        self.toggle(self.child, completed=True)
+        self.toggle(self.parent, completed=True)
+
+        response = self.client.get(reverse("todolist:todo_list"))
+
+        self.assertIn(
+            self.parent.pk, [t.pk for t in response.context["todo_completed"]]
+        )
+
+    def test_enfant_decoche_decoche_ses_ancetres(self):
+        self.finish_children()
+        self.toggle(self.child, completed=True)
+        self.toggle(self.parent, completed=True)
+
+        self.toggle(self.grandchild, completed=False)
+
+        self.assertEqual(
+            self.done(self.grandchild, self.child, self.parent, self.other),
+            [False, False, False, True],
+        )
+
+    def test_nouvel_enfant_decoche_le_parent(self):
+        self.finish_children()
+        self.toggle(self.child, completed=True)
+        self.toggle(self.parent, completed=True)
+
+        self.task("Nouveau", parent=self.parent)
+
+        self.assertEqual(self.done(self.parent, self.child), [False, True])
