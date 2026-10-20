@@ -8,16 +8,21 @@
 {% block content %}
     <h1>Liste des images importées</h1>
 
-    <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+    {# role="list" : list-none retire la sémantique de liste dans certains navigateurs. #}
+    <ul role="list" class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
         {% for img in images %}
-            <div>
-                <p>{{ img.name }}</p>
-                {% if img.file %}
-                    <img src="{{ img.file.url }}" class="w-full">
-                {% else %}
-                    <p style="color:red;">Pas de fichier associé</p>
-                {% endif %}
-            </div>
+            <li>
+                <a class="block h-full rounded-lg p-2 hover:bg-primary-95" href="{% url 'note_taking:image_detail' img.pk %}">
+                    <figure>
+                        {% if img.file %}
+                            <img src="{{ img.file.url }}" alt="" class="aspect-[4/3] w-full rounded-md bg-neutral-95 object-contain">
+                        {% else %}
+                            <p class="text-alert-40">Pas de fichier associé</p>
+                        {% endif %}
+                        <figcaption class="mt-1 break-all text-sm">{{ img.name }}</figcaption>
+                    </figure>
+                </a>
+            </li>
         {% endfor %}
-    </div>
+    </ul>
 {% endblock content %}

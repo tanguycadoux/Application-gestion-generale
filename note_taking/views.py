@@ -93,6 +93,19 @@ class ImageList(ListView):
     template_name = "note_taking/images_list.html"
 
 
+class ImageDetail(DetailView):
+    model = Image
+    context_object_name = "image"
+    template_name = "note_taking/image_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["notes"] = (
+            Note.objects.filter(parts__images=self.object).distinct().order_by("date")
+        )
+        return context
+
+
 def note_md(request, pk):
     note = get_object_or_404(Note, pk=pk)
 

@@ -1,7 +1,5 @@
 """Tests de la page de détail d'une image et de la grille des images (#84)."""
 
-import unittest
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -27,7 +25,6 @@ class ImageDetailTests(TestCase):
         image = image or self.image
         return self.client.get(reverse("note_taking:image_detail", args=[image.pk]))
 
-    @unittest.expectedFailure
     def test_image_et_nom(self):
         response = self.get()
 
@@ -36,7 +33,6 @@ class ImageDetailTests(TestCase):
         self.assertContains(response, 'alt="banc.png"')
         self.assertContains(response, "<figcaption")
 
-    @unittest.expectedFailure
     def test_notes_qui_utilisent_l_image(self):
         later = use_image(self.image, "2026-02-03")
         earlier = use_image(self.image, "2025-11-24")
@@ -54,13 +50,11 @@ class ImageDetailTests(TestCase):
             html.index('datetime="2025-11-24"'), html.index('datetime="2026-02-03"')
         )
 
-    @unittest.expectedFailure
     def test_image_inutilisee(self):
         response = self.get()
 
         self.assertContains(response, "Aucune note n'utilise cette image.")
 
-    @unittest.expectedFailure
     def test_image_inexistante(self):
         response = self.client.get(reverse("note_taking:image_detail", args=[999]))
 
@@ -68,7 +62,6 @@ class ImageDetailTests(TestCase):
 
 
 class ImageGridTests(TestCase):
-    @unittest.expectedFailure
     def test_chaque_image_mene_a_sa_page(self):
         image = Image.objects.create(name="banc.png", file="note_images/banc.png")
 
@@ -78,7 +71,6 @@ class ImageGridTests(TestCase):
             response, f'href="{reverse("note_taking:image_detail", args=[image.pk])}"'
         )
 
-    @unittest.expectedFailure
     def test_grille_en_liste_avec_plus_de_colonnes(self):
         Image.objects.create(name="banc.png", file="note_images/banc.png")
 
