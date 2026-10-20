@@ -170,7 +170,9 @@ class ParentValidationTests(ParentProgressTestCase):
 
         response = self.client.get(reverse("todolist:todo_list"))
 
-        self.assertIn(self.parent.pk, [t.pk for t in response.context["todo_pending"]])
+        self.assertIn(
+            self.parent.pk, [g.root.pk for g in response.context["pending_groups"]]
+        )
         self.assertContains(response, "(100 % · à valider)")
 
     def test_parent_valide_parmi_les_terminees(self):
@@ -181,7 +183,7 @@ class ParentValidationTests(ParentProgressTestCase):
         response = self.client.get(reverse("todolist:todo_list"))
 
         self.assertIn(
-            self.parent.pk, [t.pk for t in response.context["todo_completed"]]
+            self.parent.pk, [g.root.pk for g in response.context["done_groups"]]
         )
 
     def test_enfant_decoche_decoche_ses_ancetres(self):

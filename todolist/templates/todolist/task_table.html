@@ -1,0 +1,43 @@
+{% load ui todo_ui %}
+{% comment %}
+Tableau arborescent des tâches (#166), partagé par la liste et le détail d'une tâche.
+- groups : groupes de lignes (todolist.tree.TaskGroup), un <tbody> par racine ;
+- show_project : la première ligne de chaque groupe porte le projet de sa racine.
+{% endcomment %}
+<table class="w-full border-collapse text-left">
+    <thead>
+        <tr class="text-sm text-slate-600">
+            <th scope="col" class="w-8 p-2"><span class="sr-only">Terminée</span></th>
+            <th scope="col" class="p-2 font-medium">Tâche</th>
+            <th scope="col" class="p-2 font-medium">Restant</th>
+            <th scope="col" class="p-2 font-medium">Échéance</th>
+        </tr>
+    </thead>
+    {% for group in groups %}
+        <tbody class="border-t border-slate-200">
+            {% if show_project %}
+                <tr>
+                    <th scope="rowgroup" colspan="4" class="px-2 pt-3 pb-1 text-left font-semibold">{% project_badge group.root.project %}</th>
+                </tr>
+            {% endif %}
+            {% for row in group.rows %}
+                {% with todo=row.task %}
+                    <tr class="hover:bg-slate-50{% if todo.done %} text-slate-500{% endif %}">
+                        <td class="w-8 p-2 align-baseline">
+                            <input type="checkbox" class="todo-toggle" data-id="{{ todo.pk }}" data-url="{% url 'todolist:todo_toggle' todo.pk %}" aria-label="Terminée : {{ todo.title }}"{% if todo.done %} checked{% endif %}>
+                        </td>
+                        <td class="p-2 align-baseline">
+                            <div class="{{ row.level|indent_class }}">
+                                <a href="{% url 'todolist:todo_detail' todo.pk %}">{{ todo.title }}</a>
+                                {% if row.has_children %}<span class="text-sm text-slate-600">({{ todo.progress }} %{% if todo.to_validate %} · à valider{% endif %})</span>{% endif %}
+                                {% include "todolist/incoherence_flag.html" %}
+                            </div>
+                        </td>
+                        <td class="whitespace-nowrap p-2 align-baseline text-sm {{ todo|remaining_class }}">{{ todo|remaining_text }}</td>
+                        <td class="whitespace-nowrap p-2 align-baseline text-sm">{% if todo.due_date %}{% date_time todo.due_date "court" %}{% else %}—{% endif %}</td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+        </tbody>
+    {% endfor %}
+</table>

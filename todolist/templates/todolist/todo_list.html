@@ -1,5 +1,5 @@
 {% extends "todolist/base.html" %}
-{% load ui todo_ui %}
+{% load ui %}
 
 {% block title %}Liste des tâches{% endblock title %}
 
@@ -10,73 +10,28 @@
 {% endblock extra_head %}
 
 {% block content %}
-    <h1>Liste des tâches</h1>
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">Liste des tâches</h1>
 
-    {% url 'todolist:todo_create' as url %}
-    {% button "Créer une tâche" icon="add" href=url %}
+        {% url 'todolist:todo_create' as url %}
+        {% button "Créer une tâche" icon="add" href=url %}
+    </header>
 
-    <details open>
-        <summary class="cursor-pointer"><h2 class="inline text-2xl">À faire</h2></summary>
-        
-        <ul class="grid grid-cols-[auto_1fr_auto] gap-[.4rem]">
-            {% for todo in todo_pending %}
-                <li class="col-span-full grid grid-cols-subgrid">
-                    <article class="{{ todo.due_status|todo_card_classes }}">
-                        <h3>{{ todo.project }}</h3>
-                        
-                        <div class="{{ todo.due_status|todo_line_classes }}">
-                            <div>
-                                <label>
-                                    <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
-                                    {{ todo.title }}{% if todo.children.exists %} <span class="text-sm text-slate-600">({{ todo.progress }} %{% if todo.to_validate %} · à valider{% endif %})</span>{% endif %}
-{% include "todolist/incoherence_flag.html" %}
-                                </label>
-                                <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
-                            </div>
-                            <span class="text-[.8rem]">{% date_time todo.due_date "court" %}</span>
-                        </div>
-
-                        {% if todo.children.all %}
-                            <div class="col-[2/-1]">
-                                {% with children=todo.children.all %}
-                                    {% include "todolist/todo_item.html" with children=children %}
-                                {% endwith %}
-                            </div>
-                        {% endif %}
-                    </article>
-                </li>
-            {% endfor %}
-        </ul>
-    </details>
+    <section aria-labelledby="pending-title" class="mb-6">
+        <h2 id="pending-title" class="mb-2">En cours</h2>
+        {% if pending_groups %}
+            {% include "todolist/task_table.html" with groups=pending_groups show_project=True %}
+        {% else %}
+            <p>Aucune tâche en cours.</p>
+        {% endif %}
+    </section>
 
     <details>
-        <summary class="cursor-pointer"><h2 class="inline text-2xl">Archivées</h2></summary>
-        
-        <ul class="grid grid-cols-[auto_1fr_auto] gap-[.4rem]">
-            {% for todo in todo_completed %}
-                <li class="col-span-full grid grid-cols-subgrid">
-                    <article class="{{ todo.due_status|todo_card_classes }}">
-                        <h3>{{ todo.project }}</h3>
-                        <div>
-                            <label>
-                                <input type="checkbox" class="todo-toggle" data-id="{{ todo.id }}" data-url="{% url 'todolist:todo_toggle' todo.id %}" {% if todo.completed %}checked{% endif %}>
-                                {{ todo.title }}{% if todo.children.exists %} <span class="text-sm text-slate-600">({{ todo.progress }} %{% if todo.to_validate %} · à valider{% endif %})</span>{% endif %}
-{% include "todolist/incoherence_flag.html" %}
-                            </label>
-                            <a href="{% url 'todolist:todo_detail' todo.pk %}">Voir</a>
-                        </div>
-                        <span class="w-fit justify-self-end text-[.8rem]">{% date_time todo.due_date "court" %}</span>
-                        {% if todo.children.all %}
-                            <div class="col-[2/-1]">
-                                {% with children=todo.children.all %}
-                                    {% include "todolist/todo_item.html" with children=children %}
-                                {% endwith %}
-                            </div>
-                        {% endif %}
-                    </article>
-                </li>
-            {% endfor %}
-        </ul>
+        <summary class="mb-2 cursor-pointer"><h2 class="inline">Terminées ({{ done_groups|length }})</h2></summary>
+        {% if done_groups %}
+            {% include "todolist/task_table.html" with groups=done_groups show_project=True %}
+        {% else %}
+            <p>Aucune tâche terminée.</p>
+        {% endif %}
     </details>
 {% endblock content %}
-

@@ -1,7 +1,6 @@
 """Tests de la liste des tâches en tableau arborescent (#166)."""
 
 import re
-import unittest
 from datetime import timedelta
 
 from django.test import SimpleTestCase, TestCase
@@ -27,7 +26,6 @@ class RemainingTests(SimpleTestCase):
         )
         return remaining_text(task), remaining_class(task)
 
-    @unittest.expectedFailure
     def test_formats(self):
         cases = {
             0: "aujourd'hui",
@@ -43,14 +41,12 @@ class RemainingTests(SimpleTestCase):
             with self.subTest(offset=offset):
                 self.assertEqual(self.remaining(offset)[0], text)
 
-    @unittest.expectedFailure
     def test_couleur_selon_l_urgence(self):
         self.assertEqual(self.remaining(-1)[1], "text-red-800")
         self.assertEqual(self.remaining(0)[1], "text-amber-800")
         self.assertEqual(self.remaining(3)[1], "text-amber-800")
         self.assertEqual(self.remaining(4)[1], "text-slate-600")
 
-    @unittest.expectedFailure
     def test_rien_sans_echeance_ou_terminee(self):
         self.assertEqual(self.remaining(None)[0], "")
         self.assertEqual(self.remaining(-5, done=True)[0], "")
@@ -66,7 +62,6 @@ class TaskTreeTests(TestCase):
             title=title, project=project or self.asterics, **fields
         )
 
-    @unittest.expectedFailure
     def test_ordre_des_racines_et_des_freres(self):
         from todolist.tree import task_groups
 
@@ -116,7 +111,6 @@ class TaskListPageTests(TestCase):
     def html(self) -> str:
         return self.client.get(reverse("todolist:todo_list")).content.decode()
 
-    @unittest.expectedFailure
     def test_tableau_avec_un_groupe_par_racine(self):
         html = self.html()
         table = html[html.index("<table") : html.index("</table>")]
@@ -128,7 +122,6 @@ class TaskListPageTests(TestCase):
         self.assertIn("bg-teal-500", table)
         self.assertLess(table.index(">Parent<"), table.index(">Enfant<"))
 
-    @unittest.expectedFailure
     def test_ligne_d_une_tache(self):
         html = self.html()
         row = re.search(r"<tr[^>]*>(?:(?!</tr>).)*>Enfant<.*?</tr>", html, re.DOTALL)
@@ -143,14 +136,12 @@ class TaskListPageTests(TestCase):
         self.assertIn("dans 2 j", row_html)
         self.assertIn(f'datetime="{days(2).isoformat()}"', row_html)
 
-    @unittest.expectedFailure
     def test_terminees_dans_une_section_repliee(self):
         html = self.html()
 
         self.assertRegex(html, r"<details>\s*<summary[^>]*>.*Terminées \(1\)")
         self.assertLess(html.index("<details>"), html.index(">Finie<"))
 
-    @unittest.expectedFailure
     def test_meme_tableau_dans_le_detail_d_un_parent(self):
         html = self.client.get(
             reverse("todolist:todo_detail", args=[self.parent.pk])
