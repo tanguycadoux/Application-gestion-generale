@@ -4,6 +4,7 @@ Le projet n'a pas de lanceur de tests JavaScript : ces tests lisent le script.
 """
 
 import json
+import unittest
 import re
 from pathlib import Path
 
@@ -68,6 +69,29 @@ class AlertScriptStyleTests(TestCase):
     def test_plus_de_modale(self):
         self.assertNotIn("createModal", self.script)
         self.assertNotIn("alert__modal", self.script)
+
+
+class ToastProgressTests(TestCase):
+    """La barre de progression ne dépend pas de la génération des classes Tailwind.
+
+    La version navigateur de Tailwind génère les classes d'un élément ajouté par
+    script après coup : une largeur de départ lue sur `w-full` valait 0 (#154).
+    """
+
+    @unittest.expectedFailure
+    def test_animation_dans_la_feuille_chargee_au_depart(self):
+        css = read_static("core/alert_system.css")
+
+        self.assertIn(".alert__toast-progress {", css)
+        self.assertIn("@keyframes alert-toast-progress", css)
+
+    @unittest.expectedFailure
+    def test_script_ne_donne_que_la_duree(self):
+        script = read_static("core/alert_system.js")
+
+        self.assertIn("alert__toast-progress", script)
+        self.assertIn("style.animationDuration", script)
+        self.assertNotIn("offsetWidth", script)
 
 
 class AlertStylesheetTests(TestCase):
