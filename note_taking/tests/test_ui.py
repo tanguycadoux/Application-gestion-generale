@@ -1,7 +1,5 @@
 """Tests du style des pages de note_taking en classes Tailwind (#79)."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 from django.urls import reverse
@@ -18,7 +16,6 @@ class NoteListTableTests(TestCase):
     def get(self) -> str:
         return self.client.get(reverse("note_taking:notes_list")).content.decode()
 
-    @unittest.expectedFailure
     def test_tableau_en_classes_tailwind(self):
         html = self.get()
 
@@ -26,7 +23,6 @@ class NoteListTableTests(TestCase):
         self.assertIn("even:bg-[oklch(96%_0_0)]", html)
         self.assertIn("data-active:bg-[oklch(92%_0_0)]", html)
 
-    @unittest.expectedFailure
     def test_points_d_accroche_du_script_conserves(self):
         html = self.get()
 
@@ -41,21 +37,18 @@ class StylesheetsTests(TestCase):
         with open(path, encoding="utf-8") as file:
             return file.read()
 
-    @unittest.expectedFailure
     def test_plus_de_regles_globales_de_tableau(self):
         css = self.read("core/style.css")
 
         self.assertNotIn("table {", css)
         self.assertNotIn(".table-column-head", css)
 
-    @unittest.expectedFailure
     def test_tableaux_du_contenu_rendu_encadres(self):
         css = self.read("note_taking/style.css")
 
         self.assertIn(".rendered-content table", css)
         self.assertNotIn(".notes-list-table", css)
 
-    @unittest.expectedFailure
     def test_etat_actif_par_attribut_data(self):
         js = self.read("note_taking/table.js")
 

@@ -8,11 +8,11 @@ async function tableColumnOptions(columnButton) {
     
     await ready;
     pop.classList.add("table-column-options-popover");
-    columnButton.classList.add("table-column-head--active-popover");
+    columnButton.dataset.active = "";
 
     return new Promise((resolve) => {
         close.then(() => {
-            columnButton.classList.remove("table-column-head--active-popover");
+            delete columnButton.dataset.active;
             resolve(false);
         });
     });
