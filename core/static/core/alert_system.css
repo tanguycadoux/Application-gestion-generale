@@ -14,6 +14,19 @@
         transform: translateY(0);
     }
 
+    /* Barre de progression d'un toast : de toute la largeur à rien, sur la durée
+       du toast (animation-duration, donnée par le script). Ici plutôt qu'en
+       classes Tailwind, générées après coup pour un élément ajouté par script. */
+    .alert__toast-progress {
+        width: 100%;
+        animation: alert-toast-progress linear forwards;
+    }
+
+    @keyframes alert-toast-progress {
+        from { width: 100%; }
+        to   { width: 0; }
+    }
+
     /* Apparition de la popover */
     .alert__popover {
         animation: fadeIn .1s ease-out;

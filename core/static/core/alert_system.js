@@ -63,7 +63,9 @@ window.Alert = (function () {
     const icon = alertElement("span", `material-symbols-rounded ${style.text}`, style.icon);
     icon.setAttribute("aria-hidden", "true");
 
-    const progressBar = alertElement("div", `absolute bottom-0 left-0 h-1 w-full ${style.bar}`);
+    // Barre animée par alert_system.css : le script ne donne que la durée.
+    const progressBar = alertElement("div", `alert__toast-progress absolute bottom-0 left-0 h-1 ${style.bar}`);
+    progressBar.style.animationDuration = `${duration_ms}ms`;
     const toast = alertElement(
       "div",
       `alert__toast relative overflow-hidden ${ALERT_SHAPE} border-l-4 ${style.border}`,
@@ -75,13 +77,6 @@ window.Alert = (function () {
 
     requestAnimationFrame(() => {
       toast.classList.add("show");
-    });
-
-    progressBar.style.transition = `width ${duration_ms}ms linear`;
-    void progressBar.offsetWidth;
-    progressBar.style.width = "0%";
-    requestAnimationFrame(() => {
-      progressBar.style.width = "0%";
     });
 
     setTimeout(() => {
