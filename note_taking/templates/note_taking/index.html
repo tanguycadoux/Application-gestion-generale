@@ -24,7 +24,7 @@
 
     <section id="calendar" aria-labelledby="calendar-title">
         <header class="mb-2 flex items-center gap-2">
-            <h2 id="calendar-title" class="flex-1 text-xl font-semibold">{{ calendar.month|date:"F Y"|capfirst }}</h2>
+            <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
             <nav aria-label="Mois" class="flex items-center gap-1" hx-boost="true" hx-target="#calendar" hx-select="#calendar" hx-swap="outerHTML">
                 {% url 'note_taking:index' as index_url %}
                 {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}

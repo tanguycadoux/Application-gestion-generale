@@ -61,6 +61,17 @@
             button:not(:disabled), [role="button"]:not(:disabled) {
                 cursor: pointer;
             }
+
+            /* Titres de page (#118) ; le contenu rendu des notes a ses propres règles. */
+            h1 {
+                @apply text-2xl font-semibold;
+            }
+            h2 {
+                @apply text-xl font-semibold;
+            }
+            h3 {
+                @apply text-lg font-semibold;
+            }
         }
     </style>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />

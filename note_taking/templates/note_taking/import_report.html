@@ -8,10 +8,10 @@
 
 {% block content %}
     <article class="flex flex-col gap-4">
-        <h1 class="text-2xl font-semibold">Compte rendu de l'import</h1>
+        <h1>Compte rendu de l'import</h1>
 
         <section aria-labelledby="report-notes" class="flex flex-col gap-2">
-            <h2 id="report-notes" class="text-xl font-semibold">Notes</h2>
+            <h2 id="report-notes">Notes</h2>
 
             <details{% if report.created %} open{% endif %}>
                 <summary class="cursor-pointer font-semibold">Notes créées ({{ report.created|length }})</summary>
@@ -37,7 +37,7 @@
         </section>
 
         <section aria-labelledby="report-images" class="flex flex-col gap-2">
-            <h2 id="report-images" class="text-xl font-semibold">Images</h2>
+            <h2 id="report-images">Images</h2>
 
             <details>
                 <summary class="cursor-pointer font-semibold">Images importées ({{ report.images_imported|length }})</summary>
@@ -52,7 +52,7 @@
 
         {% if report.ignored %}
             <section aria-labelledby="report-ignored" class="flex flex-col gap-2">
-                <h2 id="report-ignored" class="text-xl font-semibold">Fichiers non reconnus ({{ report.ignored|length }})</h2>
+                <h2 id="report-ignored">Fichiers non reconnus ({{ report.ignored|length }})</h2>
                 <p class="text-sm text-slate-600">Ni une note (.qmd), ni une image, ni une archive de l'export ; dans une archive, ni une note à la racine, ni une image dans images/ : non importés.</p>
                 {% include "note_taking/import_report_names.html" with names=report.ignored %}
             </section>

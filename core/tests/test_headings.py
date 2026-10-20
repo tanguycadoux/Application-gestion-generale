@@ -1,7 +1,6 @@
 """Tests des titres de page : taille de base et hiérarchie (#118)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -21,7 +20,6 @@ def main_headings(html: str) -> list[int]:
 
 
 class HeadingStylesTests(TestCase):
-    @unittest.expectedFailure
     def test_styles_de_base_des_titres(self):
         html = self.client.get("/").content.decode()
 
@@ -29,7 +27,6 @@ class HeadingStylesTests(TestCase):
         self.assertIn("h2 {\n                @apply text-xl font-semibold;", html)
         self.assertIn("h3 {\n                @apply text-lg font-semibold;", html)
 
-    @unittest.expectedFailure
     def test_classes_de_taille_redondantes_retirees(self):
         image = Image.objects.create(name="banc.png", file="note_images/banc.png")
 
@@ -79,13 +76,11 @@ class HeadingHierarchyTests(TestCase):
         for previous, level in zip(levels, levels[1:], strict=False):
             self.assertLessEqual(level, previous + 1, levels)
 
-    @unittest.expectedFailure
     def test_hierarchie_des_pages(self):
         for url in self.pages():
             with self.subTest(url=url):
                 self.assertHierarchy(self.client.get(url).content.decode())
 
-    @unittest.expectedFailure
     def test_hierarchie_des_resultats_de_recherche(self):
         url = reverse("note_taking:notes_search")
         page = self.client.get(url).content.decode()

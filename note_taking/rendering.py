@@ -23,6 +23,9 @@ IMAGE_REF_REGEX = re.compile(
     r"\!\[(?P<alt>[^\]]*)\]\(image:(?P<pk>\d+)\)(?P<attrs>\{[^}]*\})?"
 )
 
+# Balise de titre ouvrante ou fermante du HTML rendu : <h2 …> ou </h2>.
+HEADING_TAG_REGEX = re.compile(r"<(?P<slash>/?)h(?P<level>[1-6])\b")
+
 # Image désignée par une URL complète ou absolue, laissée telle quelle.
 EXTERNAL_URL_REGEX = re.compile(r"^([a-z][a-z0-9+.-]*://|/|data:)", re.IGNORECASE)
 
@@ -304,8 +307,18 @@ def render_note_part(content: str) -> str:
 
 
 def render_note_body(body: str) -> str:
-    """Rend le body complet d'une note, tel qu'écrit dans le fichier qmd."""
-    return render_markdown(resolve_image_paths(strip_metadata_blocks(body)))
+    """Rend le body complet d'une note, tel qu'écrit dans le fichier qmd.
+
+    Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
+    a son propre h1.
+    """
+    html = render_markdown(resolve_image_paths(strip_metadata_blocks(body)))
+    return HEADING_TAG_REGEX.sub(shift_heading, html)
+
+
+def shift_heading(match: re.Match[str]) -> str:
+    level = min(int(match.group("level")) + 1, 6)
+    return f"<{match.group('slash')}h{level}"
 
 
 def strip_metadata_blocks(text: str) -> str:
