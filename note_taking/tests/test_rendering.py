@@ -1,10 +1,14 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from core.models import Project
+from images.models import Image
 from note_taking.models import Note, NotePart
 from note_taking.rendering import IMAGE_MISSING_PATH, render_markdown
 
@@ -131,6 +135,49 @@ class NoteMarkdownViewTests(TestCase):
         self.assertContains(response, "<h1>P</h1>", html=True)
         self.assertContains(response, "<td>1</td>", html=True)
         self.assertEqual(str(response.context["date"]), "2025-11-24")
+
+    def get(self, body: str):
+        note = Note.objects.create(date="2025-11-24", body=body)
+        return self.client.get(reverse("note_taking:note_md", args=[note.pk]))
+
+    @unittest.expectedFailure
+    def test_image_resolue_par_nom_de_fichier(self):
+        image = Image.objects.create(name="banc.png", file="note_images/banc.png")
+
+        response = self.get("![Banc](images/banc.png){width=80%}")
+
+        self.assertContains(
+            response, f'<img alt="Banc" src="{image.file.url}" width="80%">', html=True
+        )
+
+    @unittest.expectedFailure
+    def test_image_inconnue_remplacee(self):
+        response = self.get("![Banc](images/inconnue.png)")
+
+        self.assertContains(
+            response, f'<img alt="Banc" src="{static(IMAGE_MISSING_PATH)}">', html=True
+        )
+
+    def test_image_externe_conservee(self):
+        response = self.get("![Logo](https://example.com/logo.png)")
+
+        self.assertContains(
+            response, '<img alt="Logo" src="https://example.com/logo.png">', html=True
+        )
+
+    @unittest.expectedFailure
+    def test_bloc_metadata_retire(self):
+        response = self.get("Avant\n\n::: {.metadata}\ntags: a\n:::\n\nAprès")
+
+        self.assertContains(response, "<p>Avant</p>", html=True)
+        self.assertContains(response, "<p>Après</p>", html=True)
+        self.assertNotContains(response, "metadata")
+        self.assertNotContains(response, "tags: a")
+
+    def test_bloc_metadata_conserve_dans_un_bloc_de_code(self):
+        response = self.get("```\n::: {.metadata}\ntags: a\n:::\n```")
+
+        self.assertContains(response, "tags: a")
 
     def test_note_sans_contenu(self):
         note = Note.objects.create(date="2025-11-24", body="")
