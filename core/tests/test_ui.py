@@ -1,7 +1,5 @@
 """Tests du style des éléments communs en classes Tailwind (#79)."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 
@@ -14,14 +12,12 @@ def read_static(name: str) -> str:
 
 
 class CoreStyleTests(TestCase):
-    @unittest.expectedFailure
     def test_panneau_admin_en_classes_tailwind(self):
         html = self.client.get("/").content.decode()
 
         self.assertNotIn("admin-side-panel", html)
         self.assertIn("bg-neutral-95", html)
 
-    @unittest.expectedFailure
     def test_regles_inutilisees_retirees(self):
         css = read_static("core/style.css")
 
@@ -29,14 +25,12 @@ class CoreStyleTests(TestCase):
             with self.subTest(rule=rule):
                 self.assertNotIn(rule, css)
 
-    @unittest.expectedFailure
     def test_alertes_dans_le_layer_components(self):
         """Hors layer, ces règles l'emporteraient sur toute classe Tailwind."""
         css = read_static("core/alert_system.css")
 
         self.assertTrue(css.lstrip().startswith("@layer components {"))
 
-    @unittest.expectedFailure
     def test_titre_de_l_accueil(self):
         response = self.client.get("/")
 
