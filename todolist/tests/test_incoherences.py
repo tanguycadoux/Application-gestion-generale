@@ -1,6 +1,5 @@
 """Tests des incohérences signalées plutôt qu'empêchées (#165)."""
 
-import unittest
 from datetime import date
 
 from django.test import TestCase
@@ -29,12 +28,10 @@ class IncoherenceTestCase(TestCase):
 
 
 class DueDateTests(IncoherenceTestCase):
-    @unittest.expectedFailure
     def test_aucune_incoherence(self):
         self.assertEqual(self.messages(self.parent), [])
         self.assertEqual(self.messages(self.child), [])
 
-    @unittest.expectedFailure
     def test_echeance_d_un_enfant_apres_celle_du_parent(self):
         self.child.due_date = date(2025, 12, 5)
         self.child.save()
@@ -60,7 +57,6 @@ class DueDateTests(IncoherenceTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_echeance_absente_sans_incoherence(self):
         self.task("Sans échéance", parent=self.parent)
         self.parent.due_date = None
@@ -70,7 +66,6 @@ class DueDateTests(IncoherenceTestCase):
 
 
 class ProjectTests(IncoherenceTestCase):
-    @unittest.expectedFailure
     def test_projet_different_de_celui_du_parent(self):
         self.child.project = self.other_project
         self.child.save()
@@ -97,7 +92,6 @@ class ProjectTests(IncoherenceTestCase):
 
 
 class DoneTests(IncoherenceTestCase):
-    @unittest.expectedFailure
     def test_parent_termine_avec_un_enfant_en_cours(self):
         self.parent.done = True
         self.parent.save()
@@ -129,7 +123,6 @@ class DisplayTests(IncoherenceTestCase):
         self.child.project = self.other_project
         self.child.save()
 
-    @unittest.expectedFailure
     def test_encadre_dans_le_detail(self):
         html = self.client.get(
             reverse("todolist:todo_detail", args=[self.parent.pk])
@@ -151,7 +144,6 @@ class DisplayTests(IncoherenceTestCase):
 
         self.assertNotIn("incoherences-title", html)
 
-    @unittest.expectedFailure
     def test_indicateur_dans_la_liste(self):
         self.task("Seule")
 
