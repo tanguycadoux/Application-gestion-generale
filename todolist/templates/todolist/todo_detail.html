@@ -4,60 +4,84 @@
 {% block title %}Tâche « {{ object.title }} »{% endblock title %}
 
 {% block content %}
-    <header class="mb-4 flex items-start">
-        <h1 class="flex-1">{{ object.title }}</h1>
+    <article>
+        <header class="mb-4 flex items-start">
+            <h1 class="flex-1">{{ object.title }}</h1>
 
-        {% url 'todolist:todo_edit' object.pk as url %}
-        {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
+            {% url 'todolist:todo_edit' object.pk as url %}
+            {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la tâche « {{ object.title }} » ?">
-            {% csrf_token %}
-            {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
-        </form>
-    </header>
+            <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la tâche « {{ object.title }} » ?">
+                {% csrf_token %}
+                {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
+            </form>
+        </header>
 
-    {% with incoherences=object.incoherences %}
-        {% if incoherences %}
-            <aside aria-labelledby="incoherences-title" class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3">
-                <h2 id="incoherences-title" class="flex items-center gap-2 text-base text-amber-800">
-                    <span class="material-symbols-rounded" aria-hidden="true">warning</span>
-                    À corriger
-                </h2>
-                <ul class="mt-2 list-disc pl-6">
-                    {% for incoherence in incoherences %}
-                        <li>{{ incoherence.message }} <a href="{% url 'todolist:todo_detail' incoherence.task.pk %}">Voir « {{ incoherence.task }} »</a></li>
-                    {% endfor %}
-                </ul>
-            </aside>
+        {% with incoherences=object.incoherences %}
+            {% if incoherences %}
+                <aside aria-labelledby="incoherences-title" class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3">
+                    <h2 id="incoherences-title" class="flex items-center gap-2 text-base text-amber-800">
+                        <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+                        À corriger
+                    </h2>
+                    <ul class="mt-2 list-disc pl-6">
+                        {% for incoherence in incoherences %}
+                            <li>{{ incoherence.message }} <a href="{% url 'todolist:todo_detail' incoherence.task.pk %}">Voir « {{ incoherence.task }} »</a></li>
+                        {% endfor %}
+                    </ul>
+                </aside>
+            {% endif %}
+        {% endwith %}
+
+        <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+            <dt class="font-semibold">Projet</dt>
+            <dd>{% project_badge object.project %}</dd>
+            <dt class="font-semibold">Sujet</dt>
+            <dd>{{ object.subject|default:"Aucun" }}</dd>
+            {% if object.tags.all %}
+                <dt class="font-semibold">Tags</dt>
+                <dd>{% tag_list object.tags.all %}</dd>
+            {% endif %}
+            <dt class="font-semibold">Priorité</dt>
+            <dd>{{ object.get_priority_display }}</dd>
+            <dt class="font-semibold">Échéance</dt>
+            <dd>{% if object.due_date %}{% date_time object.due_date "moyen" %}{% else %}Aucune{% endif %}</dd>
+            <dt class="font-semibold">Avancement</dt>
+            <dd>
+                {{ object.progress }} % · {% if object.done %}terminée{% elif object.to_validate %}à valider{% else %}en cours{% endif %}
+                {% if children %}<span class="text-sm text-slate-600">(calculé à partir des sous-tâches)</span>{% endif %}
+            </dd>
+            <dt class="font-semibold">Créée le</dt>
+            <dd>{% date_time object.created_at "moyen" %}</dd>
+            {% if object.parent %}
+                <dt class="font-semibold">Tâche parente</dt>
+                <dd><a href="{% url 'todolist:todo_detail' object.parent.pk %}">{{ object.parent }}</a></dd>
+            {% endif %}
+            {% if origin_note %}
+                <dt class="font-semibold">Note d'origine</dt>
+                <dd><a href="{% url 'note_taking:note_detail' origin_note.pk %}">Note du {% date_time origin_note.date "long" %}</a></dd>
+            {% endif %}
+        </dl>
+
+        {% if object.description %}
+            <section aria-labelledby="description-title" class="mb-4">
+                <h2 id="description-title" class="mb-2">Description</h2>
+                {{ object.description|linebreaks }}
+            </section>
         {% endif %}
-    {% endwith %}
 
-    {% if object.project %}
-        <p>{{ object.project }}</p>
-    {% else %}
-        <p>Pas de projet affilié.</p>
-    {% endif %}
-    {% if object.tags.all %}
-        <p>Tags : {% for t in object.tags.all %} {{ t.name }} {% endfor %}</p>
-    {% endif %}
-    {% if object.due_date %}
-        <p>{% date_time object.due_date "moyen" %}</p>
-    {% endif %}
-    {% if object.description %}
-        <p>{{ object.description }}</p>
-    {% endif %}
-    {% if object.parent %}
-        <p>Parent : <a href="{% url 'todolist:todo_detail' object.parent.pk %}">{{ object.parent }}</a></p>
-    {% endif %}
-    {% if object.children.all %}
-        <div>
-            {% with children=object.children.all %}
+        <section aria-labelledby="children-title">
+            <header class="mb-2 flex items-center gap-2">
+                <h2 id="children-title" class="flex-1">Sous-tâches</h2>
+                {% url 'todolist:todo_create' as url %}
+                {% querystring parent=object.pk as query %}
+                {% button "Ajouter une sous-tâche" icon="add" href=url|add:query %}
+            </header>
+            {% if children %}
                 {% include "todolist/todo_item.html" with children=children %}
-            {% endwith %}
-        </div>
-    {% endif %}
-    
-    {% url 'todolist:todo_create' as url %}
-    {% querystring parent=object.pk as query %}
-    {% button "Ajouter une sous-tâche" icon="add" href=url|add:query %}
+            {% else %}
+                <p>Aucune sous-tâche.</p>
+            {% endif %}
+        </section>
+    </article>
 {% endblock content %}
