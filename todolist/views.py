@@ -16,6 +16,8 @@ from django.views.generic import (
     UpdateView,
 )
 
+from note_taking.models import Note
+
 from .forms import TodoForm
 from .models import Todo
 
@@ -59,6 +61,17 @@ class TodoListView(ListView):
 class TodoDetailView(DetailView):
     model = Todo
     template_name = "todolist/todo_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        todo = self.object
+        context["origin_note"] = (
+            Note.objects.filter(date=todo.note_part_date).first()
+            if todo.created_from_note
+            else None
+        )
+        context["children"] = todo.children.all()
+        return context
 
 
 class TodoCreateView(CreateView):

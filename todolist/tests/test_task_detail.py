@@ -1,7 +1,6 @@
 """Tests du détail d'une tâche, structuré (#133)."""
 
 import re
-import unittest
 from datetime import date
 
 from django.test import TestCase
@@ -45,7 +44,6 @@ class TaskDetailTests(TestCase):
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()
 
-    @unittest.expectedFailure
     def test_fiche(self):
         fiche = definitions(self.get(self.task))
 
@@ -63,7 +61,6 @@ class TaskDetailTests(TestCase):
         self.assertEqual(fiche["Tâche parente"], "Parent")
         self.assertIn("Créée le", fiche)
 
-    @unittest.expectedFailure
     def test_pastille_du_projet_et_lien_vers_le_parent(self):
         html = self.get(self.task)
 
@@ -72,7 +69,6 @@ class TaskDetailTests(TestCase):
             f'href="{reverse("todolist:todo_detail", args=[self.parent.pk])}"', html
         )
 
-    @unittest.expectedFailure
     def test_valeurs_absentes(self):
         task = Todo.objects.create(title="Nue", project=self.project)
 
@@ -83,7 +79,6 @@ class TaskDetailTests(TestCase):
         self.assertNotIn("Tags", fiche)
         self.assertNotIn("Tâche parente", fiche)
 
-    @unittest.expectedFailure
     def test_avancement_d_un_parent(self):
         self.task.progress = 100
         self.task.save()
@@ -94,14 +89,12 @@ class TaskDetailTests(TestCase):
             fiche["Avancement"], "100 % · à valider (calculé à partir des sous-tâches)"
         )
 
-    @unittest.expectedFailure
     def test_description_avec_ses_retours_a_la_ligne(self):
         html = self.get(self.task)
 
         self.assertIn('<h2 id="description-title"', html)
         self.assertIn("Première ligne<br>Seconde ligne", html)
 
-    @unittest.expectedFailure
     def test_section_des_sous_taches_avec_son_bouton(self):
         html = self.get(self.parent)
 
@@ -115,13 +108,11 @@ class TaskDetailTests(TestCase):
             section.group(),
         )
 
-    @unittest.expectedFailure
     def test_section_des_sous_taches_vide(self):
         html = self.get(self.task)
 
         self.assertIn("Aucune sous-tâche.", html)
 
-    @unittest.expectedFailure
     def test_note_d_origine(self):
         note = Note.objects.create(
             date="2025-11-24", body="# P\n## S\n### TODO\n- De la note"
