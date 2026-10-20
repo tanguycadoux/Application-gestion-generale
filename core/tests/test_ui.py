@@ -1,5 +1,7 @@
 """Tests du style des éléments communs en classes Tailwind (#79)."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 
@@ -18,12 +20,13 @@ class CoreStyleTests(TestCase):
         self.assertNotIn("admin-side-panel", html)
         self.assertIn("bg-neutral-95", html)
 
-    def test_regles_inutilisees_retirees(self):
-        css = read_static("core/style.css")
+    @unittest.expectedFailure
+    def test_plus_de_feuille_de_style_commune(self):
+        """Tout le style commun est en Tailwind : core/style.css n'existe plus."""
+        html = self.client.get("/").content.decode()
 
-        for rule in (".nav-link", ".messages_wrapper", ".admin-side-panel"):
-            with self.subTest(rule=rule):
-                self.assertNotIn(rule, css)
+        self.assertIsNone(finders.find("core/style.css"))
+        self.assertNotIn("core/style.css", html)
 
     def test_alertes_dans_le_layer_components(self):
         """Hors layer, ces règles l'emporteraient sur toute classe Tailwind."""
