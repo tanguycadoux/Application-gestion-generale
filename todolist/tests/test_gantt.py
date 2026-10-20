@@ -1,7 +1,6 @@
 """Tests de la frise de type Gantt des sous-tâches, dans le détail (#168)."""
 
 import re
-import unittest
 from datetime import date, datetime
 
 from django.test import TestCase
@@ -46,7 +45,6 @@ class GanttTestCase(TestCase):
 
 
 class GanttChartTests(GanttTestCase):
-    @unittest.expectedFailure
     def test_lignes_dans_l_ordre_du_tableau(self):
         rows = self.chart().rows
 
@@ -55,7 +53,6 @@ class GanttChartTests(GanttTestCase):
             [("Enfant", 0), ("Petit-enfant", 1), ("Sans échéance", 0)],
         )
 
-    @unittest.expectedFailure
     def test_axe_de_la_premiere_creation_a_la_derniere_date(self):
         chart = self.chart()
 
@@ -67,7 +64,6 @@ class GanttChartTests(GanttTestCase):
         self.assertEqual(chart.today, 66.3)
         self.assertEqual(chart.parent_due, 100.0)
 
-    @unittest.expectedFailure
     def test_position_longueur_et_avancement_d_une_barre(self):
         grandchild = self.chart().rows[1]
 
@@ -75,14 +71,12 @@ class GanttChartTests(GanttTestCase):
         self.assertEqual(grandchild.progress, 40)
         self.assertFalse(grandchild.open_end)
 
-    @unittest.expectedFailure
     def test_barre_ouverte_jusqu_a_aujourd_hui_sans_echeance(self):
         open_row = self.chart().rows[2]
 
         self.assertTrue(open_row.open_end)
         self.assertEqual(open_row.start + open_row.width, self.chart().today)
 
-    @unittest.expectedFailure
     def test_debuts_de_mois(self):
         self.assertEqual(
             [label for label, _ in self.chart().ticks], ["jan.", "fév.", "mars"]
@@ -95,7 +89,6 @@ class GanttPageTests(GanttTestCase):
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()
 
-    @unittest.expectedFailure
     def test_frise_dans_le_detail_d_un_parent(self):
         html = self.html(self.parent)
 
@@ -107,10 +100,9 @@ class GanttPageTests(GanttTestCase):
         self.assertIn("left-(--start) w-(--width)", figure.group())
         # La page utilise la vraie date du jour : seules les variables sont vérifiées.
         self.assertRegex(figure.group(), r'style="--start: [\d.]+%; --width: [\d.]+%;')
-        self.assertIn('aria-label="Aujourd&#x27;hui"', figure.group())
+        self.assertRegex(figure.group(), r"aria-label=\"Aujourd(&#x27;|')hui\"")
         self.assertIn('aria-label="Échéance de la tâche"', figure.group())
 
-    @unittest.expectedFailure
     def test_texte_de_chaque_barre_pour_les_lecteurs_d_ecran(self):
         html = self.html(self.parent)
 

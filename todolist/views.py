@@ -17,6 +17,7 @@ from core.month_calendar import requested_month
 from note_taking.models import Note
 
 from .forms import TodoForm
+from .gantt import gantt_chart
 from .models import Todo
 from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups
@@ -68,6 +69,7 @@ class TodoDetailView(DetailView):
         )
         context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
         context["children"] = context["children_groups"][0].rows
+        context["gantt"] = gantt_chart(todo)
         return context
 
 
