@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -40,7 +38,6 @@ class NotePartRenderingTests(TestCase):
 class ImageMissingTests(SimpleTestCase):
     """L'image de remplacement d'une image supprimée existe dans les statiques (#55)."""
 
-    @unittest.expectedFailure
     def test_image_de_remplacement_presente(self):
         self.assertIsNotNone(finders.find(IMAGE_MISSING_PATH))
 
