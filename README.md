@@ -299,7 +299,7 @@ Le suivi détaillé se fait dans les [issues](https://github.com/tanguycadoux/Ap
 
 Principes :
 
-- application locale et mono-utilisateur ;
+- application locale et mono-utilisateur ; aucune donnée des notes ne quitte la machine (l'assistant et l'OCR passent par des services locaux) ;
 - la base de données fait foi, le format qmd sert à l'import et à l'export ;
 - front sans étape de build : HTML, CSS et JS natifs (htmx pour les mises à jour partielles).
 
@@ -320,6 +320,12 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M10 · Qualité du code | dépendances entre apps sans cycle, performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
-| M11 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes |
-| M12 · Éditeur d'images | création et modification d'images vectorielles et matricielles |
+| M10 · Qualité du code | dépendances entre apps sans cycle, front sans ressource externe (Tailwind compilé, htmx et icônes en local), performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
+| M11 · Rendu fidèle à Quarto | sous-listes, légendes de tableau, cases à cocher et formules affichées comme dans Quarto |
+| M12 · Tâches issues des notes | sous-listes en sous-tâches, pas d'échéance par défaut, page bilan des tâches créées, tâches supprimées qui ne reviennent pas, avancement rendu au décochage |
+| M13 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
+| M14 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
+| M15 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais |
+| M16 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
+| M17 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
+| M18 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet, questions sur les notes, correction orthographique, tâches suggérées |
