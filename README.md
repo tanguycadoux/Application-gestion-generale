@@ -321,8 +321,9 @@ Milestones terminés :
 | Milestone | Contenu |
 |---|---|
 | M10 · Qualité du code | dépendances entre apps sans cycle, front sans ressource externe (Tailwind compilé, htmx et icônes en local), performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
-| M11 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
-| M12 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
-| M13 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
-| M14 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
-| M15 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet, questions sur les notes, correction orthographique, tâches suggérées |
+| M11 · Rendu fidèle à Quarto | sous-listes, légendes de tableau, cases à cocher et formules affichées comme dans Quarto |
+| M12 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
+| M13 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
+| M14 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
+| M15 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
+| M16 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet, questions sur les notes, correction orthographique, tâches suggérées |
