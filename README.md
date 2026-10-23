@@ -320,7 +320,7 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M10 · Qualité du code | dépendances entre apps sans cycle, performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
+| M10 · Qualité du code | dépendances entre apps sans cycle, front sans ressource externe (Tailwind compilé, htmx et icônes en local), performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
 | M11 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
 | M12 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
 | M13 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
