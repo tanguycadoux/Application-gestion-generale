@@ -17,6 +17,10 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
 
 
+# Titre et texte d'origine d'une tâche : une ligne de note longue doit tenir (#222).
+TODO_TEXT_MAX_LENGTH = 500
+
+
 class Todo(models.Model):
     PRIORITY_CHOICES = [
         ("low", "Basse"),
@@ -24,7 +28,7 @@ class Todo(models.Model):
         ("high", "Haute"),
     ]
 
-    title = models.CharField("titre", max_length=200)
+    title = models.CharField("titre", max_length=TODO_TEXT_MAX_LENGTH)
     project = models.ForeignKey(
         Project,
         verbose_name="projet",
@@ -59,7 +63,9 @@ class Todo(models.Model):
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
-    note_part_text = models.CharField(max_length=200, blank=True, default="")
+    note_part_text = models.CharField(
+        max_length=TODO_TEXT_MAX_LENGTH, blank=True, default=""
+    )
 
     priority = models.CharField(
         "priorité", max_length=10, choices=PRIORITY_CHOICES, default="medium"

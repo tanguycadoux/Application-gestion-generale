@@ -1,7 +1,5 @@
 """Tâches issues des notes : titre retenu pour chaque ligne (#222)."""
 
-import unittest
-
 from django.test import TestCase
 
 from note_taking.models import Note
@@ -17,7 +15,6 @@ class NoteTodoTitleTests(TestCase):
         process_note_parts(note)
         return list(Todo.objects.order_by("pk").values_list("title", flat=True))
 
-    @unittest.expectedFailure
     def test_marqueurs_de_liste_retires(self):
         self.assertEqual(
             self.titles(
@@ -38,7 +35,6 @@ class NoteTodoTitleTests(TestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_cases_retirees_sans_terminer_la_tache(self):
         """Décision du 2026-10-23 : `[x]` ne crée pas de tâche terminée."""
         self.assertEqual(
@@ -53,11 +49,9 @@ class NoteTodoTitleTests(TestCase):
             ["Relire - corriger", "Pièce 3-4"],
         )
 
-    @unittest.expectedFailure
     def test_marqueur_seul_ignore(self):
         self.assertEqual(self.titles("-", "*", "1.", "- [ ]", "- Tâche"), ["Tâche"])
 
-    @unittest.expectedFailure
     def test_ligne_longue_modifiable(self):
         """Une tâche de 300 caractères s'enregistre à nouveau sans modification."""
         line = "Tâche " + "x" * 294
