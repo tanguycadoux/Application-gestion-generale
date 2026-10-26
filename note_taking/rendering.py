@@ -340,6 +340,50 @@ class TagInlineProcessor(markdown.inlinepatterns.InlineProcessor):
         return element, m.start(0), m.end(0)
 
 
+# Formule en bloc $$…$$, éventuellement sur plusieurs lignes.
+DISPLAY_MATH_REGEX = r"(?<!\\)\$\$(?P<tex>.+?)\$\$"
+# Formule en ligne $…$ : pas d'espace après le premier $ ni avant le second, et
+# pas de chiffre juste après (« de 5$ à 6$ » n'est pas une formule).
+INLINE_MATH_REGEX = r"(?<!\\)\$(?![\s$])(?P<tex>(?:[^$\\]|\\.)+?)(?<!\s)\$(?!\d)"
+
+
+class MathExtension(markdown.Extension):
+    """Formules LaTeX $…$ et $$…$$, comme dans Quarto (#99).
+
+    La formule est gardée telle qu'écrite, sous la forme de Pandoc avec MathJax :
+    `<span class="math inline">\\(…\\)</span>`, ou `math display` et `\\[…\\]`.
+    Le script `math.js` l'affiche ensuite avec KaTeX. Les motifs passent avant
+    tous les autres, sauf le code : ni l'emphase, ni les exposants, ni les
+    caractères échappés ne touchent une formule.
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        md.ESCAPED_CHARS.append("$")
+        # Après backtick (190), avant escape (180).
+        md.inlinePatterns.register(
+            MathInlineProcessor(DISPLAY_MATH_REGEX, "display", md), "display_math", 186
+        )
+        md.inlinePatterns.register(
+            MathInlineProcessor(INLINE_MATH_REGEX, "inline", md), "inline_math", 185
+        )
+
+
+class MathInlineProcessor(markdown.inlinepatterns.InlineProcessor):
+    DELIMITERS = {"inline": ("\\(", "\\)"), "display": ("\\[", "\\]")}
+
+    def __init__(self, pattern: str, mode: str, md: markdown.Markdown):
+        super().__init__(pattern, md)
+        self.mode = mode
+
+    def handleMatch(  # type: ignore[override]
+        self, m: re.Match[str], data: str
+    ) -> tuple[etree.Element, int, int]:
+        start, end = self.DELIMITERS[self.mode]
+        element = etree.Element("span", {"class": f"math {self.mode}"})
+        element.text = markdown.util.AtomicString(f"{start}{m.group('tex')}{end}")
+        return element, m.start(0), m.end(0)
+
+
 MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     "fenced_code",
     "tables",
@@ -352,6 +396,7 @@ MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     TaskListExtension(),
     TableCaptionExtension(),
     SuperscriptSubscriptExtension(),
+    MathExtension(),
 ]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"

@@ -6,7 +6,6 @@ dans le navigateur.
 """
 
 import re
-import unittest
 
 from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
@@ -26,36 +25,30 @@ def display(tex: str) -> str:
 
 
 class MathRenderingTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_formule_en_ligne(self):
         self.assertHTMLEqual(
             render_markdown("a $x^2$ b"), f"<p>a {inline('x^2')} b</p>"
         )
 
-    @unittest.expectedFailure
     def test_formule_en_bloc(self):
         self.assertHTMLEqual(
             render_markdown("$$x = \\frac{1}{2}$$"),
             f"<p>{display('x = \\frac{1}{2}')}</p>",
         )
 
-    @unittest.expectedFailure
     def test_formule_en_bloc_sur_plusieurs_lignes_intacte(self):
         html = render_markdown(f"On a :\n\n$$\n{ALIGNED}\n$$")
 
         self.assertIn(display(f"\n{ALIGNED}\n").replace("&", "&amp;"), html)
 
-    @unittest.expectedFailure
     def test_formule_non_interpretee_en_markdown(self):
         tex = "a_1 * b_2 * c^2^ ~d~ \\{x\\} \\alpha"
 
         self.assertIn(inline(tex), render_markdown(f"${tex}$"))
 
-    @unittest.expectedFailure
     def test_caracteres_html_echappes(self):
         self.assertIn(inline("a &lt; b"), render_markdown("$a < b$"))
 
-    @unittest.expectedFailure
     def test_formules_qui_se_suivent(self):
         self.assertHTMLEqual(
             render_markdown("$x$$y$"), f"<p>{inline('x')}{inline('y')}</p>"
@@ -75,7 +68,6 @@ class MathRenderingTests(SimpleTestCase):
     def test_formule_suivie_d_un_chiffre(self):
         self.assertHTMLEqual(render_markdown("$a$1"), "<p>$a$1</p>")
 
-    @unittest.expectedFailure
     def test_dollar_echappe(self):
         self.assertHTMLEqual(render_markdown("\\$x$"), "<p>$x$</p>")
 
@@ -85,7 +77,6 @@ class MathRenderingTests(SimpleTestCase):
         self.assertIn("<code>$c$</code>", html)
         self.assertIn("<code>$$x$$\n</code>", html)
 
-    @unittest.expectedFailure
     def test_dans_un_tableau_une_liste_et_un_callout(self):
         for text in (
             "| $a_1$ | x |\n|---|---|\n| 1 | 2 |",
@@ -103,13 +94,11 @@ FONT_URL_REGEX = re.compile(r"url\(fonts/(?P<name>[\w-]+\.woff2)\)")
 class KatexAssetsTests(TestCase):
     """KaTeX embarqué en local (#217), chargé une fois par les pages de notes."""
 
-    @unittest.expectedFailure
     def test_katex_embarque_avec_licence_et_readme(self):
         for name in ("katex.min.js", "katex.min.css", "LICENSE", "README.md"):
             with self.subTest(name=name):
                 self.assertIsNotNone(finders.find(f"vendor/katex/{name}"))
 
-    @unittest.expectedFailure
     def test_polices_woff2_presentes(self):
         css_path = finders.find("vendor/katex/katex.min.css")
         self.assertIsNotNone(css_path)
@@ -121,7 +110,6 @@ class KatexAssetsTests(TestCase):
             with self.subTest(name=name):
                 self.assertIsNotNone(finders.find(f"vendor/katex/fonts/{name}"))
 
-    @unittest.expectedFailure
     def test_charge_une_fois_sur_les_pages_de_notes(self):
         html = self.client.get(reverse("note_taking:index")).content.decode()
 
