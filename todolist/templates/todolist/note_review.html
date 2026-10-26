@@ -69,19 +69,23 @@
                     </thead>
                     <tbody>
                         {% for form in gone_formset %}
-                            <tr class="border-t border-slate-200 align-baseline">
+                            <tr class="group border-t border-slate-200 align-baseline">
                                 <th scope="row" class="p-2 font-normal">
                                     {{ form.id }}
                                     <a href="{% url 'todolist:todo_detail' form.instance.pk %}">{{ form.instance.title }}</a>
                                     {{ form.non_field_errors }}
                                 </th>
-                                {% for field in form.visible_fields %}
-                                    <td class="p-2">
-                                        <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }} pour « {{ form.instance.title }} »</label>
-                                        {{ field }}
-                                        {{ field.errors }}
-                                    </td>
-                                {% endfor %}
+                                <td class="p-2">
+                                    <label for="{{ form.action.id_for_label }}" class="sr-only">{{ form.action.label }} pour « {{ form.instance.title }} »</label>
+                                    {{ form.action }}
+                                    {{ form.action.errors }}
+                                </td>
+                                {# Choix de la nouvelle ligne, visible seulement avec « La remplacer par », sans JavaScript. #}
+                                <td class="p-2 invisible group-has-[option[value=replace]:checked]:visible">
+                                    <label for="{{ form.replacement.id_for_label }}" class="sr-only">{{ form.replacement.label }} pour « {{ form.instance.title }} »</label>
+                                    {{ form.replacement }}
+                                    {{ form.replacement.errors }}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

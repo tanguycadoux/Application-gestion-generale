@@ -5,7 +5,6 @@ tels qu'écrits (sans `TODO`) et le chemin de sa ligne.
 """
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -162,7 +161,6 @@ class GoneLineTests(LifecycleTestCase):
         gone = [form.instance.title for form in response.context["gone_formset"]]
         self.assertEqual((new, gone), (["B modifiée"], ["B"]))
 
-    @unittest.expectedFailure
     def test_nouvelle_ligne_visible_seulement_pour_remplacer(self):
         """Le choix de la nouvelle ligne ne s'affiche qu'avec « La remplacer
         par », sans JavaScript : la cellule suit l'action de sa rangée."""
