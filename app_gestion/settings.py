@@ -134,6 +134,14 @@ TAILWIND_CLI_VERSION = "4.3.3"
 TAILWIND_CLI_SRC_CSS = "assets/css/source.css"
 TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
 
+# Validateur HTML du W3C, en local (#259) : `python manage.py install_validator`
+# télécharge vnu.jar (paquet npm vnu-jar, intégrité vérifiée) dans .vnu/.
+VNU_VERSION = "26.10.12"
+VNU_INTEGRITY = (
+    "sha512-Zg67G1zM28UGEVIOSn1ns6rFSZ6JVI/FNXhw+UJaXM02AQcDE84arp/b5c0OFrvzsgd/"
+    "VcmpAd9B4hX38BeZvA=="
+)
+
 # Tests sans réseau : l'application ne fait aucune requête vers l'extérieur (#218).
 TEST_RUNNER = "app_gestion.test_runner.NoNetworkTestRunner"
 
