@@ -102,7 +102,7 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
 
         project, _ = Project.objects.get_or_create(name=parsed_part.project)
 
-        section = section_for(project, [parsed_part.subject or ""])
+        section = section_for(project, parsed_part.path)
 
         note_part = NotePart.objects.create(
             note=note,

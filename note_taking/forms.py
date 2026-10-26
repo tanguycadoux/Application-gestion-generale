@@ -2,6 +2,7 @@ from django import forms
 from django.urls import reverse_lazy
 
 from core.models import Project, Section
+from core.sections import path_labels, with_ancestors
 
 from .exceptions import NoteParseError
 from .models import Note
@@ -33,15 +34,18 @@ class NoteSearchForm(forms.Form):
         """`projects` : identifiants de projets limitant les sujets proposés."""
         super().__init__(*args, **kwargs)
 
-        # Seuls les sujets utilisés par des note parts sont proposés.
-        subjects = Section.objects.filter(note_parts__isnull=False)
+        # Seuls les chemins utilisés par des note parts sont proposés, avec leurs
+        # parents : choisir un niveau cherche aussi ses descendants (#296).
+        used = Section.objects.filter(note_parts__isnull=False)
         if projects:
-            subjects = subjects.filter(project_id__in=projects)
-        names = subjects.values_list("name", flat=True).distinct()
+            used = used.filter(project_id__in=projects)
+        labels = path_labels()
+        pks = with_ancestors(used.values_list("pk", flat=True))
 
-        self.fields["subjects"].choices = [
-            (name, name) for name in sorted(names, key=str.lower)
-        ]
+        self.fields["subjects"].choices = sorted(
+            ((str(pk), labels[pk]) for pk in pks),
+            key=lambda choice: choice[1].casefold(),
+        )
 
 
 class NewNoteForm(forms.ModelForm):

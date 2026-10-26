@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from core.tags import forget_unused_tags
 from note_taking.exceptions import NoteError
 from note_taking.models import Note
 from note_taking.services import process_note_parts
@@ -8,8 +9,9 @@ from note_taking.services import process_note_parts
 
 class Command(BaseCommand):
     help = (
-        "Recalcule les note parts de toutes les notes. Les tâches existantes "
-        "ne sont ni recréées ni modifiées."
+        "Recalcule les note parts de toutes les notes, puis supprime les tags "
+        "que plus rien n'utilise. Les tâches existantes ne sont ni recréées ni "
+        "modifiées."
     )
 
     def add_arguments(self, parser):
@@ -35,10 +37,16 @@ class Command(BaseCommand):
                 else:
                     processed += 1
 
+            # Après un recalcul, les tags d'avant l'analyse actuelle ne servent plus.
+            forgotten = forget_unused_tags()
+
             if dry_run:
                 transaction.set_rollback(True)
 
-        summary = f"{processed} note(s) recalculée(s), {errors} erreur(s)."
+        summary = (
+            f"{processed} note(s) recalculée(s), {errors} erreur(s), "
+            f"{forgotten} tag(s) inutilisé(s) supprimé(s)."
+        )
         if dry_run:
             summary += " Simulation : rien n'a été enregistré."
         self.stdout.write(self.style.SUCCESS(summary) if not errors else summary)
