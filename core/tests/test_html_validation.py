@@ -115,6 +115,15 @@ class HtmlValidationTests(TestCase):
             note_part_text="Ligne retirée",
             note_state=Todo.NoteState.TO_REVIEW,
         )
+        # Tâche écartée : section « Écartées » de la liste (#290).
+        Todo.objects.create(
+            title="Écartée",
+            project=project,
+            created_from_note=True,
+            note_part_date=TODAY,
+            note_part_text="Écartée",
+            note_state=Todo.NoteState.DISMISSED,
+        )
         # Sous-tâche incohérente : autre projet, échéance après le parent.
         Todo.objects.create(
             title="Enfant",

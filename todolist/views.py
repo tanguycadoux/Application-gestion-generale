@@ -23,7 +23,15 @@ from note_taking.models import Note
 from .forms import GoneLineFormSet, NoteReviewFormSet, TodoForm
 from .gantt import gantt_chart
 from .models import Todo
-from .services import note_lines, note_todos_to_review, remove_task, replace_task
+from .services import (
+    dismissed_rows,
+    dismissed_subtree,
+    note_lines,
+    note_todos_to_review,
+    remove_task,
+    replace_task,
+    restore_task,
+)
 from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
@@ -50,14 +58,43 @@ def todo_list(request):
     """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
     les arbres dont la racine est terminée dans une section repliée."""
     groups = task_groups()
+    rows = dismissed_rows()
+    for row in rows:
+        # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
+        row.confirm = (
+            f"Rétablir la tâche « {row.task.title} »{with_subtasks(row.subtasks)} ?"
+        )
     return render(
         request,
         "todolist/todo_list.html",
         {
             "pending_groups": [g for g in groups if not g.root.done],
             "done_groups": [g for g in groups if g.root.done],
+            "dismissed_rows": rows,
         },
     )
+
+
+@require_POST
+def restore_todo(request, pk):
+    """Rétablit une tâche écartée et ses sous-tâches écartées (#290)."""
+    todo = get_object_or_404(
+        Todo.all_objects, pk=pk, note_state=Todo.NoteState.DISMISSED
+    )
+    subtasks = len(dismissed_subtree(todo)) - 1
+    dismissed_parent = restore_task(todo)
+    message = (
+        f"La tâche « {todo.title} »{with_subtasks(subtasks)} sont rétablies."
+        if subtasks
+        else f"La tâche « {todo.title} » est rétablie."
+    )
+    if dismissed_parent:
+        message += (
+            f" Sa tâche parente « {dismissed_parent.title} » est écartée : "
+            "elle est rétablie sans tâche parente."
+        )
+    messages.success(request, message)
+    return redirect("todolist:todo_list")
 
 
 def with_subtasks(count: int) -> str:

@@ -273,7 +273,7 @@ Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, so
 
 « Enregistrer les tâches » les rend revues et revient à la note ; « Plus tard » y revient sans rien changer, et le bilan reviendra au prochain enregistrement.
 
-Supprimer une tâche issue d'une note l'**écarte** : elle n'est plus affichée, et la note ne la recrée pas.
+Supprimer une tâche issue d'une note l'**écarte** : elle n'est plus affichée, et la note ne la recrée pas. La section repliée « Écartées » de la liste des tâches permet de la **rétablir**, avec ses sous-tâches écartées (#290). Si sa tâche parente est elle-même écartée, elle revient sans parent, et le message le signale.
 
 ### Images
 

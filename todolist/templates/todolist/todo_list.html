@@ -34,4 +34,43 @@
             <p>Aucune tâche terminée.</p>
         {% endif %}
     </details>
+
+    {% if dismissed_rows %}
+        <details class="mt-6">
+            <summary class="mb-2 cursor-pointer"><h2 class="inline">Écartées ({{ dismissed_rows|length }})</h2></summary>
+            <p class="mb-2 text-slate-600">Tâches issues des notes, supprimées : leur note ne les recrée pas. Rétablir une tâche rétablit aussi ses sous-tâches écartées.</p>
+            <table class="w-full border-collapse text-left">
+                <thead>
+                    <tr class="text-sm text-slate-600">
+                        <th scope="col" class="p-2 font-medium">Tâche</th>
+                        <th scope="col" class="p-2 font-medium">Note</th>
+                        <th scope="col" class="p-2 font-medium"><span class="sr-only">Rétablir</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dismissed_rows %}
+                        <tr class="border-t border-slate-200 align-baseline">
+                            <th scope="row" class="p-2 font-normal">
+                                {{ row.task.title }}
+                                {% if row.subtasks %}<span class="text-sm text-slate-600">· {{ row.subtasks }} sous-tâche{{ row.subtasks|pluralize }}</span>{% endif %}
+                            </th>
+                            <td class="p-2">
+                                {% if row.note %}
+                                    <a href="{% url 'note_taking:note_detail' row.note.pk %}">Note du {% date_time row.note.date "moyen" %}</a>
+                                {% else %}
+                                    {% date_time row.task.note_part_date "moyen" %}
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-right">
+                                <form method="post" action="{% url 'todolist:todo_restore' row.task.pk %}" data-confirm="{{ row.confirm }}">
+                                    {% csrf_token %}
+                                    {% button "Rétablir" icon="restore_from_trash" variant="ghost" %}
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+    {% endif %}
 {% endblock content %}

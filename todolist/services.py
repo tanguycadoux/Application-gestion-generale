@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from core.models import Project, Subject, Tag
-from note_taking.models import NotePart
+from note_taking.models import Note, NotePart
 from note_taking.qmd.lists import CODE_INDENT, LIST_ITEM_REGEX, text_column
 from note_taking.qmd.parser import HEADING_SEPARATOR
 
@@ -184,6 +184,87 @@ def remove_task(todo: Todo) -> None:
     ).update(parent=None)
     Todo.all_objects.filter(pk__in=manual).delete()
     update_ancestors_progress(todo.parent_id)
+
+
+def dismissed_subtree(todo: Todo) -> list[Todo]:
+    """La tâche et ses sous-tâches écartées, à tous les niveaux."""
+    subtree, level = [todo], [todo]
+    while level:
+        level = list(
+            Todo.all_objects.filter(
+                parent__in=level, note_state=Todo.NoteState.DISMISSED
+            )
+        )
+        subtree += level
+    return subtree
+
+
+@dataclass
+class DismissedRow:
+    """Tâche écartée dont le parent ne l'est pas, avec ses sous-tâches écartées :
+    ce que « Rétablir » remet ensemble (#290)."""
+
+    task: Todo
+    subtasks: int
+    note: Note | None
+    # Texte de la confirmation, posé par la vue.
+    confirm: str = ""
+
+
+def dismissed_rows() -> list[DismissedRow]:
+    dismissed = Todo.all_objects.filter(
+        note_state=Todo.NoteState.DISMISSED
+    ).select_related("project", "parent")
+    tops = [
+        task
+        for task in dismissed.order_by("-note_part_date", "pk")
+        if task.parent is None or task.parent.note_state != Todo.NoteState.DISMISSED
+    ]
+    notes = Note.objects.in_bulk(
+        [task.note_part_date for task in tops], field_name="date"
+    )
+    return [
+        DismissedRow(
+            task, len(dismissed_subtree(task)) - 1, notes.get(task.note_part_date)
+        )
+        for task in tops
+    ]
+
+
+def restore_task(todo: Todo) -> Todo | None:
+    """Rétablit une tâche écartée et ses sous-tâches écartées (#290).
+
+    Chacune redevient revue si sa ligne est encore dans la note, gardée sans sa
+    ligne sinon. La tâche retrouve son parent s'il est encore affiché ; s'il est
+    écarté, elle est rétablie à la racine, et le parent écarté est renvoyé pour
+    le signaler.
+    """
+    subtree = dismissed_subtree(todo)
+    note = (
+        Note.objects.filter(date=todo.note_part_date).first()
+        if todo.note_part_date
+        else None
+    )
+    lines = note_lines(note.parts.prefetch_related("tags")) if note else set()
+    for state, keep in (
+        (Todo.NoteState.REVIEWED, True),
+        (Todo.NoteState.DETACHED, False),
+    ):
+        Todo.all_objects.filter(
+            pk__in=[
+                task.pk
+                for task in subtree
+                if ((task.note_path, task.note_part_text) in lines) == keep
+            ]
+        ).update(note_state=state)
+
+    dismissed_parent = None
+    if todo.parent_id and not Todo.objects.filter(pk=todo.parent_id).exists():
+        dismissed_parent = todo.parent
+        Todo.all_objects.filter(pk=todo.pk).update(parent=None)
+    else:
+        update_ancestors_progress(todo.parent_id)
+    return dismissed_parent
 
 
 def replace_task(old: Todo, new: Todo) -> None:

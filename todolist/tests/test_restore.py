@@ -5,8 +5,6 @@ son parent s'il est encore affiché, sinon elle revient à la racine, signalé. 
 de suppression définitive : sa ligne reviendrait en tâche.
 """
 
-import unittest
-
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -38,7 +36,6 @@ class RestoreTestCase(TestCase):
 
 
 class DismissedListTests(RestoreTestCase):
-    @unittest.expectedFailure
     def test_section_des_ecartees(self):
         remove_task(self.task("A"))
 
@@ -49,7 +46,6 @@ class DismissedListTests(RestoreTestCase):
             [row.task.title for row in response.context["dismissed_rows"]], ["A"]
         )
 
-    @unittest.expectedFailure
     def test_confirmation_annonce_les_sous_taches(self):
         remove_task(self.task("A"))
 
@@ -59,7 +55,6 @@ class DismissedListTests(RestoreTestCase):
 
 
 class RestoreTests(RestoreTestCase):
-    @unittest.expectedFailure
     def test_retablit_la_tache_et_ses_sous_taches(self):
         remove_task(self.task("A"))
 
@@ -74,7 +69,6 @@ class RestoreTests(RestoreTestCase):
             "La tâche « A » et ses 2 sous-tâches sont rétablies.",
         )
 
-    @unittest.expectedFailure
     def test_revue_si_sa_ligne_est_dans_la_note(self):
         remove_task(self.task("D"))
 
@@ -82,7 +76,6 @@ class RestoreTests(RestoreTestCase):
 
         self.assertEqual(self.task("D").note_state, Todo.NoteState.REVIEWED)
 
-    @unittest.expectedFailure
     def test_gardee_sans_sa_ligne_sinon(self):
         remove_task(self.task("D"))
         self.note.body = "# P\n### TODO\n- A\n  - B\n  - C"
@@ -93,7 +86,6 @@ class RestoreTests(RestoreTestCase):
 
         self.assertEqual(self.task("D").note_state, Todo.NoteState.DETACHED)
 
-    @unittest.expectedFailure
     def test_retrouve_son_parent_affiche(self):
         remove_task(self.task("B"))
 
@@ -102,7 +94,6 @@ class RestoreTests(RestoreTestCase):
         self.assertEqual(self.task("B").parent, self.task("A"))
         self.assertEqual(self.message(response), "La tâche « B » est rétablie.")
 
-    @unittest.expectedFailure
     def test_parent_ecarte_retablie_a_la_racine(self):
         remove_task(self.task("A"))
 
@@ -116,7 +107,6 @@ class RestoreTests(RestoreTestCase):
             "elle est rétablie sans tâche parente.",
         )
 
-    @unittest.expectedFailure
     def test_avancement_du_parent_a_jour(self):
         Todo.objects.filter(title="C").update(progress=100)
         b = self.task("B")
@@ -128,13 +118,11 @@ class RestoreTests(RestoreTestCase):
 
         self.assertEqual(self.task("A").progress, 50)
 
-    @unittest.expectedFailure
     def test_tache_non_ecartee_introuvable(self):
         response = self.restore("A")
 
         self.assertEqual(response.status_code, 404)
 
-    @unittest.expectedFailure
     def test_methode_get_refusee(self):
         remove_task(self.task("A"))
 
