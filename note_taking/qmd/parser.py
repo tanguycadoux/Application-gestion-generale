@@ -66,12 +66,13 @@ class Level:
     tags: set[str] | None = None
 
 
-def parse_key_value(text: str) -> tuple[str, str]:
+def parse_key_value(text: str, line_number: int) -> tuple[str, str]:
     # Découpage sur le premier « : » seulement : la valeur peut en contenir.
     parsed_text = text.split(":", 1)
     if len(parsed_text) != 2:
         raise NoteParseError(
-            f"La métadonnée est erronnée : format non type DICT ({text})"
+            f"Ligne {line_number} : métadonnée invalide (« {text} »), "
+            "la forme attendue est « clé: valeur »."
         )
     return parsed_text[0].strip(), parsed_text[1].strip()
 
@@ -119,11 +120,11 @@ class NoteParser:
 
         if self.in_front_matter and self.in_metadata_block:
             raise NoteParseError(
-                "Erreur dans la lecture : à la fois block metadata local et global "
-                f"(ligne numéro {number + 1} : {line})"
+                f"Ligne {number + 1} : bloc de métadonnées ouvert dans le bloc "
+                "d'en-tête, à fermer d'abord (ligne ---)."
             )
         if self.in_front_matter and line != "":
-            key, value = parse_key_value(line)
+            key, value = parse_key_value(line, number + 1)
             self.note.metadata[key] = value
         elif self.in_metadata_block and line != "":
             self.parse_metadata_line(number, line)
@@ -172,13 +173,13 @@ class NoteParser:
         return True
 
     def parse_metadata_line(self, number: int, line: str) -> None:
-        key, value = parse_key_value(line)
+        key, value = parse_key_value(line, number + 1)
 
         if key == "tags":
-            if value[0] != "[" or value[-1] != "]":
+            if not value.startswith("[") or not value.endswith("]"):
                 raise NoteParseError(
-                    "La métadonnée locale est erronnée : format non type ARRAY "
-                    f"(ligne numéro {number + 1} : {line})"
+                    f"Ligne {number + 1} : les tags s'écrivent entre crochets, "
+                    "par exemple « tags: [a, b] »."
                 )
             tags = (tag.strip() for tag in value.strip("[]").split(","))
             self.local_tags = {tag for tag in tags if tag}

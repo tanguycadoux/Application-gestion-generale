@@ -105,7 +105,7 @@ class ImportNoteTests(ServiceTestCase):
         self.assertFalse(Note.objects.exists())
 
     def test_sans_bloc_en_tete(self):
-        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "date: 2025-11-24"):
             insert_note_in_table(qmd_file("2025-11-24.qmd", "# P\nx"))
         self.assertFalse(Note.objects.exists())
 
@@ -169,7 +169,7 @@ class UpdateNoteTests(ServiceTestCase):
             )
 
     def test_en_tete_sans_date(self):
-        with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
+        with self.assertRaisesMessage(InvalidNoteFileError, "date: 2025-11-24"):
             update_note_from_source_file(
                 self.note, qmd_file("2025-11-24.qmd", "---\nauteur: moi\n---\n")
             )
