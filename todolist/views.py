@@ -85,11 +85,12 @@ class TodoDetailView(DetailView):
         return context
 
 
-class TodoCreateView(CreateView):
+class TodoCreateView(SuccessMessageMixin, CreateView):
     model = Todo
     form_class = TodoForm
     template_name = "todolist/todo_form.html"
     success_url = reverse_lazy("todolist:todo_list")
+    success_message = "La tâche « %(title)s » est créée."
 
     def get_initial(self):
         initial = super().get_initial()
@@ -108,11 +109,12 @@ class TodoCreateView(CreateView):
         return initial
 
 
-class TodoUpdateView(UpdateView):
+class TodoUpdateView(SuccessMessageMixin, UpdateView):
     model = Todo
     form_class = TodoForm
     template_name = "todolist/todo_form.html"
     success_url = reverse_lazy("todolist:todo_list")
+    success_message = "La tâche « %(title)s » est modifiée."
 
 
 class TodoDeleteView(SuccessMessageMixin, DeleteView):
@@ -130,8 +132,10 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
     def get_success_message(self, cleaned_data):
         title = self.object.title
         if self.subtasks:
-            return f"La tâche « {title} »{with_subtasks(self.subtasks)} ont été supprimées."
-        return f"La tâche « {title} » a été supprimée."
+            return (
+                f"La tâche « {title} »{with_subtasks(self.subtasks)} sont supprimées."
+            )
+        return f"La tâche « {title} » est supprimée."
 
 
 @require_POST

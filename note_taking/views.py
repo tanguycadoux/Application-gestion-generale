@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
+from core.templatetags.ui import date_text
 from images.models import Image
 from images.services import delete_image as delete_image_service
 
@@ -128,7 +129,7 @@ def delete_image(request, pk):
     except AppError as e:
         messages.error(request, str(e))
         return redirect("note_taking:image_detail", pk=pk)
-    messages.success(request, f"L'image {name} a été supprimée.")
+    messages.success(request, f"L'image « {name} » est supprimée.")
     return redirect("note_taking:images_list")
 
 
@@ -171,7 +172,7 @@ def update_source_file(request, pk):
         except AppError as e:
             messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
         else:
-            messages.success(request, "La note est mise à jour.")
+            messages.success(request, f"{note_name(note)} est modifiée.")
     return redirect("note_taking:note_detail", pk=note.pk)
 
 
@@ -225,19 +226,33 @@ def get_subjects(request):
     return HttpResponse(html)
 
 
+def note_name(note: Note) -> str:
+    """« La note du 24 novembre 2025 », pour les messages."""
+    return f"La note du {date_text(note.date, 'moyen')}"
+
+
+def save_note_parts(request, note: Note, done: str) -> None:
+    """Recalcule les note parts d'une note enregistrée, et le dit (#192).
+
+    Si l'analyse échoue, seul le message d'erreur s'affiche.
+    """
+    try:
+        process_note_parts(note)
+    except AppError as e:
+        messages.error(
+            request,
+            f"La note est enregistrée mais son contenu n'a pas pu être traité : {e}",
+        )
+    else:
+        messages.success(request, f"{note_name(note)} est {done}.")
+
+
 def new_note(request):
     if request.method == "POST":
         form = NewNoteForm(request.POST)
         if form.is_valid():
             note = form.save()
-            try:
-                process_note_parts(note)
-            except AppError as e:
-                messages.error(
-                    request,
-                    f"La note est enregistrée mais son contenu n'a pas pu être "
-                    f"traité : {e}",
-                )
+            save_note_parts(request, note, "créée")
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
         note_date = parse_date_param(request.GET.get("date", ""))
@@ -272,14 +287,7 @@ def edit_note(request, pk):
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
-            try:
-                process_note_parts(note)
-            except AppError as e:
-                messages.error(
-                    request,
-                    f"La note est enregistrée mais son contenu n'a pas pu être "
-                    f"traité : {e}",
-                )
+            save_note_parts(request, note, "modifiée")
             return redirect("note_taking:note_detail", pk=note.pk)
     else:
         form = NewNoteForm(instance=note)
@@ -291,8 +299,9 @@ def edit_note(request, pk):
 def delete_note(request, pk):
     """Supprime une note ; la confirmation se fait par popover (data-confirm)."""
     note = get_object_or_404(Note, pk=pk)
+    name = note_name(note)
     note.delete()
-    messages.success(request, "La note a été supprimée.")
+    messages.success(request, f"{name} est supprimée.")
     return redirect("note_taking:notes_list")
 
 

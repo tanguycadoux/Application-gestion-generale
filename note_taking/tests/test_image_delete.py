@@ -50,7 +50,7 @@ class ImageDeleteTests(TestCase):
         self.assertRedirects(response, reverse("note_taking:images_list"))
         self.assertFalse(Image.objects.filter(pk=self.image.pk).exists())
         self.assertIn(
-            "L'image banc.png a été supprimée.",
+            "L'image « banc.png » est supprimée.",
             [m.message for m in get_messages(response.wsgi_request)],
         )
 

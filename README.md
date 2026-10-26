@@ -64,6 +64,8 @@ Dates (#129) : trois formats d'affichage, selon l'usage, définis dans `core/tem
 
 Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Section » (« Liste des notes · Notes », « Tâche « Relire » · Tâches ») ; une page définit `{% block title %}`, le gabarit de base de son application ajoute la section (`{% block title_suffix %}`), et l'accueil général s'appelle « Gestion générale ». Une date dans un titre d'onglet est au format moyen. Un élément de la liste de l'app des TODO est une **tâche** (« Créer une tâche », « sous-tâche ») ; le marqueur TODO écrit dans les notes garde son nom.
 
+Messages de confirmation (#192) : chaque création, modification et suppression d'un projet, d'une note, d'une tâche ou d'une image affiche un toast de succès, de la même forme : l'objet nommé, au présent (« Le projet « ASTERICS » est créé. », « La tâche « Relire » est modifiée. », « La note du 24 novembre 2025 est supprimée. », « L'image « banc.png » est supprimée. »). Une note se nomme par sa date au format moyen. Si l'analyse d'une note échoue, seul le message d'erreur s'affiche. `core/tests/test_action_messages.py` vérifie chaque message.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |

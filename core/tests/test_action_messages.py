@@ -6,7 +6,6 @@ nomme par sa date au format moyen.
 
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -56,14 +55,12 @@ class ActionMessagesTests(TestCase):
             "progress": 0,
         }
 
-    @unittest.expectedFailure
     def test_tache_creee(self):
         self.assertEqual(
             self.post("todolist:todo_create", data=self.task_data("Relire")),
             ["La tâche « Relire » est créée."],
         )
 
-    @unittest.expectedFailure
     def test_tache_modifiee(self):
         task = Todo.objects.create(title="Relire", project=self.project)
 
@@ -72,7 +69,6 @@ class ActionMessagesTests(TestCase):
             ["La tâche « Relu » est modifiée."],
         )
 
-    @unittest.expectedFailure
     def test_tache_supprimee(self):
         task = Todo.objects.create(title="Relire", project=self.project)
 
@@ -81,7 +77,6 @@ class ActionMessagesTests(TestCase):
             ["La tâche « Relire » est supprimée."],
         )
 
-    @unittest.expectedFailure
     def test_tache_supprimee_avec_ses_sous_taches(self):
         task = Todo.objects.create(title="Relire", project=self.project)
         Todo.objects.create(title="A", project=self.project, parent=task)
@@ -94,7 +89,6 @@ class ActionMessagesTests(TestCase):
 
     # Notes
 
-    @unittest.expectedFailure
     def test_note_creee(self):
         self.assertEqual(
             self.post(
@@ -103,7 +97,6 @@ class ActionMessagesTests(TestCase):
             ["La note du 24 novembre 2025 est créée."],
         )
 
-    @unittest.expectedFailure
     def test_note_modifiee(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -125,7 +118,6 @@ class ActionMessagesTests(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("n'a pas pu être traité", messages[0])
 
-    @unittest.expectedFailure
     def test_note_modifiee_par_son_fichier_source(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
         file = SimpleUploadedFile(
@@ -141,7 +133,6 @@ class ActionMessagesTests(TestCase):
             ["La note du 24 novembre 2025 est modifiée."],
         )
 
-    @unittest.expectedFailure
     def test_note_supprimee(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
@@ -152,7 +143,6 @@ class ActionMessagesTests(TestCase):
 
     # Images
 
-    @unittest.expectedFailure
     def test_image_supprimee(self):
         image = import_image(image_file("banc.png"))
 

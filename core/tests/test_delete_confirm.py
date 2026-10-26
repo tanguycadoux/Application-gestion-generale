@@ -92,5 +92,5 @@ class TodoDeleteTests(DeleteFormTestCase):
         self.assertFalse(Todo.objects.filter(pk=self.todo.pk).exists())
         self.assertEqual(
             [str(m) for m in get_messages(response.wsgi_request)],
-            ["La tâche « Relire » a été supprimée."],
+            ["La tâche « Relire » est supprimée."],
         )
