@@ -4,6 +4,7 @@ from datetime import date
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import (
@@ -20,7 +21,7 @@ from .forms import TodoForm
 from .gantt import gantt_chart
 from .models import Todo
 from .task_calendar import task_calendar
-from .tree import TaskGroup, descendant_rows, task_groups
+from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
 
 def index(request):
@@ -156,6 +157,12 @@ def toggle_todo(request, pk):
     else:
         todo.progress = 100 if completed else 0
     todo.save()
-    return JsonResponse(
-        {"status": "ok", "toggled_ids": [todo.pk, *todo.updated_ancestor_ids]}
-    )
+    toggled_ids = [todo.pk, *todo.updated_ancestor_ids]
+    # Lignes à jour, que la liste remplace sans recharger la page (#189).
+    rows = {
+        str(pk): render_to_string(
+            "todolist/task_row.html", {"row": row}, request
+        ).strip()
+        for pk, row in task_rows(toggled_ids).items()
+    }
+    return JsonResponse({"status": "ok", "toggled_ids": toggled_ids, "rows": rows})
