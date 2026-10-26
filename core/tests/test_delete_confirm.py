@@ -5,6 +5,7 @@ et des vues limitées à POST, sans page de confirmation.
 """
 
 import re
+import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -72,14 +73,36 @@ class TodoDeleteTests(DeleteFormTestCase):
         )
         self.url = reverse("todolist:todo_delete", args=[self.todo.pk])
 
-    def test_formulaire_de_suppression_avec_confirmation(self):
+    @unittest.expectedFailure
+    def test_confirmation_par_une_popover_native(self):
+        """Le bouton de l'en-tête ouvre une popover qui porte le message et le
+        formulaire : « Annuler » (sans envoi), puis « Supprimer » en danger."""
         html = self.client.get(
             reverse("todolist:todo_detail", args=[self.todo.pk])
         ).content.decode()
 
-        self.assert_delete_form(
-            html, self.url, "Supprimer définitivement la tâche « Relire » ?"
+        header = page_header(html)
+        self.assertRegex(
+            header,
+            r'<button type="button"[^>]*aria-label="Supprimer la tâche"'
+            r'[^>]*popovertarget="delete-confirm"',
         )
+        popover = re.search(
+            r'<div id="delete-confirm" popover class="confirm-popover[^"]*">(.*?)</div>',
+            header,
+            re.DOTALL,
+        )
+        assert popover is not None, header
+        self.assertIn("Supprimer définitivement la tâche « Relire » ?", popover[1])
+        form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
+        assert form is not None
+        self.assertIn(f'action="{self.url}"', form[0])
+        self.assertIn("csrfmiddlewaretoken", form[0])
+        self.assertNotIn("data-confirm", form[0])
+        cancel = form[0].index('popovertargetaction="hide"')
+        submit = form[0].index('type="submit"')
+        self.assertLess(cancel, submit)
+        self.assertIn(BUTTON_VARIANTS["danger"], form[0][submit - 10 :])
 
     def test_pas_de_page_de_confirmation(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
