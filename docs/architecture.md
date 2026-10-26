@@ -18,7 +18,7 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 
 ```
 app_gestion/   configuration : settings, urls, lanceur de tests sans réseau
-core/          éléments communs : Project, Subject, Tag, AppError, accueil,
+core/          éléments communs : Project, Section, Tag, AppError, accueil,
                page Projets, gabarit de base, composants d'interface,
                calendrier mensuel, icônes, validateur HTML
 images/        modèle Image, import et suppression des images
@@ -46,7 +46,8 @@ todolist ──► note_taking ──► images ──► core
 
 | Module | Rôle |
 |---|---|
-| `models.py` | `Project` (nom unique, couleur, description), `Subject`, `Tag`, partagés par les notes et les tâches |
+| `models.py` | `Project` (nom unique, couleur, description), `Section` (niveau d'un chemin sous un projet, #295), `Tag`, partagés par les notes et les tâches |
+| `sections.py` | chemins : saisie (`split_path`, `join_path`), création et reprise d'un chemin (`section_for`), ancêtres, sous-arbre, oubli des sections inutilisées (`forget_unused_sections`) |
 | `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
 | `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
 | `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
@@ -92,18 +93,19 @@ Le tableau des tâches (`task_table.html`, une ligne par `task_row.html`) sert �
 
 ```
 Note ──< NotePart >── Project          (core)
-           │  │  └──── Subject (option) (core)
+           │  │  └──── Section (option)  (core)
            │  └──<>── Tag              (core)
            └────<>─── Image            (images), via NotePartImageLink
 
-Todo >── Project, Todo >── Subject (option), Todo >─< Tag,
+Todo >── Project, Todo >── Section (option), Todo >─< Tag,
+Section >── Project, Section >── Section (parent, option),
 Todo >── Todo (parent, option)
 ```
 
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
-- **`NotePart`** : morceau de note partageant projet, sujet et tags, avec les titres de sa section (`heading_path`, #240). **Données dérivées** de `Note.body`.
-- **`Project`, `Subject`, `Tag`** : partagés par les notes et les tâches, noms uniques. Un projet a une couleur (#162) et une description.
-- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date, le chemin et le texte de sa ligne (`note_part_date`, `note_path`, `note_part_text`), et son état dans la note (`note_state` : à revoir, revue, gardée sans sa ligne, écartée, #240). `Todo.objects` exclut les tâches écartées ; `Todo.all_objects` les compte.
+- **`NotePart`** : morceau de note partageant projet, section (son sujet) et tags, avec les titres de sa section (`heading_path`, #240). **Données dérivées** de `Note.body`.
+- **`Project`, `Section`, `Tag`** : partagés par les notes et les tâches. Un projet a un nom unique, une couleur (#162) et une description. Une section est un niveau d'un chemin sous un projet (voir « Chemins sous un projet »).
+- **`Todo`** (tâche) : titre, projet, section (son sujet) et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date, le chemin et le texte de sa ligne (`note_part_date`, `note_path`, `note_part_text`), et son état dans la note (`note_state` : à revoir, revue, gardée sans sa ligne, écartée, #240). `Todo.objects` exclut les tâches écartées ; `Todo.all_objects` les compte.
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
 
 ## Décisions
@@ -129,7 +131,7 @@ Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont cré�
 
 - Le titre est le texte de la ligne sans son marqueur de liste ni sa case (#222). Une case cochée ne termine pas la tâche.
 - Une ligne imbriquée sous un élément de liste, selon la règle des sous-listes du rendu (#229), donne une sous-tâche de la tâche de cet élément (#238), sur plusieurs niveaux ; une ligne sans marqueur sous un élément, suite de son texte pour Pandoc, aussi. Le parent n'est posé qu'à la création : il a pu être choisi à la main ensuite.
-- La tâche reprend le projet et le sujet de la note part. Ses tags sont ceux de la note part, sans `TODO`. Elle n'a pas d'échéance (#239) : la date de la note la mettait en retard dès le lendemain.
+- La tâche reprend le projet et la section de la note part. Ses tags sont ceux de la note part, sans `TODO`. Elle n'a pas d'échéance (#239) : la date de la note la mettait en retard dès le lendemain.
 - **Identité** (#240) : une tâche générée est identifiée par la date de la note, le chemin de sa ligne et son texte, pas par une clé étrangère vers sa note part, recréée à chaque enregistrement. Le chemin est fait des titres de la section tels qu'écrits, sans `TODO`, puis des lignes parentes : « Test › BLABLA › P » pour la ligne « F » sous « P ». Une même ligne sous un autre sujet ou sous un autre parent est donc une autre tâche. Une tâche créée avant #240, sans chemin, est reprise par sa date et son texte au prochain enregistrement de sa note (`reprocess_notes` les reprend toutes).
 - **Cycle de vie** (#240) : une tâche créée est **à revoir**. Tant qu'une note a des tâches à revoir, son enregistrement (formulaire, remplacement par le fichier source) redirige vers son bilan (`todolist:note_review`), et un import le cite dans son compte rendu. Le bilan se calcule depuis la base, sans session. Il présente :
   - les tâches dont la ligne est dans la note : échéance, priorité, projet et sujet ; enregistrer les rend **revues**, même sans échéance. « Plus tard » les laisse à revoir ;
@@ -145,13 +147,23 @@ Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont cré�
 - Supprimer une tâche supprime ses sous-tâches ; la confirmation et le message le disent (#223).
 - Une seule règle d'urgence, `Todo.due_signal` : terminée, en retard, proche (sous 3 jours) ou normale (#189).
 
-### Projets, sujets et tags partagés (#19, #20)
+### Projets, sections et tags partagés (#19, #20, #295)
 
 - Un même modèle pour les notes et les tâches, fusionnés par nom lors de la migration.
-- Un **sujet est global**, indépendant des projets (« Calcul thermique » peut apparaître dans plusieurs projets).
+- Une **section appartient à un projet** (#295) : « Calcul thermique » sous deux projets est deux sections. Elle remplace le sujet, qui était global ; voir « Chemins sous un projet ».
 - La casse est respectée (« Thermique » ≠ « thermique »).
-- Sujets et tags devenus inutilisés restent en base, mais ne sont pas proposés dans la recherche.
+- Un tag devenu inutilisé reste en base, mais n'est pas proposé dans la recherche. Une section que plus rien n'utilise est supprimée à l'enregistrement d'une note (`forget_unused_sections`).
 - Les tags vides (`tags: []`) sont ignorés.
+
+### Chemins sous un projet (#287, #295)
+
+Un chemin est une suite de niveaux sous un projet : « Réunion › Préparation ». C'est un **arbre de lignes** (`Section` : projet, parent facultatif, nom), pas un texte à séparateurs : un « / » dans un titre (« Rapport RT17/A ») ne peut pas passer pour un séparateur, et renommer un niveau fait suivre ses descendants. Modèle repris des tags hiérarchiques de `research-paper-relationship-graph`, avec les parents comme vraies lignes.
+
+- Un niveau est **unique sous son parent, casse ignorée** ; un niveau déjà connu garde la casse de sa première écriture (`section_for`). Le `LOWER` de SQLite ne replie que l'ASCII : la comparaison complète se fait en Python, les contraintes de la base sont un filet.
+- Le séparateur n'existe qu'à la **saisie** (« / » entre niveaux, « // » pour un « / » littéral : `split_path`, `join_path`) et à l'**affichage** (« › »). Les notes ne passent pas par ce texte : leurs titres donnent directement les niveaux.
+- Supprimer un niveau supprime ses descendants. `Section.project` est en cascade ; `NotePart.section` est protégé, `Todo.section` passe à vide.
+- `core` ne connaît aucune app : `forget_unused_sections` lit les clés étrangères qui mènent à `Section` sur le modèle, sans importer les apps.
+- Tant que #296 n'a pas étendu l'analyse des notes, `##` donne la seule section d'un chemin d'un niveau ; les sujets d'avant sont devenus des sections de premier rang, une par projet qui les utilisait.
 
 ### Images (#25, #26)
 
@@ -166,7 +178,7 @@ Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont cré�
 Un objet utilisé ne peut pas être supprimé (`on_delete=PROTECT`) :
 
 - un **projet** utilisé par une note part ou une tâche ;
-- un **sujet** utilisé par une note part ;
+- une **section** utilisée par une note part (celle d'une tâche passe à vide à la suppression, elle est facultative) ;
 - une **image** utilisée par une note part (via `NotePartImageLink`).
 
 Django refuse la suppression (`ProtectedError`) et l'admin liste les éléments concernés.
