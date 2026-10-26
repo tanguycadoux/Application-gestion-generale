@@ -4,6 +4,9 @@ Une tâche générée est identifiée par la date de la note, le chemin des titr
 tels qu'écrits (sans `TODO`) et le chemin de sa ligne.
 """
 
+import re
+import unittest
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -158,6 +161,26 @@ class GoneLineTests(LifecycleTestCase):
         new = [form.instance.title for form in response.context["new_formset"]]
         gone = [form.instance.title for form in response.context["gone_formset"]]
         self.assertEqual((new, gone), (["B modifiée"], ["B"]))
+
+    @unittest.expectedFailure
+    def test_nouvelle_ligne_visible_seulement_pour_remplacer(self):
+        """Le choix de la nouvelle ligne ne s'affiche qu'avec « La remplacer
+        par », sans JavaScript : la cellule suit l'action de sa rangée."""
+        self.prepare()
+        self.save_note("# P\n### TODO\n- A\n- B modifiée")
+
+        html = self.client.get(review_url()).content.decode()
+
+        row = re.search(r'<tr class="group[^"]*">.*?</tr>', html, re.DOTALL)
+        assert row is not None
+        cell = re.search(
+            r'<td class="([^"]*)">(?:(?!</td>).)*-replacement"', row.group(), re.DOTALL
+        )
+        assert cell is not None
+        self.assertIn(
+            "invisible group-has-[option[value=replace]:checked]:visible",
+            cell.group(1),
+        )
 
     def test_garder(self):
         self.prepare()
