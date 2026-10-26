@@ -6,13 +6,13 @@ Une note est découpée selon ses titres :
 - `##` à `######` : le chemin sous le projet, un niveau par titre, à
   n'importe quelle profondeur.
 
-Des blocs `::: {.metadata}` ajoutent des tags à la branche où ils sont écrits,
-sous-niveaux compris : une portée, jamais un niveau du chemin. Le texte
-partageant le même projet, le même chemin et les mêmes tags forme une note part.
+Des blocs `::: {.metadata}` donnent à la branche où ils sont écrits, sous-niveaux
+compris, des tags (`tags: [a, b]`) et le marqueur de tâches (`todo: true`) : une
+portée, jamais un niveau du chemin. Le texte partageant le même projet, le même
+chemin et les mêmes tags forme une note part.
 
-Le titre `TODO` (de `###` à `######`) marque une section de tâches : il n'entre
-pas dans le chemin, et la note part reçoit le tag `TODO` (#297 le remplace par
-les cases à cocher).
+Une branche `todo: true` donne le tag `TODO` à ses note parts : chaque élément de
+liste y est une tâche, sans case (#297). Un titre `TODO` n'a plus de sens propre.
 """
 
 import re
@@ -31,14 +31,14 @@ BLOCK_END = ":::"
 CODE_FENCE = "```"
 # Séparateur des titres d'une section, du projet au plus profond (#240).
 HEADING_SEPARATOR = " › "
-# Titre qui marque une section de tâches, de `###` à `######` (#297).
-TODO_TITLE = "TODO"
+# Tag des note parts d'une branche `todo: true` (#297).
+TODO_TAG = "TODO"
 
 
 @dataclass
 class ParsedPart:
     project: str | None
-    # Titres de `##` à `######`, sans `TODO` : les niveaux sous le projet (#287).
+    # Titres de `##` à `######` : les niveaux sous le projet (#287).
     path: list[str]
     tags: list[str]
     lines: list[str]
@@ -75,6 +75,8 @@ class Level:
 
     title: str | None = None
     tags: set[str] | None = None
+    # `todo: true` ou `todo: false` du bloc de ce niveau ; None s'il n'en a pas.
+    todo: bool | None = None
 
 
 def parse_key_value(text: str, line_number: int) -> tuple[str, str]:
@@ -185,6 +187,9 @@ class NoteParser:
 
     def parse_metadata_line(self, number: int, line: str) -> None:
         key, value = parse_key_value(line, number + 1)
+        level = self.current_level
+        # Un bloc avant tout titre, ou sous un titre au-delà de `######`, ne vaut pour rien.
+        state = self.levels[level] if level is not None and level <= MAX_LEVEL else None
 
         if key == "tags":
             if not value.startswith("[") or not value.endswith("]"):
@@ -194,31 +199,41 @@ class NoteParser:
                 )
             tags = (tag.strip() for tag in value.strip("[]").split(","))
             self.local_tags = {tag for tag in tags if tag}
-
-        if self.current_level is not None and self.current_level <= MAX_LEVEL:
-            self.levels[self.current_level].tags = self.local_tags
+            if state is not None:
+                state.tags = self.local_tags
+        elif key == "todo":
+            if value not in ("true", "false"):
+                raise NoteParseError(
+                    f"Ligne {number + 1} : « todo » vaut « true » ou « false », "
+                    "par exemple « todo: true »."
+                )
+            if state is not None:
+                state.todo = value == "true"
 
     # Note parts
-
-    def is_todo_marker(self, level: int, state: Level) -> bool:
-        return level > 2 and state.title == TODO_TITLE
 
     def current_path(self) -> list[str]:
         return [
             state.title
             for level, state in self.levels.items()
-            if level > 1
-            and state.title is not None
-            and not self.is_todo_marker(level, state)
+            if level > 1 and state.title is not None
         ]
+
+    def is_todo(self) -> bool:
+        """La branche est marquée `todo: true` ; le niveau le plus profond qui en
+        parle l'emporte (`todo: false` retire le marqueur d'un niveau parent)."""
+        for state in reversed(list(self.levels.values())):
+            if state.todo is not None:
+                return state.todo
+        return False
 
     def current_tags(self) -> set[str]:
         tags: set[str] = set()
-        for level, state in self.levels.items():
-            if self.is_todo_marker(level, state):
-                tags.add(TODO_TITLE)
+        for state in self.levels.values():
             if state.tags is not None:
                 tags |= state.tags
+        if self.is_todo():
+            tags.add(TODO_TAG)
         return tags
 
     def add_content(self, line: str) -> None:
