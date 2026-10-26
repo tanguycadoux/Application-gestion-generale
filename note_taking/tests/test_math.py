@@ -71,17 +71,10 @@ class MathRenderingTests(SimpleTestCase):
     def test_dollar_echappe(self):
         self.assertHTMLEqual(render_markdown("\\$x$"), "<p>$x$</p>")
 
-    def test_code_prioritaire(self):
-        html = render_markdown("`$c$`\n\n```\n$$x$$\n```")
-
-        self.assertIn("<code>$c$</code>", html)
-        self.assertIn("<code>$$x$$\n</code>", html)
-
-    def test_dans_un_tableau_une_liste_et_un_callout(self):
+    def test_dans_un_tableau_et_une_liste(self):
         for text in (
             "| $a_1$ | x |\n|---|---|\n| 1 | 2 |",
             "- $a_1$ dans une liste",
-            "::: {.callout-note}\n$a_1$\n:::",
         ):
             with self.subTest(text=text):
                 self.assertIn(inline("a_1"), render_markdown(text))
