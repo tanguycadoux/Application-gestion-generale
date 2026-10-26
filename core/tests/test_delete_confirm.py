@@ -5,7 +5,6 @@ et des vues limitées à POST, sans page de confirmation.
 """
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -73,7 +72,6 @@ class TodoDeleteTests(DeleteFormTestCase):
         )
         self.url = reverse("todolist:todo_delete", args=[self.todo.pk])
 
-    @unittest.expectedFailure
     def test_confirmation_par_une_popover_native(self):
         """Le bouton de l'en-tête ouvre une popover qui porte le message et le
         formulaire : « Annuler » (sans envoi), puis « Supprimer » en danger."""

@@ -166,8 +166,8 @@ class TodoUpdateView(SuccessMessageMixin, UpdateView):
 
 
 class TodoDeleteView(SuccessMessageMixin, DeleteView):
-    """Supprime ou écarte une tâche ; la confirmation se fait par popover
-    (data-confirm)."""
+    """Supprime ou écarte une tâche ; la confirmation se fait par popover HTML,
+    dans la page de la tâche."""
 
     model = Todo
     http_method_names = ["post"]

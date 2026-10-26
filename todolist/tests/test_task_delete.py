@@ -6,7 +6,6 @@ bouton, confirmation et message (#290).
 """
 
 import re
-import unittest
 from html import unescape
 
 from django.contrib.messages import get_messages
@@ -53,7 +52,6 @@ class ParentDeleteTests(DeleteTestCase):
             title="Petit-enfant", project=self.project, parent=self.child
         )
 
-    @unittest.expectedFailure
     def test_confirmation_annonce_les_sous_taches_descendants_compris(self):
         self.add_grandchildren()
 
@@ -62,14 +60,12 @@ class ParentDeleteTests(DeleteTestCase):
             "Supprimer définitivement la tâche « Parent » et ses 3 sous-tâches ?",
         )
 
-    @unittest.expectedFailure
     def test_confirmation_une_seule_sous_tache(self):
         self.assertEqual(
             self.confirm(self.parent),
             "Supprimer définitivement la tâche « Parent » et sa sous-tâche ?",
         )
 
-    @unittest.expectedFailure
     def test_confirmation_sans_sous_tache_inchangee(self):
         self.assertEqual(
             self.confirm(self.child),
@@ -118,7 +114,6 @@ class DismissTests(DeleteTestCase):
         self.assertIn("Écarter la tâche", html)
         self.assertNotIn("Supprimer la tâche", html)
 
-    @unittest.expectedFailure
     def test_confirmation(self):
         self.assertEqual(
             self.confirm(self.a),
