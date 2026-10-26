@@ -330,12 +330,12 @@ Milestones terminés :
 | M7 · Export et import qmd | export des notes et de leurs images en archive zip, import unifié (notes, images, archives) |
 | M8 · Cohérence de l'interface | couleurs Tailwind, styles communs des liens, boutons, formulaires et alertes, suppression par popover, formats de date, titres d'onglet et vocabulaire, icônes ; règles décrites dans la section Front |
 | M9 · Interface des tâches | page Projets et couleur par projet, modèle des tâches (sujet, avancement, validation d'un parent), incohérences signalées, tableau arborescent avec barre d'avancement, calendrier partagé avec les notes, frise de type Gantt |
+| M10 · Qualité du code | dépendances entre apps sans cycle ; front sans ressource externe (Tailwind compilé, htmx et icônes SVG en local, tests sans réseau) ; HTML des notes filtré ; listes en un nombre fixe de requêtes ; case des tâches sans rechargement ; messages et accessibilité cohérents ; validation HTML du W3C en local ; coverage, djlint et Dependabot ; correctifs de la revue (analyse atomique, images invalides ou externes, titres de tâches) ; documentation d'architecture à jour |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M10 · Qualité du code | dépendances entre apps sans cycle, front sans ressource externe (Tailwind compilé, htmx et icônes en local), performances des listes, règles et messages cohérents, accessibilité, documentation d'architecture à jour |
 | M11 · Rendu fidèle à Quarto | sous-listes, légendes de tableau, cases à cocher et formules affichées comme dans Quarto |
 | M12 · Tâches issues des notes | sous-listes en sous-tâches, pas d'échéance par défaut, page bilan des tâches créées, tâches supprimées qui ne reviennent pas, avancement rendu au décochage |
 | M13 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
