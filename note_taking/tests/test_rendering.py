@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -168,13 +166,11 @@ class SubListRenderingTests(SimpleTestCase):
     Les résultats attendus sont ceux de Pandoc.
     """
 
-    @unittest.expectedFailure
     def test_puce_indentee_de_2_espaces(self):
         html = render_markdown("- a\n  - b\n- c")
 
         self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>")
 
-    @unittest.expectedFailure
     def test_puce_indentee_de_3_espaces(self):
         html = render_markdown("- a\n   - b")
 
@@ -190,7 +186,6 @@ class SubListRenderingTests(SimpleTestCase):
 
         self.assertHTMLEqual(html, "<ul><li>a</li><li>b</li></ul>")
 
-    @unittest.expectedFailure
     def test_trois_niveaux_puis_retour(self):
         html = render_markdown("- a\n  - b\n    - c\n  - d")
 
@@ -199,20 +194,17 @@ class SubListRenderingTests(SimpleTestCase):
             "<ul><li>a<ul><li>b<ul><li>c</li></ul></li><li>d</li></ul></li></ul>",
         )
 
-    @unittest.expectedFailure
     def test_retour_sous_la_colonne_de_la_sous_liste(self):
         # « c » est sous la colonne du texte de « b », mais pas sous celle de « a ».
         html = render_markdown("- a\n    - b\n  - c")
 
         self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li><li>c</li></ul></li></ul>")
 
-    @unittest.expectedFailure
     def test_puce_sous_un_numero_alignee_sur_le_texte(self):
         html = render_markdown("1. a\n   - b\n2. c")
 
         self.assertHTMLEqual(html, "<ol><li>a<ul><li>b</li></ul></li><li>c</li></ol>")
 
-    @unittest.expectedFailure
     def test_puce_sous_un_numero_avant_le_texte_hors_de_la_liste(self):
         html = render_markdown("1. a\n  - b\n2. c")
 
@@ -225,7 +217,6 @@ class SubListRenderingTests(SimpleTestCase):
 
         self.assertHTMLEqual(html, "<ol><li>a</li><li>b</li><li>c</li></ol>")
 
-    @unittest.expectedFailure
     def test_marqueur_a_deux_chiffres(self):
         self.assertHTMLEqual(
             render_markdown("10. a\n    - b"),
@@ -236,13 +227,11 @@ class SubListRenderingTests(SimpleTestCase):
             '<ol start="10"><li>a</li></ol><ul><li>b</li></ul>',
         )
 
-    @unittest.expectedFailure
     def test_liste_numerotee_sous_une_puce(self):
         html = render_markdown("- a\n  1. b\n  2. c")
 
         self.assertHTMLEqual(html, "<ul><li>a<ol><li>b</li><li>c</li></ol></li></ul>")
 
-    @unittest.expectedFailure
     def test_paragraphe_aligne_sur_le_texte_de_l_element(self):
         html = render_markdown("- a\n\n  suite\n- c")
 
@@ -250,7 +239,6 @@ class SubListRenderingTests(SimpleTestCase):
             html, "<ul><li><p>a</p><p>suite</p></li><li><p>c</p></li></ul>"
         )
 
-    @unittest.expectedFailure
     def test_code_indente_dans_un_element(self):
         html = render_markdown("- a\n\n      code\n- c")
 
@@ -259,7 +247,22 @@ class SubListRenderingTests(SimpleTestCase):
             "<ul><li><p>a</p><pre><code>code\n</code></pre></li><li><p>c</p></li></ul>",
         )
 
-    @unittest.expectedFailure
+    def test_marqueur_sous_la_colonne_du_texte_et_a_4_espaces_reste_du_texte(self):
+        # « 1. c » n'atteint pas le texte de « 2. b » (colonne 5) : à 4 espaces
+        # du bord, il n'ouvre pas d'élément et s'ajoute au texte de « b ».
+        html = render_markdown("1. a\n  2. b\n    1. c")
+
+        self.assertHTMLEqual(html, "<ol><li>a</li><li>b\n1. c</li></ol>")
+
+    def test_marqueur_a_4_espaces_au_dela_du_texte(self):
+        self.assertHTMLEqual(
+            render_markdown("- a\n      - b"), "<ul><li>a\n- b</li></ul>"
+        )
+        # Après une ligne vide, c'est du code dans l'élément.
+        self.assertInHTML(
+            "<pre><code>- b\n</code></pre>", render_markdown("- a\n\n      - b")
+        )
+
     def test_sous_liste_dans_un_callout(self):
         html = render_markdown("::: {.callout-note}\n- a\n  - b\n:::")
 

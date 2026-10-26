@@ -172,6 +172,12 @@ Le HTML qu'écrit l'utilisateur, directement ou par le Markdown, passe par une l
 
 Après le filtrage, chaque image du contenu reçoit `loading="lazy"` et `decoding="async"` (#225) : une note longue ne charge que les images proches de l'écran. La liste des images fait de même.
 
+### Rendu fidèle à Quarto (M11)
+
+Le rendu suit le Markdown de Pandoc, celui de Quarto, et non les règles propres à Python-Markdown. Un écart se corrige par une extension Markdown de `rendering.py`, testée sur les résultats de Pandoc.
+
+- Sous-listes (#229) : un élément est imbriqué si son marqueur commence au moins à la colonne du texte de l'élément parent (2 espaces après `- `, 3 après `1. `). `PandocListsExtension` réindente les listes par multiples de 4, seul pas que comprend Python-Markdown ; un changement de type de liste commence une autre liste (`sane_lists`). L'analyse des sous-listes en sous-tâches (#238) devra suivre la même règle.
+
 ### Analyse des notes
 
 Les règles d'analyse sont décrites dans le README. Choix notables :
