@@ -3,6 +3,7 @@
 import re
 import shutil
 import tempfile
+import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -75,6 +76,63 @@ class UpdateSourceFileViewTests(ViewTestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+    @unittest.expectedFailure
+    def test_get_refuse(self):
+        """#219 : la mise à jour n'accepte qu'un POST."""
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 405)
+
+    @unittest.expectedFailure
+    def test_retour_sur_la_page_de_la_note(self):
+        """#219 : la redirection ne dépend pas de l'en-tête Referer."""
+        response = self.client.post(
+            self.url,
+            {"note_update_source_file": qmd_file("2025-11-24.qmd", HEADER + "# P\ny")},
+            HTTP_REFERER="https://exemple.org/",
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("note_taking:note_detail", args=[self.note.pk]),
+            fetch_redirect_response=False,
+        )
+
+
+class NoteListSortTests(ViewTestCase):
+    """#219 : seuls les tris proposés par l'interface sont acceptés."""
+
+    def setUp(self):
+        for day in ("2025-11-24", "2025-11-26", "2025-11-25"):
+            Note.objects.create(date=day, body="# P\nx")
+        self.url = reverse("note_taking:notes_list")
+
+    def dates(self, response) -> list[str]:
+        return [str(note.date) for note in response.context["notes"]]
+
+    def test_tri_par_date(self):
+        response = self.client.get(self.url, {"sort": "date", "direction": "asc"})
+
+        self.assertEqual(
+            self.dates(response), ["2025-11-24", "2025-11-25", "2025-11-26"]
+        )
+
+    @unittest.expectedFailure
+    def test_tri_inconnu_revient_au_tri_par_defaut(self):
+        for params in (
+            {"sort": "foo", "direction": "asc"},
+            {"sort": "body", "direction": "asc"},
+            {"sort": "date", "direction": "foo"},
+        ):
+            with self.subTest(params=params):
+                response = self.client.get(self.url, params)
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    self.dates(response), ["2025-11-26", "2025-11-25", "2025-11-24"]
+                )
+                self.assertIsNone(response.context["sort"])
 
 
 class NoteFormViewTests(ViewTestCase):
