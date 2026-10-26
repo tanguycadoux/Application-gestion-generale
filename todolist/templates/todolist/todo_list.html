@@ -20,7 +20,7 @@
     <section aria-labelledby="pending-title" class="mb-6">
         <h2 id="pending-title" class="mb-2">En cours</h2>
         {% if pending_groups %}
-            {% include "todolist/task_table.html" with groups=pending_groups show_project=True %}
+            {% include "todolist/task_table.html" with groups=pending_groups show_project=True live=True %}
         {% else %}
             <p>Aucune tâche en cours.</p>
         {% endif %}
@@ -29,7 +29,7 @@
     <details>
         <summary class="mb-2 cursor-pointer"><h2 class="inline">Terminées ({{ done_groups|length }})</h2></summary>
         {% if done_groups %}
-            {% include "todolist/task_table.html" with groups=done_groups show_project=True %}
+            {% include "todolist/task_table.html" with groups=done_groups show_project=True live=True %}
         {% else %}
             <p>Aucune tâche terminée.</p>
         {% endif %}

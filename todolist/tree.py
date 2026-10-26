@@ -78,6 +78,21 @@ def task_groups() -> list[TaskGroup]:
     return sorted(groups, key=group_key)
 
 
+def task_rows(ids: list[int]) -> dict[int, TaskRow]:
+    """Lignes de ces tâches, au niveau qu'elles ont dans la liste (racine = 0)."""
+    children = children_map()
+    rows = {}
+    for tasks in children.values():
+        for task in tasks:
+            if task.pk in ids:
+                level, (parent, _) = 0, task.tree or (None, [])
+                while parent is not None:
+                    level += 1
+                    parent = parent.tree[0] if parent.tree else None
+                rows[task.pk] = TaskRow(task, level, bool(children.get(task.pk)))
+    return rows
+
+
 def descendant_rows(task: Todo) -> list[TaskRow]:
     """Lignes des descendants d'une tâche, ses enfants au niveau 0 (détail).
 

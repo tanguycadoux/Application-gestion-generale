@@ -15,7 +15,7 @@
             {% for task in day.visible_tasks %}
                 <li class="flex min-w-0 items-center gap-1">
                     <span class="size-2 shrink-0 rounded-full {{ task.project|project_dot_class }}" aria-hidden="true"></span>
-                    <a class="truncate rounded px-0.5 hover:bg-slate-100 {% if task.done %}text-slate-500{% elif task.due_status == 'overdue' %}text-red-800{% else %}text-slate-800{% endif %}" href="{% url 'todolist:todo_detail' task.pk %}">{{ task.title }}</a>
+                    <a class="truncate rounded px-0.5 hover:bg-slate-100 {% if task.done %}text-slate-500{% elif task.due_signal == 'overdue' %}text-red-800{% else %}text-slate-800{% endif %}" href="{% url 'todolist:todo_detail' task.pk %}">{{ task.title }}</a>
                 </li>
             {% endfor %}
             {% if day.more %}
