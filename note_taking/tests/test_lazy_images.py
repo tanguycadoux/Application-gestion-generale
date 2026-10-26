@@ -1,7 +1,5 @@
 """Images chargées à la demande, quand elles approchent de l'écran (#225)."""
 
-import unittest
-
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -13,7 +11,6 @@ LAZY = ('loading="lazy"', 'decoding="async"')
 
 
 class LazyRenderedImagesTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_images_du_contenu_rendu(self):
         html = render_markdown("![A](/a.png)\n\n![B](/b.png){width=50%}")
 
@@ -29,7 +26,6 @@ class LazyRenderedImagesTests(SimpleTestCase):
 
 
 class LazyPagesTests(TestCase):
-    @unittest.expectedFailure
     def test_liste_des_images(self):
         Image.objects.create(name="banc.png", file="note_images/banc.png")
 
@@ -39,7 +35,6 @@ class LazyPagesTests(TestCase):
             with self.subTest(attr=attr):
                 self.assertIn(attr, html)
 
-    @unittest.expectedFailure
     def test_note_complete(self):
         note = Note.objects.create(date="2025-11-24", body="![A](/a.png)")
 
