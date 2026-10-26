@@ -68,11 +68,11 @@ class ParentDeleteTests(TestCase):
         messages = self.delete(self.parent)
 
         self.assertEqual(
-            messages, ["La tâche « Parent » et ses 3 sous-tâches ont été supprimées."]
+            messages, ["La tâche « Parent » et ses 3 sous-tâches sont supprimées."]
         )
         self.assertFalse(Todo.objects.exists())
 
     def test_message_sans_sous_tache_inchange(self):
         self.assertEqual(
-            self.delete(self.child), ["La tâche « Enfant » a été supprimée."]
+            self.delete(self.child), ["La tâche « Enfant » est supprimée."]
         )
