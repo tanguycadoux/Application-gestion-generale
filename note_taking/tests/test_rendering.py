@@ -263,20 +263,10 @@ class SubListRenderingTests(SimpleTestCase):
             "<pre><code>- b\n</code></pre>", render_markdown("- a\n\n      - b")
         )
 
-    def test_sous_liste_dans_un_callout(self):
-        html = render_markdown("::: {.callout-note}\n- a\n  - b\n:::")
-
-        self.assertInHTML("<ul><li>a<ul><li>b</li></ul></li></ul>", html)
-
     def test_liste_collee_a_un_paragraphe_reste_du_texte(self):
         html = render_markdown("Texte\n- a\n  - b")
 
         self.assertNotIn("<li>", html)
-
-    def test_bloc_de_code_delimite_inchange(self):
-        html = render_markdown("```\n- a\n  - b\n```")
-
-        self.assertIn("<code>- a\n  - b\n</code>", html)
 
 
 class TaskListRenderingTests(SimpleTestCase):
@@ -356,7 +346,7 @@ class TaskListRenderingTests(SimpleTestCase):
         )
 
     def test_blancs_apres_la_case_retires(self):
-        for text in ("- [x]  a", "- [x]\ta", "- \[x] a", "- [x] a\r\n"):
+        for text in ("- [x]  a", "- [x]\ta", "- \\[x] a", "- [x] a\r\n"):
             with self.subTest(text=text):
                 self.assertHTMLEqual(
                     render_markdown(text),
@@ -374,18 +364,6 @@ class TaskListRenderingTests(SimpleTestCase):
         ):
             with self.subTest(text=text):
                 self.assertHTMLEqual(render_markdown(text), expected)
-
-    def test_bloc_de_code_inchange(self):
-        html = render_markdown("```\n- [ ] a\n```")
-
-        self.assertIn("<code>- [ ] a\n</code>", html)
-
-    def test_dans_un_callout(self):
-        html = render_markdown("::: {.callout-note}\n- [x] a\n:::")
-
-        self.assertInHTML(
-            '<label><input type="checkbox" checked disabled>a</label>', html
-        )
 
 
 TABLE = "| a |\n|---|\n| 1 |"
@@ -448,11 +426,6 @@ class TableCaptionRenderingTests(SimpleTestCase):
             f"<table>{TABLE_BODY}</table>",
         )
 
-    def test_legende_dans_un_callout(self):
-        html = render_markdown(f"::: {{.callout-note}}\n{TABLE}\n\n: L\n:::")
-
-        self.assertInHTML(f"<table><caption>L</caption>{TABLE_BODY}</table>", html)
-
     def test_paragraphe_sans_tableau_voisin(self):
         for text in ("Texte\n\n: pas de tableau", f"{TABLE}\n\nTexte\n\n: loin"):
             with self.subTest(text=text):
@@ -460,11 +433,6 @@ class TableCaptionRenderingTests(SimpleTestCase):
 
                 self.assertNotIn("<caption>", html)
                 self.assertIn("<p>: ", html)
-
-    def test_bloc_de_code_inchange(self):
-        html = render_markdown(f"```\n{TABLE}\n: L\n```")
-
-        self.assertIn(f"<code>{TABLE}\n: L\n</code>", html)
 
 
 class SuperscriptSubscriptRenderingTests(SimpleTestCase):
@@ -514,16 +482,43 @@ class SuperscriptSubscriptRenderingTests(SimpleTestCase):
             render_markdown("H~2~~3~"), "<p>H<sub>2</sub><sub>3</sub></p>"
         )
 
-    def test_code_inchange(self):
-        html = render_markdown("`a^b^ ~c~`\n\n```\nx^2^\n```")
-
-        self.assertIn("<code>a^b^ ~c~</code>", html)
-        self.assertIn("<code>x^2^\n</code>", html)
-
     def test_dans_une_legende_de_tableau(self):
         html = render_markdown("| a |\n|---|\n| 1 |\n\n: Rétreint (10^-6^/K)")
 
         self.assertInHTML("<caption>Rétreint (10<sup>-6</sup>/K)</caption>", html)
+
+
+# Une syntaxe de chaque issue de M11 : sous-liste (#229), case (#231), légende
+# (#230), exposant, indice et barré (#271), formule (#99).
+QUARTO_SYNTAX = (
+    "- a\n  - b\n\nTexte\n\n- [x] c\n\n| t |\n|---|\n| 1 |\n\n: L\n\n"
+    "10^-6^ H~2~O ~~d~~ $x_1$"
+)
+
+
+class QuartoSyntaxTests(SimpleTestCase):
+    """Règles communes aux syntaxes de Quarto rendues pendant M11."""
+
+    def test_code_inchange(self):
+        html = render_markdown(f"```\n{QUARTO_SYNTAX}\n```\n\n`- [x] ^a^ ~b~ $c$`")
+
+        self.assertIn(f"<code>{QUARTO_SYNTAX}\n</code>", html)
+        self.assertIn("<code>- [x] ^a^ ~b~ $c$</code>", html)
+
+    def test_rendu_dans_un_callout(self):
+        html = render_markdown(f"::: {{.callout-note}}\n{QUARTO_SYNTAX}\n:::")
+
+        for fragment in (
+            "<ul><li>a<ul><li>b</li></ul></li></ul>",
+            '<input type="checkbox" checked disabled>',
+            "<caption>L</caption>",
+            "<sup>-6</sup>",
+            "<sub>2</sub>",
+            "<del>d</del>",
+            '<span class="math inline">\\(x_1\\)</span>',
+        ):
+            with self.subTest(fragment=fragment):
+                self.assertInHTML(fragment, html)
 
 
 class CalloutRenderingTests(SimpleTestCase):

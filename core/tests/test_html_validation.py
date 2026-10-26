@@ -62,6 +62,26 @@ Légende commune
 print("<b>")
 ```
 
+- Sous-liste
+  - à 2 espaces
+- [ ] Case vide
+- [x] Case cochée
+
+| Matériau | Rétreint |
+|---|---|
+| Cu | 3.2 |
+
+: Rétreint (10^-6^/K), H~2~O, ~~ancien~~ {#tbl-retreint}
+
+Formule $\\alpha_{Cu} < 1$ et en bloc :
+
+$$
+\\begin{aligned}
+E_i &= E_z\\\\
+E_j &= E_x
+\\end{aligned}
+$$
+
 ### TODO
 - Relire le compte rendu
 """
