@@ -3,7 +3,7 @@
 Chaque balise rend un gabarit de `core/templates/core/components/`. Les classes
 Tailwind sont dans le gabarit, ou ici quand elles dépendent d'une variante,
 toujours écrites en entier (sans les construire par morceaux). Les icônes sont
-des noms de Material Symbols Rounded.
+des noms de Material Symbols Rounded, en SVG inline (`{% icon %}`, core/icons.py).
 """
 
 import datetime
@@ -13,8 +13,24 @@ from django.template.defaultfilters import date as format_date
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, json_script
+from django.utils.safestring import SafeString
+
+from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
 
 register = template.Library()
+
+
+@register.simple_tag
+def icon(name: str, label: str = "", **attrs) -> SafeString:
+    """Icône Material Symbols en SVG inline (#218) : `{% icon "save" %}`.
+
+    Taille et couleur par classes (`class="size-4 text-amber-600"`, 24 px par
+    défaut), décorative sauf si `label` est donné (icône seule qui porte un sens).
+    """
+    try:
+        return icon_svg(name, attrs.get("class", DEFAULT_CLASSES), label)
+    except UnknownIconError as error:
+        raise template.TemplateSyntaxError(str(error)) from error
 
 
 @register.inclusion_tag("core/components/nav_link.html", takes_context=True)

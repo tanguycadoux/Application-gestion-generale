@@ -6,7 +6,7 @@
         {% if day.can_create %}
             {% url 'todolist:todo_create' as create_url %}
             <a class="rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-blue-50" href="{{ create_url }}?due={{ day.date|date:'Y-m-d' }}" aria-label="Créer une tâche pour le {{ day.date|date_text:"moyen" }}">
-                <span class="material-symbols-rounded align-middle text-base! text-blue-800" aria-hidden="true">add</span>
+                {% icon "add" class="inline-block size-4 align-middle text-blue-800" %}
             </a>
         {% endif %}
     </div>

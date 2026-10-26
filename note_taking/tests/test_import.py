@@ -275,6 +275,6 @@ class ImportViewTests(TestCase):
 
         self.assertRegex(
             html,
-            r'<span class="material-symbols-rounded">upload</span>Importer</button>'
+            r"</svg>Importer</button>"
             r"\s*</form>\s*<a [^>]*" + f'href="{reverse("note_taking:export_notes")}"',
         )

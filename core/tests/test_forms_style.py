@@ -4,6 +4,7 @@ from django import forms
 from django.test import TestCase
 from django.urls import reverse
 
+from core.icons import icon_svg
 from core.models import Project
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
@@ -79,7 +80,8 @@ class FormGridTemplateTests(TestCase):
 
 SAVE_BUTTON = (
     '<button type="submit" form="{form}" class="{classes}" aria-label="{label}">'
-    '<span class="material-symbols-rounded">save</span></button>'
+    + icon_svg("save").replace("{", "{{").replace("}", "}}")
+    + "</button>"
 )
 
 

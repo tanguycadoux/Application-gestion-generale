@@ -13,6 +13,14 @@ function alertElement(tag, className, text = null, children = []) {
 // Forme commune des alertes (#154), celle des boutons pour les coins.
 const ALERT_SHAPE = "rounded-xl border border-slate-200 bg-white p-3 shadow-lg";
 
+// Icône d'un toast : SVG rendu par le gabarit de base (<template id="alert-icon-…">),
+// cloné ici, plutôt qu'une police chargée depuis Internet (#218).
+function alertIcon(name, className) {
+  const icon = document.getElementById(`alert-icon-${name}`).content.firstElementChild.cloneNode(true);
+  icon.classList.add(...className.split(" "));
+  return icon;
+}
+
 // Classes des variantes du composant button, transmises par le gabarit de base
 // (core/templatetags/ui.py, BUTTON_VARIANTS) plutôt que recopiées ici.
 function buttonVariants() {
@@ -60,8 +68,7 @@ window.Alert = (function () {
     }
     text.push(alertElement("p", "", message));
 
-    const icon = alertElement("span", `material-symbols-rounded ${style.text}`, style.icon);
-    icon.setAttribute("aria-hidden", "true");
+    const icon = alertIcon(style.icon, style.text);
 
     // Barre animée par alert_system.css : le script ne donne que la durée.
     const progressBar = alertElement("div", `alert__toast-progress absolute bottom-0 left-0 h-1 ${style.bar}`);

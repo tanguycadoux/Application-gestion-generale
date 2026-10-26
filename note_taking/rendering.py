@@ -7,6 +7,7 @@ import markdown
 from django.templatetags.static import static
 from django.utils.html import escape
 
+from core.icons import icon_svg
 from images.models import Image
 
 from .qmd.parser import BLOCK_END, METADATA_BLOCK_START
@@ -296,8 +297,7 @@ def render_callout(start: re.Match[str], body: list[str]) -> str:
 
     icon = CALLOUT_ICONS.get(callout_type)
     icon_html = (
-        f'<span class="material-symbols-rounded callout-icon" aria-hidden="true">'
-        f"{icon}</span>"
+        icon_svg(icon, "callout-icon")
         if icon and not CALLOUT_NO_ICON_ATTR_REGEX.search(attrs)
         else ""
     )

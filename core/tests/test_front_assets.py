@@ -60,3 +60,30 @@ class FrontAssetsTests(TestCase):
         self.assertIn("@layer base {", css)
         self.assertIn(".alert__toast-progress {", css)
         self.assertEqual(settings.TAILWIND_CLI_SRC_CSS, "assets/css/source.css")
+
+
+# Ressource chargée depuis un autre serveur : src ou href en http(s):// ou //.
+EXTERNAL_RESOURCE_REGEX = re.compile(
+    r"<(?:script|link|img|iframe|source)\b[^>]*\b(?:src|href)=\"(?:https?:)?//",
+    re.IGNORECASE,
+)
+
+TEMPLATE_DIRS = ("core", "images", "note_taking", "todolist")
+
+
+class NoExternalResourceTests(TestCase):
+    """#218 : plus aucune ressource externe, police d'icônes comprise."""
+
+    def test_pages_sans_ressource_externe(self):
+        for name in PAGES:
+            with self.subTest(page=name):
+                html = self.client.get(reverse(name)).content.decode()
+                self.assertEqual(EXTERNAL_RESOURCE_REGEX.findall(html), [])
+
+    def test_gabarits_sans_ressource_externe(self):
+        """Hors contenu des notes, aucun gabarit ne cite de ressource externe."""
+        for app in TEMPLATE_DIRS:
+            for path in (Path(settings.BASE_DIR) / app).glob("**/templates/**/*.html"):
+                with self.subTest(path=str(path)):
+                    text = path.read_text(encoding="utf-8")
+                    self.assertEqual(EXTERNAL_RESOURCE_REGEX.findall(text), [])

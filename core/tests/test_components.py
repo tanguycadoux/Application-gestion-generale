@@ -4,6 +4,7 @@ from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
 
+from core.icons import icon_svg
 from core.templatetags.ui import BUTTON_VARIANTS
 
 SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
@@ -27,7 +28,7 @@ class NavLinkTests(SimpleTestCase):
             html,
             '<a class="flex items-center gap-2 rounded-2xl py-2 pr-3 pl-2'
             f' hover:bg-white" href="{reverse("todolist:index")}">'
-            '<span class="material-symbols-rounded">home</span>'
+            f"{icon_svg('home')}"
             '<span class="font-medium">Accueil</span>'
             "</a>",
         )
@@ -76,7 +77,7 @@ class ButtonTests(SimpleTestCase):
         self.assertHTMLEqual(
             html,
             f'<button type="submit" class="{PRIMARY}" aria-label="Enregistrer">'
-            '<span class="material-symbols-rounded">save</span>'
+            f"{icon_svg('save')}"
             "</button>",
         )
 
@@ -104,7 +105,7 @@ class ButtonTests(SimpleTestCase):
         self.assertHTMLEqual(
             html,
             f'<a class="{GHOST}" href="/edit/" aria-label="Modifier">'
-            '<span class="material-symbols-rounded">edit</span>'
+            f"{icon_svg('edit')}"
             "</a>",
         )
 
