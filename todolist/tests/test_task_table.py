@@ -78,7 +78,7 @@ class TaskTreeTests(TestCase):
         self.task("A sans échéance", parent=late_root)
         self.task("Petit-enfant", parent=child_b, due_date=days(5))
 
-        groups = task_groups(Todo.objects.filter(parent__isnull=True))
+        groups = task_groups()
 
         self.assertEqual(
             [group.root.title for group in groups],

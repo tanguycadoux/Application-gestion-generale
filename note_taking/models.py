@@ -16,6 +16,13 @@ class Note(models.Model):
 
     @property
     def projects(self):
+        """Projets des note parts de la note, par nom.
+
+        Sans requête si les note parts ont été préchargées avec leur projet (#188).
+        """
+        if "parts" in getattr(self, "_prefetched_objects_cache", {}):
+            unique = {part.project_id: part.project for part in self.parts.all()}
+            return sorted(unique.values(), key=lambda project: project.name)
         return Project.objects.filter(note_parts__note=self).distinct()
 
     @property
