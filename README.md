@@ -39,12 +39,12 @@ Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis re
 
 ### Front
 
-HTML, CSS et JavaScript natifs, sans Node. Seule étape de build : la feuille Tailwind, compilée par `django-tailwind-cli` (voir « Installation et lancement »). Les notes étant privées, l'application ne charge aucune ressource depuis Internet : tout est servi en local (#217).
+HTML, CSS et JavaScript natifs, sans Node. Seule étape de build : la feuille Tailwind, compilée par `django-tailwind-cli` (voir « Installation et lancement »). Les notes étant privées, l'application ne charge aucune ressource depuis Internet : tout est servi en local (#217, #218). Les tests le vérifient : aucune page ni aucun gabarit ne cite de ressource externe (`<script>`, `<link>`, `<img>` en `http(s)://`), et le lanceur de tests (`app_gestion/test_runner.py`) fait échouer toute connexion réseau.
 
 | Outil | Rôle | Chargement |
 |---|---|---|
 | [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | version 4.3.3 (`TAILWIND_CLI_VERSION`), compilée dans `static/css/tailwind.css` (non versionnée) et chargée par `{% tailwind_css %}` dans `core/templates/base.html` ; thème, styles de base et animations des alertes dans la source `assets/css/source.css` |
-| [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` (passage en SVG local : #218) |
+| [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie, licence Apache 2.0) | fichiers SVG dans `static/icons/`, recopiés dans les pages par `{% icon "nom" %}` (#218) ; une icône s'ajoute avec `python manage.py add_icon <nom>` ; icône d'onglet `core/static/core/favicon.svg` |
 | [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes, navigation des calendriers) | version 1.9.11, embarquée dans `static/vendor/htmx/` (licence, provenance et empreinte dans son README), chargée une fois dans `core/templates/base.html` |
 
 Tailwind détecte les classes dans les fichiers du dépôt (gabarits, code Python, scripts), hors fichiers ignorés par git : une classe n'est générée que si elle est écrite quelque part en entier.
@@ -67,6 +67,7 @@ Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templa
 
 | Balise | Rendu |
 |---|---|
+| `{% icon "nom" class="size-4 text-amber-600" label="…" %}` | icône Material Symbols en SVG inline, de la couleur du texte ; 24 px (`size-6`) sans classe ; décorative (`aria-hidden`), sauf avec `label`, pour une icône seule qui porte un sens (`role="img"`, `aria-label`) |
 | `{% nav_link "app:vue" "Libellé" "icône" %}` | lien du menu, marqué actif (`aria-current="page"`) sur sa page |
 | `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True form="id" describedby="id" %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) ; `form="id"` relie un `<button>` placé hors de son formulaire (pas un lien) ; `describedby="id"` pose `aria-describedby`, par exemple vers la raison pour laquelle le bouton est désactivé |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
