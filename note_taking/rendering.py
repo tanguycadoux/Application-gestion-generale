@@ -12,6 +12,7 @@ from django.utils.html import escape
 from core.icons import icon_svg
 from images.models import Image
 
+from .qmd.lists import LIST_ITEM_REGEX, text_column
 from .qmd.parser import BLOCK_END, METADATA_BLOCK_START
 
 
@@ -27,8 +28,6 @@ class NoSetextHeadingsExtension(markdown.Extension):
         md.parser.blockprocessors.deregister("setextheader")
 
 
-# Élément de liste : indentation, puce ou numéro, espaces avant le texte.
-LIST_ITEM_REGEX = re.compile(r"^(?P<indent> *)(?P<marker>[-*+]|\d+[.)])(?P<space> +|$)")
 ATX_HEADING_REGEX = re.compile(r"^#{1,6}(\s|$)")
 # Pas d'indentation de Python-Markdown : un niveau de liste, un bloc de code.
 MARKDOWN_INDENT = 4
@@ -82,13 +81,8 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
                 new_list = sibling is not None and sibling[1] != ordered
                 if (new_list or in_paragraph_after_blank) and not previous_blank:
                     result.append("")
-                marker_end = indent + len(item.group("marker"))
-                space = len(item.group("space"))
-                # Au-delà de 4 espaces, le texte est du code indenté : Pandoc
-                # place alors la colonne du texte juste après le marqueur.
-                text_column = marker_end + (space if 0 < space <= 4 else 1)
                 result.append(" " * (MARKDOWN_INDENT * depth) + line[indent:])
-                items.append((text_column, ordered))
+                items.append((text_column(item), ordered))
                 in_paragraph_after_blank = False
             else:
                 if item and items and not previous_blank:
