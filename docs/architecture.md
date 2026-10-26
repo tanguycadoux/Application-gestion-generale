@@ -48,7 +48,7 @@ todolist ──► note_taking ──► images ──► core
 | `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
 | `services.py` | import, mise à jour, génération des note parts et des liens vers les images (accès à la base) |
 | `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes) |
-| `rendering.py` | rendu HTML : Markdown, références d'images, callouts Quarto |
+| `rendering.py` | rendu HTML : Markdown filtré, références d'images, callouts et blocs Quarto |
 | `exceptions.py` | erreurs métier (`NoteError` et sous-classes) |
 | `management/commands/reprocess_notes.py` | recalcul des note parts de toutes les notes |
 
@@ -118,6 +118,10 @@ Un objet utilisé ne peut pas être supprimé (`on_delete=PROTECT`) :
 Django refuse la suppression (`ProtectedError`) et l'admin liste les éléments concernés.
 
 Dans l'interface, une image se supprime depuis sa page de détail (#85) : le bouton est désactivé, avec la raison, tant que l'image est utilisée. Le service `images.services.delete_image` s'appuie sur la même protection : il traduit la `ProtectedError` en erreur métier (`ImageInUseError`), sans connaître les apps qui utilisent les images, et n'efface les fichiers qu'une fois la suppression validée en base.
+
+### HTML des notes filtré (#241)
+
+Le HTML qu'écrit l'utilisateur, directement ou par le Markdown, passe par une liste blanche (`nh3`, dans `render_plain_markdown`) : balises d'un document (texte, titres, listes, tableaux, images, liens, code, `details`…), attributs `class`, `id`, `title`, `href`, `src`, `alt`, `width`, `height`, `style` limité à `text-align` sur les cellules, et URL en `http`, `https`, `mailto` ou relatives. Un script, un gestionnaire `on…`, un cadre ou un lien `javascript:` est retiré : il s'exécuterait dans la page et pourrait envoyer les notes ailleurs. Le HTML des blocs Quarto (callouts, grilles, colonnes, icônes) est construit autour, à partir de valeurs échappées ou contrôlées, et n'est pas filtré.
 
 ### Analyse des notes
 

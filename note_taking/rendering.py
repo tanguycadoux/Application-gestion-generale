@@ -4,6 +4,7 @@ import re
 from pathlib import PurePosixPath
 
 import markdown
+import nh3
 from django.templatetags.static import static
 from django.utils.html import escape
 
@@ -107,6 +108,29 @@ CALLOUT_NO_ICON_ATTR_REGEX = re.compile(r"\bicon=false\b")
 
 CODE_FENCE = "```"
 
+# HTML gardé dans le contenu des notes (#241) : celui d'un document, sans script,
+# formulaire, cadre ni style libre. Les chemins relatifs restent autorisés.
+ALLOWED_TAGS = {
+    *("p", "br", "hr", "blockquote", "pre", "code", "kbd", "samp"),
+    *("h1", "h2", "h3", "h4", "h5", "h6"),
+    *("ul", "ol", "li", "dl", "dt", "dd"),
+    *("table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption"),
+    *("a", "img", "figure", "figcaption", "div", "span", "details", "summary"),
+    *("em", "strong", "b", "i", "u", "s", "del", "ins", "mark", "small"),
+    *("sub", "sup", "abbr"),
+}
+ALLOWED_ATTRIBUTES = {
+    "*": {"class", "id", "title"},
+    "a": {"href"},
+    "img": {"src", "alt", "width", "height"},
+    "ol": {"start"},
+    "th": {"style", "colspan", "rowspan"},
+    "td": {"style", "colspan", "rowspan"},
+}
+ALLOWED_URL_SCHEMES = {"http", "https", "mailto"}
+# Alignement des colonnes de tableau, produit par l'extension tables.
+ALLOWED_STYLE_PROPERTIES = {"text-align"}
+
 
 def render_markdown(text: str) -> str:
     """Rend du Markdown en HTML, callouts et blocs de mise en page Quarto compris."""
@@ -140,7 +164,28 @@ def render_markdown(text: str) -> str:
 
 
 def render_plain_markdown(text: str) -> str:
-    return markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS)
+    """Markdown en HTML, filtré : tout ce qu'écrit l'utilisateur passe par ici.
+
+    Le HTML des blocs Quarto (callouts, grilles, colonnes) est construit autour,
+    à partir de valeurs échappées ou contrôlées, et n'a pas à être filtré.
+    """
+    return sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
+
+
+def sanitize_html(html: str) -> str:
+    """Liste blanche de balises, d'attributs et de schémas d'URL (#241).
+
+    Un script, un gestionnaire `on…` ou un lien `javascript:` écrit dans une
+    note s'exécuterait dans la page et pourrait envoyer les notes ailleurs.
+    """
+    return nh3.clean(
+        html,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        url_schemes=ALLOWED_URL_SCHEMES,
+        filter_style_properties=ALLOWED_STYLE_PROPERTIES,
+        link_rel=None,
+    )
 
 
 def match_block_start(line: str):
