@@ -238,7 +238,7 @@ def note_review(request, note_date: str):
         raise Http404("Date invalide.")
     note = get_object_or_404(Note, date=day)
     todos = list(
-        note_todos_to_review(day).select_related("project", "subject").order_by("pk")
+        note_todos_to_review(day).select_related("project", "section").order_by("pk")
     )
     if not todos:
         return redirect("note_taking:note_detail", pk=note.pk)

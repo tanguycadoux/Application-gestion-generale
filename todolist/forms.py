@@ -1,6 +1,8 @@
 from django import forms
 from django.forms import modelformset_factory
 
+from core.forms import SectionChoiceField
+
 from .models import Todo
 
 
@@ -15,10 +17,11 @@ class TodoForm(forms.ModelForm):
             "priority",
             "due_date",
             "project",
-            "subject",
+            "section",
             "tags",
             "parent",
         ]
+        field_classes = {"section": SectionChoiceField}
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
             "progress": forms.NumberInput(attrs={"min": 0, "max": 100}),
@@ -45,7 +48,8 @@ class NoteReviewForm(forms.ModelForm):
 
     class Meta:
         model = Todo
-        fields = ["due_date", "priority", "project", "subject"]
+        fields = ["due_date", "priority", "project", "section"]
+        field_classes = {"section": SectionChoiceField}
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
         }

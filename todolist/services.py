@@ -3,7 +3,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 
-from core.models import Project, Subject, Tag
+from core.models import Project, Tag
+from core.sections import levels, section_for
 from note_taking.models import Note, NotePart
 from note_taking.qmd.lists import CODE_INDENT, LIST_ITEM_REGEX, text_column
 from note_taking.qmd.parser import HEADING_SEPARATOR
@@ -56,17 +57,13 @@ def create_todo_from_dict(
         return todo, False
 
     project, _ = Project.objects.get_or_create(name=todo_data["project"])
-    subject = (
-        Subject.objects.get_or_create(name=todo_data["subject"])[0]
-        if todo_data.get("subject")
-        else None
-    )
+    section = section_for(project, todo_data.get("sections", []))
     todo = Todo.objects.create(
         **identity,
         note_path=todo_data["path"],
         title=todo_data["content"],
         project=project,
-        subject=subject,
+        section=section,
         parent=parent,
         note_state=Todo.NoteState.TO_REVIEW,
     )
@@ -301,7 +298,7 @@ def create_todos_from_note_part(note_part: NotePart) -> list[Todo]:
         return []
     part_tags = [tag.name for tag in note_part.tags.all()]
 
-    subject = note_part.subject.name if note_part.subject else None
+    sections = levels(note_part.section) if note_part.section else []
     tags = [tag for tag in part_tags if tag != TODO_TAG]
     created_todos: list[Todo] = []
     todos: dict[int, Todo] = {}
@@ -311,7 +308,7 @@ def create_todos_from_note_part(note_part: NotePart) -> list[Todo]:
             "project": note_part.project.name,
             "path": line.path,
             "content": line.text,
-            "subject": subject,
+            "sections": sections,
             "tags": tags,
         }
         parent = todos[id(line.parent)] if line.parent else None

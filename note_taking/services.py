@@ -4,7 +4,8 @@ from datetime import date
 
 from django.db import transaction
 
-from core.models import Project, Subject, Tag
+from core.models import Project, Tag
+from core.sections import forget_unused_sections, section_for
 from images.models import Image
 
 from .exceptions import (
@@ -87,6 +88,8 @@ def process_note_parts(
     note.follow_ups = tuple(
         response for response in responses if isinstance(response, NoteFollowUp)
     )
+    # Les sections qu'aucune note part ni tâche n'utilise plus sont oubliées (#295).
+    forget_unused_sections()
 
     return note_parts
 
@@ -99,16 +102,12 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
 
         project, _ = Project.objects.get_or_create(name=parsed_part.project)
 
-        subject = (
-            Subject.objects.get_or_create(name=parsed_part.subject)[0]
-            if parsed_part.subject
-            else None
-        )
+        section = section_for(project, [parsed_part.subject or ""])
 
         note_part = NotePart.objects.create(
             note=note,
             project=project,
-            subject=subject,
+            section=section,
             content=content,
             heading_path=HEADING_SEPARATOR.join(parsed_part.headings),
         )

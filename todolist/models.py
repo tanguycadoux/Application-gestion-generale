@@ -9,7 +9,7 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
-from core.models import Project, Subject, Tag
+from core.models import Project, Section, Tag
 from core.templatetags.ui import date_text
 
 if TYPE_CHECKING:
@@ -65,10 +65,10 @@ class Todo(models.Model):
         on_delete=protect_unless_dismissed,
         related_name="todos",
     )
-    subject = models.ForeignKey(
-        Subject,
+    section = models.ForeignKey(
+        Section,
         verbose_name="sujet",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="todos",
         null=True,
         blank=True,

@@ -1,7 +1,29 @@
 from django import forms
 from django.forms.renderers import DjangoTemplates
 
-from .models import Project
+from .models import Project, Section
+from .sections import LABEL_SEPARATOR
+
+
+class SectionChoiceField(forms.ModelChoiceField):
+    """Choix d'une section : « Projet › Réunion › Préparation ».
+
+    Les chemins se lisent dans un seul dictionnaire, chargé à la première étiquette :
+    pas une requête par option.
+    """
+
+    def label_from_instance(self, obj):
+        if not hasattr(self, "_sections"):
+            self._sections = {
+                section.pk: section
+                for section in Section.objects.select_related("project")
+            }
+        section = self._sections[obj.pk]
+        chain = [section]
+        while chain[0].parent_id:
+            chain.insert(0, self._sections[chain[0].parent_id])
+        names = [section.project.name] + [level.name for level in chain]
+        return LABEL_SEPARATOR.join(names)
 
 
 class GridFormRenderer(DjangoTemplates):
