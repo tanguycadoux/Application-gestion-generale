@@ -29,6 +29,14 @@ class ProgressTests(TestCase):
 
         self.assertTrue(todo.completed)
 
+    def test_avancement_au_pourcent_pres(self):
+        """76 % se saisit : le champ n'impose pas de pas de 5 %."""
+        form = TodoForm(
+            data={"title": "T", "project": self.project.pk, "priority": "medium"}
+        )
+
+        self.assertNotIn("step", form.fields["progress"].widget.attrs)
+
     def test_avancement_borne(self):
         for value in (-1, 101):
             with self.subTest(value=value), self.assertRaises(ValidationError):
