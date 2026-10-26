@@ -1,7 +1,7 @@
 """Rendu HTML des notes : Markdown et références d'images."""
 
 import re
-from pathlib import Path
+from pathlib import PurePosixPath
 
 import markdown
 from django.templatetags.static import static
@@ -44,8 +44,16 @@ IMAGE_REF_REGEX = re.compile(
 # Balise de titre ouvrante ou fermante du HTML rendu : <h2 …> ou </h2>.
 HEADING_TAG_REGEX = re.compile(r"<(?P<slash>/?)h(?P<level>[1-6])\b")
 
-# Image désignée par une URL complète ou absolue, laissée telle quelle.
+# Image désignée par une URL complète ou absolue : pas une image importée.
 EXTERNAL_URL_REGEX = re.compile(r"^([a-z][a-z0-9+.-]*://|/|data:)", re.IGNORECASE)
+
+# Image sur un autre serveur, avec son titre et ses attributs éventuels :
+# ![légende](https://…/a.png "titre"){width=50%}. Elle n'est pas chargée (#220).
+REMOTE_IMAGE_REGEX = re.compile(
+    r"\!\[(?P<alt>[^\]]*)\]\((?P<url>[a-z][a-z0-9+.-]*://[^)\s]+)"
+    r"(?:\s+\"[^\"]*\")?\)(?:\{[^}]*\})?",
+    re.IGNORECASE,
+)
 
 
 # Callout Quarto : ::: {.callout-<type> title="…"} … :::
@@ -321,7 +329,7 @@ def resolve_image_refs(content: str) -> str:
 
 
 def render_note_part(content: str) -> str:
-    return render_markdown(resolve_image_refs(content))
+    return render_markdown(remote_images_as_links(resolve_image_refs(content)))
 
 
 def render_note_body(body: str) -> str:
@@ -330,7 +338,9 @@ def render_note_body(body: str) -> str:
     Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
     a son propre h1.
     """
-    html = render_markdown(resolve_image_paths(strip_metadata_blocks(body)))
+    html = render_markdown(
+        remote_images_as_links(resolve_image_paths(strip_metadata_blocks(body)))
+    )
     return HEADING_TAG_REGEX.sub(shift_heading, html)
 
 
@@ -369,11 +379,37 @@ def resolve_image_paths(content: str) -> str:
 
     def repl(match: re.Match[str]) -> str:
         path = match.group("path")
-        if EXTERNAL_URL_REGEX.match(path):
+        name = image_name(path)
+        if name is None:
             return match.group(0)
 
-        image = Image.objects.filter(name=Path(path).name).first()
+        image = Image.objects.filter(name=name).first()
         url = image.file.url if image else static(IMAGE_MISSING_PATH)
         return match.group(0).replace(path, url)
 
     return IMAGE_PATH_REGEX.sub(repl, content)
+
+
+def image_name(path: str) -> str | None:
+    """Nom de l'image importée désignée par un chemin, ou None pour une URL externe.
+
+    Seul le nom de fichier compte, quel que soit le dossier, écrit avec / ou \\.
+    Règle commune à l'analyse, au rendu et à l'export (#220).
+    """
+    if EXTERNAL_URL_REGEX.match(path):
+        return None
+    return PurePosixPath(path.replace("\\", "/")).name
+
+
+def remote_images_as_links(content: str) -> str:
+    """Remplace chaque image sur un autre serveur par un lien vers son adresse.
+
+    Les notes sont privées : le navigateur ne contacte aucun serveur tiers (#220).
+    Le texte du lien est la légende, ou l'adresse sans légende.
+    """
+
+    def repl(match: re.Match[str]) -> str:
+        url = match.group("url")
+        return f"[{match.group('alt') or url}]({url})"
+
+    return REMOTE_IMAGE_REGEX.sub(repl, content)
