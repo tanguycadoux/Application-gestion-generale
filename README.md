@@ -103,7 +103,7 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | mois précédent, suivant | `chevron_left`, `chevron_right` |
 | aujourd'hui, note du jour | `today` |
 
-Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi, avec « Annuler » en `ghost` puis « Supprimer » en `danger` (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement. Toute suppression passe par là (#126) : un bouton `ghost-danger` dans un formulaire POST portant `data-confirm`, vers une vue limitée à POST ; il n'y a pas de page de confirmation.
+Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi, avec « Annuler » en `ghost` puis « Supprimer » en `danger` (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement. Toute suppression passe par là (#126) : un bouton `ghost-danger` dans un formulaire POST portant `data-confirm`, vers une vue limitée à POST ; il n'y a pas de page de confirmation. Essai : « Rétablir » une tâche écartée confirme par une popover HTML native (attribut `popover`, bouton `popovertarget`), sans JavaScript : le navigateur l'ouvre, la ferme (Échap, clic à côté, « Annuler ») et la place sous son bouton par l'ancrage CSS.
 
 Les principes de ces composants (un composant par rôle, l'apparence en variante, des paramètres ajoutés seulement quand une page en a besoin) sont décrits dans `docs/architecture.md`, section « Composants d'interface ».
 

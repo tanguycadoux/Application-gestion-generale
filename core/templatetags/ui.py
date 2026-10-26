@@ -78,6 +78,8 @@ def button(
     disabled: bool = False,
     form: str = "",
     describedby: str = "",
+    popovertarget: str = "",
+    popovertargetaction: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -90,7 +92,9 @@ def button(
     - `form` : identifiant du formulaire que le bouton envoie, quand il est
       placé hors de ce formulaire (barre d'outils de l'en-tête) ; pas pour un lien ;
     - `describedby` : identifiant du texte qui décrit le bouton (`aria-describedby`),
-      par exemple la raison pour laquelle il est désactivé.
+      par exemple la raison pour laquelle il est désactivé ;
+    - `popovertarget`, `popovertargetaction` : popover native que le bouton
+      ouvre, ou ferme avec `"hide"` ; pas pour un lien.
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
@@ -98,6 +102,8 @@ def button(
         raise ValueError("Un lien ne peut pas être désactivé : retirer href.")
     if form and href:
         raise ValueError("Un lien n'envoie pas de formulaire : retirer href.")
+    if popovertarget and href:
+        raise ValueError("Un lien n'ouvre pas de popover : retirer href.")
 
     classes = BUTTON_VARIANTS[variant]
     if disabled:
@@ -115,6 +121,8 @@ def button(
         "disabled": disabled,
         "form": form,
         "describedby": describedby,
+        "popovertarget": popovertarget,
+        "popovertargetaction": popovertargetaction,
     }
 
 

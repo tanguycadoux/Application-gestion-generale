@@ -5,7 +5,6 @@ Le projet n'a pas de lanceur de tests JavaScript : les tests du script le lisent
 
 import json
 import re
-import unittest
 from pathlib import Path
 from typing import Any
 
@@ -147,7 +146,6 @@ class AlertStylesheetTests(SimpleTestCase):
         self.assertIn(".alert__toast-progress {", css)
         self.assertIn("@keyframes alert-toast-progress", css)
 
-    @unittest.expectedFailure
     def test_popover_native_ancree_a_son_bouton(self):
         """Sous son bouton par l'ancrage CSS ; sans lui, le navigateur la centre."""
         css = components_layer(read_source_css())

@@ -92,6 +92,22 @@
         animation: fadeIn .1s ease-out;
     }
 
+    /* Popover native de confirmation (essai) : sous son bouton, alignée sur son
+       bord droit, par l'ancre implicite de popovertarget ; retournée au-dessus
+       si la place manque. Sans ancrage CSS, le navigateur la centre. */
+    .confirm-popover:popover-open {
+        animation: fadeIn .1s ease-out;
+    }
+
+    @supports (position-area: bottom) {
+        .confirm-popover {
+            inset: auto;
+            margin: 0.25rem 0;
+            position-area: bottom span-left;
+            position-try-fallbacks: flip-block;
+        }
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: scale(0.98); }
         to   { opacity: 1; transform: scale(1); }

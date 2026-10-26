@@ -6,7 +6,6 @@ de suppression définitive : sa ligne reviendrait en tâche.
 """
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -56,7 +55,6 @@ class DismissedListTests(RestoreTestCase):
 
         self.assertContains(response, "Rétablir la tâche « A » et ses 2 sous-tâches ?")
 
-    @unittest.expectedFailure
     def test_confirmation_par_une_popover_native(self):
         """Essai : popover HTML (`popover`, `popovertarget`), sans JavaScript ; le
         formulaire est dans la popover, avec « Annuler » puis « Rétablir »."""
