@@ -103,8 +103,8 @@ class IndexCalendarTests(TestCase):
         response = self.get("?mois=2025-11")
 
         self.assertContains(response, 'id="calendar"')
-        self.assertContains(response, 'hx-boost="true"')
-        self.assertContains(response, 'hx-select="#calendar"')
+        self.assertContains(response, 'data-hx-boost="true"')
+        self.assertContains(response, 'data-hx-select="#calendar"')
 
 
 class CalendarDayLinkTests(TestCase):

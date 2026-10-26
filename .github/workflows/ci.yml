@@ -32,6 +32,16 @@ jobs:
       - name: Migrations à jour
         run: python manage.py makemigrations --check --dry-run
 
+      # Validateur HTML du W3C (vnu.jar, Java déjà présent sur le runner) : les
+      # tests valident les pages principales (#259).
+      - uses: actions/cache@v6
+        with:
+          path: .vnu
+          key: vnu-${{ hashFiles('app_gestion/settings.py') }}
+
+      - name: Installation du validateur HTML
+        run: test -f .vnu/vnu.jar || python manage.py install_validator
+
       - name: Tests
         run: python manage.py test
 

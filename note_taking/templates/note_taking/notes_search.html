@@ -9,9 +9,9 @@
     <div>
         <form
         method="post"
-        hx-post="{% url 'note_taking:notes_search' %}"
-        hx-target="#results"
-        hx-trigger="change delay:200ms"
+        data-hx-post="{% url 'note_taking:notes_search' %}"
+        data-hx-target="#results"
+        data-hx-trigger="change delay:200ms"
         >
             {% csrf_token %}
     

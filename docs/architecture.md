@@ -166,6 +166,7 @@ Les éléments d'interface récurrents (boutons, liens du menu, listes de tags�
 - `ruff` (lint et formatage, configuration dans `pyproject.toml`), `mypy` avec `django-stubs` (`mypy.ini`).
 - La CI GitHub Actions lance `ruff check`, `ruff format --check`, `mypy`, `makemigrations --check` et les tests à chaque PR.
 - `main` est protégée : une PR ne peut être mergée que si la CI passe et que la branche est à jour.
+- **Validation HTML** (#259) : le validateur du W3C (Nu Html Checker, `vnu.jar`) tourne **en local**, jamais en ligne, car le validateur en ligne recevrait le contenu des notes. `python manage.py install_validator` le télécharge (paquet npm `vnu-jar`, version et intégrité épinglées par `VNU_VERSION` et `VNU_INTEGRITY`) dans `.vnu/`, non versionné ; il demande Java. `core/tests/test_html_validation.py` valide alors les pages principales, rendues avec des données de test ; sans validateur, ce test est ignoré. La CI l'installe et le lance à chaque PR. La dernière issue d'un milestone qui touche au HTML vérifie qu'il passe et en étend la liste de pages si besoin.
 
 ### Git
 

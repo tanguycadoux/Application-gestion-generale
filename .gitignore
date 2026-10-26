@@ -17,6 +17,9 @@ media/
 .django_tailwind_cli/
 static/css/tailwind.css
 
+# Validateur HTML du W3C, téléchargé par install_validator
+.vnu/
+
 # mypy
 .mypy_cache/
 

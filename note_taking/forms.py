@@ -13,10 +13,10 @@ class NoteSearchForm(forms.Form):
         queryset=Project.objects.all().order_by("name"),
         widget=forms.CheckboxSelectMultiple(
             attrs={
-                "hx-post": reverse_lazy("note_taking:get_subjects"),
-                "hx-target": "#subjects-block",
-                "hx-trigger": "change",
-                "hx-include": "closest form",
+                "data-hx-post": reverse_lazy("note_taking:get_subjects"),
+                "data-hx-target": "#subjects-block",
+                "data-hx-trigger": "change",
+                "data-hx-include": "closest form",
             }
         ),
         required=False,

@@ -45,3 +45,16 @@ class LazyPagesTests(TestCase):
         for attr in LAZY:
             with self.subTest(attr=attr):
                 self.assertIn(attr, html)
+
+
+class PercentWidthTests(SimpleTestCase):
+    """`{width=80%}` en style : l'attribut width n'accepte que des pixels (#259)."""
+
+    def test_largeur_en_pourcentage_en_style(self):
+        html = render_markdown("![A](/a.png){width=80%}")
+
+        self.assertIn('style="width: 80%"', html)
+        self.assertNotIn('width="80%"', html)
+
+    def test_largeur_en_pixels_inchangee(self):
+        self.assertIn('width="300"', render_markdown("![A](/a.png){width=300}"))
