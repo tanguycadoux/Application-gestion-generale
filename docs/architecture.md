@@ -177,6 +177,7 @@ Après le filtrage, chaque image du contenu reçoit `loading="lazy"` et `decodin
 Le rendu suit le Markdown de Pandoc, celui de Quarto, et non les règles propres à Python-Markdown. Un écart se corrige par une extension Markdown de `rendering.py`, testée sur les résultats de Pandoc.
 
 - Sous-listes (#229) : un élément est imbriqué si son marqueur commence au moins à la colonne du texte de l'élément parent (2 espaces après `- `, 3 après `1. `). `PandocListsExtension` réindente les listes par multiples de 4, seul pas que comprend Python-Markdown ; un changement de type de liste commence une autre liste (`sane_lists`). L'analyse des sous-listes en sous-tâches (#238) devra suivre la même règle.
+- Cases à cocher (#231) : un élément qui commence par `[ ]`, `[x]` ou `[X]` suivi d'un blanc devient une case dans un `<label>`, comme dans Pandoc ; une liste à puces faite uniquement de cases reçoit la classe `task-list`, sans puces. `TaskListExtension` pose le `<label>` ; la case (`<input type="checkbox" disabled>`) n'est ajoutée qu'après le filtrage nh3, dont la liste blanche n'accepte aucun champ de formulaire. Les cases sont désactivées : la page affiche la note sans la modifier. Une tâche issue d'une ligne à case garde son propre état : une case cochée ne la termine pas (#222, voir #237).
 
 ### Analyse des notes
 

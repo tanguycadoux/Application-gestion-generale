@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -288,7 +286,6 @@ class TaskListRenderingTests(SimpleTestCase):
     page affiche la note, elle ne la modifie pas.
     """
 
-    @unittest.expectedFailure
     def test_cases_cochee_et_non_cochee(self):
         html = render_markdown("- [ ] a\n- [x] b\n- [X] c")
 
@@ -301,7 +298,6 @@ class TaskListRenderingTests(SimpleTestCase):
             "</ul>",
         )
 
-    @unittest.expectedFailure
     def test_liste_mixte_sans_classe(self):
         html = render_markdown("- [ ] a\n- b")
 
@@ -311,7 +307,6 @@ class TaskListRenderingTests(SimpleTestCase):
             "<li>b</li></ul>",
         )
 
-    @unittest.expectedFailure
     def test_liste_numerotee(self):
         html = render_markdown("1. [ ] a\n2. [x] b")
 
@@ -321,7 +316,6 @@ class TaskListRenderingTests(SimpleTestCase):
             '<li><label><input type="checkbox" checked disabled>b</label></li></ol>',
         )
 
-    @unittest.expectedFailure
     def test_mise_en_forme_dans_le_libelle(self):
         html = render_markdown("- [ ] **gras** et `code`")
 
@@ -331,7 +325,6 @@ class TaskListRenderingTests(SimpleTestCase):
             html,
         )
 
-    @unittest.expectedFailure
     def test_libelle_arrete_avant_la_sous_liste(self):
         html = render_markdown("- [ ] a\n  - b\n  - [x] c")
 
@@ -343,7 +336,6 @@ class TaskListRenderingTests(SimpleTestCase):
             "</ul></li></ul>",
         )
 
-    @unittest.expectedFailure
     def test_sous_liste_de_cases(self):
         html = render_markdown("- a\n  - [ ] b")
 
@@ -354,7 +346,6 @@ class TaskListRenderingTests(SimpleTestCase):
             "</ul></li></ul>",
         )
 
-    @unittest.expectedFailure
     def test_liste_lache(self):
         html = render_markdown("- [ ] a\n\n  suite")
 
@@ -364,7 +355,6 @@ class TaskListRenderingTests(SimpleTestCase):
             "</label></p><p>suite</p></li></ul>",
         )
 
-    @unittest.expectedFailure
     def test_blancs_apres_la_case_retires(self):
         for text in ("- [x]  a", "- [x]\ta", "- \[x] a", "- [x] a\r\n"):
             with self.subTest(text=text):
@@ -390,7 +380,6 @@ class TaskListRenderingTests(SimpleTestCase):
 
         self.assertIn("<code>- [ ] a\n</code>", html)
 
-    @unittest.expectedFailure
     def test_dans_un_callout(self):
         html = render_markdown("::: {.callout-note}\n- [x] a\n:::")
 
