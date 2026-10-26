@@ -41,24 +41,6 @@ def remaining_text(task) -> str:
     return f"{_duration(-days)} de retard"
 
 
-# Seuil de l'échéance proche, en jours (ambre).
-SOON_DAYS = 3
-
-
-def due_signal(task) -> str:
-    """Signal d'une tâche, commun au temps restant et à la barre d'avancement :
-    `done` (succès), `overdue` (danger), `soon` (avertissement, sous 3 jours)
-    ou `normal` (info, aussi sans échéance)."""
-    if task.done:
-        return "done"
-    days = _days_left(task)
-    if days is not None and days < 0:
-        return "overdue"
-    if days is not None and days <= SOON_DAYS:
-        return "soon"
-    return "normal"
-
-
 REMAINING_CLASSES = {
     "overdue": "text-red-800",
     "soon": "text-amber-800",
@@ -68,7 +50,7 @@ REMAINING_CLASSES = {
 @register.filter
 def remaining_class(task) -> str:
     """Rouge en retard, ambre aujourd'hui et sous 3 jours, gris sinon."""
-    return REMAINING_CLASSES.get(due_signal(task), "text-slate-600")
+    return REMAINING_CLASSES.get(task.due_signal, "text-slate-600")
 
 
 @register.filter
@@ -102,7 +84,7 @@ PROGRESS_COLORS = {
 @register.filter
 def progress_classes(task) -> str:
     """Barre d'avancement (#182) aux couleurs du signal de son échéance."""
-    return PROGRESS_BAR + PROGRESS_COLORS[due_signal(task)]
+    return PROGRESS_BAR + PROGRESS_COLORS[task.due_signal]
 
 
 # Barres de la frise (#168) : fond sur toute la durée et remplissage selon
@@ -123,9 +105,9 @@ SIGNAL_FILL_CLASSES = {
 
 @register.filter
 def signal_track_class(task) -> str:
-    return SIGNAL_TRACK_CLASSES[due_signal(task)]
+    return SIGNAL_TRACK_CLASSES[task.due_signal]
 
 
 @register.filter
 def signal_fill_class(task) -> str:
-    return SIGNAL_FILL_CLASSES[due_signal(task)]
+    return SIGNAL_FILL_CLASSES[task.due_signal]

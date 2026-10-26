@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import date
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
@@ -19,6 +18,10 @@ if TYPE_CHECKING:
 
 # Titre et texte d'origine d'une tâche : une ligne de note longue doit tenir (#222).
 TODO_TEXT_MAX_LENGTH = 500
+
+
+# Seuil de l'échéance proche, en jours (ambre).
+SOON_DAYS = 3
 
 
 class Todo(models.Model):
@@ -191,18 +194,19 @@ class Todo(models.Model):
                 ancestor = ancestor.parent
 
     @property
-    def due_status(self):
-        if not self.due_date or self.completed:
-            return None
-
-        today = date.today()
-        delta = (self.due_date - today).days
-
-        if delta < 0:
+    def due_signal(self) -> str:
+        """Signal de l'échéance, seule règle d'urgence (#189) : `done` (terminée),
+        `overdue` (en retard), `soon` (aujourd'hui ou sous `SOON_DAYS` jours) ou
+        `normal` (plus tard, ou sans échéance). Barre d'avancement, temps restant,
+        calendrier et frise l'utilisent."""
+        if self.done:
+            return "done"
+        if self.due_date is None:
+            return "normal"
+        days = (self.due_date - timezone.localdate()).days
+        if days < 0:
             return "overdue"
-        elif delta == 0:
-            return "today"
-        elif delta <= 3:
+        if days <= SOON_DAYS:
             return "soon"
         return "normal"
 

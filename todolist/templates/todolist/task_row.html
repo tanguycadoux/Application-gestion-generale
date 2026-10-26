@@ -1,0 +1,22 @@
+{% load ui todo_ui %}{% comment %}
+Ligne d'une tâche du tableau (#166), avec son niveau dans l'arbre (`row`,
+todolist.tree.TaskRow). Renvoyée aussi par la case à cocher (#189).
+{% endcomment %}{% with todo=row.task %}
+    <tr data-task-id="{{ todo.pk }}" class="hover:bg-slate-50{% if todo.done %} text-slate-500{% endif %}">
+        <td class="w-8 p-2 align-baseline">
+            <input type="checkbox" class="todo-toggle" data-id="{{ todo.pk }}" data-url="{% url 'todolist:todo_toggle' todo.pk %}" aria-label="Terminée : {{ todo.title }}"{% if todo.done %} checked{% endif %}>
+        </td>
+        <td class="p-2 align-baseline">
+            <div class="{{ row.level|indent_class }}">
+                <a href="{% url 'todolist:todo_detail' todo.pk %}">{{ todo.title }}</a>
+                {% if todo.to_validate %}<span class="text-sm text-slate-600">· à valider</span>{% endif %}
+                {% include "todolist/incoherence_flag.html" %}
+            </div>
+        </td>
+        <td class="p-2 align-middle">
+            <progress value="{{ todo.progress }}" max="100" class="{{ todo|progress_classes }}" aria-label="Avancement : {{ todo.progress }} %">{{ todo.progress }} %</progress>
+        </td>
+        <td class="whitespace-nowrap p-2 align-baseline text-sm {{ todo|remaining_class }}">{{ todo|remaining_text }}</td>
+        <td class="whitespace-nowrap p-2 align-baseline text-sm">{% if todo.due_date %}{% date_time todo.due_date "court" %}{% else %}—{% endif %}</td>
+    </tr>
+{% endwith %}

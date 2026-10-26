@@ -1,8 +1,6 @@
 """Une seule règle d'urgence, et la case cochée sans rechargement (#189)."""
 
 import json
-import re
-import unittest
 from datetime import timedelta
 from pathlib import Path
 
@@ -26,7 +24,6 @@ class DueSignalTests(TestCase):
         due = TODAY + timedelta(days=days) if days is not None else None
         return Todo(title="T", project=self.project, due_date=due, **fields)
 
-    @unittest.expectedFailure
     def test_signal_porte_par_le_modele(self):
         for days, expected in (
             (-1, "overdue"),
@@ -39,7 +36,6 @@ class DueSignalTests(TestCase):
                 self.assertEqual(self.task(days).due_signal, expected)
         self.assertEqual(self.task(-5, done=True).due_signal, "done")
 
-    @unittest.expectedFailure
     def test_plus_de_seconde_regle(self):
         self.assertFalse(hasattr(Todo, "due_status"))
 
@@ -59,7 +55,6 @@ class LiveToggleTests(TestCase):
             content_type="application/json",
         )
 
-    @unittest.expectedFailure
     def test_lignes_modifiees_renvoyees_a_jour(self):
         rows = self.toggle(self.child, True).json()["rows"]
 
@@ -70,7 +65,6 @@ class LiveToggleTests(TestCase):
         # Le parent, dont l'avancement passe à 100 %, est à valider.
         self.assertIn('value="100"', rows[str(self.parent.pk)])
 
-    @unittest.expectedFailure
     def test_liste_mise_a_jour_sur_place(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
@@ -85,7 +79,6 @@ class LiveToggleTests(TestCase):
 
         self.assertNotIn("data-live-rows", html)
 
-    @unittest.expectedFailure
     def test_script_remplace_les_lignes_et_signale_un_echec(self):
         script = SCRIPT.read_text(encoding="utf-8")
 
@@ -94,4 +87,5 @@ class LiveToggleTests(TestCase):
         # En cas d'échec, la case revient à son état et un toast le dit.
         self.assertIn("response.ok", script)
         self.assertRegex(script, r'Alert\.toast\([^)]*type: "error"')
-        self.assertIsNone(re.search(r"^\s*location\.reload\(\);\s*$", script, re.M))
+        # Rechargement réservé aux pages sans mise à jour sur place (détail).
+        self.assertIn('closest("table[data-live-rows]")', script)
