@@ -158,6 +158,127 @@ class SetextHeadingTests(SimpleTestCase):
         self.assertHTMLEqual(render_markdown("## Titre"), "<h2>Titre</h2>")
 
 
+class SubListRenderingTests(SimpleTestCase):
+    """Sous-listes imbriquées comme dans Quarto (#229).
+
+    Règle de Pandoc : un élément est imbriqué si son marqueur commence au moins
+    à la colonne du texte de l'élément parent (2 après « - », 3 après « 1. »).
+    Les résultats attendus sont ceux de Pandoc.
+    """
+
+    def test_puce_indentee_de_2_espaces(self):
+        html = render_markdown("- a\n  - b\n- c")
+
+        self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>")
+
+    def test_puce_indentee_de_3_espaces(self):
+        html = render_markdown("- a\n   - b")
+
+        self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li></ul></li></ul>")
+
+    def test_puce_indentee_de_4_espaces(self):
+        html = render_markdown("- a\n    - b")
+
+        self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li></ul></li></ul>")
+
+    def test_puce_indentee_de_1_espace_au_meme_niveau(self):
+        html = render_markdown("- a\n - b")
+
+        self.assertHTMLEqual(html, "<ul><li>a</li><li>b</li></ul>")
+
+    def test_trois_niveaux_puis_retour(self):
+        html = render_markdown("- a\n  - b\n    - c\n  - d")
+
+        self.assertHTMLEqual(
+            html,
+            "<ul><li>a<ul><li>b<ul><li>c</li></ul></li><li>d</li></ul></li></ul>",
+        )
+
+    def test_retour_sous_la_colonne_de_la_sous_liste(self):
+        # « c » est sous la colonne du texte de « b », mais pas sous celle de « a ».
+        html = render_markdown("- a\n    - b\n  - c")
+
+        self.assertHTMLEqual(html, "<ul><li>a<ul><li>b</li><li>c</li></ul></li></ul>")
+
+    def test_puce_sous_un_numero_alignee_sur_le_texte(self):
+        html = render_markdown("1. a\n   - b\n2. c")
+
+        self.assertHTMLEqual(html, "<ol><li>a<ul><li>b</li></ul></li><li>c</li></ol>")
+
+    def test_puce_sous_un_numero_avant_le_texte_hors_de_la_liste(self):
+        html = render_markdown("1. a\n  - b\n2. c")
+
+        self.assertHTMLEqual(
+            html, '<ol><li>a</li></ol><ul><li>b</li></ul><ol start="2"><li>c</li></ol>'
+        )
+
+    def test_numero_sous_un_numero_avant_le_texte_au_meme_niveau(self):
+        html = render_markdown("1. a\n  1. b\n2. c")
+
+        self.assertHTMLEqual(html, "<ol><li>a</li><li>b</li><li>c</li></ol>")
+
+    def test_marqueur_a_deux_chiffres(self):
+        self.assertHTMLEqual(
+            render_markdown("10. a\n    - b"),
+            '<ol start="10"><li>a<ul><li>b</li></ul></li></ol>',
+        )
+        self.assertHTMLEqual(
+            render_markdown("10. a\n   - b"),
+            '<ol start="10"><li>a</li></ol><ul><li>b</li></ul>',
+        )
+
+    def test_liste_numerotee_sous_une_puce(self):
+        html = render_markdown("- a\n  1. b\n  2. c")
+
+        self.assertHTMLEqual(html, "<ul><li>a<ol><li>b</li><li>c</li></ol></li></ul>")
+
+    def test_paragraphe_aligne_sur_le_texte_de_l_element(self):
+        html = render_markdown("- a\n\n  suite\n- c")
+
+        self.assertHTMLEqual(
+            html, "<ul><li><p>a</p><p>suite</p></li><li><p>c</p></li></ul>"
+        )
+
+    def test_code_indente_dans_un_element(self):
+        html = render_markdown("- a\n\n      code\n- c")
+
+        self.assertHTMLEqual(
+            html,
+            "<ul><li><p>a</p><pre><code>code\n</code></pre></li><li><p>c</p></li></ul>",
+        )
+
+    def test_marqueur_sous_la_colonne_du_texte_et_a_4_espaces_reste_du_texte(self):
+        # « 1. c » n'atteint pas le texte de « 2. b » (colonne 5) : à 4 espaces
+        # du bord, il n'ouvre pas d'élément et s'ajoute au texte de « b ».
+        html = render_markdown("1. a\n  2. b\n    1. c")
+
+        self.assertHTMLEqual(html, "<ol><li>a</li><li>b\n1. c</li></ol>")
+
+    def test_marqueur_a_4_espaces_au_dela_du_texte(self):
+        self.assertHTMLEqual(
+            render_markdown("- a\n      - b"), "<ul><li>a\n- b</li></ul>"
+        )
+        # Après une ligne vide, c'est du code dans l'élément.
+        self.assertInHTML(
+            "<pre><code>- b\n</code></pre>", render_markdown("- a\n\n      - b")
+        )
+
+    def test_sous_liste_dans_un_callout(self):
+        html = render_markdown("::: {.callout-note}\n- a\n  - b\n:::")
+
+        self.assertInHTML("<ul><li>a<ul><li>b</li></ul></li></ul>", html)
+
+    def test_liste_collee_a_un_paragraphe_reste_du_texte(self):
+        html = render_markdown("Texte\n- a\n  - b")
+
+        self.assertNotIn("<li>", html)
+
+    def test_bloc_de_code_delimite_inchange(self):
+        html = render_markdown("```\n- a\n  - b\n```")
+
+        self.assertIn("<code>- a\n  - b\n</code>", html)
+
+
 class CalloutRenderingTests(SimpleTestCase):
     def test_titre_en_attribut(self):
         html = render_markdown(

@@ -26,11 +26,107 @@ class NoSetextHeadingsExtension(markdown.Extension):
         md.parser.blockprocessors.deregister("setextheader")
 
 
+# Élément de liste : indentation, puce ou numéro, espaces avant le texte.
+LIST_ITEM_REGEX = re.compile(r"^(?P<indent> *)(?P<marker>[-*+]|\d+[.)])(?P<space> +|$)")
+ATX_HEADING_REGEX = re.compile(r"^#{1,6}(\s|$)")
+# Pas d'indentation de Python-Markdown : un niveau de liste, un bloc de code.
+MARKDOWN_INDENT = 4
+
+
+class PandocListsExtension(markdown.Extension):
+    """Imbrique les listes selon la règle de Pandoc, celle de Quarto (#229).
+
+    Pour Pandoc, un élément est imbriqué si son marqueur commence au moins à la
+    colonne du texte de l'élément parent : 2 espaces après « - », 3 après « 1. ».
+    Python-Markdown n'imbrique qu'à 4 espaces : le prétraitement réindente les
+    listes par multiples de 4, en gardant le décalage du code indenté.
+
+    Python-Markdown découpe le texte en blocs aux lignes vides : une ligne vide
+    est ajoutée avant un élément qui change de type de liste (Pandoc commence
+    alors une autre liste), ou qui suit un paragraphe de suite d'un élément.
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        # Après fenced_code (25) : un bloc de code délimité est déjà mis de côté.
+        md.preprocessors.register(PandocListsPreprocessor(md), "pandoc_lists", 24)
+
+
+class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
+    def run(self, lines: list[str]) -> list[str]:
+        # Éléments ouverts, du plus extérieur au plus intérieur : colonne de leur
+        # texte et type de liste. Un élément de niveau n s'écrit avec 4 × n espaces.
+        items: list[tuple[int, bool]] = []
+        previous_blank = True
+        in_paragraph_after_blank = False
+        result = []
+
+        for line in lines:
+            if not line.strip():
+                result.append(line)
+                previous_blank = True
+                continue
+
+            indent = len(line) - len(line.lstrip(" "))
+            # Niveau de la ligne : nombre d'éléments ouverts dont elle atteint le
+            # texte. Les colonnes croissent de l'extérieur vers l'intérieur.
+            depth = sum(1 for column, _ in items if indent >= column)
+            container = items[depth - 1][0] if depth else 0
+            item = LIST_ITEM_REGEX.match(line)
+            # À 4 espaces au-delà du texte du parent, un marqueur n'ouvre plus
+            # d'élément : la ligne est du code, ou la suite du texte précédent.
+            if item and indent < container + MARKDOWN_INDENT:
+                sibling = items[depth] if depth < len(items) else None
+                items = items[:depth]
+                ordered = item.group("marker")[0].isdigit()
+                new_list = sibling is not None and sibling[1] != ordered
+                if (new_list or in_paragraph_after_blank) and not previous_blank:
+                    result.append("")
+                marker_end = indent + len(item.group("marker"))
+                space = len(item.group("space"))
+                # Au-delà de 4 espaces, le texte est du code indenté : Pandoc
+                # place alors la colonne du texte juste après le marqueur.
+                text_column = marker_end + (space if 0 < space <= 4 else 1)
+                result.append(" " * (MARKDOWN_INDENT * depth) + line[indent:])
+                items.append((text_column, ordered))
+                in_paragraph_after_blank = False
+            else:
+                if item and items and not previous_blank:
+                    # Suite du texte de l'élément : le marqueur reste du texte.
+                    line = escape_list_marker(item, line)
+                if depth:
+                    shift = MARKDOWN_INDENT * depth + indent - container
+                    result.append(" " * shift + line[indent:])
+                    in_paragraph_after_blank = (
+                        in_paragraph_after_blank or previous_blank
+                    )
+                else:
+                    # Ligne qui suit le texte de l'élément (continuation paresseuse),
+                    # ou qui ferme les listes après une ligne vide ou en titre.
+                    if previous_blank or ATX_HEADING_REGEX.match(line):
+                        items = []
+                        in_paragraph_after_blank = False
+                    result.append(line)
+            previous_blank = False
+
+        return result
+
+
+def escape_list_marker(item: re.Match[str], line: str) -> str:
+    """Échappe le marqueur de liste d'une ligne : « 1\\. » ou « \\- »."""
+    marker = item.group("marker")
+    escaped = f"{marker[:-1]}\\{marker[-1]}"
+    return line[: item.start("marker")] + escaped + line[item.end("marker") :]
+
+
 MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     "fenced_code",
     "tables",
     "attr_list",
+    # Un changement de type de liste (numéros, puces) commence une autre liste,
+    # et une liste numérotée garde son premier numéro, comme dans Pandoc.
+    "sane_lists",
     NoSetextHeadingsExtension(),
+    PandocListsExtension(),
 ]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
