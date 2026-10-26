@@ -267,6 +267,8 @@ Les images sont importées séparément (bouton d'import, liste sur `/note_takin
 
 Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
 
+Une image désignée par une adresse externe (`![Légende](https://…)`) n'est pas une image importée : elle ne bloque pas l'analyse, et elle n'est pas chargée. Elle s'affiche comme un lien vers son adresse, avec sa légende pour texte, pour que le navigateur ne contacte aucun serveur tiers (#220).
+
 Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
 
 Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaque enregistrement de la note). Une image utilisée par une note ne peut pas être supprimée.

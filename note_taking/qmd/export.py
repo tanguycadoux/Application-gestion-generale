@@ -7,13 +7,12 @@ racine, images/<nom> à côté. Dézippée, elle forme un projet Quarto valide.
 import re
 import zipfile
 from collections.abc import Iterable
-from pathlib import PurePosixPath
 from typing import IO
 
 from images.models import Image
 
 from ..models import Note
-from ..rendering import EXTERNAL_URL_REGEX, IMAGE_PATH_REGEX
+from ..rendering import IMAGE_PATH_REGEX, image_name
 from .parser import FRONT_MATTER_DELIMITER
 
 IMAGES_DIR = "images"
@@ -42,13 +41,6 @@ def normalize_image_paths(body: str) -> str:
         return match.group(0).replace(match.group("path"), f"{IMAGES_DIR}/{name}")
 
     return IMAGE_PATH_REGEX.sub(repl, body)
-
-
-def image_name(path: str) -> str | None:
-    """Nom de fichier d'un chemin d'image, ou None pour une URL externe."""
-    if EXTERNAL_URL_REGEX.match(path):
-        return None
-    return PurePosixPath(path.replace("\\", "/")).name
 
 
 def write_notes_archive(output: IO[bytes]) -> None:

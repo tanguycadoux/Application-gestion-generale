@@ -1,7 +1,6 @@
 """Services de note : import, mise à jour, note parts et images."""
 
 from datetime import date
-from pathlib import Path
 
 from django.db import transaction
 
@@ -17,7 +16,7 @@ from .exceptions import (
 from .models import Note, NotePart
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import ParsedNote, parse_note
-from .rendering import IMAGE_PATH_REGEX
+from .rendering import IMAGE_PATH_REGEX, image_name
 from .signals import note_parts_processed
 
 
@@ -114,7 +113,10 @@ def replace_image_paths(content: str) -> tuple[str, list[Image]]:
 
     def repl(match):
         path = match.group("path")
-        name = Path(path).name
+        name = image_name(path)
+        if name is None:
+            # URL externe : pas une image importée, affichée en lien (#220).
+            return match.group(0)
 
         try:
             image_obj = Image.objects.get(name=name)

@@ -5,8 +5,6 @@ s'affiche comme un lien vers son adresse (aucune requête vers l'extérieur).
 Le nom d'une image importée se tire de son chemin de la même façon partout.
 """
 
-import unittest
-
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -14,13 +12,13 @@ from core.models import Project
 from images.models import Image
 from note_taking.models import Note, NotePart
 from note_taking.qmd.export import note_to_qmd
+from note_taking.rendering import image_name
 from note_taking.services import process_note_parts
 
 URL = "https://example.com/logo.png"
 
 
 class ExternalImageAnalysisTests(TestCase):
-    @unittest.expectedFailure
     def test_image_externe_analysee(self):
         note = Note.objects.create(date="2025-11-24", body=f"# P\n![Logo]({URL})")
 
@@ -45,20 +43,17 @@ class ExternalImageRenderingTests(TestCase):
     def render_part(self, content: str) -> str:
         return NotePart(project=Project(name="P"), content=content).rendered_content()
 
-    @unittest.expectedFailure
     def test_note_part_lien_au_lieu_de_l_image(self):
         html = self.render_part(f"![Logo]({URL})")
 
         self.assertInHTML(f'<a href="{URL}">Logo</a>', html)
         self.assertNotIn("<img", html)
 
-    @unittest.expectedFailure
     def test_legende_vide_lien_sur_l_adresse(self):
         html = self.render_part(f"![]({URL})")
 
         self.assertInHTML(f'<a href="{URL}">{URL}</a>', html)
 
-    @unittest.expectedFailure
     def test_note_complete_lien_au_lieu_de_l_image(self):
         note = Note.objects.create(date="2025-11-24", body=f"![Logo]({URL})")
 
@@ -76,10 +71,7 @@ class ExternalImageRenderingTests(TestCase):
 class ImageNameTests(SimpleTestCase):
     """Une seule règle, pour l'analyse, le rendu et l'export."""
 
-    @unittest.expectedFailure
     def test_nom_tire_du_chemin(self):
-        from note_taking.rendering import image_name
-
         for path, expected in (
             ("banc.png", "banc.png"),
             ("images/banc.png", "banc.png"),
