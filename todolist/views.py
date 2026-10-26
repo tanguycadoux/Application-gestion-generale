@@ -16,7 +16,9 @@ from django.views.generic import (
     UpdateView,
 )
 
+from core.models import Section
 from core.month_calendar import requested_month
+from core.sections import path_labels, with_descendants
 from core.templatetags.ui import date_text
 from note_taking.models import Note
 
@@ -55,10 +57,24 @@ def parse_date_param(value: str):
         return None
 
 
+def selected_section(value: str) -> Section | None:
+    """La section du paramètre `?chemin=`, ou None s'il manque ou n'existe pas."""
+    try:
+        pk = int(value)
+    except ValueError:
+        return None
+    return Section.objects.filter(pk=pk).first()
+
+
 def todo_list(request):
     """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
-    les arbres dont la racine est terminée dans une section repliée."""
-    groups = task_groups()
+    les arbres dont la racine est terminée dans une section repliée.
+
+    `?chemin=<id>` ne garde que les tâches de ce niveau et de ses descendants,
+    chacune sous ses parents atténués (#298).
+    """
+    section = selected_section(request.GET.get("chemin", ""))
+    groups = task_groups(with_descendants({section.pk}) if section else None)
     rows = dismissed_rows()
     for row in rows:
         # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
@@ -72,6 +88,10 @@ def todo_list(request):
             "pending_groups": [g for g in groups if not g.root.done],
             "done_groups": [g for g in groups if g.root.done],
             "dismissed_rows": rows,
+            "section": section,
+            "path_choices": sorted(
+                path_labels().items(), key=lambda item: item[1].casefold()
+            ),
         },
     )
 

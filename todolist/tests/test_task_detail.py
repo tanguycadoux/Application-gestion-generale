@@ -48,10 +48,10 @@ class TaskDetailTests(TestCase):
         fiche = definitions(self.get(self.task))
 
         self.assertEqual(
-            {key: fiche.get(key) for key in ("Projet", "Sujet", "Tags", "Priorité")},
+            {key: fiche.get(key) for key in ("Projet", "Chemin", "Tags", "Priorité")},
             {
                 "Projet": "ASTERICS",
-                "Sujet": "Réunion",
+                "Chemin": "Réunion",
                 "Tags": "urgent",
                 "Priorité": "Haute",
             },
@@ -74,7 +74,7 @@ class TaskDetailTests(TestCase):
 
         fiche = definitions(self.get(task))
 
-        self.assertEqual(fiche["Sujet"], "Aucun")
+        self.assertEqual(fiche["Chemin"], "Aucun")
         self.assertEqual(fiche["Échéance"], "Aucune")
         self.assertNotIn("Tags", fiche)
         self.assertNotIn("Tâche parente", fiche)

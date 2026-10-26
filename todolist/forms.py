@@ -1,12 +1,35 @@
 from django import forms
 from django.forms import modelformset_factory
 
-from core.forms import SectionChoiceField
+from core.forms import SectionPathField, section_path_text
+from core.sections import section_for
 
 from .models import Todo
 
 
-class TodoForm(forms.ModelForm):
+class SectionPathForm(forms.ModelForm):
+    """Formulaire d'une tâche dont le chemin se saisit en texte (#298), sous le
+    projet choisi : un chemin inconnu est créé à l'enregistrement, pas avant."""
+
+    section_path = SectionPathField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial["section_path"] = section_path_text(self.instance.section)
+
+    def save(self, commit=True):
+        todo = super().save(commit=False)
+        todo.section = section_for(
+            self.cleaned_data["project"], self.cleaned_data["section_path"]
+        )
+        if commit:
+            todo.save()
+            self.save_m2m()
+        return todo
+
+
+class TodoForm(SectionPathForm):
     class Meta:
         model = Todo
         fields = [
@@ -17,11 +40,10 @@ class TodoForm(forms.ModelForm):
             "priority",
             "due_date",
             "project",
-            "section",
+            "section_path",
             "tags",
             "parent",
         ]
-        field_classes = {"section": SectionChoiceField}
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
             "progress": forms.NumberInput(attrs={"min": 0, "max": 100}),
@@ -42,14 +64,13 @@ class TodoForm(forms.ModelForm):
             )
 
 
-class NoteReviewForm(forms.ModelForm):
+class NoteReviewForm(SectionPathForm):
     """Ligne du bilan d'une note (#239) : ce qui se règle juste après la création
     d'une tâche, l'échéance surtout."""
 
     class Meta:
         model = Todo
-        fields = ["due_date", "priority", "project", "section"]
-        field_classes = {"section": SectionChoiceField}
+        fields = ["due_date", "priority", "project", "section_path"]
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
         }

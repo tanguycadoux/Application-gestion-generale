@@ -18,6 +18,8 @@ class TaskRow:
     task: Todo
     level: int
     has_children: bool
+    # Gardée pour le contexte d'un filtre sans y répondre : affichée atténuée.
+    muted: bool = False
 
 
 @dataclass
@@ -49,12 +51,37 @@ def children_map() -> dict[int | None, list[Todo]]:
 
 
 def subtree_rows(
-    task: Todo, children: dict[int | None, list[Todo]], level: int
+    task: Todo,
+    children: dict[int | None, list[Todo]],
+    level: int,
+    matching: set[int] | None = None,
 ) -> list[TaskRow]:
-    rows = [TaskRow(task, level, bool(children.get(task.pk)))]
+    muted = matching is not None and task.pk not in matching
+    rows = [TaskRow(task, level, bool(children.get(task.pk)), muted)]
     for child in children.get(task.pk, []):
-        rows += subtree_rows(child, children, level + 1)
+        rows += subtree_rows(child, children, level + 1, matching)
     return rows
+
+
+def restrict_to_sections(
+    children: dict[int | None, list[Todo]], section_ids: set[int]
+) -> tuple[dict[int | None, list[Todo]], set[int]]:
+    """Ne garde que les tâches de ces sections et leurs parents, pour qu'une tâche
+    reste sous son parent dans l'arbre (#298). Renvoie l'arbre restreint et les
+    tâches qui répondent au filtre."""
+    tasks = [task for tasks in children.values() for task in tasks]
+    matching = {task.pk for task in tasks if task.section_id in section_ids}
+    keep = set(matching)
+    by_id = {task.pk: task for task in tasks}
+    for pk in matching:
+        parent = by_id[pk].parent_id
+        while parent is not None and parent not in keep:
+            keep.add(parent)
+            parent = by_id[parent].parent_id
+    restricted: dict[int | None, list[Todo]] = defaultdict(list)
+    for parent_id, siblings in children.items():
+        restricted[parent_id] = [task for task in siblings if task.pk in keep]
+    return restricted, matching
 
 
 def earliest_pending_due(rows: list[TaskRow]) -> date | None:
@@ -64,12 +91,19 @@ def earliest_pending_due(rows: list[TaskRow]) -> date | None:
     return min(dues) if dues else rows[0].task.due_date
 
 
-def task_groups() -> list[TaskGroup]:
-    """Un groupe par tâche racine, racines triées par échéance la plus proche."""
+def task_groups(section_ids: set[int] | None = None) -> list[TaskGroup]:
+    """Un groupe par tâche racine, racines triées par échéance la plus proche.
+
+    Avec `section_ids`, seules les tâches de ces sections (et leurs parents, pour
+    le contexte, atténués) sont gardées.
+    """
     children = children_map()
+    matching = None
+    if section_ids is not None:
+        children, matching = restrict_to_sections(children, section_ids)
     groups = []
     for root in children.get(None, []):
-        groups.append(TaskGroup(root, subtree_rows(root, children, 0)))
+        groups.append(TaskGroup(root, subtree_rows(root, children, 0, matching)))
 
     def group_key(group: TaskGroup) -> tuple:
         due = earliest_pending_due(group.rows)
