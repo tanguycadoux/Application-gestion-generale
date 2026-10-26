@@ -3,19 +3,15 @@
 import shutil
 import tempfile
 
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import ProtectedError
 from django.test import TestCase, override_settings
 
 from images.services import import_image
+from images.tests.files import image_file
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 
 MEDIA_ROOT = tempfile.mkdtemp()
-
-
-def image_file(name: str) -> SimpleUploadedFile:
-    return SimpleUploadedFile(name, b"image", content_type="image/png")
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)

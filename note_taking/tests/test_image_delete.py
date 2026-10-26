@@ -5,13 +5,13 @@ import tempfile
 
 from django.contrib.messages import get_messages
 from django.contrib.staticfiles import finders
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.models import Project
 from images.models import Image
 from images.services import import_image
+from images.tests.files import image_file
 from note_taking.models import Note, NotePart, NotePartImageLink
 
 MEDIA_ROOT = tempfile.mkdtemp()
@@ -25,7 +25,7 @@ class ImageDeleteTests(TestCase):
         shutil.rmtree(MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
-        self.image = import_image(SimpleUploadedFile("banc.png", b"image"))
+        self.image = import_image(image_file("banc.png"))
 
     def use(self, note_date: str = "2025-11-24") -> None:
         note = Note.objects.get_or_create(date=note_date)[0]

@@ -6,15 +6,14 @@ import tempfile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
-from images.exceptions import ImageAlreadyExistsError
+from images.exceptions import ImageAlreadyExistsError, InvalidImageError
 from images.models import Image
 from images.services import import_image
+from images.tests.files import image_file, png
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
-
-def image_file(name: str) -> SimpleUploadedFile:
-    return SimpleUploadedFile(name, b"image", content_type="image/png")
+SVG = b'<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>'
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
@@ -44,6 +43,27 @@ class ImportImageTests(TestCase):
         with self.assertRaisesMessage(ImageAlreadyExistsError, "existe déjà"):
             import_image(image_file("banc.png"))
         self.assertEqual(Image.objects.count(), 1)
+
+    def test_fichier_qui_n_est_pas_une_image_refuse(self):
+        """#224 : le contenu est vérifié, pas seulement l'extension."""
+        for name, data in (
+            ("faux.png", b"du texte"),
+            ("tronquee.png", png()[:30]),
+            ("faux.svg", b"pas du XML"),
+            ("page.svg", b"<html><body/></html>"),
+        ):
+            with self.subTest(name=name):
+                with self.assertRaisesMessage(InvalidImageError, name):
+                    import_image(SimpleUploadedFile(name, data))
+                self.assertFalse(Image.objects.filter(name=name).exists())
+
+    def test_svg_importe(self):
+        image = import_image(SimpleUploadedFile("schema.svg", SVG))
+
+        self.assertTrue(image.is_vector)
+        image.file.open("rb")
+        with image.file:
+            self.assertEqual(image.file.read(), SVG)
 
 
 DELETE_MEDIA_ROOT = tempfile.mkdtemp()

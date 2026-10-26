@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from images.models import Image
 from images.services import import_image
+from images.tests.files import image_file, png
 from note_taking.models import Note
 
 MEDIA_ROOT = tempfile.mkdtemp()
@@ -22,10 +23,6 @@ def qmd(note_date: str, body: str) -> bytes:
 
 def qmd_file(note_date: str, body: str, name: str = "") -> SimpleUploadedFile:
     return SimpleUploadedFile(name or f"{note_date}.qmd", qmd(note_date, body))
-
-
-def image_file(name: str, data: bytes = b"image") -> SimpleUploadedFile:
-    return SimpleUploadedFile(name, data, content_type="image/png")
 
 
 def archive(name: str = "notes.zip", **entries: bytes) -> SimpleUploadedFile:
@@ -58,7 +55,7 @@ class ImportArchiveTests(ImportTestCase):
             archive(
                 **{
                     "2025-11-24.qmd": qmd("2025-11-24", "# P\n![A](images/banc.png)"),
-                    "images__banc.png": b"banc",
+                    "images__banc.png": png("banc"),
                 }
             )
         )
@@ -81,13 +78,13 @@ class ImportArchiveTests(ImportTestCase):
         self.assertEqual(existing.body, "# P\nVersion en base")
 
     def test_image_existante_gardee(self):
-        image = import_image(image_file("banc.png", b"en base"))
+        image = import_image(image_file("banc.png", "en base"))
 
-        report = self.run_import(archive(**{"images__banc.png": b"archive"}))
+        report = self.run_import(archive(**{"images__banc.png": png("archive")}))
 
         self.assertEqual(report.images_kept, ["banc.png"])
         with image.file.open("rb") as file:
-            self.assertEqual(file.read(), b"en base")
+            self.assertEqual(file.read(), png("en base"))
         self.assertEqual(Image.objects.count(), 1)
 
     def test_une_note_en_erreur_n_empeche_pas_les_autres(self):
@@ -111,7 +108,7 @@ class ImportArchiveTests(ImportTestCase):
             archive(
                 **{
                     "notes__2025-11-24.qmd": qmd("2025-11-24", "# P\nx"),
-                    "images__sous__c.png": b"c",
+                    "images__sous__c.png": png("c"),
                     "LISEZMOI.txt": b"x",
                 }
             )
@@ -140,7 +137,7 @@ class ImportArchiveTests(ImportTestCase):
     def test_export_puis_reimport_dans_une_base_vide(self):
         from note_taking.qmd.export import write_notes_archive
 
-        import_image(image_file("banc.png", b"banc"))
+        import_image(image_file("banc.png", "banc"))
         Note.objects.create(date="2025-11-24", body="# P\r\n![A](images/banc.png)\r\n")
         buffer = io.BytesIO()
         write_notes_archive(buffer)
@@ -178,10 +175,20 @@ class ImportFilesTests(ImportTestCase):
         note = Note.objects.get(date="2025-11-24")
         self.assertEqual(note.parts.get().images.get().name, "banc.png")
 
-    def test_image_deja_en_base_gardee_sans_doublon(self):
-        import_image(image_file("banc.png", b"en base"))
+    def test_image_invalide_signalee_sans_bloquer_les_autres(self):
+        """#224 : un fichier image illisible est en erreur, les autres sont importés."""
+        report = self.run_import(
+            SimpleUploadedFile("faux.png", b"du texte"), image_file("banc.png")
+        )
 
-        report = self.run_import(image_file("banc.png", b"nouvelle"))
+        self.assertEqual([name for name, _ in report.images_failed], ["faux.png"])
+        self.assertEqual(report.images_imported, ["banc.png"])
+        self.assertFalse(Image.objects.filter(name="faux.png").exists())
+
+    def test_image_deja_en_base_gardee_sans_doublon(self):
+        import_image(image_file("banc.png", "en base"))
+
+        report = self.run_import(image_file("banc.png", "nouvelle"))
 
         self.assertEqual(report.images_kept, ["banc.png"])
         self.assertEqual(report.failed, [])
