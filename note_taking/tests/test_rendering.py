@@ -63,8 +63,8 @@ class LayoutRenderingTests(SimpleTestCase):
             html,
             '<figure class="my-2" id="fig-banc">'
             '<div class="grid grid-cols-2 gap-4 items-start">'
-            '<div class="min-w-0"><p><img alt="A" src="a.png"></p></div>'
-            '<div class="min-w-0"><p><img alt="B" id="fig-banc-b" src="b.png"></p></div>'
+            '<div class="min-w-0"><p><img loading="lazy" decoding="async" alt="A" src="a.png"></p></div>'
+            '<div class="min-w-0"><p><img loading="lazy" decoding="async" alt="B" id="fig-banc-b" src="b.png"></p></div>'
             "</div>"
             '<figcaption class="mt-2 text-sm text-center text-slate-600">'
             "<p>Légende du <em>banc</em></p>"
@@ -281,14 +281,18 @@ class NoteMarkdownViewTests(TestCase):
         response = self.get("![Banc](images/banc.png){width=80%}")
 
         self.assertContains(
-            response, f'<img alt="Banc" src="{image.file.url}" width="80%">', html=True
+            response,
+            f'<img loading="lazy" decoding="async" alt="Banc" src="{image.file.url}" width="80%">',
+            html=True,
         )
 
     def test_image_inconnue_remplacee(self):
         response = self.get("![Banc](images/inconnue.png)")
 
         self.assertContains(
-            response, f'<img alt="Banc" src="{static(IMAGE_MISSING_PATH)}">', html=True
+            response,
+            f'<img loading="lazy" decoding="async" alt="Banc" src="{static(IMAGE_MISSING_PATH)}">',
+            html=True,
         )
 
     def test_bloc_metadata_retire(self):

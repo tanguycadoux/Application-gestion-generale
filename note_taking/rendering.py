@@ -127,6 +127,8 @@ ALLOWED_ATTRIBUTES = {
     "th": {"style", "colspan", "rowspan"},
     "td": {"style", "colspan", "rowspan"},
 }
+IMG_TAG_REGEX = re.compile(r"<img\b")
+
 ALLOWED_URL_SCHEMES = {"http", "https", "mailto"}
 # Alignement des colonnes de tableau, produit par l'extension tables.
 ALLOWED_STYLE_PROPERTIES = {"text-align"}
@@ -169,7 +171,16 @@ def render_plain_markdown(text: str) -> str:
     Le HTML des blocs Quarto (callouts, grilles, colonnes) est construit autour,
     à partir de valeurs échappées ou contrôlées, et n'a pas à être filtré.
     """
-    return sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
+    html = sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
+    return lazy_images(html)
+
+
+def lazy_images(html: str) -> str:
+    """Images chargées et décodées à la demande, près de l'écran (#225).
+
+    Appliqué au HTML filtré : `<img` n'y est que le début d'une balise.
+    """
+    return IMG_TAG_REGEX.sub('<img loading="lazy" decoding="async"', html)
 
 
 def sanitize_html(html: str) -> str:
