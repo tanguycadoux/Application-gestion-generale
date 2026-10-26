@@ -29,6 +29,9 @@ jobs:
       - name: Typage (mypy)
         run: mypy .
 
+      - name: Gabarits (djlint)
+        run: djlint --lint core images note_taking todolist
+
       - name: Migrations à jour
         run: python manage.py makemigrations --check --dry-run
 
@@ -42,8 +45,11 @@ jobs:
       - name: Installation du validateur HTML
         run: test -f .vnu/vnu.jar || python manage.py install_validator
 
-      - name: Tests
-        run: python manage.py test
+      - name: Tests, avec la couverture
+        run: coverage run manage.py test
+
+      - name: Couverture
+        run: coverage report
 
   tailwind:
     runs-on: ubuntu-latest
