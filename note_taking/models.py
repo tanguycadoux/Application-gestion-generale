@@ -55,6 +55,9 @@ class NotePart(models.Model):
         Image, through="NotePartImageLink", related_name="note_parts", blank=True
     )
     content = models.TextField(blank=True, default="")
+    # Titres de la section, du projet au plus profond, séparés par « › » : les
+    # tâches issues des notes s'y repèrent (#240).
+    heading_path = models.TextField(blank=True, default="")
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

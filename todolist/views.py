@@ -3,7 +3,8 @@ from datetime import date
 
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import Http404, JsonResponse
+from django.db import transaction
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -19,9 +20,10 @@ from core.month_calendar import requested_month
 from core.templatetags.ui import date_text
 from note_taking.models import Note
 
-from .forms import NoteReviewFormSet, TodoForm
+from .forms import GoneLineFormSet, NoteReviewFormSet, TodoForm
 from .gantt import gantt_chart
 from .models import Todo
+from .services import note_lines, note_todos_to_review, remove_task, replace_task
 from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
@@ -130,7 +132,11 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
     def form_valid(self, form):
         # Compté avant la suppression, qui emporte les sous-tâches (#223).
         self.subtasks = self.object.descendants_count()
-        return super().form_valid(form)
+        success_url = self.get_success_url()
+        # Une tâche issue d'une note est écartée, pas supprimée (#240).
+        remove_task(self.object)
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(success_url)
 
     def get_success_message(self, cleaned_data):
         title = self.object.title
@@ -172,33 +178,73 @@ def toggle_todo(request, pk):
 
 
 def note_review(request, note_date: str):
-    """Bilan des tâches créées par l'enregistrement d'une note (#239) : leurs
-    échéance, priorité, projet et sujet se règlent aussitôt, puis retour à la note.
+    """Bilan des tâches à revoir d'une note (#239, #240), puis retour à la note.
 
-    Les tâches sont désignées par `?ids=` ; seules celles issues de cette note
-    sont retenues. Sans tâche, retour direct à la note.
+    - Tâches dont la ligne est dans la note (nouvelles, ou laissées « plus
+      tard ») : échéance, priorité, projet et sujet se règlent aussitôt.
+    - Tâches dont la ligne a disparu : la garder, l'écarter, ou la remplacer par
+      la tâche d'une nouvelle ligne.
+
+    Enregistrer les rend revues ; sans tâche à revoir, retour direct à la note.
     """
     day = parse_date_param(note_date)
     if day is None:
         raise Http404("Date invalide.")
     note = get_object_or_404(Note, date=day)
-    ids = [int(pk) for pk in request.GET.get("ids", "").split(",") if pk.isdigit()]
-    todos = (
-        Todo.objects.filter(pk__in=ids, created_from_note=True, note_part_date=day)
-        .select_related("project", "subject")
-        .order_by("pk")
+    todos = list(
+        note_todos_to_review(day).select_related("project", "subject").order_by("pk")
     )
-    if not todos.exists():
+    if not todos:
         return redirect("note_taking:note_detail", pk=note.pk)
 
-    formset = NoteReviewFormSet(request.POST or None, queryset=todos)
-    if request.method == "POST" and formset.is_valid():
-        formset.save()
+    lines = note_lines(note.parts.prefetch_related("tags"))
+    new_ids = [t.pk for t in todos if (t.note_path, t.note_part_text) in lines]
+    gone_ids = [t.pk for t in todos if t.pk not in new_ids]
+    new_todos = Todo.objects.filter(pk__in=new_ids).order_by("pk")
+    data = request.POST or None
+    new_formset = NoteReviewFormSet(data, queryset=new_todos, prefix="new")
+    gone_formset = GoneLineFormSet(
+        data,
+        queryset=Todo.objects.filter(pk__in=gone_ids).order_by("pk"),
+        prefix="gone",
+        form_kwargs={"replacements": new_todos},
+    )
+
+    if request.method == "POST" and new_formset.is_valid() and gone_formset.is_valid():
+        # Une tâche nouvelle qui en remplace une autre disparaît : ses réglages
+        # ne comptent pas, l'ancienne garde les siens.
+        replaced = {
+            form.cleaned_data["replacement"].pk
+            for form in gone_formset
+            if form.cleaned_data["action"] == "replace"
+        }
+        with transaction.atomic():
+            for form in new_formset:
+                if form.instance.pk not in replaced:
+                    todo = form.save(commit=False)
+                    todo.note_state = Todo.NoteState.REVIEWED
+                    todo.save()
+            save_gone_lines(gone_formset)
         messages.success(
             request,
             f"Les tâches de la note du {date_text(day, 'moyen')} sont enregistrées.",
         )
         return redirect("note_taking:note_detail", pk=note.pk)
     return render(
-        request, "todolist/note_review.html", {"note": note, "formset": formset}
+        request,
+        "todolist/note_review.html",
+        {"note": note, "new_formset": new_formset, "gone_formset": gone_formset},
     )
+
+
+def save_gone_lines(formset) -> None:
+    """Applique le choix fait pour chaque tâche dont la ligne a disparu."""
+    for form in formset:
+        todo, action = form.instance, form.cleaned_data["action"]
+        if action == "keep":
+            todo.note_state = Todo.NoteState.DETACHED
+            todo.save()
+        elif action == "dismiss":
+            remove_task(todo)
+        else:
+            replace_task(todo, form.cleaned_data["replacement"])

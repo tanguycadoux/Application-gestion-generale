@@ -262,11 +262,18 @@ Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) gén
 
 Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`, `[x]`) : une case cochée ne crée pas de tâche terminée (#222). Une ligne vide ou réduite à son marqueur est ignorée ; le titre est limité à 500 caractères.
 
-Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Le rattachement ne se fait qu'à la création de la tâche : une tâche déjà créée dont la ligne est indentée plus tard garde son parent.
+Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section sans `TODO`, puis lignes parentes) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
 
-Chaque TODO est rattachée au projet et au sujet de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+Chaque TODO est rattachée au projet et au sujet de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
 
-Quand l'enregistrement d'une note crée des tâches, une page bilan les présente aussitôt (#239) : échéance, priorité, projet et sujet s'y règlent pour chacune, puis « Enregistrer les tâches » revient à la note ; « Plus tard » y revient sans rien changer. Après un import, le compte rendu indique les tâches créées pour chaque note, avec un lien vers ce bilan.
+Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
+
+- les tâches de la note : échéance, priorité, projet et sujet s'y règlent pour chacune ;
+- les tâches dont la ligne a disparu, parce qu'elle a été modifiée, déplacée ou retirée : la garder, l'écarter, ou la remplacer par la tâche d'une nouvelle ligne, qui lui garde son avancement, son échéance et ses sous-tâches.
+
+« Enregistrer les tâches » les rend revues et revient à la note ; « Plus tard » y revient sans rien changer, et le bilan reviendra au prochain enregistrement.
+
+Supprimer une tâche issue d'une note l'**écarte** : elle n'est plus affichée, et la note ne la recrée pas.
 
 ### Images
 

@@ -1,51 +1,97 @@
 {% extends "todolist/base.html" %}
 {% load ui %}
 
-{% block title %}Tâches créées par la note du {{ note.date|date_text:"moyen" }}{% endblock title %}
+{% block title %}Tâches à revoir de la note du {{ note.date|date_text:"moyen" }}{% endblock title %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
-        <h1 class="flex-1">Tâches créées par la note du {% date_time note.date "long" %}</h1>
+        <h1 class="flex-1">Tâches à revoir de la note du {% date_time note.date "long" %}</h1>
 
         {% button "Enregistrer les tâches" icon="save" variant="ghost" icon_only=True form="note-review-form" %}
     </header>
 
-    <p class="mb-4 text-slate-600">Ces tâches viennent d'être créées depuis la note. Elles n'ont pas d'échéance : elle se choisit ici, ou plus tard dans la liste des tâches.</p>
-
-    <form id="note-review-form" method="post" class="flex flex-col gap-4">
+    <form id="note-review-form" method="post" class="flex flex-col gap-6">
         {% csrf_token %}
-        {{ formset.management_form }}
-        {{ formset.non_form_errors }}
+        {{ new_formset.management_form }}
+        {{ gone_formset.management_form }}
 
-        <table class="w-full border-collapse text-left">
-            <thead>
-                <tr class="text-sm text-slate-600">
-                    <th scope="col" class="p-2 font-medium">Tâche</th>
-                    <th scope="col" class="p-2 font-medium">Échéance</th>
-                    <th scope="col" class="p-2 font-medium">Priorité</th>
-                    <th scope="col" class="p-2 font-medium">Projet</th>
-                    <th scope="col" class="p-2 font-medium">Sujet</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for form in formset %}
-                    <tr class="border-t border-slate-200 align-baseline">
-                        <th scope="row" class="p-2 font-normal">
-                            {{ form.id }}
-                            <a href="{% url 'todolist:todo_detail' form.instance.pk %}">{{ form.instance.title }}</a>
-                            {{ form.non_field_errors }}
-                        </th>
-                        {% for field in form.visible_fields %}
-                            <td class="p-2">
-                                <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }} de « {{ form.instance.title }} »</label>
-                                {{ field }}
-                                {{ field.errors }}
-                            </td>
+        {% if new_formset.forms %}
+            <section aria-labelledby="review-new" class="flex flex-col gap-2">
+                <h2 id="review-new">Tâches de la note</h2>
+                <p class="text-slate-600">Créées depuis la note, ou laissées pour plus tard. Elles n'ont pas d'échéance : elle se choisit ici, ou plus tard dans la liste des tâches.</p>
+                {{ new_formset.non_form_errors }}
+
+                <table class="w-full border-collapse text-left">
+                    <thead>
+                        <tr class="text-sm text-slate-600">
+                            <th scope="col" class="p-2 font-medium">Tâche</th>
+                            <th scope="col" class="p-2 font-medium">Échéance</th>
+                            <th scope="col" class="p-2 font-medium">Priorité</th>
+                            <th scope="col" class="p-2 font-medium">Projet</th>
+                            <th scope="col" class="p-2 font-medium">Sujet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in new_formset %}
+                            <tr class="border-t border-slate-200 align-baseline">
+                                <th scope="row" class="p-2 font-normal">
+                                    {{ form.id }}
+                                    <a href="{% url 'todolist:todo_detail' form.instance.pk %}">{{ form.instance.title }}</a>
+                                    {{ form.non_field_errors }}
+                                </th>
+                                {% for field in form.visible_fields %}
+                                    <td class="p-2">
+                                        <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }} de « {{ form.instance.title }} »</label>
+                                        {{ field }}
+                                        {{ field.errors }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
                         {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </section>
+        {% endif %}
+
+        {% if gone_formset.forms %}
+            <section aria-labelledby="review-gone" class="flex flex-col gap-2">
+                <h2 id="review-gone">Tâches dont la ligne a disparu</h2>
+                <p class="text-slate-600">Leur ligne a été modifiée, déplacée ou retirée de la note. La remplacer par une nouvelle ligne lui garde son avancement, son échéance et ses sous-tâches ; l'écarter la retire des tâches sans que la note la recrée.</p>
+                {{ gone_formset.non_form_errors }}
+
+                <table class="w-full border-collapse text-left">
+                    <thead>
+                        <tr class="text-sm text-slate-600">
+                            <th scope="col" class="p-2 font-medium">Tâche</th>
+                            <th scope="col" class="p-2 font-medium">Que faire</th>
+                            <th scope="col" class="p-2 font-medium">Nouvelle ligne</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in gone_formset %}
+                            <tr class="group border-t border-slate-200 align-baseline">
+                                <th scope="row" class="p-2 font-normal">
+                                    {{ form.id }}
+                                    <a href="{% url 'todolist:todo_detail' form.instance.pk %}">{{ form.instance.title }}</a>
+                                    {{ form.non_field_errors }}
+                                </th>
+                                <td class="p-2">
+                                    <label for="{{ form.action.id_for_label }}" class="sr-only">{{ form.action.label }} pour « {{ form.instance.title }} »</label>
+                                    {{ form.action }}
+                                    {{ form.action.errors }}
+                                </td>
+                                {# Choix de la nouvelle ligne, visible seulement avec « La remplacer par », sans JavaScript. #}
+                                <td class="p-2 invisible group-has-[option[value=replace]:checked]:visible">
+                                    <label for="{{ form.replacement.id_for_label }}" class="sr-only">{{ form.replacement.label }} pour « {{ form.instance.title }} »</label>
+                                    {{ form.replacement }}
+                                    {{ form.replacement.errors }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        {% endif %}
 
         <p class="flex gap-2">
             {% button "Enregistrer les tâches" icon="save" %}

@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
@@ -19,7 +19,11 @@ def with_usage(projects):
     """Projets annotés du nombre d'objets de chaque app qui les utilisent."""
     return projects.annotate(
         **{
-            f"usage_{i}": Count(usage.lookup, distinct=True)
+            f"usage_{i}": Count(
+                usage.lookup,
+                distinct=True,
+                filter=~usage.exclude if usage.exclude else Q(),
+            )
             for i, usage in enumerate(project_usages())
         }
     )

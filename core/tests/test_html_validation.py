@@ -106,6 +106,15 @@ class HtmlValidationTests(TestCase):
             description="Première ligne\nSeconde ligne",
         )
         self.parent.tags.add(Tag.objects.get_or_create(name="urgent")[0])
+        # Tâche dont la ligne a disparu de la note : seconde section du bilan (#240).
+        Todo.objects.create(
+            title="Ligne retirée",
+            project=project,
+            created_from_note=True,
+            note_part_date=TODAY,
+            note_part_text="Ligne retirée",
+            note_state=Todo.NoteState.TO_REVIEW,
+        )
         # Sous-tâche incohérente : autre projet, échéance après le parent.
         Todo.objects.create(
             title="Enfant",

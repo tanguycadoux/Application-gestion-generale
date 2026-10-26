@@ -10,6 +10,7 @@ Les apps sont parcourues dans l'ordre d'INSTALLED_APPS.
 from dataclasses import dataclass
 
 from django.apps import apps
+from django.db.models import Q
 
 
 @dataclass(frozen=True)
@@ -21,11 +22,13 @@ class HomeLink:
 
 @dataclass(frozen=True)
 class ProjectUsage:
-    """Objets qui utilisent un projet, comptés par `lookup` depuis Project."""
+    """Objets qui utilisent un projet, comptés par `lookup` depuis Project, sauf
+    ceux qui répondent à `exclude` (tâches écartées, par exemple)."""
 
     lookup: str
     singular: str
     plural: str
+    exclude: Q | None = None
 
     def text(self, count: int) -> str:
         return f"{count} {self.singular if count == 1 else self.plural}"

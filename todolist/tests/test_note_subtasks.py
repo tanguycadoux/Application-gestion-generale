@@ -19,6 +19,12 @@ class NoteSubtaskTests(TestCase):
         process_note_parts(note)
         return note
 
+    def titles_and_parents(self) -> list[tuple[str, str | None]]:
+        return [
+            (todo.title, todo.parent.title if todo.parent else None)
+            for todo in Todo.objects.select_related("parent").order_by("pk")
+        ]
+
     def tree(self) -> dict[str, str | None]:
         """Titre de chaque tâche, et titre de sa parente."""
         return {
@@ -67,13 +73,15 @@ class NoteSubtaskTests(TestCase):
 
         self.assertEqual(self.tree(), {"A": None, "précision": "A"})
 
-    def test_parent_pose_seulement_a_la_creation(self):
-        """Une tâche existante n'est pas rattachée d'office (décision du
-        2026-10-26) : son parent a pu être choisi à la main."""
+    def test_ligne_indentee_plus_tard(self):
+        """La ligne change de chemin, donc d'identité (#240) : une nouvelle
+        sous-tâche est créée, l'ancienne tâche garde son parent, à revoir."""
         self.save_note("- A", "- B")
         self.save_note("- A", "  - B")
 
-        self.assertEqual(self.tree(), {"A": None, "B": None})
+        self.assertEqual(
+            self.titles_and_parents(), [("A", None), ("B", None), ("B", "A")]
+        )
 
     def test_nouvelle_ligne_sous_une_tache_existante(self):
         self.save_note("- A")
@@ -91,7 +99,8 @@ class NoteSubtaskTests(TestCase):
 
         self.assertEqual(self.tree(), {"A": None, "B": "C", "C": None})
 
-    def test_meme_texte_sous_lui_meme_sans_boucle(self):
+    def test_meme_texte_sous_lui_meme(self):
+        """Deux chemins, donc deux tâches (#240), sans boucle."""
         self.save_note("- A", "  - A")
 
-        self.assertEqual(self.tree(), {"A": None})
+        self.assertEqual(self.titles_and_parents(), [("A", None), ("A", "A")])
