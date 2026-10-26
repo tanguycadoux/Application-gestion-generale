@@ -20,6 +20,10 @@ static/css/tailwind.css
 # Validateur HTML du W3C, téléchargé par install_validator
 .vnu/
 
+# Couverture des tests
+.coverage
+htmlcov/
+
 # mypy
 .mypy_cache/
 
