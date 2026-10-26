@@ -262,6 +262,8 @@ Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) gén
 
 Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`, `[x]`) : une case cochée ne crée pas de tâche terminée (#222). Une ligne vide ou réduite à son marqueur est ignorée ; le titre est limité à 500 caractères.
 
+Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Le rattachement ne se fait qu'à la création de la tâche : une tâche déjà créée dont la ligne est indentée plus tard garde son parent.
+
 Chaque TODO est rattachée au projet et au sujet de la note part, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
 
 ### Images
