@@ -1,7 +1,6 @@
 """Tailwind compilé et htmx servis en local, sans CDN (#217)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -75,14 +74,12 @@ TEMPLATE_DIRS = ("core", "images", "note_taking", "todolist")
 class NoExternalResourceTests(TestCase):
     """#218 : plus aucune ressource externe, police d'icônes comprise."""
 
-    @unittest.expectedFailure
     def test_pages_sans_ressource_externe(self):
         for name in PAGES:
             with self.subTest(page=name):
                 html = self.client.get(reverse(name)).content.decode()
                 self.assertEqual(EXTERNAL_RESOURCE_REGEX.findall(html), [])
 
-    @unittest.expectedFailure
     def test_gabarits_sans_ressource_externe(self):
         """Hors contenu des notes, aucun gabarit ne cite de ressource externe."""
         for app in TEMPLATE_DIRS:

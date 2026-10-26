@@ -62,7 +62,6 @@ def used_icons() -> set[str]:
 
 
 class IconComponentTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_icone_decorative(self):
         html = render('{% icon "save" %}')
 
@@ -74,7 +73,6 @@ class IconComponentTests(SimpleTestCase):
         self.assertIn("<path ", html)
         self.assertNotIn("role=", html)
 
-    @unittest.expectedFailure
     def test_icone_seule_avec_libelle(self):
         html = render('{% icon "warning" label="Incohérences à corriger" %}')
 
@@ -82,7 +80,6 @@ class IconComponentTests(SimpleTestCase):
         self.assertIn('aria-label="Incohérences à corriger"', html)
         self.assertNotIn("aria-hidden", html)
 
-    @unittest.expectedFailure
     def test_taille_par_classe(self):
         self.assertIn('class="size-6 shrink-0"', render('{% icon "save" %}'))
         self.assertIn(
@@ -90,7 +87,6 @@ class IconComponentTests(SimpleTestCase):
             render('{% icon "save" class="size-4 text-amber-600" %}'),
         )
 
-    @unittest.expectedFailure
     def test_icone_inconnue_refusee(self):
         with self.assertRaisesMessage(TemplateSyntaxError, "add_icon"):
             render('{% icon "nexistepas" %}')
@@ -100,19 +96,16 @@ class IconFilesTests(SimpleTestCase):
     def test_icones_utilisees_trouvees(self):
         self.assertGreater(len(used_icons()), 15)
 
-    @unittest.expectedFailure
     def test_chaque_icone_utilisee_est_embarquee(self):
         for name in sorted(used_icons()):
             with self.subTest(name=name):
                 self.assertTrue((ICONS_DIR / f"{name}.svg").exists())
 
-    @unittest.expectedFailure
     def test_licence_et_readme(self):
         for name in ("LICENSE", "README.md"):
             with self.subTest(name=name):
                 self.assertTrue((ICONS_DIR / name).exists())
 
-    @unittest.expectedFailure
     def test_plus_de_police_d_icones(self):
         for path in [*app_files("**/*.html", "**/*.py", "**/*.js", "**/*.css")]:
             with self.subTest(path=str(path)):
@@ -120,7 +113,6 @@ class IconFilesTests(SimpleTestCase):
 
 
 class AddIconCommandTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_telecharge_l_icone_rounded(self):
         from core import icons
 
@@ -139,14 +131,12 @@ class AddIconCommandTests(SimpleTestCase):
 
 
 class NoNetworkTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_connexion_reseau_interdite_pendant_les_tests(self):
         with self.assertRaisesRegex(RuntimeError, "réseau"):
             socket.create_connection(("127.0.0.1", 9), timeout=1)
 
 
 class FaviconTests(TestCase):
-    @unittest.expectedFailure
     def test_icone_d_onglet_locale(self):
         html = self.client.get(reverse("core:index")).content.decode()
 

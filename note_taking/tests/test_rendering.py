@@ -5,6 +5,7 @@ from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
+from core.icons import icon_svg
 from core.models import Project
 from images.models import Image
 from note_taking.models import Note, NotePart
@@ -167,7 +168,7 @@ class CalloutRenderingTests(SimpleTestCase):
             html,
             '<div class="callout callout-warning">'
             '<div class="callout-header">'
-            '<span class="material-symbols-rounded callout-icon" aria-hidden="true">warning</span>'
+            f"{icon_svg('warning', 'callout-icon')}"
             '<span class="callout-title">Attention !</span>'
             "</div>"
             '<div class="callout-body"><p>Texte <strong>gras</strong></p></div>'
@@ -201,7 +202,7 @@ class CalloutRenderingTests(SimpleTestCase):
             "<p>Avant</p>"
             '<div class="callout callout-note">'
             '<div class="callout-header">'
-            '<span class="material-symbols-rounded callout-icon" aria-hidden="true">info</span>'
+            f"{icon_svg('info', 'callout-icon')}"
             '<span class="callout-title">Note</span>'
             "</div>"
             '<div class="callout-body"><p>Dedans</p></div>'
@@ -220,11 +221,7 @@ class CalloutRenderingTests(SimpleTestCase):
             with self.subTest(callout_type=callout_type):
                 html = render_markdown(f"::: {{.callout-{callout_type}}}\nx\n:::")
 
-                self.assertInHTML(
-                    '<span class="material-symbols-rounded callout-icon"'
-                    f' aria-hidden="true">{icon}</span>',
-                    html,
-                )
+                self.assertInHTML(icon_svg(icon, "callout-icon"), html)
 
     def test_sans_icone_avec_icon_false(self):
         html = render_markdown("::: {.callout-note icon=false}\nx\n:::")

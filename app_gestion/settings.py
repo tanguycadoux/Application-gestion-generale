@@ -134,6 +134,9 @@ TAILWIND_CLI_VERSION = "4.3.3"
 TAILWIND_CLI_SRC_CSS = "assets/css/source.css"
 TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
 
+# Tests sans réseau : l'application ne fait aucune requête vers l'extérieur (#218).
+TEST_RUNNER = "app_gestion.test_runner.NoNetworkTestRunner"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

@@ -1,2 +1,2 @@
 {# Indicateur d'incohérences d'une tâche (#165), à côté de son titre dans les listes. #}
-{% if todo.incoherences %}<span role="img" aria-label="Incohérences à corriger" class="material-symbols-rounded align-middle text-base! text-amber-600">warning</span>{% endif %}
+{% load ui %}{% if todo.incoherences %}{% icon "warning" label="Incohérences à corriger" class="inline-block size-4 align-middle text-amber-600" %}{% endif %}

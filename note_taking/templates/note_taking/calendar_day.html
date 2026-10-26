@@ -13,7 +13,7 @@
     {% url 'note_taking:new_note' as new_url %}
     <a class="{% calendar_cell_classes day %}" href="{{ new_url }}?date={{ day.date|date:'Y-m-d' }}" aria-label="Créer la note du {{ day.date|date_text:"moyen" }}"{% if day.is_today %} aria-current="date"{% endif %}>
         <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time>
-        <span class="material-symbols-rounded pointer-events-none absolute inset-0 m-auto size-fit text-4xl! text-blue-800 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">add</span>
+        {% icon "add" class="pointer-events-none absolute inset-0 m-auto size-9 text-blue-800 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" %}
     </a>
 {% else %}
     <div class="{% calendar_cell_classes day inactive=True %}"{% if day.is_today %} aria-current="date"{% endif %}>
