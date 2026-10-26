@@ -12,6 +12,7 @@ from django.urls import reverse
 
 from images.models import Image
 from images.services import import_image
+from images.tests.files import image_file, png
 from note_taking.models import Note
 from note_taking.qmd.files import (
     check_metadata_date,
@@ -71,7 +72,7 @@ class NotesArchiveTests(TestCase):
     def setUp(self):
         Note.objects.create(date="2025-11-24", body="# P\n![A](images/banc.png)")
         Note.objects.create(date="2026-02-03", body="# Q\nTexte")
-        import_image(SimpleUploadedFile("banc.png", b"contenu-png"))
+        import_image(image_file("banc.png", "contenu"))
 
     def archive(self) -> zipfile.ZipFile:
         from note_taking.qmd.export import write_notes_archive
@@ -87,7 +88,7 @@ class NotesArchiveTests(TestCase):
             sorted(archive.namelist()),
             ["2025-11-24.qmd", "2026-02-03.qmd", "images/banc.png"],
         )
-        self.assertEqual(archive.read("images/banc.png"), b"contenu-png")
+        self.assertEqual(archive.read("images/banc.png"), png("contenu"))
         self.assertEqual(
             archive.read("2026-02-03.qmd").decode("utf-8"),
             "---\ndate: 2026-02-03\n---\n\n# Q\nTexte",
@@ -141,8 +142,8 @@ class ExportViewTests(TestCase):
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class NoteExportTests(TestCase):
     def setUp(self):
-        import_image(SimpleUploadedFile("banc.png", b"banc"))
-        import_image(SimpleUploadedFile("autre.png", b"autre"))
+        import_image(image_file("banc.png", "banc"))
+        import_image(image_file("autre.png", "autre"))
         self.note = Note.objects.create(
             date="2025-11-24",
             body="# P\n![A](images/banc.png)\n![X](images/absente.png)",

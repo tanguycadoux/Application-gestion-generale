@@ -14,6 +14,7 @@ from django.test import TestCase, override_settings
 
 from core.models import Project
 from images.services import import_image
+from images.tests.files import image_file
 from note_taking.exceptions import (
     ImageNotFoundError,
     InvalidNoteFileError,
@@ -36,10 +37,6 @@ HEADER = "---\ndate: 2025-11-24\n---\n"
 
 def qmd_file(name: str, content: str, encoding: str = "utf-8") -> SimpleUploadedFile:
     return SimpleUploadedFile(name, content.encode(encoding))
-
-
-def image_file(name: str) -> SimpleUploadedFile:
-    return SimpleUploadedFile(name, b"image", content_type="image/png")
 
 
 def parts_summary(note: Note) -> list[tuple]:
