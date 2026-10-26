@@ -5,74 +5,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% load static %}
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
-    <style type="text/tailwindcss">
-        /* Thème et styles de base Tailwind : seul endroit où les déclarer. */
-
-        /* Couleurs : uniquement celles de Tailwind (#128), voir le README.
-           « theme(static) » : toutes les variables de couleur existent
-           (var(--color-slate-200)…), même sans classe qui les utilise dans la page,
-           pour les feuilles CSS propres. Avec cet @import, la version navigateur
-           n'ajoute plus le sien. */
-        @import "tailwindcss" theme(static);
-
-        @layer base {
-            /* Tailwind v4 ne met plus le curseur main sur les boutons (comportement de v3 conservé). */
-            button:not(:disabled), [role="button"]:not(:disabled) {
-                cursor: pointer;
-            }
-
-            /* Titres de page (#118) ; le contenu rendu des notes a ses propres règles. */
-            h1 {
-                @apply text-2xl font-semibold;
-            }
-            h2 {
-                @apply text-xl font-semibold;
-            }
-            h3 {
-                @apply text-lg font-semibold;
-            }
-
-            /* Liens de texte (#127) : tout lien sans classe, y compris dans le contenu
-               des notes. Un lien qui a sa propre apparence (bouton, menu, carte) porte
-               des classes et n'est pas concerné. */
-            a:not([class]) {
-                @apply text-blue-700 underline underline-offset-2 hover:text-blue-900 hover:decoration-2;
-            }
-            a:not([class]):focus-visible {
-                @apply rounded-sm outline-2 outline-offset-2 outline-blue-700;
-            }
-
-            /* Champs de formulaire (#132), écrits à la main ou rendus par Django. */
-            input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select, textarea {
-                @apply max-w-full rounded-lg border border-slate-300 bg-white px-2 py-1;
-            }
-            input:focus-visible, select:focus-visible, textarea:focus-visible {
-                @apply outline-2 outline-offset-2 outline-blue-700;
-            }
-            [aria-invalid="true"] {
-                @apply border-red-800;
-            }
-            .errorlist {
-                @apply text-sm text-red-800;
-            }
-            input[type="checkbox"], input[type="radio"] {
-                @apply accent-blue-700;
-            }
-            /* Bouton « Parcourir » d'un champ fichier, à l'image d'un bouton ghost. */
-            input[type="file"]::file-selector-button {
-                @apply mr-2 cursor-pointer rounded-xl p-2 font-semibold hover:bg-slate-200;
-            }
-        }
-    </style>
+    {% load tailwind_cli %}
+    {% tailwind_css %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
-
-    <link rel="stylesheet" href="{% static 'core/alert_system.css' %}">
 
     {% load ui %}
     {% button_variants_json %}
     <script src="{% static 'core/alert_system.js' %}"></script>
     <script src="{% static 'core/confirm.js' %}" defer></script>
+    <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
     
     {# Titre d'onglet « Page · Section » (#130) : la section vient du gabarit de base de l'app. #}
     <title>{% block title %}{% endblock title %}{% block title_suffix %}{% endblock title_suffix %}</title>

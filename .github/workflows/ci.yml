@@ -34,3 +34,26 @@ jobs:
 
       - name: Tests
         run: python manage.py test
+
+  tailwind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Installation des dépendances
+        run: pip install -r requirements.txt
+
+      # Le CLI de Tailwind (environ 110 Mo) n'est téléchargé qu'une fois par version.
+      - uses: actions/cache@v6
+        with:
+          path: .django_tailwind_cli
+          key: tailwind-cli-${{ hashFiles('app_gestion/settings.py') }}
+
+      - name: Construction de la feuille Tailwind
+        run: python manage.py tailwind build

@@ -10,9 +10,11 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase
 
 from core import models
+
+from .stylesheets import SOURCE_CSS, components_layer, read_source_css
 
 APPS = ("core", "images", "note_taking", "todolist")
 
@@ -86,7 +88,7 @@ def app_sources() -> list[Path]:
                 for path in (Path(settings.BASE_DIR) / app).glob(pattern)
                 if "tests" not in path.parts and "migrations" not in path.parts
             ]
-    return files
+    return [*files, SOURCE_CSS]
 
 
 def read_static(name: str) -> str:
@@ -95,13 +97,10 @@ def read_static(name: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-class TailwindThemeTests(TestCase):
-    def setUp(self):
-        self.html = self.client.get("/").content.decode()
-
+class TailwindThemeTests(SimpleTestCase):
     def test_variables_de_couleur_de_tailwind_toujours_emises(self):
         """Les feuilles CSS propres utilisent var(--color-…) sans classe dans la page."""
-        self.assertIn('@import "tailwindcss" theme(static);', self.html)
+        self.assertIn('@import "tailwindcss" theme(static);', read_source_css())
 
 
 class ColorClassesTests(SimpleTestCase):
@@ -143,7 +142,7 @@ class ColorClassesTests(SimpleTestCase):
 
 class StylesheetColorsTests(SimpleTestCase):
     def test_alertes_sans_couleur_en_dur(self):
-        css = CSS_COMMENT_REGEX.sub("", read_static("core/alert_system.css"))
+        css = CSS_COMMENT_REGEX.sub("", components_layer(read_source_css()))
 
         self.assertEqual(CSS_LITERAL_COLOR_REGEX.findall(css), [])
         colors = {m.group("color") for m in CSS_VAR_COLOR_REGEX.finditer(css)}

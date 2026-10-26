@@ -10,6 +10,8 @@ from images.models import Image
 from note_taking.models import Note, NotePart
 from todolist.models import Todo
 
+from .stylesheets import read_source_css
+
 HEADING_REGEX = re.compile(r"<h([1-6])[\s>]")
 
 
@@ -21,11 +23,11 @@ def main_headings(html: str) -> list[int]:
 
 class HeadingStylesTests(TestCase):
     def test_styles_de_base_des_titres(self):
-        html = self.client.get("/").content.decode()
+        css = read_source_css()
 
-        self.assertIn("h1 {\n                @apply text-2xl font-semibold;", html)
-        self.assertIn("h2 {\n                @apply text-xl font-semibold;", html)
-        self.assertIn("h3 {\n                @apply text-lg font-semibold;", html)
+        self.assertIn("h1 {\n        @apply text-2xl font-semibold;", css)
+        self.assertIn("h2 {\n        @apply text-xl font-semibold;", css)
+        self.assertIn("h3 {\n        @apply text-lg font-semibold;", css)
 
 
 class HeadingHierarchyTests(TestCase):

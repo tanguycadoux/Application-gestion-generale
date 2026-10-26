@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_tailwind_cli",
     "core",
     "images",
     "note_taking",
@@ -123,6 +124,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Tailwind CSS compilé par django-tailwind-cli (CLI autonome, sans Node) :
+# `python manage.py tailwind build`, ou `tailwind runserver` pour le reconstruire
+# à chaque modification.
+TAILWIND_CLI_VERSION = "4.3.3"
+TAILWIND_CLI_SRC_CSS = "assets/css/source.css"
+TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
