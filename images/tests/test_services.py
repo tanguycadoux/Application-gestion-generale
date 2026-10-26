@@ -2,19 +2,14 @@
 
 import shutil
 import tempfile
-import unittest
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
-from images import exceptions
-from images.exceptions import ImageAlreadyExistsError
+from images.exceptions import ImageAlreadyExistsError, InvalidImageError
 from images.models import Image
 from images.services import import_image
 from images.tests.files import image_file, png
-
-# Absente tant que #224 n'est pas corrigée.
-InvalidImageError = getattr(exceptions, "InvalidImageError", Exception)
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -49,7 +44,6 @@ class ImportImageTests(TestCase):
             import_image(image_file("banc.png"))
         self.assertEqual(Image.objects.count(), 1)
 
-    @unittest.expectedFailure
     def test_fichier_qui_n_est_pas_une_image_refuse(self):
         """#224 : le contenu est vérifié, pas seulement l'extension."""
         for name, data in (

@@ -45,6 +45,17 @@
                 <summary class="cursor-pointer font-semibold">Images gardées, déjà en base sous ce nom ({{ report.images_kept|length }})</summary>
                 {% include "note_taking/import_report_names.html" with names=report.images_kept %}
             </details>
+
+            {% if report.images_failed %}
+                <details open>
+                    <summary class="cursor-pointer font-semibold text-red-800">Images en erreur ({{ report.images_failed|length }})</summary>
+                    <ul class="list-disc pl-6">
+                        {% for name, error in report.images_failed %}
+                            <li><code>{{ name }}</code> : {{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            {% endif %}
         </section>
 
         {% if report.ignored %}

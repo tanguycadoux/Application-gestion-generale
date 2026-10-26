@@ -3,7 +3,6 @@
 import io
 import shutil
 import tempfile
-import unittest
 import zipfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -176,7 +175,6 @@ class ImportFilesTests(ImportTestCase):
         note = Note.objects.get(date="2025-11-24")
         self.assertEqual(note.parts.get().images.get().name, "banc.png")
 
-    @unittest.expectedFailure
     def test_image_invalide_signalee_sans_bloquer_les_autres(self):
         """#224 : un fichier image illisible est en erreur, les autres sont importés."""
         report = self.run_import(
