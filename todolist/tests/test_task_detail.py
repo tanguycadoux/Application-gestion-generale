@@ -6,7 +6,7 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Project, Subject, Tag
+from core.models import Project, Section, Tag
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.models import Todo
@@ -30,7 +30,7 @@ class TaskDetailTests(TestCase):
         self.task = Todo.objects.create(
             title="Relire",
             project=self.project,
-            subject=Subject.objects.create(name="Réunion"),
+            section=Section.objects.create(project=self.project, name="Réunion"),
             priority="high",
             due_date=date(2025, 11, 24),
             progress=40,

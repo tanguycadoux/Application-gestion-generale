@@ -43,7 +43,7 @@ def parts_summary(note: Note) -> list[tuple]:
     return [
         (
             part.project.name,
-            part.subject.name if part.subject else None,
+            part.section.name if part.section else None,
             sorted(part.tags.values_list("name", flat=True)),
             part.content,
         )
@@ -276,7 +276,7 @@ class TodoGenerationTests(ServiceTestCase):
 
         todo = Todo.objects.get()
         self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
-        self.assertEqual(todo.subject.name, "S")
+        self.assertEqual(todo.section.name, "S")
 
     def test_pas_de_todo_sans_tag_todo(self):
         self.process("# P\n## S\n### Notes\n- Pas une tâche")

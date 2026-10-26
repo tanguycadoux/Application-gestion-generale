@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core import html_validator
-from core.models import Project, Subject, Tag
+from core.models import Project, Section, Tag
 from images.models import Image
 from note_taking.models import Note
 from note_taking.services import process_note_parts
@@ -101,7 +101,7 @@ class HtmlValidationTests(TestCase):
         self.parent = Todo.objects.create(
             title="Parent",
             project=project,
-            subject=Subject.objects.get(name="Réunion"),
+            section=Section.objects.get(name="Réunion"),
             due_date=TODAY,
             description="Première ligne\nSeconde ligne",
         )

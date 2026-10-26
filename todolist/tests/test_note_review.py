@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Project, Subject
+from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.models import Todo
@@ -133,7 +133,7 @@ class ReviewPageTests(TestCase):
 
     def test_enregistrer_les_modifications(self):
         project = Project.objects.create(name="Q")
-        subject = Subject.objects.create(name="S")
+        section = Section.objects.create(project=project, name="S")
         data = {
             "new-TOTAL_FORMS": "2",
             "new-INITIAL_FORMS": "2",
@@ -141,12 +141,12 @@ class ReviewPageTests(TestCase):
             "new-0-due_date": "2025-12-01",
             "new-0-priority": "high",
             "new-0-project": project.pk,
-            "new-0-subject": subject.pk,
+            "new-0-section": section.pk,
             "new-1-id": self.second.pk,
             "new-1-due_date": "",
             "new-1-priority": "medium",
             "new-1-project": self.second.project.pk,
-            "new-1-subject": "",
+            "new-1-section": "",
             "gone-TOTAL_FORMS": "0",
             "gone-INITIAL_FORMS": "0",
         }
@@ -162,9 +162,9 @@ class ReviewPageTests(TestCase):
                 self.first.due_date,
                 self.first.priority,
                 self.first.project,
-                self.first.subject,
+                self.first.section,
             ),
-            (date(2025, 12, 1), "high", project, subject),
+            (date(2025, 12, 1), "high", project, section),
         )
         self.second.refresh_from_db()
         self.assertIsNone(self.second.due_date)

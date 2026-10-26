@@ -5,7 +5,7 @@ import re
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Project, Subject
+from core.models import Project, Section
 from images.models import Image
 from note_taking.models import Note, NotePart
 from todolist.models import Todo
@@ -36,9 +36,9 @@ class HeadingHierarchyTests(TestCase):
     def setUp(self):
         project = Project.objects.create(name="P")
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        subject = Subject.objects.create(name="S")
+        section = Section.objects.create(project=project, name="S")
         NotePart.objects.create(
-            note=self.note, project=project, subject=subject, content="x"
+            note=self.note, project=project, section=section, content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
         self.todo = Todo.objects.create(title="T", project=project)
