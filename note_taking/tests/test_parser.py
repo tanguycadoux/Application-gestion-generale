@@ -60,7 +60,15 @@ class ParsedNoteTests(SimpleTestCase):
             ParsedNote(
                 file_date="2025-11-24",
                 metadata={"date": "2025-11-24"},
-                parts=[ParsedPart(project="P", subject="S", tags=[], lines=["x"])],
+                parts=[
+                    ParsedPart(
+                        project="P",
+                        subject="S",
+                        tags=[],
+                        lines=["x"],
+                        headings=["P", "S"],
+                    )
+                ],
             ),
         )
 

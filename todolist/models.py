@@ -72,6 +72,10 @@ class Todo(models.Model):
     note_part_text = models.CharField(
         max_length=TODO_TEXT_MAX_LENGTH, blank=True, default=""
     )
+    # Chemin de la ligne dans la note : titres de sa section sans `TODO`, puis
+    # lignes parentes, séparés par « › » (#240). Avec la date et le texte, il
+    # identifie la tâche ; vide pour une tâche créée avant #240, pas encore reprise.
+    note_path = models.TextField(blank=True, default="")
 
     priority = models.CharField(
         "priorité", max_length=10, choices=PRIORITY_CHOICES, default="medium"
@@ -104,9 +108,14 @@ class Todo(models.Model):
         verbose_name = "tâche"
         constraints = [
             models.UniqueConstraint(
-                fields=["created_from_note", "note_part_date", "note_part_text"],
+                fields=[
+                    "created_from_note",
+                    "note_part_date",
+                    "note_path",
+                    "note_part_text",
+                ],
                 condition=Q(created_from_note=True),
-                name="unique_note_parts_when_created_from_note",
+                name="unique_note_line_when_created_from_note",
             )
         ]
 

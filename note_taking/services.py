@@ -15,7 +15,7 @@ from .exceptions import (
 )
 from .models import Note, NotePart
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
-from .qmd.parser import ParsedNote, parse_note
+from .qmd.parser import HEADING_SEPARATOR, ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX, image_name
 from .signals import NoteFollowUp, note_parts_processed
 
@@ -106,7 +106,11 @@ def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NoteP
         )
 
         note_part = NotePart.objects.create(
-            note=note, project=project, subject=subject, content=content
+            note=note,
+            project=project,
+            subject=subject,
+            content=content,
+            heading_path=HEADING_SEPARATOR.join(parsed_part.headings),
         )
         note_part.tags.set(
             [Tag.objects.get_or_create(name=name)[0] for name in parsed_part.tags]

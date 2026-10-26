@@ -25,6 +25,8 @@ METADATA_BLOCK_START = "::: {.metadata}"
 CALLOUT_START = "::: {.callout-"
 BLOCK_END = ":::"
 CODE_FENCE = "```"
+# Séparateur des titres d'une section, du projet au plus profond (#240).
+HEADING_SEPARATOR = " › "
 
 
 @dataclass
@@ -33,6 +35,8 @@ class ParsedPart:
     subject: str | None
     tags: list[str]
     lines: list[str]
+    # Titres de la section de sa première ligne, du projet au plus profond (#240).
+    headings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -210,7 +214,12 @@ class NoteParser:
             if (part.project, part.subject, set(part.tags)) == (project, subject, tags):
                 part.lines.append(line)
                 return
-        self.note.parts.append(ParsedPart(project, subject, list(tags), [line]))
+        headings = [
+            state.title for state in self.levels.values() if state.title is not None
+        ]
+        self.note.parts.append(
+            ParsedPart(project, subject, list(tags), [line], headings)
+        )
 
     def clean_parts(self) -> None:
         """Retire les parts vides et les lignes vides en bordure."""
