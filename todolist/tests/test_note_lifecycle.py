@@ -5,6 +5,7 @@ tels qu'écrits (sans `TODO`) et le chemin de sa ligne.
 """
 
 import re
+import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -296,6 +297,9 @@ class DeleteTests(LifecycleTestCase):
 
         self.assertFalse(Todo.all_objects.exists())
 
+    # Un arbre qui contient une tâche issue d'une note est écarté en entier, même
+    # ses tâches saisies à la main : le rétablir le rend intact (#290).
+    @unittest.expectedFailure
     def test_parent_saisi_a_la_main_avec_enfant_de_note(self):
         self.save_note("# P\n### TODO\n- A")
         child = Todo.objects.get()
@@ -304,11 +308,43 @@ class DeleteTests(LifecycleTestCase):
 
         self.delete(parent)
 
-        self.assertFalse(Todo.all_objects.filter(pk=parent.pk).exists())
+        self.assertFalse(Todo.objects.exists())
         child = Todo.all_objects.get(pk=child.pk)
         self.assertEqual(
-            (child.note_state, child.parent_id), (Todo.NoteState.DISMISSED, None)
+            (child.note_state, child.parent_id), (Todo.NoteState.DISMISSED, parent.pk)
         )
+        self.assertEqual(
+            Todo.all_objects.get(pk=parent.pk).note_state, Todo.NoteState.DISMISSED
+        )
+
+    @unittest.expectedFailure
+    def test_enfant_saisi_a_la_main_ecarte_avec_sa_tache_de_note(self):
+        self.save_note("# P\n### TODO\n- A")
+        parent = Todo.objects.get()
+        child = Todo.objects.create(
+            title="Enfant", project=parent.project, parent=parent
+        )
+
+        self.delete(parent)
+
+        self.assertFalse(Todo.objects.exists())
+        self.assertEqual(
+            Todo.all_objects.get(pk=child.pk).note_state, Todo.NoteState.DISMISSED
+        )
+
+    @unittest.expectedFailure
+    def test_tache_ecartee_portee_par_un_arbre_saisi_a_la_main(self):
+        """Une tâche déjà écartée sous un arbre supprimé n'est pas emportée."""
+        self.save_note("# P\n### TODO\n- A")
+        child = Todo.objects.get()
+        parent = Todo.objects.create(title="Parent", project=child.project)
+        Todo.objects.filter(pk=child.pk).update(parent=parent)
+        self.delete(child)
+
+        self.delete(parent)
+
+        self.assertFalse(Todo.all_objects.filter(pk=parent.pk).exists())
+        self.assertIsNone(Todo.all_objects.get(pk=child.pk).parent_id)
 
     def test_sous_tache_ecartee_hors_de_l_avancement_du_parent(self):
         self.save_note("# P\n### TODO\n- A\n  - B\n  - C")
