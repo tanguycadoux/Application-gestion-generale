@@ -279,6 +279,115 @@ class SubListRenderingTests(SimpleTestCase):
         self.assertIn("<code>- a\n  - b\n</code>", html)
 
 
+class TaskListRenderingTests(SimpleTestCase):
+    """Cases à cocher « - [ ] » et « - [x] » comme dans Quarto (#231).
+
+    Les résultats attendus sont ceux de Pandoc, avec des cases désactivées : la
+    page affiche la note, elle ne la modifie pas.
+    """
+
+    def test_cases_cochee_et_non_cochee(self):
+        html = render_markdown("- [ ] a\n- [x] b\n- [X] c")
+
+        self.assertHTMLEqual(
+            html,
+            '<ul class="task-list">'
+            '<li><label><input type="checkbox" disabled>a</label></li>'
+            '<li><label><input type="checkbox" checked disabled>b</label></li>'
+            '<li><label><input type="checkbox" checked disabled>c</label></li>'
+            "</ul>",
+        )
+
+    def test_liste_mixte_sans_classe(self):
+        html = render_markdown("- [ ] a\n- b")
+
+        self.assertHTMLEqual(
+            html,
+            '<ul><li><label><input type="checkbox" disabled>a</label></li>'
+            "<li>b</li></ul>",
+        )
+
+    def test_liste_numerotee(self):
+        html = render_markdown("1. [ ] a\n2. [x] b")
+
+        self.assertHTMLEqual(
+            html,
+            '<ol><li><label><input type="checkbox" disabled>a</label></li>'
+            '<li><label><input type="checkbox" checked disabled>b</label></li></ol>',
+        )
+
+    def test_mise_en_forme_dans_le_libelle(self):
+        html = render_markdown("- [ ] **gras** et `code`")
+
+        self.assertInHTML(
+            '<label><input type="checkbox" disabled><strong>gras</strong> et '
+            "<code>code</code></label>",
+            html,
+        )
+
+    def test_libelle_arrete_avant_la_sous_liste(self):
+        html = render_markdown("- [ ] a\n  - b\n  - [x] c")
+
+        self.assertHTMLEqual(
+            html,
+            '<ul class="task-list"><li><label><input type="checkbox" disabled>a'
+            "</label><ul><li>b</li>"
+            '<li><label><input type="checkbox" checked disabled>c</label></li>'
+            "</ul></li></ul>",
+        )
+
+    def test_sous_liste_de_cases(self):
+        html = render_markdown("- a\n  - [ ] b")
+
+        self.assertHTMLEqual(
+            html,
+            '<ul><li>a<ul class="task-list">'
+            '<li><label><input type="checkbox" disabled>b</label></li>'
+            "</ul></li></ul>",
+        )
+
+    def test_liste_lache(self):
+        html = render_markdown("- [ ] a\n\n  suite")
+
+        self.assertHTMLEqual(
+            html,
+            '<ul class="task-list"><li><p><label><input type="checkbox" disabled>a'
+            "</label></p><p>suite</p></li></ul>",
+        )
+
+    def test_blancs_apres_la_case_retires(self):
+        for text in ("- [x]  a", "- [x]\ta", "- \[x] a", "- [x] a\r\n"):
+            with self.subTest(text=text):
+                self.assertHTMLEqual(
+                    render_markdown(text),
+                    '<ul class="task-list"><li><label>'
+                    '<input type="checkbox" checked disabled>a</label></li></ul>',
+                )
+
+    def test_crochets_sans_case(self):
+        for text, expected in (
+            ("- [ ]a", "<ul><li>[ ]a</li></ul>"),
+            ("- [ ]", "<ul><li>[ ]</li></ul>"),
+            ("- [] a", "<ul><li>[] a</li></ul>"),
+            ("- a [ ] b", "<ul><li>a [ ] b</li></ul>"),
+            ("[ ] a", "<p>[ ] a</p>"),
+        ):
+            with self.subTest(text=text):
+                self.assertHTMLEqual(render_markdown(text), expected)
+
+    def test_bloc_de_code_inchange(self):
+        html = render_markdown("```\n- [ ] a\n```")
+
+        self.assertIn("<code>- [ ] a\n</code>", html)
+
+    def test_dans_un_callout(self):
+        html = render_markdown("::: {.callout-note}\n- [x] a\n:::")
+
+        self.assertInHTML(
+            '<label><input type="checkbox" checked disabled>a</label>', html
+        )
+
+
 class CalloutRenderingTests(SimpleTestCase):
     def test_titre_en_attribut(self):
         html = render_markdown(

@@ -17,6 +17,19 @@
 .rendered-content ul ul ul { list-style-type: square; }
 .rendered-content ol       { list-style-type: decimal; }
 
+/* Cases à cocher (#231) : la case remplace la puce, comme dans Quarto. */
+.rendered-content ul.task-list { list-style-type: none; }
+
+.rendered-content ul.task-list input[type="checkbox"] {
+    width: .8em;
+    margin: 0 .8em .2em -1em;
+    vertical-align: middle;
+}
+
+.rendered-content input[type="checkbox"] {
+    margin-right: .4em;
+}
+
 /* Tableaux encadrés, cellules comprises. */
 .rendered-content table {
     border: 1px solid;

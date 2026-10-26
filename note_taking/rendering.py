@@ -1,6 +1,7 @@
 """Rendu HTML des notes : Markdown et références d'images."""
 
 import re
+import xml.etree.ElementTree as etree
 from pathlib import PurePosixPath
 
 import markdown
@@ -118,6 +119,83 @@ def escape_list_marker(item: re.Match[str], line: str) -> str:
     return line[: item.start("marker")] + escaped + line[item.end("marker") :]
 
 
+# Case en tête d'un élément de liste, suivie d'un blanc sur la même ligne.
+TASK_REGEX = re.compile(r"^\[(?P<mark>[ xX])\][ \t]+")
+# Balises qui terminent le libellé d'une case : le texte d'un élément s'arrête
+# à la première d'entre elles (sous-liste, paragraphe suivant, code…).
+BLOCK_TAGS = {
+    *("p", "ul", "ol", "pre", "blockquote", "table", "div", "hr", "dl"),
+    *("h1", "h2", "h3", "h4", "h5", "h6"),
+}
+
+
+class TaskListExtension(markdown.Extension):
+    """Cases à cocher « - [ ] » et « - [x] », comme dans Quarto (#231).
+
+    Comme Pandoc, le texte de l'élément est placé dans un `<label>`, et une
+    liste à puces dont tous les éléments sont des cases reçoit la classe
+    `task-list`. Le libellé commence par « [ ] » ou « [x] », que `task_checkboxes`
+    remplace par la case après le filtrage du HTML.
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        # Après unescape (0) : « \[ ] » est aussi une case, comme dans Pandoc.
+        md.treeprocessors.register(TaskListTreeprocessor(md), "task_list", -1)
+
+
+class TaskListTreeprocessor(markdown.treeprocessors.Treeprocessor):
+    def run(self, root: etree.Element) -> None:
+        lists = [element for element in root.iter() if element.tag in ("ul", "ol")]
+        for element in lists:
+            items = [child for child in element if child.tag == "li"]
+            tasks = [label_task(item) for item in items]
+            if element.tag == "ul" and items and all(tasks):
+                element.set("class", "task-list")
+
+
+def label_task(item: etree.Element) -> bool:
+    """Place le texte d'un élément commençant par une case dans un `<label>`.
+
+    Dans une liste lâche, le texte est celui du premier paragraphe.
+    """
+    target = item
+    if not (item.text or "").strip() and len(item) and item[0].tag == "p":
+        target = item[0]
+    task = TASK_REGEX.match(target.text or "")
+    if not task:
+        return False
+
+    label = etree.Element("label")
+    mark = "x" if task.group("mark") in "xX" else " "
+    label.text = f"[{mark}]" + (target.text or "")[task.end() :]
+    for child in list(target):
+        if child.tag in BLOCK_TAGS:
+            break
+        target.remove(child)
+        label.append(child)
+    target.text = None
+    target.insert(0, label)
+    return True
+
+
+# Début du libellé d'une case, une fois le HTML filtré.
+TASK_LABEL_REGEX = re.compile(r"<label>\[(?P<mark>[ x])\]")
+
+
+def task_checkboxes(html: str) -> str:
+    """Remplace le début du libellé des cases par une case désactivée (#231).
+
+    Appliqué au HTML filtré, qui n'accepte pas de champ de formulaire. La case
+    est désactivée : la page affiche la note, elle ne la modifie pas.
+    """
+
+    def repl(match: re.Match[str]) -> str:
+        checked = " checked" if match.group("mark") == "x" else ""
+        return f'<label><input type="checkbox"{checked} disabled>'
+
+    return TASK_LABEL_REGEX.sub(repl, html)
+
+
 MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     "fenced_code",
     "tables",
@@ -127,6 +205,7 @@ MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     "sane_lists",
     NoSetextHeadingsExtension(),
     PandocListsExtension(),
+    TaskListExtension(),
 ]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
@@ -212,6 +291,7 @@ ALLOWED_TAGS = {
     *("ul", "ol", "li", "dl", "dt", "dd"),
     *("table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption"),
     *("a", "img", "figure", "figcaption", "div", "span", "details", "summary"),
+    "label",
     *("em", "strong", "b", "i", "u", "s", "del", "ins", "mark", "small"),
     *("sub", "sup", "abbr"),
 }
@@ -271,7 +351,7 @@ def render_plain_markdown(text: str) -> str:
     à partir de valeurs échappées ou contrôlées, et n'a pas à être filtré.
     """
     html = sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
-    return lazy_images(html)
+    return lazy_images(task_checkboxes(html))
 
 
 def lazy_images(html: str) -> str:
