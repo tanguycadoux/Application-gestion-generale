@@ -1,6 +1,5 @@
 """Tests des migrations de données de core."""
 
-import unittest
 from importlib import import_module
 
 from django.apps import apps
@@ -12,7 +11,6 @@ from core.models import Project
 class ClearDescriptionsTests(TestCase):
     """#243 : une description identique au nom du projet est vidée."""
 
-    @unittest.expectedFailure
     def test_description_egale_au_nom_videe_les_autres_gardees(self):
         migration = import_module("core.migrations.0005_clear_project_descriptions")
         same = Project.objects.create(name="ASTERICS", description="ASTERICS")
