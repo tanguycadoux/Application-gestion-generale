@@ -255,7 +255,9 @@ Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) gén
 - Deuxième tâche
 ```
 
-Chaque TODO est rattachée au projet, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`) ainsi que le sujet. Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`, `[x]`) : une case cochée ne crée pas de tâche terminée (#222). Une ligne vide ou réduite à son marqueur est ignorée ; le titre est limité à 500 caractères.
+
+Chaque TODO est rattachée au projet et au sujet de la note part, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
 
 ### Images
 
