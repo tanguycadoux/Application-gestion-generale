@@ -220,6 +220,18 @@ class ProcessNotePartsTests(ServiceTestCase):
         self.assertEqual(parts_summary(note), [("P", None, ["C"], "z")])
         self.assertEqual(NotePart.objects.count(), 1)
 
+    def test_analyse_interrompue_garde_les_parts_d_avant(self):
+        """#221 : tout ou rien, note parts et tâches comprises."""
+        note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx")
+        process_note_parts(note)
+
+        note.body = "# P\n### TODO\n- Tâche\n# Q\n![a](absente.png)"
+        with self.assertRaises(ImageNotFoundError):
+            process_note_parts(note)
+
+        self.assertEqual(parts_summary(note), [("P", None, ["A"], "x")])
+        self.assertFalse(Todo.objects.exists())
+
     def test_contenu_vide(self):
         note = Note.objects.create(date="2025-11-24", body="")
 

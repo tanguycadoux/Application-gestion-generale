@@ -167,6 +167,22 @@ class NoteFormViewTests(ViewTestCase):
         self.assertEqual(note.body, "# P\n### A\ny")
         self.assertEqual(list(note.parts.values_list("content", flat=True)), ["y"])
 
+    def test_modification_interrompue_garde_les_parts_d_avant(self):
+        """#221 : le texte est enregistré, les note parts d'avant restent intactes."""
+        note = Note.objects.create(date="2025-11-24", body="# P\nx")
+        process_note_parts(note)
+        body = "# P\ny\n# Q\n![a](absente.png)"
+
+        response = self.client.post(
+            reverse("note_taking:edit_note", args=[note.pk]),
+            {"date": "2025-11-24", "body": body},
+        )
+
+        note.refresh_from_db()
+        self.assertEqual(note.body, body)
+        self.assertEqual(list(note.parts.values_list("content", flat=True)), ["x"])
+        self.assertEqual(self.levels(response), ["error"])
+
     def test_modification_contenu_non_traitable(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 

@@ -256,7 +256,9 @@ Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) gén
 - Deuxième tâche
 ```
 
-Chaque TODO est rattachée au projet, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`) ainsi que le sujet. Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`, `[x]`) : une case cochée ne crée pas de tâche terminée (#222). Une ligne vide ou réduite à son marqueur est ignorée ; le titre est limité à 500 caractères.
+
+Chaque TODO est rattachée au projet et au sujet de la note part, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
 
 ### Images
 
@@ -267,6 +269,8 @@ Les images sont importées séparément (bouton d'import, liste sur `/note_takin
 ```
 
 Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
+
+Une image désignée par une adresse externe (`![Légende](https://…)`) n'est pas une image importée : elle ne bloque pas l'analyse, et elle n'est pas chargée. Elle s'affiche comme un lien vers son adresse, avec sa légende pour texte, pour que le navigateur ne contacte aucun serveur tiers (#220).
 
 Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
 

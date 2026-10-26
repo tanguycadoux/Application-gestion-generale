@@ -291,13 +291,6 @@ class NoteMarkdownViewTests(TestCase):
             response, f'<img alt="Banc" src="{static(IMAGE_MISSING_PATH)}">', html=True
         )
 
-    def test_image_externe_conservee(self):
-        response = self.get("![Logo](https://example.com/logo.png)")
-
-        self.assertContains(
-            response, '<img alt="Logo" src="https://example.com/logo.png">', html=True
-        )
-
     def test_bloc_metadata_retire(self):
         response = self.get("Avant\n\n::: {.metadata}\ntags: a\n:::\n\nAprès")
 

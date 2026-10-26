@@ -82,7 +82,7 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 
 ### Les note parts sont dérivées et recalculées
 
-`process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire). Conséquences :
+`process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire), en tout ou rien (#221) : si l'analyse échoue, les note parts et les tâches d'avant restent intactes, et le texte de la note, déjà enregistré, n'est pas annulé. Conséquences :
 
 - aucune donnée saisie ne doit être rattachée à une note part, car elle serait perdue au prochain enregistrement ;
 - après une évolution du parseur, `python manage.py reprocess_notes` recalcule toutes les notes (`--dry-run` pour simuler).
@@ -103,6 +103,7 @@ Les TODO sont créées par `todolist`, à l'écoute du signal `note_parts_proces
 
 - Modèle dans l'app `images` ; les **pages restent dans la prise de notes**.
 - Une image est référencée dans une note par son **nom de fichier**, quel que soit le dossier écrit. À l'analyse, la référence devient `image:<pk>` dans le contenu de la note part.
+- Le nom se tire du chemin par une seule fonction, `rendering.image_name`, commune à l'analyse, au rendu et à l'export (#220) : dossier ignoré, `\` traité comme `/`, et `None` pour une URL externe (`http(s)://`, `data:`, chemin absolu). Une image sur un autre serveur n'est pas chargée : le rendu en fait un lien vers son adresse (`remote_images_as_links`).
 - Le **format** (vectoriel ou matriciel) se déduit de l'extension du fichier (`is_vector`), l'**origine** de la présence d'une source (`is_editable`) : ce sont deux notions indépendantes, sans champ dédié.
 - Le lien vers les images est porté par la **note part**, là où l'image est utilisée : on sait dans quel projet, sujet et avec quels tags elle apparaît. `Note.images` en est déduit.
 
