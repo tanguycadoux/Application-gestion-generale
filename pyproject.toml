@@ -23,7 +23,7 @@ indent = 4
 # Positions de la frise par variables CSS (left-(--start)), voulues (#168).
 "todolist/templates/todolist/gantt.html" = "H021"
 # Tableau des notes : refonte en pause, avec le tri et les filtres communs (#178).
-"note_taking/templates/note_taking/note_list.html" = "H023 H043"
+"note_taking/templates/note_taking/note_list.html" = "H023,H043"
 
 [tool.coverage.run]
 source = ["app_gestion", "core", "images", "note_taking", "todolist"]
