@@ -109,7 +109,9 @@ class NoteMetadataTests(SimpleTestCase):
         self.assertEqual(parse("# P\nx")["note metadata"], {})
 
     def test_metadonnee_mal_formee(self):
-        with self.assertRaisesMessage(NoteParseError, "format non type DICT"):
+        with self.assertRaisesMessage(
+            NoteParseError, "la forme attendue est « clé: valeur »"
+        ):
             parse("---\npas de deux-points\n---\n# P\nx")
 
 
@@ -199,7 +201,7 @@ class LocalMetadataTests(SimpleTestCase):
         )
 
     def test_tags_non_tableau(self):
-        with self.assertRaisesMessage(NoteParseError, "format non type ARRAY"):
+        with self.assertRaisesMessage(NoteParseError, "entre crochets"):
             parse("# P\n::: {.metadata}\ntags: a, b\n:::\nx")
 
     def test_tags_vides_ignores(self):

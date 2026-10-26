@@ -54,7 +54,9 @@ def split_front_matter(text: str) -> tuple[dict[str, str], str]:
         raise NoteParseError("Le bloc d'en-tête n'est pas fermé (ligne --- manquante).")
 
     metadata = dict(
-        parse_key_value(line.strip()) for line in lines[start + 1 : end] if line.strip()
+        parse_key_value(lines[i].strip(), i + 1)
+        for i in range(start + 1, end)
+        if lines[i].strip()
     )
     body = lines[end + 1 :]
     while body and not body[0].strip():
@@ -63,7 +65,14 @@ def split_front_matter(text: str) -> tuple[dict[str, str], str]:
 
 
 def check_metadata_date(note_date: str, metadata: dict[str, str]) -> None:
-    if note_date != metadata.get("date"):
+    header_date = metadata.get("date")
+    if header_date is None:
         raise InvalidNoteFileError(
-            "La date des métadonnées ne correspond pas au nom du fichier."
+            "Le bloc d'en-tête doit indiquer la date de la note, celle du nom "
+            f"du fichier : « date: {note_date} »."
+        )
+    if header_date != note_date:
+        raise InvalidNoteFileError(
+            f"La date du bloc d'en-tête ({header_date}) ne correspond pas "
+            f"au nom du fichier ({note_date}.qmd)."
         )
