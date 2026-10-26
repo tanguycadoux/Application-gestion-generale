@@ -1,7 +1,6 @@
 """Tâches issues des notes : sans échéance, et page bilan après l'enregistrement
 d'une note qui en crée (#239)."""
 
-import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -22,7 +21,6 @@ def review_url(note_date: str, *todos: Todo) -> str:
 
 
 class NoDueDateTests(TestCase):
-    @unittest.expectedFailure
     def test_tache_issue_d_une_note_sans_echeance(self):
         note = Note.objects.create(date="2025-11-24", body=BODY)
         process_note_parts(note)
@@ -38,7 +36,6 @@ class RedirectAfterSaveTests(TestCase):
             reverse("note_taking:new_note"), {"date": "2025-11-24", "body": body}
         )
 
-    @unittest.expectedFailure
     def test_nouvelle_note_qui_cree_des_taches(self):
         response = self.post_new(BODY)
 
@@ -54,7 +51,6 @@ class RedirectAfterSaveTests(TestCase):
             response, reverse("note_taking:note_detail", args=[note.pk])
         )
 
-    @unittest.expectedFailure
     def test_modification_seulement_les_taches_creees(self):
         note = Note.objects.create(date="2025-11-24", body="# P\n### TODO\n- Première")
         process_note_parts(note)
@@ -81,7 +77,6 @@ class RedirectAfterSaveTests(TestCase):
             response, reverse("note_taking:note_detail", args=[note.pk])
         )
 
-    @unittest.expectedFailure
     def test_remplacement_par_le_fichier_source(self):
         note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
         process_note_parts(note)
@@ -98,7 +93,6 @@ class RedirectAfterSaveTests(TestCase):
             response, review_url("2025-11-24", *Todo.objects.order_by("pk"))
         )
 
-    @unittest.expectedFailure
     def test_import_tache_creees_dans_le_compte_rendu(self):
         file = SimpleUploadedFile(
             "2025-11-24.qmd", f"---\ndate: 2025-11-24\n---\n{BODY}".encode()
@@ -123,7 +117,6 @@ class ReviewPageTests(TestCase):
     def url(self) -> str:
         return review_url("2025-11-24", self.first, self.second)
 
-    @unittest.expectedFailure
     def test_liste_les_taches_creees(self):
         response = self.client.get(self.url())
 
@@ -133,7 +126,6 @@ class ReviewPageTests(TestCase):
             response, reverse("note_taking:note_detail", args=[self.note.pk])
         )
 
-    @unittest.expectedFailure
     def test_seulement_les_taches_de_la_note(self):
         other = Todo.objects.create(title="Autre", project=self.first.project)
 
@@ -142,7 +134,6 @@ class ReviewPageTests(TestCase):
         self.assertContains(response, "Première")
         self.assertNotContains(response, "Autre")
 
-    @unittest.expectedFailure
     def test_enregistrer_les_modifications(self):
         project = Project.objects.create(name="Q")
         subject = Subject.objects.create(name="S")
@@ -179,7 +170,6 @@ class ReviewPageTests(TestCase):
         self.second.refresh_from_db()
         self.assertIsNone(self.second.due_date)
 
-    @unittest.expectedFailure
     def test_sans_tache_retour_a_la_note(self):
         Todo.objects.all().delete()
 
@@ -189,7 +179,6 @@ class ReviewPageTests(TestCase):
             response, reverse("note_taking:note_detail", args=[self.note.pk])
         )
 
-    @unittest.expectedFailure
     def test_note_inexistante(self):
         response = self.client.get(review_url("2025-11-25", self.first))
 

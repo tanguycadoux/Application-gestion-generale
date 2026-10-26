@@ -264,7 +264,9 @@ Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `
 
 Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Le rattachement ne se fait qu'à la création de la tâche : une tâche déjà créée dont la ligne est indentée plus tard garde son parent.
 
-Chaque TODO est rattachée au projet et au sujet de la note part, a pour échéance la date de la note et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+Chaque TODO est rattachée au projet et au sujet de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même date et le même texte n'est pas recréée.
+
+Quand l'enregistrement d'une note crée des tâches, une page bilan les présente aussitôt (#239) : échéance, priorité, projet et sujet s'y règlent pour chacune, puis « Enregistrer les tâches » revient à la note ; « Plus tard » y revient sans rien changer. Après un import, le compte rendu indique les tâches créées pour chaque note, avec un lien vers ce bilan.
 
 ### Images
 

@@ -11,11 +11,15 @@ from .models import TODO_TEXT_MAX_LENGTH, Todo
 LIST_MARKER_REGEX = re.compile(r"^(?:[-*+]|\d+[.)])(?:\s+\[[ xX]\])?(?:\s+|$)")
 
 
-def create_todo_from_dict(todo_data: dict, parent: Todo | None = None) -> Todo:
+def create_todo_from_dict(
+    todo_data: dict, parent: Todo | None = None
+) -> tuple[Todo, bool]:
     """Tâche d'une ligne de note, créée si elle n'existe pas encore.
 
     Le parent n'est posé qu'à la création (#238) : une tâche existante garde le
-    sien, qui a pu être choisi à la main.
+    sien, qui a pu être choisi à la main. Pas d'échéance (#239) : elle se
+    choisit dans le bilan qui suit l'enregistrement de la note. Renvoie la tâche,
+    et si elle vient d'être créée.
     """
     project, _ = Project.objects.get_or_create(name=todo_data["project"])
     subject = (
@@ -32,7 +36,6 @@ def create_todo_from_dict(todo_data: dict, parent: Todo | None = None) -> Todo:
             "title": todo_data["content"],
             "project": project,
             "subject": subject,
-            "due_date": todo_data["date"],
             "parent": parent,
         },
     )
@@ -43,7 +46,7 @@ def create_todo_from_dict(todo_data: dict, parent: Todo | None = None) -> Todo:
         if tag_names:
             tags = [Tag.objects.get_or_create(name=name)[0] for name in tag_names]
             todo.tags.add(*tags)
-    return todo
+    return todo, created
 
 
 def todo_text(line: str) -> str:
@@ -57,14 +60,15 @@ def todo_text(line: str) -> str:
     return text.strip()[:TODO_TEXT_MAX_LENGTH]
 
 
-def create_todos_from_note_part(note_part: NotePart):
+def create_todos_from_note_part(note_part: NotePart) -> list[Todo]:
     """Une tâche par ligne d'une note part marquée TODO.
 
     Une ligne imbriquée sous un élément de liste, selon la règle de Pandoc
     (#229), donne une sous-tâche de la tâche de cet élément (#238). Une ligne
     sans marqueur sous un élément est la suite de son texte : elle aussi devient
-    sa sous-tâche.
+    sa sous-tâche. Renvoie les tâches créées.
     """
+    created_todos: list[Todo] = []
     part_tags = [tag.name for tag in note_part.tags.all()]
     subject = note_part.subject.name if note_part.subject else None
 
@@ -89,7 +93,9 @@ def create_todos_from_note_part(note_part: NotePart):
                 "subject": subject,
                 "tags": tags,
             }
-            todo = create_todo_from_dict(todo_data, parent)
+            todo, created = create_todo_from_dict(todo_data, parent)
+            if created:
+                created_todos.append(todo)
 
             item = LIST_ITEM_REGEX.match(raw_line)
             if item and indent < container + CODE_INDENT:
@@ -97,3 +103,4 @@ def create_todos_from_note_part(note_part: NotePart):
             elif not depth:
                 # Ligne hors de toute liste : elle ferme les éléments ouverts.
                 items = []
+    return created_todos

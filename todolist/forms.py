@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import modelformset_factory
 
 from .models import Todo
 
@@ -36,3 +37,22 @@ class TodoForm(forms.ModelForm):
             ].help_text = (
                 "Calculé à partir des sous-tâches : la moyenne de leur avancement."
             )
+
+
+class NoteReviewForm(forms.ModelForm):
+    """Ligne du bilan d'une note (#239) : ce qui se règle juste après la création
+    d'une tâche, l'échéance surtout."""
+
+    class Meta:
+        model = Todo
+        fields = ["due_date", "priority", "project", "subject"]
+        widgets = {
+            "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["due_date"].input_formats = [r"%Y-%m-%d"]
+
+
+NoteReviewFormSet = modelformset_factory(Todo, form=NoteReviewForm, extra=0)

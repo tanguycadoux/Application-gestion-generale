@@ -181,7 +181,7 @@ def update_source_file(request, pk):
             messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
         else:
             messages.success(request, f"{note_name(note)} est modifiée.")
-    return redirect("note_taking:note_detail", pk=note.pk)
+    return redirect(next_page(note))
 
 
 def note_json(request, pk):
@@ -239,10 +239,12 @@ def note_name(note: Note) -> str:
     return f"La note du {date_text(note.date, 'moyen')}"
 
 
-def save_note_parts(request, note: Note, done: str) -> None:
+def save_note_parts(request, note: Note, done: str) -> str:
     """Recalcule les note parts d'une note enregistrée, et le dit (#192).
 
-    Si l'analyse échoue, seul le message d'erreur s'affiche.
+    Si l'analyse échoue, seul le message d'erreur s'affiche. Renvoie la page où
+    aller ensuite : celle de la note, ou la suite proposée par une autre app,
+    comme le bilan des tâches créées (#239).
     """
     try:
         process_note_parts(note)
@@ -253,6 +255,15 @@ def save_note_parts(request, note: Note, done: str) -> None:
         )
     else:
         messages.success(request, f"{note_name(note)} est {done}.")
+    return next_page(note)
+
+
+def next_page(note: Note) -> str:
+    """Page après l'enregistrement d'une note : la suite proposée par une autre
+    app (#239), sinon la note."""
+    if note.follow_ups:
+        return note.follow_ups[0].url
+    return reverse("note_taking:note_detail", args=[note.pk])
 
 
 def new_note(request):
@@ -260,8 +271,7 @@ def new_note(request):
         form = NewNoteForm(request.POST)
         if form.is_valid():
             note = form.save()
-            save_note_parts(request, note, "créée")
-            return redirect("note_taking:note_detail", pk=note.pk)
+            return redirect(save_note_parts(request, note, "créée"))
     else:
         note_date = parse_date_param(request.GET.get("date", ""))
         existing = Note.objects.filter(date=note_date).first() if note_date else None
@@ -295,8 +305,7 @@ def edit_note(request, pk):
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
-            save_note_parts(request, note, "modifiée")
-            return redirect("note_taking:note_detail", pk=note.pk)
+            return redirect(save_note_parts(request, note, "modifiée"))
     else:
         form = NewNoteForm(instance=note)
 

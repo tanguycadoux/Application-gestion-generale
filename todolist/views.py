@@ -1,9 +1,10 @@
 import json
 from datetime import date
 
+from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
@@ -15,9 +16,10 @@ from django.views.generic import (
 )
 
 from core.month_calendar import requested_month
+from core.templatetags.ui import date_text
 from note_taking.models import Note
 
-from .forms import TodoForm
+from .forms import NoteReviewFormSet, TodoForm
 from .gantt import gantt_chart
 from .models import Todo
 from .task_calendar import task_calendar
@@ -167,3 +169,36 @@ def toggle_todo(request, pk):
         for pk, row in task_rows(toggled_ids).items()
     }
     return JsonResponse({"status": "ok", "toggled_ids": toggled_ids, "rows": rows})
+
+
+def note_review(request, note_date: str):
+    """Bilan des tâches créées par l'enregistrement d'une note (#239) : leurs
+    échéance, priorité, projet et sujet se règlent aussitôt, puis retour à la note.
+
+    Les tâches sont désignées par `?ids=` ; seules celles issues de cette note
+    sont retenues. Sans tâche, retour direct à la note.
+    """
+    day = parse_date_param(note_date)
+    if day is None:
+        raise Http404("Date invalide.")
+    note = get_object_or_404(Note, date=day)
+    ids = [int(pk) for pk in request.GET.get("ids", "").split(",") if pk.isdigit()]
+    todos = (
+        Todo.objects.filter(pk__in=ids, created_from_note=True, note_part_date=day)
+        .select_related("project", "subject")
+        .order_by("pk")
+    )
+    if not todos.exists():
+        return redirect("note_taking:note_detail", pk=note.pk)
+
+    formset = NoteReviewFormSet(request.POST or None, queryset=todos)
+    if request.method == "POST" and formset.is_valid():
+        formset.save()
+        messages.success(
+            request,
+            f"Les tâches de la note du {date_text(day, 'moyen')} sont enregistrées.",
+        )
+        return redirect("note_taking:note_detail", pk=note.pk)
+    return render(
+        request, "todolist/note_review.html", {"note": note, "formset": formset}
+    )

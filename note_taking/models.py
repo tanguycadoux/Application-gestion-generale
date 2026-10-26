@@ -3,6 +3,8 @@ from django.db import models
 from core.models import Project, Subject, Tag
 from images.models import Image
 
+from .signals import NoteFollowUp
+
 
 class Note(models.Model):
     date = models.DateField(unique=True)
@@ -10,6 +12,10 @@ class Note(models.Model):
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+    # Suites proposées par les autres apps au dernier recalcul des note parts
+    # (#239) : tâches créées, par exemple.
+    follow_ups: tuple[NoteFollowUp, ...] = ()
 
     def __str__(self):
         return f"{self.date}"

@@ -6,7 +6,6 @@ détecter toute régression lors de la restructuration (M3).
 
 import shutil
 import tempfile
-import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -258,7 +257,6 @@ class TodoGenerationTests(ServiceTestCase):
 
         self.assertEqual(Todo.objects.get().project, note.parts.get().project)
 
-    @unittest.expectedFailure
     def test_une_todo_par_ligne(self):
         self.process("# P\n## S\n### TODO\n- Première\n- Seconde")
 

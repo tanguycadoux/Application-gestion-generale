@@ -39,7 +39,7 @@ todolist ──► note_taking ──► images ──► core
   - `home_link` : son entrée dans le menu de l'accueil général ;
   - `project_usages` : ce qui utilise un projet chez elle (chemin de comptage depuis `Project`, libellés), pour l'afficher dans la liste des projets et refuser la suppression d'un projet utilisé. On compte des notes, pas des note parts : c'est pourquoi le chemin est déclaré plutôt que déduit des relations du modèle.
 - `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
-- `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche.
+- `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche. Pour proposer une suite à l'enregistrement (#239), un receveur renvoie un `NoteFollowUp` (libellé et adresse, construite par l'app qui l'écoute) ; `process_note_parts` les range dans `note.follow_ups`, et la note redirige vers la première ou les cite dans le compte rendu d'import, sans connaître l'app qui les propose.
 - Ce sens est vérifié par un test (`core/tests/test_dependencies.py`) : imports Python et noms d'URL cités dans les gabarits, hors tests et migrations.
 
 ## Éléments communs de `core`
@@ -65,7 +65,7 @@ Les couleurs des projets (#162) sont des familles de Tailwind réservées aux pr
 | `qmd/lists.py` | règle d'imbrication des listes de Pandoc (#229), partagée par le rendu et les sous-tâches issues des notes (#238) |
 | `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
 | `services.py` | import, mise à jour, génération des note parts et des liens vers les images (accès à la base) |
-| `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes) |
+| `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes), et `NoteFollowUp`, la suite qu'un receveur propose (#239) |
 | `rendering.py` | rendu HTML : Markdown filtré, références d'images, callouts et blocs Quarto |
 | `importing.py`, `qmd/export.py` | import unifié (notes, images, archives) et export en archive Quarto |
 | `note_calendar.py` | calendrier des notes, sur la grille de `core` |
@@ -80,7 +80,7 @@ Les vues sont fines : elles délèguent aux services et n'attrapent que les erre
 |---|---|
 | `models.py` | `Todo` : avancement, état terminé, propagation aux ancêtres (`update_ancestors_progress`), incohérences, signal d'échéance (`due_signal`) |
 | `tree.py` | arbre des tâches en une requête (`children_map`), groupes et lignes du tableau ; chaque tâche y reçoit son parent et ses enfants déjà chargés (`Todo.tree`, #188) |
-| `services.py`, `receivers.py` | tâches issues des notes, créées à l'écoute de `note_parts_processed` |
+| `services.py`, `receivers.py` | tâches issues des notes, créées à l'écoute de `note_parts_processed` ; le receveur propose le bilan des tâches créées (`note_review`, #239) |
 | `task_calendar.py` | calendrier des tâches : une tâche en cours à son échéance, une tâche terminée à sa date de complétion |
 | `gantt.py` | frise de type Gantt du détail d'un parent (#168) |
 | `templatetags/todo_ui.py` | affichage du tableau : indentation, temps restant, couleurs du signal d'échéance |
@@ -129,7 +129,8 @@ Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont cré�
 
 - Le titre est le texte de la ligne sans son marqueur de liste ni sa case (#222). Une case cochée ne termine pas la tâche.
 - Une ligne imbriquée sous un élément de liste, selon la règle des sous-listes du rendu (#229), donne une sous-tâche de la tâche de cet élément (#238), sur plusieurs niveaux ; une ligne sans marqueur sous un élément, suite de son texte pour Pandoc, aussi. Le parent n'est posé qu'à la création : une tâche existante dont la ligne passe sous une autre n'est pas rattachée d'office, car son parent a pu être choisi à la main.
-- La tâche reprend le projet et le sujet de la note part. Ses tags sont ceux de la note part, sans `TODO`. Son échéance est la date de la note.
+- La tâche reprend le projet et le sujet de la note part. Ses tags sont ceux de la note part, sans `TODO`. Elle n'a pas d'échéance (#239) : la date de la note la mettait en retard dès le lendemain.
+- Quand l'enregistrement d'une note crée des tâches (formulaire, remplacement par le fichier source), la note redirige vers leur bilan (`todolist:note_review`), qui règle échéance, priorité, projet et sujet, puis revient à la note. Les tâches y sont désignées par `?ids=`, sans session : seules celles issues de cette note sont retenues. Un import cite les tâches créées dans son compte rendu, avec le lien vers le bilan de chaque note. Sans tâche créée, rien ne change.
 - Une tâche générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle tâche ; l'ancienne est conservée. Le suivi des lignes modifiées ou supprimées est à trancher (#240), avec les sous-listes devenues sous-tâches (#238).
 
 ### Avancement, état terminé et incohérences des tâches (#164, #165)

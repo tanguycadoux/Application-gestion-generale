@@ -1,0 +1,56 @@
+{% extends "todolist/base.html" %}
+{% load ui %}
+
+{% block title %}Tâches créées par la note du {{ note.date|date_text:"moyen" }}{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start">
+        <h1 class="flex-1">Tâches créées par la note du {% date_time note.date "long" %}</h1>
+
+        {% button "Enregistrer les tâches" icon="save" variant="ghost" icon_only=True form="note-review-form" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">Ces tâches viennent d'être créées depuis la note. Elles n'ont pas d'échéance : elle se choisit ici, ou plus tard dans la liste des tâches.</p>
+
+    <form id="note-review-form" method="post" class="flex flex-col gap-4">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {{ formset.non_form_errors }}
+
+        <table class="w-full border-collapse text-left">
+            <thead>
+                <tr class="text-sm text-slate-600">
+                    <th scope="col" class="p-2 font-medium">Tâche</th>
+                    <th scope="col" class="p-2 font-medium">Échéance</th>
+                    <th scope="col" class="p-2 font-medium">Priorité</th>
+                    <th scope="col" class="p-2 font-medium">Projet</th>
+                    <th scope="col" class="p-2 font-medium">Sujet</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in formset %}
+                    <tr class="border-t border-slate-200 align-baseline">
+                        <th scope="row" class="p-2 font-normal">
+                            {{ form.id }}
+                            <a href="{% url 'todolist:todo_detail' form.instance.pk %}">{{ form.instance.title }}</a>
+                            {{ form.non_field_errors }}
+                        </th>
+                        {% for field in form.visible_fields %}
+                            <td class="p-2">
+                                <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }} de « {{ form.instance.title }} »</label>
+                                {{ field }}
+                                {{ field.errors }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="flex gap-2">
+            {% button "Enregistrer les tâches" icon="save" %}
+            {% url 'note_taking:note_detail' note.pk as note_url %}
+            {% button "Plus tard, retour à la note" icon="arrow_back" href=note_url variant="ghost" %}
+        </p>
+    </form>
+{% endblock content %}
