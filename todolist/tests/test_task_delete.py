@@ -98,7 +98,9 @@ class DismissTests(DeleteTestCase):
     """Une tâche issue d'une note, ou un arbre qui en contient une : écartée."""
 
     def setUp(self):
-        note = Note.objects.create(date="2025-11-24", body="# P\n### TODO\n- A\n  - B")
+        note = Note.objects.create(
+            date="2025-11-24", body="# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B"
+        )
         process_note_parts(note)
         self.a = Todo.objects.get(title="A")
         self.b = Todo.objects.get(title="B")

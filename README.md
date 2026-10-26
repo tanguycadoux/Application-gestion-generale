@@ -199,7 +199,7 @@ Le contenu est découpé en *note parts* : chaque note part regroupe le texte pa
 
 Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#295) : le même titre sous deux projets est deux sections, et deux titres qui ne diffèrent que par la casse sont le même niveau, écrit comme la première fois. Une section qu'aucune note ni tâche n'utilise plus est supprimée à l'enregistrement d'une note.
 
-Le titre `TODO` (de `###` à `######`) est un marqueur de tâches, pas un niveau du chemin : voir « Génération des TODO ». Il disparaîtra avec les cases à cocher (#297).
+Une tâche s'écrit en case à cocher, `- [ ] texte` : voir « Génération des TODO ».
 
 Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
 
@@ -271,20 +271,40 @@ Ces tags restent transverses : on les retrouve quel que soit le projet. Après u
 
 ### Génération des TODO
 
-Toute note part portant le tag `TODO` (par exemple via un titre `### TODO`) génère une TODO par ligne de contenu dans l'application `todolist` :
+Une tâche s'écrit comme une **case à cocher** vide, la syntaxe de Pandoc et de Quarto, n'importe où dans une note (#297) :
 
 ```
 # Projet
 ## Sujet
-### TODO
+### Réunion
+
+- [ ] Première tâche
+- [ ] Deuxième tâche
+  - [ ] Sous-tâche
+- [x] Déjà fait : ni tâche ni rien
+- Une idée, qui n'est pas une tâche
+```
+
+La tâche est rangée dans le **chemin des titres au-dessus d'elle** (ici « Sujet › Réunion »). Une case cochée `- [x]` n'est pas une tâche : elle est ignorée, comme tout élément de liste sans case.
+
+Pour qu'une note reste lisible en texte brut, sans cases, une branche peut être marquée **liste de tâches** par un bloc `metadata` : chaque élément de liste y est alors une tâche, avec ou sans case.
+
+```
+## Réunion
+
+::: {.metadata}
+todo: true
+:::
 
 - Première tâche
 - Deuxième tâche
 ```
 
-Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`, `[x]`) : une case cochée ne crée pas de tâche terminée (#222). Une ligne vide ou réduite à son marqueur est ignorée ; le titre est limité à 500 caractères.
+Le marqueur a la portée des tags du bloc : la branche où il est écrit, sous-niveaux compris. `todo: false` le retire pour une branche plus profonde. Il pose aussi le tag `TODO` sur les note parts de la branche, que la recherche retrouve. Un titre `TODO` n'a plus de sens propre : c'est un niveau du chemin comme un autre.
 
-Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section sans `TODO`, puis lignes parentes) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
+Le titre de la tâche est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`). Une ligne vide, réduite à son marqueur, ou qui n'est pas un élément de liste (un paragraphe) est ignorée ; le titre est limité à 500 caractères. Les cases d'un bloc de code ne sont pas des tâches.
+
+Une ligne en sous-liste crée une sous-tâche de la tâche au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section, puis éléments parents, tâches ou non) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
 
 Chaque TODO est rattachée au projet et à la dernière section du chemin de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
 

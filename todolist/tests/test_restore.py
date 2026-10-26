@@ -16,7 +16,7 @@ from note_taking.services import process_note_parts
 from todolist.models import Todo
 from todolist.services import remove_task
 
-BODY = "# P\n### TODO\n- A\n  - B\n  - C\n- D"
+BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C\n- D"
 
 
 class RestoreTestCase(TestCase):
@@ -134,7 +134,7 @@ class RestoreTests(RestoreTestCase):
 
     def test_gardee_sans_sa_ligne_sinon(self):
         remove_task(self.task("D"))
-        self.note.body = "# P\n### TODO\n- A\n  - B\n  - C"
+        self.note.body = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C"
         self.note.save()
         process_note_parts(self.note)
 
