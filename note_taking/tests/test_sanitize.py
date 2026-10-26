@@ -4,15 +4,12 @@ Un script ou un lien `javascript:` dans une note s'exécuterait dans la page et
 pourrait envoyer les notes ailleurs : seul le HTML d'un document est gardé.
 """
 
-import unittest
-
 from django.test import SimpleTestCase
 
 from note_taking.rendering import render_markdown
 
 
 class DangerousHtmlTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_script_retire_avec_son_contenu(self):
         html = render_markdown(
             "Avant\n\n<script>fetch('https://x.org')</script>\n\nAprès"
@@ -22,7 +19,6 @@ class DangerousHtmlTests(SimpleTestCase):
         self.assertNotIn("fetch", html)
         self.assertIn("Après", html)
 
-    @unittest.expectedFailure
     def test_gestionnaire_d_evenement_retire(self):
         html = render_markdown(
             '<p onclick="alert(1)">x</p>\n\n![a](/a.png){onerror=alert(1)}'
@@ -31,14 +27,12 @@ class DangerousHtmlTests(SimpleTestCase):
         self.assertNotIn("onclick", html)
         self.assertNotIn("onerror", html)
 
-    @unittest.expectedFailure
     def test_lien_javascript_retire(self):
         html = render_markdown("[clic](javascript:alert(1))")
 
         self.assertNotIn("javascript:", html)
         self.assertIn("clic", html)
 
-    @unittest.expectedFailure
     def test_iframe_et_style_retires(self):
         html = render_markdown(
             '<iframe src="https://x.org"></iframe>\n\n<style>p{}</style>\n\n'
@@ -49,7 +43,6 @@ class DangerousHtmlTests(SimpleTestCase):
         self.assertNotIn("<style", html)
         self.assertNotIn("position", html)
 
-    @unittest.expectedFailure
     def test_image_en_data_retiree(self):
         html = render_markdown('<img src="data:image/svg+xml,&lt;svg&gt;" alt="a">')
 
@@ -62,8 +55,8 @@ class KeptHtmlTests(SimpleTestCase):
     def test_tableau_aligne(self):
         html = render_markdown("| a | b |\n|:-:|--:|\n| 1 | 2 |")
 
-        self.assertInHTML('<td style="text-align: center;">1</td>', html)
-        self.assertInHTML('<td style="text-align: right;">2</td>', html)
+        self.assertInHTML('<td style="text-align:center">1</td>', html)
+        self.assertInHTML('<td style="text-align:right">2</td>', html)
 
     def test_image_avec_attributs(self):
         html = render_markdown("![Banc](/media/banc.png){#fig-banc width=80%}")

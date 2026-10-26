@@ -30,6 +30,7 @@ Les dépendances sont maintenues à la main, avec des versions épinglées :
 - `requirements.txt` : dépendances d'exécution,
   - `Django`,
   - `Markdown` pour le rendu HTML des notes,
+  - `nh3` pour filtrer le HTML écrit dans les notes (liste blanche, #241),
   - `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
   - `django-tailwind-cli` pour compiler la feuille Tailwind (CLI autonome de Tailwind, sans Node),
   - `Pillow` pour le stockage des images de notes (`ImageField`) ;
