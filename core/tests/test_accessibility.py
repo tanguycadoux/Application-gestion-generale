@@ -1,7 +1,6 @@
 """Accessibilité du gabarit de base et des accueils (#191)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -13,13 +12,11 @@ class BaseTemplateTests(TestCase):
     def pages(self) -> dict[str, str]:
         return {name: self.client.get(reverse(name)).content.decode() for name in PAGES}
 
-    @unittest.expectedFailure
     def test_menu_principal_nomme(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
                 self.assertIn('<nav aria-label="Menu principal"', html)
 
-    @unittest.expectedFailure
     def test_lien_d_evitement_en_tete_vers_le_contenu(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
@@ -35,7 +32,6 @@ class BaseTemplateTests(TestCase):
 class HomeTitleTests(TestCase):
     """Le titre d'onglet d'un accueil d'app est son titre de page."""
 
-    @unittest.expectedFailure
     def test_titre_d_onglet_egal_au_titre_de_page(self):
         for name, title in (
             ("note_taking:index", "Gestion des notes"),

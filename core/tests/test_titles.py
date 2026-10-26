@@ -43,7 +43,7 @@ class PageTitlesTests(TestCase):
         note, todo = self.note.pk, self.todo.pk
         return {
             "/": "Gestion générale",
-            reverse("note_taking:index"): "Accueil · Notes",
+            reverse("note_taking:index"): "Gestion des notes",
             reverse("note_taking:notes_list"): "Liste des notes · Notes",
             reverse("note_taking:note_detail", args=[note]): (
                 "Note du 24 novembre 2025 · Notes"
@@ -60,7 +60,7 @@ class PageTitlesTests(TestCase):
             reverse("note_taking:image_detail", args=[self.image.pk]): (
                 "Image banc.png · Notes"
             ),
-            reverse("todolist:index"): "Accueil · Tâches",
+            reverse("todolist:index"): "Gestion des tâches",
             reverse("todolist:todo_list"): "Liste des tâches · Tâches",
             reverse("todolist:todo_detail", args=[todo]): "Tâche « Relire » · Tâches",
             reverse("todolist:todo_create"): "Nouvelle tâche · Tâches",

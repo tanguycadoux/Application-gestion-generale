@@ -80,7 +80,7 @@ class TaskCalendarTests(TestCase):
 
         html = self.client.get(reverse("todolist:index")).content.decode()
 
-        self.assertIn("<title>Accueil · Tâches</title>", html)
+        self.assertIn("<title>Gestion des tâches</title>", html)
         self.assertIn(">Relire<", html)
         self.assertIn("bg-teal-500", html)
 

@@ -1,7 +1,8 @@
 {% extends "todolist/base.html" %}
 {% load ui %}
 
-{% block title %}Accueil{% endblock title %}
+{# Accueil de l'app : le titre d'onglet est son titre de page, sans section (#191). #}
+{% block title %}Gestion des tâches{% endblock title %}{% block title_suffix %}{% endblock title_suffix %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
