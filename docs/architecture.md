@@ -164,7 +164,10 @@ Les éléments d'interface récurrents (boutons, liens du menu, listes de tags�
 ### Outillage et CI
 
 - `ruff` (lint et formatage, configuration dans `pyproject.toml`), `mypy` avec `django-stubs` (`mypy.ini`).
-- La CI GitHub Actions lance `ruff check`, `ruff format --check`, `mypy`, `makemigrations --check` et les tests à chaque PR.
+- `djlint` vérifie les gabarits (`djlint --lint`, configuration dans `pyproject.toml`, quelques codes ignorés par fichier avec leur raison). Son formatage automatique n'est pas utilisé : il coupe les attributs et ajoute des espaces dans le HTML produit (titres d'onglet, éléments en ligne), ce que les tests et le rendu remarquent (#242).
+- `coverage` mesure la couverture des tests, sans seuil bloquant (`coverage run manage.py test`, puis `coverage report`).
+- La CI GitHub Actions lance `ruff check`, `ruff format --check`, `mypy`, `djlint --lint`, `makemigrations --check`, les tests avec la couverture (validation HTML comprise) et la construction de la feuille Tailwind à chaque PR.
+- Dependabot (`.github/dependabot.yml`) propose chaque semaine les mises à jour des dépendances `pip` et des GitHub Actions, les mineures et correctives regroupées dans une seule PR.
 - `main` est protégée : une PR ne peut être mergée que si la CI passe et que la branche est à jour.
 - **Validation HTML** (#259) : le validateur du W3C (Nu Html Checker, `vnu.jar`) tourne **en local**, jamais en ligne, car le validateur en ligne recevrait le contenu des notes. `python manage.py install_validator` le télécharge (paquet npm `vnu-jar`, version et intégrité épinglées par `VNU_VERSION` et `VNU_INTEGRITY`) dans `.vnu/`, non versionné ; il demande Java. `core/tests/test_html_validation.py` valide alors les pages principales, rendues avec des données de test ; sans validateur, ce test est ignoré. La CI l'installe et le lance à chaque PR. La dernière issue d'un milestone qui touche au HTML vérifie qu'il passe et en étend la liste de pages si besoin.
 

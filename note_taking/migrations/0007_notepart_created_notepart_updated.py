@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='notepart',
             name='created',
-            field=models.DateTimeField(auto_now_add=True, default='2025-12-12'),
+            field=models.DateTimeField(auto_now_add=True, default='2025-12-12T00:00:00+01:00'),
             preserve_default=False,
         ),
         migrations.AddField(

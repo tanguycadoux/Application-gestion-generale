@@ -34,9 +34,9 @@ Les dépendances sont maintenues à la main, avec des versions épinglées :
   - `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
   - `django-tailwind-cli` pour compiler la feuille Tailwind (CLI autonome de Tailwind, sans Node),
   - `Pillow` pour le stockage des images de notes (`ImageField`) ;
-- `requirements-dev.txt` : dépendances d'exécution et outillage de développement (`mypy`, `django-stubs`, `ruff`).
+- `requirements-dev.txt` : dépendances d'exécution et outillage de développement (`mypy`, `django-stubs`, `ruff`, `djlint` pour les gabarits, `coverage` pour la couverture des tests).
 
-Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis reporter la version installée (`pip list`) dans le fichier concerné.
+Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis reporter la version installée (`pip list`) dans le fichier concerné. Dependabot propose chaque semaine les mises à jour, en PR.
 
 ### Front
 
