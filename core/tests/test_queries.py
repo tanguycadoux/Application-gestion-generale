@@ -1,6 +1,5 @@
 """Nombre de requêtes des listes, indépendant du nombre de lignes (#188)."""
 
-import unittest
 from datetime import date
 
 from django.db import connection
@@ -36,13 +35,12 @@ class ListQueriesTests(TestCase):
             )
 
     def add_notes(self, count: int):
-        for i in range(count):
+        for _ in range(count):
             note = Note.objects.create(
                 date=date(2025, 11, 1 + Note.objects.count()), body="# A\nx\n# B\ny"
             )
             process_note_parts(note)
 
-    @unittest.expectedFailure
     def test_liste_des_taches(self):
         url = reverse("todolist:todo_list")
         self.add_tasks(2)
@@ -51,7 +49,6 @@ class ListQueriesTests(TestCase):
 
         self.assertEqual(self.queries(url), few)
 
-    @unittest.expectedFailure
     def test_detail_d_une_tache_parente(self):
         a = Project.objects.create(name="A")
         parent = Todo.objects.create(title="Parent", project=a)
@@ -63,7 +60,6 @@ class ListQueriesTests(TestCase):
 
         self.assertEqual(self.queries(url), few)
 
-    @unittest.expectedFailure
     def test_liste_des_notes(self):
         url = reverse("note_taking:notes_list")
         self.add_notes(2)

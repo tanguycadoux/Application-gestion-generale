@@ -3,6 +3,7 @@ from datetime import date
 from functools import partial
 
 from django.contrib import messages
+from django.db.models import Prefetch
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -65,7 +66,14 @@ class NoteList(ListView):
         return None, None
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        # Projets de chaque note préchargés : une requête pour toute la liste (#188).
+        qs = (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                Prefetch("parts", queryset=NotePart.objects.select_related("project"))
+            )
+        )
 
         sort, direction = self.requested_sort()
 

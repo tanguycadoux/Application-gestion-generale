@@ -87,6 +87,10 @@ class Todo(models.Model):
     if TYPE_CHECKING:
         children: QuerySet[Todo]
 
+    # Parent et enfants déjà chargés par l'arbre des tâches (todolist.tree, #188) :
+    # les incohérences se calculent alors sans requête.
+    tree: tuple[Todo | None, list[Todo]] | None = None
+
     # Ancêtres dont l'avancement a changé au dernier enregistrement (#164).
     updated_ancestor_ids: list[int]
 
@@ -160,10 +164,14 @@ class Todo(models.Model):
         Rien n'est empêché : ces écarts sont seulement signalés, des deux côtés
         (sur le parent et sur l'enfant), avec un lien vers l'autre tâche.
         """
+        parent, children = self.tree or (
+            self.parent,
+            list(self.children.select_related("project")),
+        )
         found = []
-        if self.parent is not None:
-            found += pair_incoherences(self.parent, self, from_parent=False)
-        for child in self.children.select_related("project"):
+        if parent is not None:
+            found += pair_incoherences(parent, self, from_parent=False)
+        for child in children:
             found += pair_incoherences(self, child, from_parent=True)
         return found
 

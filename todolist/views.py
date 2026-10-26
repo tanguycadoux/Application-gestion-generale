@@ -44,7 +44,7 @@ def parse_date_param(value: str):
 def todo_list(request):
     """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
     les arbres dont la racine est terminée dans une section repliée."""
-    groups = task_groups(Todo.objects.filter(parent__isnull=True))
+    groups = task_groups()
     return render(
         request,
         "todolist/todo_list.html",
