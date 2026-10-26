@@ -17,6 +17,8 @@ ACTION_ICONS = {
     "Ajouter": "add",
     "Modifier": "edit",
     "Supprimer": "delete",
+    "Écarter": "playlist_remove",
+    "Rétablir": "restore_from_trash",
     "Enregistrer": "save",
     "Exporter": "download",
     "Importer": "upload",

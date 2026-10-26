@@ -140,6 +140,19 @@ class ButtonTests(SimpleTestCase):
 
         self.assertIn('aria-describedby="raison"', html)
 
+    def test_bouton_qui_ouvre_une_popover(self):
+        """Popover native (attribut `popover`) : le navigateur l'ouvre et la ferme."""
+        html = render(
+            '{% button "Annuler" type="button" popovertarget="p"'
+            ' popovertargetaction="hide" %}'
+        )
+
+        self.assertIn('popovertarget="p" popovertargetaction="hide"', html)
+
+    def test_lien_qui_ouvre_une_popover_refuse(self):
+        with self.assertRaises(ValueError):
+            render('{% button "Voir" href="/x/" popovertarget="p" %}')
+
     def test_lien_relie_a_un_formulaire_refuse(self):
         with self.assertRaises(ValueError):
             render('{% button "Enregistrer" href="/x/" form="note-form" %}')

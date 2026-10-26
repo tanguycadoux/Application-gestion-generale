@@ -146,6 +146,13 @@ class AlertStylesheetTests(SimpleTestCase):
         self.assertIn(".alert__toast-progress {", css)
         self.assertIn("@keyframes alert-toast-progress", css)
 
+    def test_popover_native_ancree_a_son_bouton(self):
+        """Sous son bouton par l'ancrage CSS ; sans lui, le navigateur la centre."""
+        css = components_layer(read_source_css())
+
+        self.assertIn("@supports (position-area: bottom)", css)
+        self.assertIn("position-area: bottom span-left", css)
+
     def test_script_ne_donne_que_la_duree_de_la_barre(self):
         script = read_static("core/alert_system.js")
 

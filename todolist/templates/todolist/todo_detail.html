@@ -17,10 +17,24 @@
             {% url 'todolist:todo_edit' object.pk as url %}
             {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
 
-            <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="{{ delete_confirm }}">
-                {% csrf_token %}
-                {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
-            </form>
+            {# Confirmation par une popover HTML native, sans JavaScript. #}
+            {% if dismisses %}
+                {% button "Écarter la tâche" icon="playlist_remove" variant="ghost-danger" icon_only=True type="button" popovertarget="delete-confirm" %}
+            {% else %}
+                {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True type="button" popovertarget="delete-confirm" %}
+            {% endif %}
+            <div id="delete-confirm" popover class="confirm-popover min-w-48 max-w-80 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-lg">
+                <p class="mb-3 font-semibold">{{ delete_confirm }}</p>
+                <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" class="flex justify-end gap-2">
+                    {% csrf_token %}
+                    {% button "Annuler" icon="close" variant="ghost" type="button" popovertarget="delete-confirm" popovertargetaction="hide" %}
+                    {% if dismisses %}
+                        {% button "Écarter" icon="playlist_remove" variant="danger" %}
+                    {% else %}
+                        {% button "Supprimer" icon="delete" variant="danger" %}
+                    {% endif %}
+                </form>
+            </div>
         </header>
 
         {% with incoherences=object.incoherences %}

@@ -23,7 +23,16 @@ from note_taking.models import Note
 from .forms import GoneLineFormSet, NoteReviewFormSet, TodoForm
 from .gantt import gantt_chart
 from .models import Todo
-from .services import note_lines, note_todos_to_review, remove_task, replace_task
+from .services import (
+    dismissed_rows,
+    dismissed_subtree,
+    note_lines,
+    note_todos_to_review,
+    removal_dismisses,
+    remove_task,
+    replace_task,
+    restore_task,
+)
 from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
@@ -50,14 +59,43 @@ def todo_list(request):
     """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
     les arbres dont la racine est terminée dans une section repliée."""
     groups = task_groups()
+    rows = dismissed_rows()
+    for row in rows:
+        # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
+        row.confirm = (
+            f"Rétablir la tâche « {row.task.title} »{with_subtasks(row.subtasks)} ?"
+        )
     return render(
         request,
         "todolist/todo_list.html",
         {
             "pending_groups": [g for g in groups if not g.root.done],
             "done_groups": [g for g in groups if g.root.done],
+            "dismissed_rows": rows,
         },
     )
+
+
+@require_POST
+def restore_todo(request, pk):
+    """Rétablit une tâche écartée et ses sous-tâches écartées (#290)."""
+    todo = get_object_or_404(
+        Todo.all_objects, pk=pk, note_state=Todo.NoteState.DISMISSED
+    )
+    subtasks = len(dismissed_subtree(todo)) - 1
+    dismissed_parent = restore_task(todo)
+    message = (
+        f"La tâche « {todo.title} »{with_subtasks(subtasks)} sont rétablies."
+        if subtasks
+        else f"La tâche « {todo.title} » est rétablie."
+    )
+    if dismissed_parent:
+        message += (
+            f" Sa tâche parente « {dismissed_parent.title} » est écartée : "
+            "elle est rétablie sans tâche parente."
+        )
+    messages.success(request, message)
+    return redirect("todolist:todo_list")
 
 
 def with_subtasks(count: int) -> str:
@@ -82,10 +120,15 @@ class TodoDetailView(DetailView):
         context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
         context["children"] = context["children_groups"][0].rows
         context["gantt"] = gantt_chart(todo)
-        # Les sous-tâches sont supprimées avec la tâche : la confirmation le dit (#223).
+        # Les sous-tâches partent avec la tâche : la confirmation le dit (#223).
+        # Un arbre qui contient une tâche issue d'une note est écarté (#290).
+        subtasks = with_subtasks(len(context["children"]))
+        context["dismisses"] = removal_dismisses(todo)
         context["delete_confirm"] = (
-            f"Supprimer définitivement la tâche « {todo.title} »"
-            f"{with_subtasks(len(context['children']))} ?"
+            f"Écarter la tâche « {todo.title} »{subtasks} ? La section « Écartées » "
+            "de la liste des tâches permet de revenir en arrière."
+            if context["dismisses"]
+            else f"Supprimer définitivement la tâche « {todo.title} »{subtasks} ?"
         )
         return context
 
@@ -123,7 +166,8 @@ class TodoUpdateView(SuccessMessageMixin, UpdateView):
 
 
 class TodoDeleteView(SuccessMessageMixin, DeleteView):
-    """Supprime une tâche ; la confirmation se fait par popover (data-confirm)."""
+    """Supprime ou écarte une tâche ; la confirmation se fait par popover HTML,
+    dans la page de la tâche."""
 
     model = Todo
     http_method_names = ["post"]
@@ -133,18 +177,20 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
         # Compté avant la suppression, qui emporte les sous-tâches (#223).
         self.subtasks = self.object.descendants_count()
         success_url = self.get_success_url()
-        # Une tâche issue d'une note est écartée, pas supprimée (#240).
+        # Un arbre qui contient une tâche issue d'une note est écarté (#240, #290).
+        self.dismissed = removal_dismisses(self.object)
         remove_task(self.object)
         messages.success(self.request, self.get_success_message(form.cleaned_data))
         return HttpResponseRedirect(success_url)
 
     def get_success_message(self, cleaned_data):
         title = self.object.title
+        removed = "écartée" if self.dismissed else "supprimée"
         if self.subtasks:
             return (
-                f"La tâche « {title} »{with_subtasks(self.subtasks)} sont supprimées."
+                f"La tâche « {title} »{with_subtasks(self.subtasks)} sont {removed}s."
             )
-        return f"La tâche « {title} » est supprimée."
+        return f"La tâche « {title} » est {removed}."
 
 
 @require_POST
