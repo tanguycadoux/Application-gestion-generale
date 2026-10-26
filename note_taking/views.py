@@ -52,12 +52,21 @@ class NoteList(ListView):
     context_object_name = "notes"
 
     DEFAULT_ORDERING = "-date"
+    # Tris proposés par l'interface ; toute autre valeur revient au tri par défaut (#219).
+    SORT_FIELDS = ("date",)
+    DIRECTIONS = ("asc", "desc")
+
+    def requested_sort(self) -> tuple[str | None, str | None]:
+        sort = self.request.GET.get("sort")
+        direction = self.request.GET.get("direction")
+        if sort in self.SORT_FIELDS and direction in self.DIRECTIONS:
+            return sort, direction
+        return None, None
 
     def get_queryset(self):
         qs = super().get_queryset()
 
-        sort = self.request.GET.get("sort")
-        direction = self.request.GET.get("direction")
+        sort, direction = self.requested_sort()
 
         if not sort or not direction:
             return qs.order_by(self.DEFAULT_ORDERING)
@@ -68,8 +77,7 @@ class NoteList(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        sort = self.request.GET.get("sort")
-        direction = self.request.GET.get("direction")
+        sort, direction = self.requested_sort()
         if not sort or not direction:
             next_direction = "asc"
             next_sort = self.DEFAULT_ORDERING.lstrip("-")
@@ -151,22 +159,20 @@ def import_files(request):
     return render(request, "note_taking/import_report.html", {"report": report})
 
 
+@require_POST
 def update_source_file(request, pk):
     note = get_object_or_404(Note, pk=pk)
-    if request.method == "POST":
-        file = request.FILES.get("note_update_source_file")
-        if file is None:
-            messages.error(request, "Choisir un fichier.")
+    file = request.FILES.get("note_update_source_file")
+    if file is None:
+        messages.error(request, "Choisir un fichier.")
+    else:
+        try:
+            update_note_from_source_file(note, file)
+        except AppError as e:
+            messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
         else:
-            try:
-                update_note_from_source_file(note, file)
-            except AppError as e:
-                messages.error(
-                    request, f"Erreur lors de la mise à jour de la note : {e}"
-                )
-            else:
-                messages.success(request, "La note est mise à jour.")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+            messages.success(request, "La note est mise à jour.")
+    return redirect("note_taking:note_detail", pk=note.pk)
 
 
 def note_json(request, pk):
