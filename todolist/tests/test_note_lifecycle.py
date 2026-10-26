@@ -9,6 +9,7 @@ import re
 from django.test import TestCase
 from django.urls import reverse
 
+from core.forms import section_path_text
 from core.models import Project
 from note_taking.models import Note
 from note_taking.services import process_note_parts
@@ -84,7 +85,7 @@ def review_data(new=(), gone=()) -> dict:
             f"new-{i}-due_date": "",
             f"new-{i}-priority": todo.priority,
             f"new-{i}-project": todo.project_id,
-            f"new-{i}-section": todo.section_id or "",
+            f"new-{i}-section_path": section_path_text(todo.section),
         }
     for i, (todo, action, replacement) in enumerate(gone):
         data |= {

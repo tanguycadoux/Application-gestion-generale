@@ -130,7 +130,7 @@ class VocabularyTests(TestCase):
                 "priority": "Priorité",
                 "due_date": "Échéance",
                 "project": "Projet",
-                "section": "Sujet",
+                "section_path": "Chemin",
                 "tags": "Tags",
                 "parent": "Tâche parente",
             },

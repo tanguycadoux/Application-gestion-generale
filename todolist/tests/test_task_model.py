@@ -83,7 +83,7 @@ class SectionAndProjectTests(TestCase):
                 "priority",
                 "due_date",
                 "project",
-                "section",
+                "section_path",
                 "tags",
                 "parent",
             ],
