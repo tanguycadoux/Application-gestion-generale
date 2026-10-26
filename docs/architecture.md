@@ -1,6 +1,6 @@
 # Architecture
 
-Ce document décrit l'organisation du code et les décisions structurantes du projet, avec leur raison. Le fonctionnement côté utilisateur (format des notes, génération des TODO…) est décrit dans le [README](../README.md) ; le suivi des évolutions se fait dans les [issues](https://github.com/tanguycadoux/Application-gestion-generale/issues) GitHub.
+Ce document décrit l'organisation du code et les décisions structurantes du projet, avec leur raison. Le fonctionnement côté utilisateur (format des notes, tâches issues des notes…) est décrit dans le [README](../README.md) ; le suivi des évolutions se fait dans les [issues](https://github.com/tanguycadoux/Application-gestion-generale/issues) GitHub.
 
 ## Contexte
 
@@ -17,12 +17,14 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 ## Apps et dépendances
 
 ```
-app_gestion/   configuration : settings, urls
-core/          éléments communs : Project, Subject, Tag, AppError,
-               page d'accueil, gabarit de base, statiques communs
-images/        modèle Image et import des images
-note_taking/   notes, analyse qmd, rendu, recherche, pages d'images
-todolist/      TODO
+app_gestion/   configuration : settings, urls, lanceur de tests sans réseau
+core/          éléments communs : Project, Subject, Tag, AppError, accueil,
+               page Projets, gabarit de base, composants d'interface,
+               calendrier mensuel, icônes, validateur HTML
+images/        modèle Image, import et suppression des images
+note_taking/   notes, analyse qmd, rendu, import et export, recherche,
+               calendrier des notes, pages d'images
+todolist/      tâches : arbre, avancement, calendrier, frise, tâches issues des notes
 ```
 
 Sens des dépendances (une flèche signifie « importe ») :
@@ -40,6 +42,21 @@ todolist ──► note_taking ──► images ──► core
 - `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche.
 - Ce sens est vérifié par un test (`core/tests/test_dependencies.py`) : imports Python et noms d'URL cités dans les gabarits, hors tests et migrations.
 
+## Éléments communs de `core`
+
+| Module | Rôle |
+|---|---|
+| `models.py` | `Project` (nom unique, couleur, description), `Subject`, `Tag`, partagés par les notes et les tâches |
+| `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
+| `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
+| `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
+| `forms.py` | formulaires des projets, et rendu en grille de `{{ form }}` (`GridFormRenderer`, réglage `FORM_RENDERER`, #132) |
+| `icons.py`, `management/commands/add_icon.py` | icônes Material Symbols en SVG (`static/icons/`), et leur téléchargement (#218) |
+| `html_validator.py`, `management/commands/install_validator.py` | validateur HTML du W3C en local (#259) |
+| `exceptions.py` | `AppError`, base des erreurs métier |
+
+Les couleurs des projets (#162) sont des familles de Tailwind réservées aux projets. Un projet créé sans couleur, par une note ou une tâche, reçoit la moins utilisée. Seule la pastille (`project_badge`) les emploie.
+
 ## Organisation de `note_taking`
 
 | Module | Rôle |
@@ -49,10 +66,26 @@ todolist ──► note_taking ──► images ──► core
 | `services.py` | import, mise à jour, génération des note parts et des liens vers les images (accès à la base) |
 | `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes) |
 | `rendering.py` | rendu HTML : Markdown filtré, références d'images, callouts et blocs Quarto |
+| `importing.py`, `qmd/export.py` | import unifié (notes, images, archives) et export en archive Quarto |
+| `note_calendar.py` | calendrier des notes, sur la grille de `core` |
 | `exceptions.py` | erreurs métier (`NoteError` et sous-classes) |
 | `management/commands/reprocess_notes.py` | recalcul des note parts de toutes les notes |
 
 Les vues sont fines : elles délèguent aux services et n'attrapent que les erreurs métier.
+
+## Organisation de `todolist`
+
+| Module | Rôle |
+|---|---|
+| `models.py` | `Todo` : avancement, état terminé, propagation aux ancêtres (`update_ancestors_progress`), incohérences, signal d'échéance (`due_signal`) |
+| `tree.py` | arbre des tâches en une requête (`children_map`), groupes et lignes du tableau ; chaque tâche y reçoit son parent et ses enfants déjà chargés (`Todo.tree`, #188) |
+| `services.py`, `receivers.py` | tâches issues des notes, créées à l'écoute de `note_parts_processed` |
+| `task_calendar.py` | calendrier des tâches : une tâche en cours à son échéance, une tâche terminée à sa date de complétion |
+| `gantt.py` | frise de type Gantt du détail d'un parent (#168) |
+| `templatetags/todo_ui.py` | affichage du tableau : indentation, temps restant, couleurs du signal d'échéance |
+| `static/todolist/todo.js` | case à cocher : la vue renvoie les lignes modifiées, que la liste remplace sans recharger la page (#189) |
+
+Le tableau des tâches (`task_table.html`, une ligne par `task_row.html`) sert à la liste et au détail d'un parent.
 
 ## Modèle de données
 
@@ -62,12 +95,14 @@ Note ──< NotePart >── Project          (core)
            │  └──<>── Tag              (core)
            └────<>─── Image            (images), via NotePartImageLink
 
-Todo >── Project, Todo >─< Tag, Todo >── Todo (parent)
+Todo >── Project, Todo >── Subject (option), Todo >─< Tag,
+Todo >── Todo (parent, option)
 ```
 
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
 - **`NotePart`** : morceau de note partageant projet, sujet et tags. **Données dérivées** de `Note.body`.
-- **`Project`, `Subject`, `Tag`** : partagés par les notes et les TODO, noms uniques.
+- **`Project`, `Subject`, `Tag`** : partagés par les notes et les tâches, noms uniques. Un projet a une couleur (#162) et une description.
+- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date et le texte de sa ligne (`note_part_date`, `note_part_text`).
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
 
 ## Décisions
@@ -87,13 +122,25 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 - aucune donnée saisie ne doit être rattachée à une note part, car elle serait perdue au prochain enregistrement ;
 - après une évolution du parseur, `python manage.py reprocess_notes` recalcule toutes les notes (`--dry-run` pour simuler).
 
-### TODO générées depuis les notes
+### Tâches issues des notes
 
-Les TODO sont créées par `todolist`, à l'écoute du signal `note_parts_processed` (voir « Apps et dépendances »). Une TODO générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle TODO ; l'ancienne est conservée. Le sujet est en pause.
+Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont créées par `todolist`, à l'écoute du signal `note_parts_processed` (voir « Apps et dépendances »).
+
+- Le titre est le texte de la ligne sans son marqueur de liste ni sa case (#222). Une case cochée ne termine pas la tâche.
+- La tâche reprend le projet et le sujet de la note part. Ses tags sont ceux de la note part, sans `TODO`. Son échéance est la date de la note.
+- Une tâche générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle tâche ; l'ancienne est conservée. Le suivi des lignes modifiées ou supprimées est à trancher (#240), avec les sous-listes devenues sous-tâches (#238).
+
+### Avancement, état terminé et incohérences des tâches (#164, #165)
+
+- L'avancement d'une tâche sans sous-tâche se saisit, et elle est terminée à 100 %. Celui d'un parent se calcule : c'est la moyenne arrondie de ses enfants, propagée aux ancêtres à chaque enregistrement.
+- Un parent se coche à la main. Il se décoche dès qu'un de ses enfants n'est plus terminé. À 100 % et non coché, il est « à valider ».
+- Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais signalés, des deux côtés : échéance d'une sous-tâche après celle du parent, projet différent. Seule une boucle parent-enfant est refusée.
+- Supprimer une tâche supprime ses sous-tâches ; la confirmation et le message le disent (#223).
+- Une seule règle d'urgence, `Todo.due_signal` : terminée, en retard, proche (sous 3 jours) ou normale (#189).
 
 ### Projets, sujets et tags partagés (#19, #20)
 
-- Un même modèle pour les notes et les TODO, fusionnés par nom lors de la migration.
+- Un même modèle pour les notes et les tâches, fusionnés par nom lors de la migration.
 - Un **sujet est global**, indépendant des projets (« Calcul thermique » peut apparaître dans plusieurs projets).
 - La casse est respectée (« Thermique » ≠ « thermique »).
 - Sujets et tags devenus inutilisés restent en base, mais ne sont pas proposés dans la recherche.
@@ -111,7 +158,7 @@ Les TODO sont créées par `todolist`, à l'écoute du signal `note_parts_proces
 
 Un objet utilisé ne peut pas être supprimé (`on_delete=PROTECT`) :
 
-- un **projet** utilisé par une note part ou une TODO ;
+- un **projet** utilisé par une note part ou une tâche ;
 - un **sujet** utilisé par une note part ;
 - une **image** utilisée par une note part (via `NotePartImageLink`).
 
