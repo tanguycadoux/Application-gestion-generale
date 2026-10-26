@@ -32,7 +32,7 @@ class NotePartAdmin(admin.ModelAdmin):
     list_display = (
         "pk",
         "project",
-        "subject",
+        "section",
         "note__date",
         "created",
         "updated",
@@ -40,6 +40,6 @@ class NotePartAdmin(admin.ModelAdmin):
     list_filter = (
         "note__date",
         "project",
-        "subject",
+        "section",
     )
     inlines = [NotePartImageLinkInline]

@@ -3,8 +3,8 @@
     {% for part in results %}
         <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
-                {% if part.subject %}
-                    <h2 class="text-lg font-medium">{{ part.subject }}</h2>
+                {% if part.section %}
+                    <h2 class="text-lg font-medium">{{ part.section }}</h2>
                 {% endif %}
                 {% tag_list part.tags.all %}
                 <p class="text-sm font-medium"><a href="{% url 'note_taking:note_detail' part.note.pk %}">Note du {% date_time part.note.date "long" %}</a></p>

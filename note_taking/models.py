@@ -1,6 +1,6 @@
 from django.db import models
 
-from core.models import Project, Subject, Tag
+from core.models import Project, Section, Tag
 from images.models import Image
 
 from .signals import NoteFollowUp
@@ -42,8 +42,9 @@ class NotePart(models.Model):
     project = models.ForeignKey(
         Project, on_delete=models.PROTECT, related_name="note_parts"
     )
-    subject = models.ForeignKey(
-        Subject,
+    section = models.ForeignKey(
+        Section,
+        verbose_name="sujet",
         on_delete=models.PROTECT,
         null=True,
         blank=True,
@@ -64,8 +65,8 @@ class NotePart(models.Model):
 
     def __str__(self):
         string_repr = str(self.project)
-        if self.subject:
-            string_repr = f"{string_repr}, {self.subject}"
+        if self.section:
+            string_repr = f"{string_repr}, {self.section}"
         return string_repr
 
     def rendered_content(self):

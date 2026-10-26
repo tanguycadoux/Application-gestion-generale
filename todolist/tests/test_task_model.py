@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Project, Subject
+from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.forms import TodoForm
@@ -55,17 +55,17 @@ class ProgressTests(TestCase):
         self.assertEqual(todo.progress, 40)
 
 
-class SubjectAndProjectTests(TestCase):
+class SectionAndProjectTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
     def test_sujet_facultatif(self):
-        subject = Subject.objects.create(name="S")
+        section = Section.objects.create(project=self.project, name="S")
 
-        todo = Todo.objects.create(title="T", project=self.project, subject=subject)
+        todo = Todo.objects.create(title="T", project=self.project, section=section)
 
-        self.assertEqual(todo.subject, subject)
-        self.assertIsNone(Todo.objects.create(title="U", project=self.project).subject)
+        self.assertEqual(todo.section, section)
+        self.assertIsNone(Todo.objects.create(title="U", project=self.project).section)
 
     def test_projet_obligatoire(self):
         form = TodoForm(data={"title": "T", "priority": "medium", "progress": 0})
@@ -83,7 +83,7 @@ class SubjectAndProjectTests(TestCase):
                 "priority",
                 "due_date",
                 "project",
-                "subject",
+                "section",
                 "tags",
                 "parent",
             ],
@@ -139,7 +139,7 @@ class TaskFromNoteTests(TestCase):
             "# P\n## Réunion\n### TODO\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
         )
 
-        self.assertEqual(todo.subject.name, "Réunion")
+        self.assertEqual(todo.section.name, "Réunion")
         self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
 
     def test_description_vide(self):
@@ -150,4 +150,4 @@ class TaskFromNoteTests(TestCase):
     def test_sans_sujet(self):
         todo = self.process("# P\n### TODO\n- Tâche")
 
-        self.assertIsNone(getattr(todo, "subject", None))
+        self.assertIsNone(todo.section)

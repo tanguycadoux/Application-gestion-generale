@@ -57,7 +57,7 @@
             <dt class="font-semibold">Projet</dt>
             <dd>{% project_badge object.project %}</dd>
             <dt class="font-semibold">Sujet</dt>
-            <dd>{{ object.subject|default:"Aucun" }}</dd>
+            <dd>{{ object.section|default:"Aucun" }}</dd>
             {% if object.tags.all %}
                 <dt class="font-semibold">Tags</dt>
                 <dd>{% tag_list object.tags.all %}</dd>

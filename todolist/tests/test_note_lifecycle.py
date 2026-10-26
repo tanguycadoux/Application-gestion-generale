@@ -84,7 +84,7 @@ def review_data(new=(), gone=()) -> dict:
             f"new-{i}-due_date": "",
             f"new-{i}-priority": todo.priority,
             f"new-{i}-project": todo.project_id,
-            f"new-{i}-subject": todo.subject_id or "",
+            f"new-{i}-section": todo.section_id or "",
         }
     for i, (todo, action, replacement) in enumerate(gone):
         data |= {

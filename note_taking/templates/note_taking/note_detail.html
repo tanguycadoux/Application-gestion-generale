@@ -41,8 +41,8 @@
             <header>
                <h2 class="font-medium">
                     {{ note_part.project }}
-                    {% if note_part.subject %}
-                        <span> / {{ note_part.subject }}</span>
+                    {% if note_part.section %}
+                        <span> / {{ note_part.section }}</span>
                     {% endif %}
                 </h2>
                 {% tag_list note_part.tags.all %}
