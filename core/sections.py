@@ -140,6 +140,30 @@ def path_labels() -> dict[int, str]:
     return labels
 
 
+def path_suggestions() -> list[tuple[str, str]]:
+    """Les chemins existants, tels qu'on les saisit, avec les projets qui les ont :
+    [("Réunion/Préparation", "ASTERICS, ICONE")]. Une requête.
+
+    Un chemin d'un niveau est aussi proposé : les parents existent. Le même chemin
+    sous deux projets est une seule suggestion, qui nomme les deux.
+    """
+    sections = {
+        section.pk: section for section in Section.objects.select_related("project")
+    }
+    projects: dict[str, set[str]] = {}
+    for section in sections.values():
+        names = [section.name]
+        parent = section.parent_id
+        while parent is not None:
+            names.insert(0, sections[parent].name)
+            parent = sections[parent].parent_id
+        projects.setdefault(join_path(names), set()).add(section.project.name)
+    return [
+        (text, ", ".join(sorted(names, key=str.casefold)))
+        for text, names in sorted(projects.items(), key=lambda item: item[0].casefold())
+    ]
+
+
 def forget_unused_sections() -> int:
     """Supprime les sections que rien n'utilise, descendants compris ; renvoie le
     nombre supprimé. Un niveau reste tant qu'un de ses descendants sert.

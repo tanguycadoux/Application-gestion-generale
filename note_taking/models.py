@@ -44,7 +44,7 @@ class NotePart(models.Model):
     )
     section = models.ForeignKey(
         Section,
-        verbose_name="sujet",
+        verbose_name="chemin",
         on_delete=models.PROTECT,
         null=True,
         blank=True,

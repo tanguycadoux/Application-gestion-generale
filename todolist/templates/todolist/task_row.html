@@ -2,7 +2,7 @@
 Ligne d'une tâche du tableau (#166), avec son niveau dans l'arbre (`row`,
 todolist.tree.TaskRow). Renvoyée aussi par la case à cocher (#189).
 {% endcomment %}{% with todo=row.task %}
-    <tr data-task-id="{{ todo.pk }}" class="hover:bg-slate-50{% if todo.done %} text-slate-500{% endif %}">
+    <tr data-task-id="{{ todo.pk }}" class="hover:bg-slate-50{% if todo.done or row.muted %} text-slate-500{% endif %}">
         <td class="w-8 p-2 align-baseline">
             <input type="checkbox" class="todo-toggle" data-id="{{ todo.pk }}" data-url="{% url 'todolist:todo_toggle' todo.pk %}" aria-label="Terminée : {{ todo.title }}"{% if todo.done %} checked{% endif %}>
         </td>

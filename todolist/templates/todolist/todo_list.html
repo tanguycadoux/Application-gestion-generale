@@ -17,6 +17,21 @@
         {% button "Créer une tâche" icon="add" href=url %}
     </header>
 
+    <form method="get" action="{% url 'todolist:todo_list' %}" class="mb-4 flex flex-wrap items-center gap-2">
+        <label for="filter-path" class="font-medium">Chemin</label>
+        <select name="chemin" id="filter-path" class="w-80 max-w-full">
+            <option value="">Tous les chemins</option>
+            {% for pk, label in path_choices %}
+                <option value="{{ pk }}"{% if section and section.pk == pk %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {% button "Filtrer" icon="filter_list" variant="ghost" %}
+        {% if section %}
+            {% url 'todolist:todo_list' as url %}
+            {% button "Retirer le filtre" icon="close" href=url variant="ghost" %}
+        {% endif %}
+    </form>
+
     <section aria-labelledby="pending-title" class="mb-6">
         <h2 id="pending-title" class="mb-2">En cours</h2>
         {% if pending_groups %}

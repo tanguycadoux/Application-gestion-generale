@@ -27,7 +27,7 @@ class NoteSearchForm(forms.Form):
         choices=[],
         widget=forms.CheckboxSelectMultiple(),
         required=False,
-        label="Sujet(s)",
+        label="Chemin(s)",
     )
 
     def __init__(self, *args, projects=None, **kwargs):

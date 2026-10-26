@@ -56,7 +56,7 @@
         <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
             <dt class="font-semibold">Projet</dt>
             <dd>{% project_badge object.project %}</dd>
-            <dt class="font-semibold">Sujet</dt>
+            <dt class="font-semibold">Chemin</dt>
             <dd>{{ object.section|default:"Aucun" }}</dd>
             {% if object.tags.all %}
                 <dt class="font-semibold">Tags</dt>

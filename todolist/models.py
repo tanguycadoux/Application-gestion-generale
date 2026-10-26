@@ -67,7 +67,7 @@ class Todo(models.Model):
     )
     section = models.ForeignKey(
         Section,
-        verbose_name="sujet",
+        verbose_name="chemin",
         on_delete=models.SET_NULL,
         related_name="todos",
         null=True,
