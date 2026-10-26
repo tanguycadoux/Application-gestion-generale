@@ -17,7 +17,7 @@ from .models import Note, NotePart
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX, image_name
-from .signals import note_parts_processed
+from .signals import NoteFollowUp, note_parts_processed
 
 
 @transaction.atomic
@@ -77,7 +77,16 @@ def process_note_parts(
     note.parts.all().delete()
     note_parts = insert_noteparts_in_table(note, parsed_note)
 
-    note_parts_processed.send(sender=Note, note=note, note_parts=note_parts)
+    # Les stubs de Django typent les réponses en `str | None` : ce sont des objets.
+    responses: list[object] = [
+        response
+        for _, response in note_parts_processed.send(
+            sender=Note, note=note, note_parts=note_parts
+        )
+    ]
+    note.follow_ups = tuple(
+        response for response in responses if isinstance(response, NoteFollowUp)
+    )
 
     return note_parts
 

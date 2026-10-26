@@ -135,6 +135,7 @@ class HtmlValidationTests(TestCase):
             "tache": reverse("todolist:todo_detail", args=[parent]),
             "tache_nouvelle": reverse("todolist:todo_create"),
             "tache_modifier": reverse("todolist:todo_edit", args=[parent]),
+            "taches_bilan": self.note.follow_ups[0].url,
         }
 
     def test_pages_valides(self):

@@ -2,7 +2,10 @@
 {% if notes %}
     <ul class="list-disc pl-6">
         {% for note in notes %}
-            <li><a href="{% url 'note_taking:note_detail' note.pk %}">Note du {% date_time note.date "long" %}</a></li>
+            <li>
+                <a href="{% url 'note_taking:note_detail' note.pk %}">Note du {% date_time note.date "long" %}</a>
+                {% for follow_up in note.follow_ups %} · <a href="{{ follow_up.url }}">{{ follow_up.label }}</a>{% endfor %}
+            </li>
         {% endfor %}
     </ul>
 {% else %}
