@@ -53,6 +53,7 @@ def insert_note_in_table(file) -> Note:
     return note
 
 
+@transaction.atomic
 def process_note_parts(
     note: Note, parsed_note: ParsedNote | None = None
 ) -> list[NotePart]:
@@ -60,6 +61,8 @@ def process_note_parts(
 
     À appeler après chaque sauvegarde de note.body (import fichier ou
     édition depuis le formulaire web), une fois `note` déjà persistée.
+    Tout ou rien (#221) : en cas d'erreur, les note parts et les tâches d'avant
+    restent intactes ; le texte de la note, déjà enregistré, n'est pas annulé.
     """
     if parsed_note is None:
         parsed_note = parse_note(str(note.date), note.body)

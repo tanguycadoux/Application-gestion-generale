@@ -82,7 +82,7 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 
 ### Les note parts sont dérivées et recalculées
 
-`process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire). Conséquences :
+`process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire), en tout ou rien (#221) : si l'analyse échoue, les note parts et les tâches d'avant restent intactes, et le texte de la note, déjà enregistré, n'est pas annulé. Conséquences :
 
 - aucune donnée saisie ne doit être rattachée à une note part, car elle serait perdue au prochain enregistrement ;
 - après une évolution du parseur, `python manage.py reprocess_notes` recalcule toutes les notes (`--dry-run` pour simuler).
