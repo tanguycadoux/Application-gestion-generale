@@ -5,13 +5,14 @@ Ce document décrit l'organisation du code et les décisions structurantes du pr
 ## Contexte
 
 - Application **locale et mono-utilisateur** : pas d'authentification, réglages Django non durcis (`DEBUG`, `SECRET_KEY` en dur).
-- Django, SQLite, rendu côté serveur. Front **sans étape de build** (voir la section Front).
+- Django, SQLite, rendu côté serveur. Front sans Node ; seule étape de build, la feuille Tailwind (voir la section Front).
 
 ## Front
 
 - Rendu côté serveur par les gabarits Django ; pas d'étape de build JS.
-- **Tailwind CSS** v4 (version navigateur, sur CDN) pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
-- Règle de style : tout en classes Tailwind (#79) ; CSS propre réservé à ce que Tailwind ne couvre pas : le HTML produit par le Markdown (`.rendered-content`, callouts) et les animations des alertes créées en JavaScript (`alert_system.css`, dans `@layer components`). L'apparence des alertes est en classes Tailwind dans le script ; leurs boutons reprennent les classes des variantes du composant `button`, transmises par le gabarit de base (`{% button_variants_json %}`). Le détail est dans le README. Les éléments d'interface récurrents sont des composants partagés : balises d'inclusion de `core/templatetags/ui.py` (`{% load ui %}`), gabarits dans `core/templates/core/components/` (principes dans la section « Composants d'interface » plus bas). La palette est définie dans le thème Tailwind de `core/templates/base.html`.
+- **Tailwind CSS** v4 pour le style, **Material Symbols Rounded** (Google Fonts) pour les icônes, **htmx** pour les mises à jour partielles. Le détail des versions et des points de chargement est dans le README.
+- **Aucune ressource externe** (#217) : les notes sont privées, et le navigateur ne doit contacter aucun serveur tiers. La feuille Tailwind est compilée en local par `django-tailwind-cli` (CLI autonome de Tailwind, version épinglée par `TAILWIND_CLI_VERSION`, sans Node) depuis `assets/css/source.css`, dans `static/css/tailwind.css`, non versionnée ; la CI la construit dans un job à part. htmx est embarqué dans `static/vendor/htmx/`, avec sa licence et un README (source, empreinte d'intégrité), et chargé une fois par le gabarit de base. Une bibliothèque front s'ajoute de la même façon (CodeMirror, #89). Le téléchargement du CLI de Tailwind est une étape d'installation, pas une requête de l'application. Reste la police d'icônes, remplacée par des SVG locaux dans #218.
+- Règle de style : tout en classes Tailwind (#79) ; CSS propre réservé à ce que Tailwind ne couvre pas : le HTML produit par le Markdown (`.rendered-content`, callouts) et les animations des alertes créées en JavaScript (bloc `@layer components` de `assets/css/source.css`). L'apparence des alertes est en classes Tailwind dans le script ; leurs boutons reprennent les classes des variantes du composant `button`, transmises par le gabarit de base (`{% button_variants_json %}`). Le détail est dans le README. Les éléments d'interface récurrents sont des composants partagés : balises d'inclusion de `core/templatetags/ui.py` (`{% load ui %}`), gabarits dans `core/templates/core/components/` (principes dans la section « Composants d'interface » plus bas). Le thème Tailwind (couleurs de Tailwind, toutes émises par `theme(static)`) et les styles de base sont dans `assets/css/source.css`.
 
 ## Apps et dépendances
 

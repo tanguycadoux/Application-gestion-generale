@@ -16,10 +16,12 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
 python manage.py migrate
-python manage.py runserver
+python manage.py tailwind runserver
 ```
 
 L'application est ensuite accessible sur <http://127.0.0.1:8000/>.
+
+`tailwind runserver` lance le serveur Django et reconstruit la feuille de style Tailwind à chaque modification d'un gabarit ou d'un script. Au premier lancement, il télécharge le CLI de Tailwind (environ 110 Mo, sans Node) dans `.django_tailwind_cli/` : c'est une étape d'installation, l'application elle-même ne fait aucune requête vers l'extérieur. La feuille compilée (`static/css/tailwind.css`) n'est pas versionnée ; pour la construire une seule fois, sans serveur : `python manage.py tailwind build`.
 
 ### Dépendances
 
@@ -29,6 +31,7 @@ Les dépendances sont maintenues à la main, avec des versions épinglées :
   - `Django`,
   - `Markdown` pour le rendu HTML des notes,
   - `django-htmx` pour les mises à jour partielles de pages (recherche de notes),
+  - `django-tailwind-cli` pour compiler la feuille Tailwind (CLI autonome de Tailwind, sans Node),
   - `Pillow` pour le stockage des images de notes (`ImageField`) ;
 - `requirements-dev.txt` : dépendances d'exécution et outillage de développement (`mypy`, `django-stubs`, `ruff`).
 
@@ -36,23 +39,25 @@ Pour ajouter ou mettre à jour une dépendance, l'installer dans le venv puis re
 
 ### Front
 
-Pas d'étape de build : HTML, CSS et JavaScript natifs, bibliothèques chargées depuis un CDN.
+HTML, CSS et JavaScript natifs, sans Node. Seule étape de build : la feuille Tailwind, compilée par `django-tailwind-cli` (voir « Installation et lancement »). Les notes étant privées, l'application ne charge aucune ressource depuis Internet : tout est servi en local (#217).
 
 | Outil | Rôle | Chargement |
 |---|---|---|
-| [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | version 4.3.3, `@tailwindcss/browser` sur jsDelivr, dans `core/templates/base.html` ; thème et styles de base dans le bloc `<style type="text/tailwindcss">` du même gabarit |
-| [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` |
-| [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes) | unpkg, version 1.9.11, dans `note_taking/templates/note_taking/base.html` |
+| [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | version 4.3.3 (`TAILWIND_CLI_VERSION`), compilée dans `static/css/tailwind.css` (non versionnée) et chargée par `{% tailwind_css %}` dans `core/templates/base.html` ; thème, styles de base et animations des alertes dans la source `assets/css/source.css` |
+| [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie) | Google Fonts, dans `core/templates/base.html` ; usage : `<span class="material-symbols-rounded">edit</span>` (passage en SVG local : #218) |
+| [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes, navigation des calendriers) | version 1.9.11, embarquée dans `static/vendor/htmx/` (licence, provenance et empreinte dans son README), chargée une fois dans `core/templates/base.html` |
 
-Règle de style : tout le style est en classes Tailwind (#79), dans les gabarits, les composants ou les scripts qui créent des éléments. Il ne reste que deux feuilles CSS propres, pour ce que Tailwind ne couvre pas : `note_taking/static/note_taking/style.css` (HTML produit par le Markdown des notes, sur lequel on ne peut pas mettre de classes : listes, titres, tableaux, callouts) et `core/static/core/alert_system.css` (animations des alertes créées en JavaScript, dont l'apparence est en classes Tailwind dans `alert_system.js`, #154), rangée dans `@layer components` pour que les classes Tailwind puissent la surcharger. Une nouvelle feuille CSS ne se justifie que dans un cas semblable ; une feuille hors `@layer` l'emporte sur toutes les classes Tailwind. Les classes Tailwind sont écrites en entier, sans les construire par morceaux, pour rester compatibles avec une future étape de build.
+Tailwind détecte les classes dans les fichiers du dépôt (gabarits, code Python, scripts), hors fichiers ignorés par git : une classe n'est générée que si elle est écrite quelque part en entier.
 
-Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate` pour les gris, `blue` pour la couleur principale, `red` pour le danger et les erreurs, `amber` pour les avertissements, `green` pour les succès, plus `white` et `black`. Pas de couleur en dur, ni en classe arbitraire (`bg-[oklch(…)]`), ni dans les feuilles CSS propres, qui utilisent les variables de Tailwind (`var(--color-slate-200)`). Ces variables existent toutes grâce à `@import "tailwindcss" theme(static)` dans `core/templates/base.html`. Seules exceptions : les couleurs des callouts reprises de Quarto (`note_taking/static/note_taking/style.css`), et les ombres et voiles noirs transparents. `core/tests/test_colors.py` vérifie la règle.
+Règle de style : tout le style est en classes Tailwind (#79), dans les gabarits, les composants ou les scripts qui créent des éléments. Il ne reste que deux ensembles de règles CSS propres, pour ce que Tailwind ne couvre pas : `note_taking/static/note_taking/style.css` (HTML produit par le Markdown des notes, sur lequel on ne peut pas mettre de classes : listes, titres, tableaux, callouts) et le bloc `@layer components` de `assets/css/source.css` (animations des alertes créées en JavaScript, dont l'apparence est en classes Tailwind dans `alert_system.js`, #154), rangé dans ce layer pour que les classes Tailwind puissent le surcharger. Une nouvelle feuille CSS ne se justifie que dans un cas semblable ; une feuille hors `@layer` l'emporte sur toutes les classes Tailwind. Les classes Tailwind sont écrites en entier, sans les construire par morceaux, pour que la compilation les trouve.
+
+Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate` pour les gris, `blue` pour la couleur principale, `red` pour le danger et les erreurs, `amber` pour les avertissements, `green` pour les succès, plus `white` et `black`. Pas de couleur en dur, ni en classe arbitraire (`bg-[oklch(…)]`), ni dans les feuilles CSS propres, qui utilisent les variables de Tailwind (`var(--color-slate-200)`). Ces variables existent toutes grâce à `@import "tailwindcss" theme(static)` dans `assets/css/source.css`. Seules exceptions : les couleurs des callouts reprises de Quarto (`note_taking/static/note_taking/style.css`), et les ombres et voiles noirs transparents. `core/tests/test_colors.py` vérifie la règle.
 
 Couleurs des projets (#162) : chaque projet a une famille parmi `orange`, `yellow`, `lime`, `emerald`, `teal`, `cyan`, `sky`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, c'est-à-dire hors gris et hors familles qui ont un rôle, pour qu'un projet ne se confonde pas avec un état. Elles sont réservées aux projets : seule la pastille (`{% project_badge %}`, `core/templatetags/ui.py`) les emploie. Un projet créé sans couleur, par l'import d'une note ou d'une tâche, reçoit la famille la moins utilisée. La page « Projets » (`/projets/`, liée depuis l'accueil général) permet de créer un projet, d'en modifier la couleur et la description, et de le supprimer s'il n'est utilisé par aucune note ni tâche.
 
-Liens (#127) : un style de base pour tout lien sans classe (`a:not([class])`, bloc `@layer base` de `core/templates/base.html`), y compris dans le contenu des notes : `blue-700` souligné, plus foncé avec un soulignement épaissi au survol, contour visible au focus clavier. Un lien de texte s'écrit donc sans classe ; un lien qui a sa propre apparence (bouton, menu, case du calendrier) porte ses classes et n'est pas concerné.
+Liens (#127) : un style de base pour tout lien sans classe (`a:not([class])`, bloc `@layer base` de `assets/css/source.css`), y compris dans le contenu des notes : `blue-700` souligné, plus foncé avec un soulignement épaissi au survol, contour visible au focus clavier. Un lien de texte s'écrit donc sans classe ; un lien qui a sa propre apparence (bouton, menu, case du calendrier) porte ses classes et n'est pas concerné.
 
-Formulaires (#132) : les champs ont un style de base (`@layer base` de `core/templates/base.html`) : largeur bornée à leur conteneur (`max-w-full`, sans quoi une longue option de `<select>` élargit la page), bordure `slate-300`, contour `blue-700` au focus, bordure rouge si `aria-invalid="true"` (posé par Django sur un champ en erreur), erreurs `.errorlist` en `red-800`, cases en `blue-700`, bouton « Parcourir » des champs fichier à l'image d'un bouton `ghost`. Un formulaire à plusieurs champs est une grille, libellés à gauche : le `<form>` porte `grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3`, `{{ form }}` y rend deux cellules par champ (`core/templates/core/forms/grid.html`, via `FORM_RENDERER`). Le bouton d'envoi n'est pas dans la grille : il est en haut à droite, dans l'en-tête de la page, en `ghost` à icône seule comme la barre d'outils d'une note, et envoie le formulaire par son identifiant (`{% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}`). Un formulaire à un seul champ garde libellé et champ sur une ligne.
+Formulaires (#132) : les champs ont un style de base (`@layer base` de `assets/css/source.css`) : largeur bornée à leur conteneur (`max-w-full`, sans quoi une longue option de `<select>` élargit la page), bordure `slate-300`, contour `blue-700` au focus, bordure rouge si `aria-invalid="true"` (posé par Django sur un champ en erreur), erreurs `.errorlist` en `red-800`, cases en `blue-700`, bouton « Parcourir » des champs fichier à l'image d'un bouton `ghost`. Un formulaire à plusieurs champs est une grille, libellés à gauche : le `<form>` porte `grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3`, `{{ form }}` y rend deux cellules par champ (`core/templates/core/forms/grid.html`, via `FORM_RENDERER`). Le bouton d'envoi n'est pas dans la grille : il est en haut à droite, dans l'en-tête de la page, en `ghost` à icône seule comme la barre d'outils d'une note, et envoie le formulaire par son identifiant (`{% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}`). Un formulaire à un seul champ garde libellé et champ sur une ligne.
 
 Dates (#129) : trois formats d'affichage, selon l'usage, définis dans `core/templatetags/ui.py` (`DATE_FORMATS`) : **long** « lundi 24 novembre 2025 » quand la date nomme une note (titres, liens « Note du … »), **moyen** « 24 novembre 2025 » dans un texte ou une fiche (échéance, dates d'une image, messages), **court** « lun. 24 nov. 2025 » dans les tableaux et les listes. Dans une page, `{% date_time valeur "long" %}` produit `<time datetime="2025-11-24">lundi 24 novembre 2025</time>` ; dans un attribut ou un message, le filtre `{{ valeur|date_text:"moyen" }}`. Le filtre `date` de Django ne sert plus qu'aux formats techniques (`Y-m-d`, `c`, `Y-m`) et au mois du calendrier (`F Y`).
 
@@ -137,6 +142,8 @@ images/               # images utilisables dans les notes (modèle, import)
 note_taking/          # application de prise de notes
 todolist/             # application de gestion des TODO
 docs/                 # documentation (architecture et décisions)
+assets/css/source.css # source de la feuille Tailwind (thème, styles de base)
+static/               # statiques communs : bibliothèques embarquées (vendor/), feuille compilée (css/, non versionnée)
 manage.py
 db.sqlite3            # base de données (non versionnée)
 media/note_images/    # images importées (non versionnées)
@@ -301,7 +308,7 @@ Principes :
 
 - application locale et mono-utilisateur ; aucune donnée des notes ne quitte la machine (l'assistant et l'OCR passent par des services locaux) ;
 - la base de données fait foi, le format qmd sert à l'import et à l'export ;
-- front sans étape de build : HTML, CSS et JS natifs (htmx pour les mises à jour partielles).
+- front sans Node : HTML, CSS et JS natifs (htmx pour les mises à jour partielles), feuille Tailwind compilée par son CLI autonome ; aucune ressource chargée depuis Internet.
 
 La réorganisation du code (milestones M1 à M3 : tests et outillage, nettoyage, restructuration des apps et du modèle de données) est terminée. L'organisation du code, les décisions structurantes et les conventions de travail sont décrites dans [`docs/architecture.md`](docs/architecture.md).
 
