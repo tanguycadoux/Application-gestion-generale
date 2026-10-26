@@ -46,7 +46,7 @@ HTML, CSS et JavaScript natifs, sans Node. Seule étape de build : la feuille Ta
 |---|---|---|
 | [Tailwind CSS](https://tailwindcss.com/) | style de l'interface (classes utilitaires) | version 4.3.3 (`TAILWIND_CLI_VERSION`), compilée dans `static/css/tailwind.css` (non versionnée) et chargée par `{% tailwind_css %}` dans `core/templates/base.html` ; thème, styles de base et animations des alertes dans la source `assets/css/source.css` |
 | [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie, licence Apache 2.0) | fichiers SVG dans `static/icons/`, recopiés dans les pages par `{% icon "nom" %}` (#218) ; une icône s'ajoute avec `python manage.py add_icon <nom>` ; icône d'onglet `core/static/core/favicon.svg` |
-| [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes, navigation des calendriers) | version 1.9.11, embarquée dans `static/vendor/htmx/` (licence, provenance et empreinte dans son README), chargée une fois dans `core/templates/base.html` |
+| [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes, navigation des calendriers) | version 1.9.11, embarquée dans `static/vendor/htmx/` (licence, provenance et empreinte dans son README), chargée une fois dans `core/templates/base.html` ; attributs écrits `data-hx-…`, la forme valide en HTML (#259) |
 
 Tailwind détecte les classes dans les fichiers du dépôt (gabarits, code Python, scripts), hors fichiers ignorés par git : une classe n'est générée que si elle est écrite quelque part en entier.
 
