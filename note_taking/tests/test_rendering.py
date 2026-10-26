@@ -1,5 +1,7 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
+import unittest
+
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -465,6 +467,73 @@ class TableCaptionRenderingTests(SimpleTestCase):
         html = render_markdown(f"```\n{TABLE}\n: L\n```")
 
         self.assertIn(f"<code>{TABLE}\n: L\n</code>", html)
+
+
+class SuperscriptSubscriptRenderingTests(SimpleTestCase):
+    """Exposants ^…^, indices ~…~ et barré ~~…~~ comme dans Quarto (#271).
+
+    Les résultats attendus sont ceux de Pandoc : un exposant ou un indice ne
+    contient pas d'espace, sauf échappée (« \\ », espace insécable).
+    """
+
+    @unittest.expectedFailure
+    def test_exposant_et_indice(self):
+        self.assertHTMLEqual(
+            render_markdown("10^-6^/K et H~2~O"),
+            "<p>10<sup>-6</sup>/K et H<sub>2</sub>O</p>",
+        )
+
+    @unittest.expectedFailure
+    def test_dans_un_mot_et_a_la_suite(self):
+        self.assertHTMLEqual(
+            render_markdown("a^b^c ^d^ ^e^"),
+            "<p>a<sup>b</sup>c <sup>d</sup> <sup>e</sup></p>",
+        )
+
+    def test_espace_dans_le_contenu_reste_du_texte(self):
+        for text in ("a^b c^ d", "a~b c~ d"):
+            with self.subTest(text=text):
+                self.assertHTMLEqual(render_markdown(text), f"<p>{text}</p>")
+
+    @unittest.expectedFailure
+    def test_espace_echappee(self):
+        self.assertHTMLEqual(render_markdown("a^b\\ c^"), "<p>a<sup>b c</sup></p>")
+
+    @unittest.expectedFailure
+    def test_marqueur_echappe(self):
+        self.assertHTMLEqual(render_markdown("a\\^b^ et \\~c~"), "<p>a^b^ et ~c~</p>")
+
+    @unittest.expectedFailure
+    def test_mise_en_forme_dans_l_exposant(self):
+        self.assertHTMLEqual(
+            render_markdown("x^*a*^ [l^2^](/u)"),
+            '<p>x<sup><em>a</em></sup> <a href="/u">l<sup>2</sup></a></p>',
+        )
+
+    @unittest.expectedFailure
+    def test_barre(self):
+        self.assertHTMLEqual(
+            render_markdown("a ~~barré b~~ c~~d~~"),
+            "<p>a <del>barré b</del> c<del>d</del></p>",
+        )
+
+    @unittest.expectedFailure
+    def test_indices_qui_se_suivent(self):
+        self.assertHTMLEqual(
+            render_markdown("H~2~~3~"), "<p>H<sub>2</sub><sub>3</sub></p>"
+        )
+
+    def test_code_inchange(self):
+        html = render_markdown("`a^b^ ~c~`\n\n```\nx^2^\n```")
+
+        self.assertIn("<code>a^b^ ~c~</code>", html)
+        self.assertIn("<code>x^2^\n</code>", html)
+
+    @unittest.expectedFailure
+    def test_dans_une_legende_de_tableau(self):
+        html = render_markdown("| a |\n|---|\n| 1 |\n\n: Rétreint (10^-6^/K)")
+
+        self.assertInHTML("<caption>Rétreint (10<sup>-6</sup>/K)</caption>", html)
 
 
 class CalloutRenderingTests(SimpleTestCase):
