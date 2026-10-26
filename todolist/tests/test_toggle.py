@@ -73,3 +73,56 @@ class ToggleTodoTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+
+class UncheckRestoresProgressTests(TestCase):
+    """Décocher rend l'avancement d'avant la coche (#237)."""
+
+    def setUp(self):
+        self.todo = Todo.objects.create(
+            project=Project.objects.get_or_create(name="P")[0],
+            title="Tâche",
+            progress=60,
+        )
+
+    def toggle(self, completed: bool):
+        return self.client.post(
+            reverse("todolist:todo_toggle", args=[self.todo.pk]),
+            json.dumps({"completed": completed}),
+            content_type="application/json",
+        )
+
+    def progress(self) -> int:
+        return Todo.objects.get(pk=self.todo.pk).progress
+
+    def test_cocher_puis_decocher(self):
+        self.toggle(True)
+        self.toggle(False)
+
+        self.assertEqual(self.progress(), 60)
+
+    def test_avancement_porte_a_100_dans_le_formulaire_puis_decoche(self):
+        self.todo.progress = 100
+        self.todo.save()
+        self.toggle(False)
+
+        self.assertEqual(self.progress(), 60)
+
+    def test_creee_terminee_puis_decochee(self):
+        self.todo = Todo.objects.create(
+            project=Project.objects.get(name="P"), title="Finie", progress=100
+        )
+        self.toggle(False)
+
+        self.assertEqual(self.progress(), 0)
+
+    def test_recocher_retient_le_dernier_avancement(self):
+        self.toggle(True)
+        self.toggle(False)
+        self.todo.refresh_from_db()
+        self.todo.progress = 30
+        self.todo.save()
+        self.toggle(True)
+        self.toggle(False)
+
+        self.assertEqual(self.progress(), 30)

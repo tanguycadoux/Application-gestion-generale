@@ -103,7 +103,7 @@ Todo >── Todo (parent, option)
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
 - **`NotePart`** : morceau de note partageant projet, sujet et tags. **Données dérivées** de `Note.body`.
 - **`Project`, `Subject`, `Tag`** : partagés par les notes et les tâches, noms uniques. Un projet a une couleur (#162) et une description.
-- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date et le texte de sa ligne (`note_part_date`, `note_part_text`).
+- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date et le texte de sa ligne (`note_part_date`, `note_part_text`).
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
 
 ## Décisions

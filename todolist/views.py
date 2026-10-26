@@ -155,7 +155,8 @@ def toggle_todo(request, pk):
         # Un parent se coche à la main ; son avancement reste calculé (#164).
         todo.done = completed
     else:
-        todo.progress = 100 if completed else 0
+        # Décocher rend l'avancement d'avant la coche (#237).
+        todo.progress = 100 if completed else todo.progress_before_done
     todo.save()
     toggled_ids = [todo.pk, *todo.updated_ancestor_ids]
     # Lignes à jour, que la liste remplace sans recharger la page (#189).
