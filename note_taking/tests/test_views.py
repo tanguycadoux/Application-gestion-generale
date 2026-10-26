@@ -3,7 +3,6 @@
 import re
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -168,7 +167,6 @@ class NoteFormViewTests(ViewTestCase):
         self.assertEqual(note.body, "# P\n### A\ny")
         self.assertEqual(list(note.parts.values_list("content", flat=True)), ["y"])
 
-    @unittest.expectedFailure
     def test_modification_interrompue_garde_les_parts_d_avant(self):
         """#221 : le texte est enregistré, les note parts d'avant restent intactes."""
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
