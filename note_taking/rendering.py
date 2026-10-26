@@ -297,6 +297,49 @@ def add_table_caption(table: etree.Element, paragraph: etree.Element) -> None:
             table.set("class", " ".join(classes))
 
 
+# Exposant ^…^ et indice ~…~ : sans espace, sauf échappée (« \ »). Barré ~~…~~,
+# qui ne commence ni ne finit par une espace.
+SUPERSCRIPT_REGEX = r"\^(?P<text>(?:\\ |[^\s^])+)\^"
+SUBSCRIPT_REGEX = r"~(?P<text>(?:\\ |[^\s~])+)~"
+STRIKEOUT_REGEX = r"~~(?P<text>(?!\s).+?)(?<!\s)~~"
+
+
+class SuperscriptSubscriptExtension(markdown.Extension):
+    """Exposants, indices et barré, comme dans Quarto (#271).
+
+    Extensions `superscript`, `subscript` et `strikeout` du Markdown de Pandoc.
+    Le barré passe avant l'indice, qui utilise lui aussi le tilde. « \\^ » et
+    « \\~ » restent du texte.
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        md.ESCAPED_CHARS.extend(["^", "~"])
+        # Avant em_strong (60) : l'emphase reste rendue dans un exposant.
+        for regex, tag, name, priority in (
+            (STRIKEOUT_REGEX, "del", "strikeout", 70),
+            (SUPERSCRIPT_REGEX, "sup", "superscript", 65),
+            (SUBSCRIPT_REGEX, "sub", "subscript", 64),
+        ):
+            md.inlinePatterns.register(
+                TagInlineProcessor(regex, tag, md), name, priority
+            )
+
+
+class TagInlineProcessor(markdown.inlinepatterns.InlineProcessor):
+    """Entoure le texte du motif d'une balise ; « \\ » y est une espace insécable."""
+
+    def __init__(self, pattern: str, tag: str, md: markdown.Markdown):
+        super().__init__(pattern, md)
+        self.tag = tag
+
+    def handleMatch(  # type: ignore[override]
+        self, m: re.Match[str], data: str
+    ) -> tuple[etree.Element, int, int]:
+        element = etree.Element(self.tag)
+        element.text = m.group("text").replace("\\ ", " ")
+        return element, m.start(0), m.end(0)
+
+
 MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     "fenced_code",
     "tables",
@@ -308,6 +351,7 @@ MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     PandocListsExtension(),
     TaskListExtension(),
     TableCaptionExtension(),
+    SuperscriptSubscriptExtension(),
 ]
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
