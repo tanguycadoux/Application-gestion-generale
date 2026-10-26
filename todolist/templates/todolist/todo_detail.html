@@ -17,7 +17,7 @@
             {% url 'todolist:todo_edit' object.pk as url %}
             {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
 
-            <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="Supprimer définitivement la tâche « {{ object.title }} » ?">
+            <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="{{ delete_confirm }}">
                 {% csrf_token %}
                 {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
             </form>

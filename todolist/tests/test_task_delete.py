@@ -4,7 +4,6 @@ Décision du 2026-10-26 : avertir, puis supprimer la tâche avec ses sous-tâche
 """
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -43,7 +42,6 @@ class ParentDeleteTests(TestCase):
             title="Petit-enfant", project=self.project, parent=self.child
         )
 
-    @unittest.expectedFailure
     def test_confirmation_annonce_les_sous_taches_descendants_compris(self):
         self.add_grandchildren()
 
@@ -52,7 +50,6 @@ class ParentDeleteTests(TestCase):
             "Supprimer définitivement la tâche « Parent » et ses 3 sous-tâches ?",
         )
 
-    @unittest.expectedFailure
     def test_confirmation_une_seule_sous_tache(self):
         self.assertEqual(
             self.confirm(self.parent),
@@ -65,7 +62,6 @@ class ParentDeleteTests(TestCase):
             "Supprimer définitivement la tâche « Enfant » ?",
         )
 
-    @unittest.expectedFailure
     def test_message_annonce_les_sous_taches_supprimees(self):
         self.add_grandchildren()
 
