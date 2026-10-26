@@ -393,7 +393,7 @@ def resolve_image_paths(content: str) -> str:
 def image_name(path: str) -> str | None:
     """Nom de l'image importée désignée par un chemin, ou None pour une URL externe.
 
-    Seul le nom de fichier compte, quel que soit le dossier, écrit avec / ou \.
+    Seul le nom de fichier compte, quel que soit le dossier, écrit avec / ou \\.
     Règle commune à l'analyse, au rendu et à l'export (#220).
     """
     if EXTERNAL_URL_REGEX.match(path):
