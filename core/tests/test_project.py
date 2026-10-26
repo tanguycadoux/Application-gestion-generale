@@ -13,7 +13,7 @@ class ProjectDeletionTests(TestCase):
 
     def setUp(self):
         self.note = Note.objects.create(
-            date="2025-11-24", body="# P\n## S\n### TODO\n- a"
+            date="2025-11-24", body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- a"
         )
         process_note_parts(self.note)
 

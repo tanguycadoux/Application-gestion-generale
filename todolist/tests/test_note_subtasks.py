@@ -14,7 +14,7 @@ from todolist.models import Todo
 
 class NoteSubtaskTests(TestCase):
     def save_note(self, *lines: str, date: str = "2025-11-24") -> Note:
-        body = "# P\n### TODO\n" + "\n".join(lines)
+        body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note, _ = Note.objects.update_or_create(date=date, defaults={"body": body})
         process_note_parts(note)
         return note
@@ -63,15 +63,15 @@ class NoteSubtaskTests(TestCase):
         self.assertEqual(self.tree(), {"A": None, "B": None})
 
     def test_cases_a_cocher(self):
-        self.save_note("- [ ] A", "  - [x] B")
+        self.save_note("- [ ] A", "  - [x] B", "  - [ ] C")
 
-        self.assertEqual(self.tree(), {"A": None, "B": "A"})
+        self.assertEqual(self.tree(), {"A": None, "C": "A"})
 
     def test_ligne_sans_marqueur_sous_un_element(self):
-        """Pandoc en fait la suite de l'élément : elle devient sa sous-tâche."""
+        """Pandoc en fait la suite du texte de l'élément : pas une tâche (#297)."""
         self.save_note("- A", "  précision")
 
-        self.assertEqual(self.tree(), {"A": None, "précision": "A"})
+        self.assertEqual(self.tree(), {"A": None})
 
     def test_ligne_indentee_plus_tard(self):
         """La ligne change de chemin, donc d'identité (#240) : une nouvelle

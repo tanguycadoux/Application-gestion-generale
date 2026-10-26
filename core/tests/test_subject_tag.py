@@ -34,7 +34,7 @@ class SharedSubjectTagTests(TestCase):
     def test_note_part_et_todo_partagent_les_tags(self):
         note = process(
             "2025-11-24",
-            "# P\n## S\n### TODO\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche",
+            "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche",
         )
 
         part_tags = set(note.parts.get().tags.all())

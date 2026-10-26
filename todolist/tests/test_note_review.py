@@ -12,7 +12,7 @@ from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.models import Todo
 
-BODY = "# P\n### TODO\n- Première\n- Seconde"
+BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- Première\n- Seconde"
 
 
 def review_url(note_date: str) -> str:
@@ -53,7 +53,9 @@ class RedirectAfterSaveTests(TestCase):
         )
 
     def test_modification_qui_cree_une_tache(self):
-        note = Note.objects.create(date="2025-11-24", body="# P\n### TODO\n- Première")
+        note = Note.objects.create(
+            date="2025-11-24", body="# P\n::: {.metadata}\ntodo: true\n:::\n- Première"
+        )
         process_note_parts(note)
         mark_reviewed()
 

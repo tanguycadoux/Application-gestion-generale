@@ -115,7 +115,8 @@ class TaskDetailTests(TestCase):
 
     def test_note_d_origine(self):
         note = Note.objects.create(
-            date="2025-11-24", body="# P\n## S\n### TODO\n- De la note"
+            date="2025-11-24",
+            body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- De la note",
         )
         process_note_parts(note)
         task = Todo.objects.get(title="De la note")
