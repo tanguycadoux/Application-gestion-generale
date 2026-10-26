@@ -27,15 +27,17 @@ todolist/      TODO
 Sens des dépendances (une flèche signifie « importe ») :
 
 ```
-note_taking ──► images ──► core
-     │                      ▲
-     ├──────► todolist ─────┤
-     └──────────────────────┘
+todolist ──► note_taking ──► images ──► core
+   │              │                      ▲
+   └──────────────┴──────────────────────┘
 ```
 
-- `core` ne dépend d'aucune app.
+- `core` ne dépend d'aucune app (#179). Ce qu'il affiche des autres apps, chacune le déclare dans son `AppConfig`, et `core/app_registry.py` le lit dans l'ordre d'`INSTALLED_APPS` :
+  - `home_link` : son entrée dans le menu de l'accueil général ;
+  - `project_usages` : ce qui utilise un projet chez elle (chemin de comptage depuis `Project`, libellés), pour l'afficher dans la liste des projets et refuser la suppression d'un projet utilisé. On compte des notes, pas des note parts : c'est pourquoi le chemin est déclaré plutôt que déduit des relations du modèle.
 - `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
-- `todolist` ne connaît pas les notes. Le seul couplage notes → TODO est l'appel à `todolist.services.create_todo_from_dict` dans `note_taking/services.py`.
+- `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche.
+- Ce sens est vérifié par un test (`core/tests/test_dependencies.py`) : imports Python et noms d'URL cités dans les gabarits, hors tests et migrations.
 
 ## Organisation de `note_taking`
 
@@ -43,7 +45,8 @@ note_taking ──► images ──► core
 |---|---|
 | `qmd/parser.py` | analyse du texte d'une note en note parts (`ParsedNote`, `ParsedPart`) ; **sans accès à la base** |
 | `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
-| `services.py` | import, mise à jour, génération des note parts, des liens vers les images et des TODO (accès à la base) |
+| `services.py` | import, mise à jour, génération des note parts et des liens vers les images (accès à la base) |
+| `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes) |
 | `rendering.py` | rendu HTML : Markdown, références d'images, callouts Quarto |
 | `exceptions.py` | erreurs métier (`NoteError` et sous-classes) |
 | `management/commands/reprocess_notes.py` | recalcul des note parts de toutes les notes |
@@ -85,7 +88,7 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 
 ### TODO générées depuis les notes
 
-Une TODO générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle TODO ; l'ancienne est conservée. Le sujet est en pause.
+Les TODO sont créées par `todolist`, à l'écoute du signal `note_parts_processed` (voir « Apps et dépendances »). Une TODO générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle TODO ; l'ancienne est conservée. Le sujet est en pause.
 
 ### Projets, sujets et tags partagés (#19, #20)
 
