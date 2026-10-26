@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : note parts et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -407,39 +405,32 @@ class TableCaptionRenderingTests(SimpleTestCase):
             f"<table{attrs}><caption>{caption}</caption>{TABLE_BODY}</table>",
         )
 
-    @unittest.expectedFailure
     def test_legende_apres_le_tableau(self):
         self.assertCaption(
             f"{TABLE}\n\n: Rétreint **thermique**",
             "Rétreint <strong>thermique</strong>",
         )
 
-    @unittest.expectedFailure
     def test_legende_avant_le_tableau(self):
         self.assertCaption(f": Avant\n\n{TABLE}", "Avant")
 
-    @unittest.expectedFailure
     def test_legende_collee_au_tableau(self):
         self.assertCaption(f"{TABLE}\n: Après", "Après")
         self.assertCaption(f": Avant\n{TABLE}", "Avant")
 
-    @unittest.expectedFailure
     def test_formes_de_la_legende(self):
         for text in (": L", ":L", "Table: L", "table: L", "\n: L"):
             with self.subTest(text=text):
                 self.assertCaption(f"{TABLE}\n\n{text}", "L")
 
-    @unittest.expectedFailure
     def test_legende_sur_plusieurs_lignes(self):
         self.assertCaption(f"{TABLE}\n\n: deux\nlignes", "deux\nlignes")
 
-    @unittest.expectedFailure
     def test_attributs_reportes_sur_le_tableau(self):
         self.assertCaption(
             f"{TABLE}\n\n: L {{#tbl-x .large}}", "L", ' id="tbl-x" class="large"'
         )
 
-    @unittest.expectedFailure
     def test_legende_d_avant_prioritaire(self):
         html = render_markdown(f": avant\n\n{TABLE}\n\n: après")
 
@@ -448,7 +439,6 @@ class TableCaptionRenderingTests(SimpleTestCase):
             f"<table><caption>avant</caption>{TABLE_BODY}</table><p>: après</p>",
         )
 
-    @unittest.expectedFailure
     def test_legende_entre_deux_tableaux_au_premier(self):
         html = render_markdown(f"{TABLE}\n\n: L\n\n{TABLE}")
 
@@ -458,7 +448,6 @@ class TableCaptionRenderingTests(SimpleTestCase):
             f"<table>{TABLE_BODY}</table>",
         )
 
-    @unittest.expectedFailure
     def test_legende_dans_un_callout(self):
         html = render_markdown(f"::: {{.callout-note}}\n{TABLE}\n\n: L\n:::")
 
