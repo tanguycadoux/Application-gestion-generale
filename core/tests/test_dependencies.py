@@ -33,7 +33,7 @@ def source_files(app: str, pattern: str):
 
 def imported_apps(app: str) -> set[str]:
     """Apps du projet importées par le code Python de `app`."""
-    found = set()
+    found: set[str] = set()
     for path in source_files(app, "*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):
@@ -48,14 +48,13 @@ def imported_apps(app: str) -> set[str]:
 
 def template_apps(app: str) -> set[str]:
     """Apps dont les gabarits de `app` citent une URL."""
-    found = set()
+    found: set[str] = set()
     for path in source_files(app, "*.html"):
         found.update(URL_NAME_REGEX.findall(path.read_text(encoding="utf-8")))
     return (found & set(APPS)) - {app}
 
 
 class DependencyTests(TestCase):
-    @unittest.expectedFailure  # note_taking importe todolist
     def test_imports_dans_le_sens_prevu(self):
         for app in APPS:
             with self.subTest(app=app):

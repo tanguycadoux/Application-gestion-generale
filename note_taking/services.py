@@ -1,4 +1,4 @@
-"""Services de note : import, mise à jour, note parts, TODO et images."""
+"""Services de note : import, mise à jour, note parts et images."""
 
 from datetime import date
 from pathlib import Path
@@ -7,7 +7,6 @@ from django.db import transaction
 
 from core.models import Project, Subject, Tag
 from images.models import Image
-from todolist.services import create_todo_from_dict
 
 from .exceptions import (
     ImageNotFoundError,
@@ -19,6 +18,7 @@ from .models import Note, NotePart
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX
+from .signals import note_parts_processed
 
 
 @transaction.atomic
@@ -57,7 +57,7 @@ def insert_note_in_table(file) -> Note:
 def process_note_parts(
     note: Note, parsed_note: ParsedNote | None = None
 ) -> list[NotePart]:
-    """(Re)génère les NotePart et les todos associés à partir de note.body.
+    """(Re)génère les NotePart à partir de note.body, puis émet note_parts_processed.
 
     À appeler après chaque sauvegarde de note.body (import fichier ou
     édition depuis le formulaire web), une fois `note` déjà persistée.
@@ -75,34 +75,9 @@ def process_note_parts(
     note.parts.all().delete()
     note_parts = insert_noteparts_in_table(note, parsed_note)
 
-    for note_part in note_parts:
-        create_todos_from_note_part(note_part)
+    note_parts_processed.send(sender=Note, note=note, note_parts=note_parts)
 
     return note_parts
-
-
-def create_todos_from_note_part(note_part: NotePart):
-    part_tags = [tag.name for tag in note_part.tags.all()]
-    subject = note_part.subject.name if note_part.subject else None
-
-    if "TODO" in part_tags:
-        tags = [tag for tag in part_tags if tag != "TODO"]
-
-        for line in note_part.content.split("\n"):
-            line = line.strip()
-            line = line.strip("-")
-            line = line.strip()
-            if not line:
-                continue
-
-            todo_data = {
-                "date": note_part.note.date,
-                "project": note_part.project.name,
-                "content": line,
-                "subject": subject,
-                "tags": tags,
-            }
-            create_todo_from_dict(todo_data)
 
 
 def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NotePart]:
