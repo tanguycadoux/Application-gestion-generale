@@ -5,6 +5,9 @@ son parent s'il est encore affiché, sinon elle revient à la racine, signalé. 
 de suppression définitive : sa ligne reviendrait en tâche.
 """
 
+import re
+import unittest
+
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -52,6 +55,31 @@ class DismissedListTests(RestoreTestCase):
         response = self.client.get(reverse("todolist:todo_list"))
 
         self.assertContains(response, "Rétablir la tâche « A » et ses 2 sous-tâches ?")
+
+    @unittest.expectedFailure
+    def test_confirmation_par_une_popover_native(self):
+        """Essai : popover HTML (`popover`, `popovertarget`), sans JavaScript ; le
+        formulaire est dans la popover, avec « Annuler » puis « Rétablir »."""
+        remove_task(self.task("A"))
+        pk = self.task("A").pk
+
+        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+
+        self.assertIn(f'popovertarget="restore-{pk}"', html)
+        popover = re.search(
+            rf'<div id="restore-{pk}" popover class="confirm-popover[^"]*">(.*?)</div>',
+            html,
+            re.DOTALL,
+        )
+        assert popover is not None
+        self.assertIn("Rétablir la tâche « A » et ses 2 sous-tâches ?", popover[1])
+        form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
+        assert form is not None
+        self.assertIn(reverse("todolist:todo_restore", args=[pk]), form[0])
+        self.assertNotIn("data-confirm", form[0])
+        self.assertLess(
+            form[0].index('popovertargetaction="hide"'), form[0].index('type="submit"')
+        )
 
 
 class MixedTreeTests(RestoreTestCase):

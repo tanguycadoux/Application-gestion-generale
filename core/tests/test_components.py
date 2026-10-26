@@ -1,5 +1,7 @@
 """Tests des composants d'interface partagés (balises de `core/templatetags/ui.py`)."""
 
+import unittest
+
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -139,6 +141,21 @@ class ButtonTests(SimpleTestCase):
         )
 
         self.assertIn('aria-describedby="raison"', html)
+
+    @unittest.expectedFailure
+    def test_bouton_qui_ouvre_une_popover(self):
+        """Popover native (attribut `popover`) : le navigateur l'ouvre et la ferme."""
+        html = render(
+            '{% button "Annuler" type="button" popovertarget="p"'
+            ' popovertargetaction="hide" %}'
+        )
+
+        self.assertIn('popovertarget="p" popovertargetaction="hide"', html)
+
+    @unittest.expectedFailure
+    def test_lien_qui_ouvre_une_popover_refuse(self):
+        with self.assertRaises(ValueError):
+            render('{% button "Voir" href="/x/" popovertarget="p" %}')
 
     def test_lien_relie_a_un_formulaire_refuse(self):
         with self.assertRaises(ValueError):

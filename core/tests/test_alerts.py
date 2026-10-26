@@ -5,6 +5,7 @@ Le projet n'a pas de lanceur de tests JavaScript : les tests du script le lisent
 
 import json
 import re
+import unittest
 from pathlib import Path
 from typing import Any
 
@@ -145,6 +146,14 @@ class AlertStylesheetTests(SimpleTestCase):
         self.assertNotRegex(css, r"\b(?:color|background|border|box-shadow)\s*:")
         self.assertIn(".alert__toast-progress {", css)
         self.assertIn("@keyframes alert-toast-progress", css)
+
+    @unittest.expectedFailure
+    def test_popover_native_ancree_a_son_bouton(self):
+        """Sous son bouton par l'ancrage CSS ; sans lui, le navigateur la centre."""
+        css = components_layer(read_source_css())
+
+        self.assertIn("@supports (position-area: bottom)", css)
+        self.assertIn("position-area: bottom span-left", css)
 
     def test_script_ne_donne_que_la_duree_de_la_barre(self):
         script = read_static("core/alert_system.js")
