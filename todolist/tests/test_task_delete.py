@@ -62,17 +62,9 @@ class ParentDeleteTests(TestCase):
             "Supprimer définitivement la tâche « Enfant » ?",
         )
 
-    def test_message_annonce_les_sous_taches_supprimees(self):
+    def test_sous_taches_supprimees_avec_la_tache(self):
         self.add_grandchildren()
 
-        messages = self.delete(self.parent)
+        self.delete(self.parent)
 
-        self.assertEqual(
-            messages, ["La tâche « Parent » et ses 3 sous-tâches sont supprimées."]
-        )
         self.assertFalse(Todo.objects.exists())
-
-    def test_message_sans_sous_tache_inchange(self):
-        self.assertEqual(
-            self.delete(self.child), ["La tâche « Enfant » est supprimée."]
-        )

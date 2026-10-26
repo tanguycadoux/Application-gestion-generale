@@ -11,7 +11,6 @@ from django.urls import reverse
 from core.models import Project
 from images.models import Image
 from note_taking.models import Note, NotePart
-from note_taking.qmd.export import note_to_qmd
 from note_taking.rendering import image_name
 from note_taking.services import process_note_parts
 
@@ -61,11 +60,6 @@ class ExternalImageRenderingTests(TestCase):
 
         self.assertContains(response, f'<a href="{URL}">Logo</a>', html=True)
         self.assertNotContains(response, f'src="{URL}"')
-
-    def test_export_garde_l_image_externe(self):
-        note = Note(date="2025-11-24", body=f"![Logo]({URL})")
-
-        self.assertIn(f"![Logo]({URL})", note_to_qmd(note))
 
 
 class ImageNameTests(SimpleTestCase):

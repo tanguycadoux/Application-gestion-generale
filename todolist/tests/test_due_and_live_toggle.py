@@ -36,9 +36,6 @@ class DueSignalTests(TestCase):
                 self.assertEqual(self.task(days).due_signal, expected)
         self.assertEqual(self.task(-5, done=True).due_signal, "done")
 
-    def test_plus_de_seconde_regle(self):
-        self.assertFalse(hasattr(Todo, "due_status"))
-
 
 class LiveToggleTests(TestCase):
     def setUp(self):

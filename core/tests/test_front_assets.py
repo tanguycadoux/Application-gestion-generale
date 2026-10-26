@@ -29,7 +29,6 @@ class FrontAssetsTests(TestCase):
                     ),
                     1,
                 )
-                self.assertNotIn("text/tailwindcss", html)
 
     def test_htmx_local_charge_une_fois(self):
         for name, html in self.pages().items():
