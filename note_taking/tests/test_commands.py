@@ -61,8 +61,7 @@ class ReprocessNotesTests(TestCase):
         todo.progress = 100
         todo.save()
 
-        out, _ = self.reprocess()
+        self.reprocess()
 
         self.assertEqual(Todo.objects.count(), 1)
         self.assertTrue(Todo.objects.get().completed)
-        self.assertIn("0 TODO créée(s)", out)

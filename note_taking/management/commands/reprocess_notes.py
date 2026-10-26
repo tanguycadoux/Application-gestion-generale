@@ -4,13 +4,12 @@ from django.db import transaction
 from note_taking.exceptions import NoteError
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
 
 
 class Command(BaseCommand):
     help = (
-        "Recalcule les note parts de toutes les notes. Les TODO existantes ne "
-        "sont ni recréées ni modifiées."
+        "Recalcule les note parts de toutes les notes. Les tâches existantes "
+        "ne sont ni recréées ni modifiées."
     )
 
     def add_arguments(self, parser):
@@ -25,8 +24,6 @@ class Command(BaseCommand):
         errors = 0
 
         with transaction.atomic():
-            todos_before = Todo.objects.count()
-
             for note in Note.objects.order_by("date"):
                 try:
                     # Une note en erreur est annulée sans bloquer les autres.
@@ -38,14 +35,10 @@ class Command(BaseCommand):
                 else:
                     processed += 1
 
-            todos_created = Todo.objects.count() - todos_before
             if dry_run:
                 transaction.set_rollback(True)
 
-        summary = (
-            f"{processed} note(s) recalculée(s), {errors} erreur(s), "
-            f"{todos_created} TODO créée(s)."
-        )
+        summary = f"{processed} note(s) recalculée(s), {errors} erreur(s)."
         if dry_run:
             summary += " Simulation : rien n'a été enregistré."
         self.stdout.write(self.style.SUCCESS(summary) if not errors else summary)
