@@ -62,6 +62,7 @@ Les couleurs des projets (#162) sont des familles de Tailwind réservées aux pr
 | Module | Rôle |
 |---|---|
 | `qmd/parser.py` | analyse du texte d'une note en note parts (`ParsedNote`, `ParsedPart`) ; **sans accès à la base** |
+| `qmd/lists.py` | règle d'imbrication des listes de Pandoc (#229), partagée par le rendu et les sous-tâches issues des notes (#238) |
 | `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
 | `services.py` | import, mise à jour, génération des note parts et des liens vers les images (accès à la base) |
 | `signals.py` | `note_parts_processed`, émis après le recalcul des note parts (tâches issues des notes) |
@@ -102,7 +103,7 @@ Todo >── Todo (parent, option)
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
 - **`NotePart`** : morceau de note partageant projet, sujet et tags. **Données dérivées** de `Note.body`.
 - **`Project`, `Subject`, `Tag`** : partagés par les notes et les tâches, noms uniques. Un projet a une couleur (#162) et une description.
-- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date et le texte de sa ligne (`note_part_date`, `note_part_text`).
+- **`Todo`** (tâche) : titre, projet, sujet et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date et le texte de sa ligne (`note_part_date`, `note_part_text`).
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
 
 ## Décisions
@@ -127,6 +128,7 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 Une note part marquée `TODO` donne une tâche par ligne. Ces tâches sont créées par `todolist`, à l'écoute du signal `note_parts_processed` (voir « Apps et dépendances »).
 
 - Le titre est le texte de la ligne sans son marqueur de liste ni sa case (#222). Une case cochée ne termine pas la tâche.
+- Une ligne imbriquée sous un élément de liste, selon la règle des sous-listes du rendu (#229), donne une sous-tâche de la tâche de cet élément (#238), sur plusieurs niveaux ; une ligne sans marqueur sous un élément, suite de son texte pour Pandoc, aussi. Le parent n'est posé qu'à la création : une tâche existante dont la ligne passe sous une autre n'est pas rattachée d'office, car son parent a pu être choisi à la main.
 - La tâche reprend le projet et le sujet de la note part. Ses tags sont ceux de la note part, sans `TODO`. Son échéance est la date de la note.
 - Une tâche générée est identifiée par sa date et son texte, pas par une clé étrangère vers sa note part (qui est recréée à chaque enregistrement). Modifier la ligne dans la note crée une nouvelle tâche ; l'ancienne est conservée. Le suivi des lignes modifiées ou supprimées est à trancher (#240), avec les sous-listes devenues sous-tâches (#238).
 
@@ -176,7 +178,7 @@ Après le filtrage, chaque image du contenu reçoit `loading="lazy"` et `decodin
 
 Le rendu suit le Markdown de Pandoc, celui de Quarto, et non les règles propres à Python-Markdown. Un écart se corrige par une extension Markdown de `rendering.py`, testée sur les résultats de Pandoc.
 
-- Sous-listes (#229) : un élément est imbriqué si son marqueur commence au moins à la colonne du texte de l'élément parent (2 espaces après `- `, 3 après `1. `). `PandocListsExtension` réindente les listes par multiples de 4, seul pas que comprend Python-Markdown ; un changement de type de liste commence une autre liste (`sane_lists`). L'analyse des sous-listes en sous-tâches (#238) devra suivre la même règle.
+- Sous-listes (#229) : un élément est imbriqué si son marqueur commence au moins à la colonne du texte de l'élément parent (2 espaces après `- `, 3 après `1. `). `PandocListsExtension` réindente les listes par multiples de 4, seul pas que comprend Python-Markdown ; un changement de type de liste commence une autre liste (`sane_lists`). La règle est dans `qmd/lists.py` : les sous-tâches issues des notes (#238) la suivent aussi.
 - Cases à cocher (#231) : un élément qui commence par `[ ]`, `[x]` ou `[X]` suivi d'un blanc devient une case dans un `<label>`, comme dans Pandoc ; une liste à puces faite uniquement de cases reçoit la classe `task-list`, sans puces. `TaskListExtension` pose le `<label>` ; la case (`<input type="checkbox" disabled>`) n'est ajoutée qu'après le filtrage nh3, dont la liste blanche n'accepte aucun champ de formulaire. Les cases sont désactivées : la page affiche la note sans la modifier. Une tâche issue d'une ligne à case garde son propre état : une case cochée ne la termine pas (#222, voir #237).
 - Légendes de tableau (#230) : un paragraphe qui commence par `:` ou `Table:`, juste avant ou juste après un tableau, avec ou sans ligne vide, devient son `<caption>` ; celle d'avant l'emporte. Des attributs `{#tbl-x .classe}` en fin de légende vont au tableau. `TableCaptionExtension` sépare d'abord une légende collée au tableau, puis déplace le paragraphe dans le tableau. La numérotation croisée de Quarto (« Table 1: » pour un tableau `#tbl-…`) n'est pas reprise : une note part est rendue seule, sans le reste de la note.
 - Exposants, indices et barré (#271) : `^…^` en `<sup>`, `~…~` en `<sub>`, sans espace dans le contenu sauf échappée (`\ `, espace insécable) ; `~~…~~` en `<del>`, reconnu avant l'indice, qui utilise lui aussi le tilde. `\^` et `\~` restent du texte. Les motifs inline de `SuperscriptSubscriptExtension` passent avant l'emphase, qui reste rendue à l'intérieur. Une formule LaTeX (#99) passe avant : `$x^2^$` ne produit pas d'exposant HTML.
