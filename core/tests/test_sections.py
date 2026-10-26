@@ -18,9 +18,12 @@ from core.sections import (
     join_path,
     label,
     levels,
+    path_labels,
     section_for,
     split_path,
     subtree,
+    with_ancestors,
+    with_descendants,
 )
 from note_taking.models import Note, NotePart
 from todolist.models import Todo
@@ -212,6 +215,51 @@ class TreeTests(TestCase):
     def test_sous_arbre_d_une_feuille(self):
         assert self.leaf is not None
         self.assertEqual([section.name for section in subtree(self.leaf)], ["C"])
+
+
+class TreeSetsTests(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(name="P")
+        self.leaf = section_for(self.project, ["A", "B", "C"])
+        self.d = section_for(self.project, ["A", "D"])
+        self.e = section_for(self.project, ["E"])
+        self.a = Section.objects.get(name="A")
+        self.b = Section.objects.get(name="B")
+
+    def test_avec_ancetres(self):
+        assert self.leaf is not None
+        self.assertEqual(
+            with_ancestors([self.leaf.pk]), {self.a.pk, self.b.pk, self.leaf.pk}
+        )
+
+    def test_avec_ancetres_sans_doublon(self):
+        assert self.leaf is not None and self.d is not None
+        self.assertEqual(
+            with_ancestors([self.leaf.pk, self.d.pk]),
+            {self.a.pk, self.b.pk, self.leaf.pk, self.d.pk},
+        )
+
+    def test_avec_descendants(self):
+        assert self.leaf is not None and self.d is not None
+        self.assertEqual(
+            with_descendants([self.a.pk]),
+            {self.a.pk, self.b.pk, self.leaf.pk, self.d.pk},
+        )
+
+    def test_avec_descendants_d_une_feuille(self):
+        assert self.leaf is not None
+        self.assertEqual(with_descendants([self.leaf.pk]), {self.leaf.pk})
+
+    def test_etiquettes_avec_le_projet(self):
+        assert self.leaf is not None and self.e is not None
+        labels = path_labels()
+
+        self.assertEqual(labels[self.leaf.pk], "P › A › B › C")
+        self.assertEqual(labels[self.e.pk], "P › E")
+
+    def test_etiquettes_en_deux_requetes(self):
+        with self.assertNumQueries(1):
+            path_labels()
 
 
 class ForgetUnusedTests(TestCase):

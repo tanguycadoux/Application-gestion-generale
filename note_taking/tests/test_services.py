@@ -12,7 +12,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.templatetags.static import static
 from django.test import TestCase, override_settings
 
-from core.models import Project
+from core.models import Project, Section
+from core.sections import levels
 from images.services import import_image
 from images.tests.files import image_file
 from note_taking.exceptions import (
@@ -43,7 +44,7 @@ def parts_summary(note: Note) -> list[tuple]:
     return [
         (
             part.project.name,
-            part.section.name if part.section else None,
+            levels(part.section) if part.section else [],
             sorted(part.tags.values_list("name", flat=True)),
             part.content,
         )
@@ -68,7 +69,7 @@ class ImportNoteTests(ServiceTestCase):
         note.refresh_from_db()
         self.assertEqual(note.date, date(2025, 11, 24))
         self.assertEqual(note.body, "# P\n## S\n### A\nx")
-        self.assertEqual(parts_summary(note), [("P", "S", ["A"], "x")])
+        self.assertEqual(parts_summary(note), [("P", ["S", "A"], [], "x")])
 
     def test_projet_cree_automatiquement(self):
         """#19 : description vide plutôt que le nom du projet."""
@@ -124,7 +125,7 @@ class ImportNoteTests(ServiceTestCase):
         note = insert_note_in_table(
             qmd_file("2025-11-24.qmd", HEADER + "# P\nx", encoding="utf-8-sig")
         )
-        self.assertEqual(parts_summary(note), [("P", None, [], "x")])
+        self.assertEqual(parts_summary(note), [("P", [], [], "x")])
 
     def test_echec_de_l_analyse_n_enregistre_pas_la_note(self):
         with self.assertRaises(ImageNotFoundError):
@@ -148,7 +149,7 @@ class UpdateNoteTests(ServiceTestCase):
 
         self.note.refresh_from_db()
         self.assertEqual(self.note.body, "# P\n### Nouveau\ny")
-        self.assertEqual(parts_summary(self.note), [("P", None, ["Nouveau"], "y")])
+        self.assertEqual(parts_summary(self.note), [("P", ["Nouveau"], [], "y")])
 
     def test_fichier_d_une_autre_date(self):
         other = "---\ndate: 2025-11-25\n---\n# P\ny"
@@ -157,7 +158,7 @@ class UpdateNoteTests(ServiceTestCase):
             update_note_from_source_file(self.note, qmd_file("2025-11-25.qmd", other))
 
         self.note.refresh_from_db()
-        self.assertEqual(parts_summary(self.note), [("P", None, ["Ancien"], "x")])
+        self.assertEqual(parts_summary(self.note), [("P", ["Ancien"], [], "x")])
 
     def test_date_en_tete_differente_du_nom(self):
         with self.assertRaisesMessage(InvalidNoteFileError, "au nom du fichier"):
@@ -178,7 +179,7 @@ class UpdateNoteTests(ServiceTestCase):
         )
 
         self.note.refresh_from_db()
-        self.assertEqual(parts_summary(self.note), [("P", None, [], "y")])
+        self.assertEqual(parts_summary(self.note), [("P", [], [], "y")])
 
     def test_echec_de_l_analyse_conserve_la_note(self):
         old_raw = self.note.body
@@ -191,7 +192,7 @@ class UpdateNoteTests(ServiceTestCase):
 
         self.note.refresh_from_db()
         self.assertEqual(self.note.body, old_raw)
-        self.assertEqual(parts_summary(self.note), [("P", None, ["Ancien"], "x")])
+        self.assertEqual(parts_summary(self.note), [("P", ["Ancien"], [], "x")])
 
 
 class ProcessNotePartsTests(ServiceTestCase):
@@ -200,7 +201,7 @@ class ProcessNotePartsTests(ServiceTestCase):
 
         process_note_parts(note)
 
-        self.assertEqual(parts_summary(note), [("P", "S", [], "x")])
+        self.assertEqual(parts_summary(note), [("P", ["S"], [], "x")])
 
     def test_date_en_tete_differente_de_la_note(self):
         note = Note.objects.create(
@@ -217,7 +218,7 @@ class ProcessNotePartsTests(ServiceTestCase):
         note.body = "# P\n### C\nz"
         process_note_parts(note)
 
-        self.assertEqual(parts_summary(note), [("P", None, ["C"], "z")])
+        self.assertEqual(parts_summary(note), [("P", ["C"], [], "z")])
         self.assertEqual(NotePart.objects.count(), 1)
 
     def test_analyse_interrompue_garde_les_parts_d_avant(self):
@@ -229,7 +230,7 @@ class ProcessNotePartsTests(ServiceTestCase):
         with self.assertRaises(ImageNotFoundError):
             process_note_parts(note)
 
-        self.assertEqual(parts_summary(note), [("P", None, ["A"], "x")])
+        self.assertEqual(parts_summary(note), [("P", ["A"], [], "x")])
         self.assertFalse(Todo.objects.exists())
 
     def test_contenu_vide(self):
@@ -350,3 +351,49 @@ class ImageTests(ServiceTestCase):
         part = NotePart(project=Project(name="P"), content="![Banc](image:999)")
 
         self.assertIn(f'src="{static(IMAGE_MISSING_PATH)}"', part.rendered_content())
+
+
+class DeepPathTests(ServiceTestCase):
+    """Les titres `##` à `######` forment le chemin de la note part (#296)."""
+
+    BODY = "# P\n## S\n### Notes\n#### Détail\nx"
+
+    def test_chemin_de_la_note_part(self):
+        note = Note.objects.create(date="2025-11-24", body=self.BODY)
+
+        process_note_parts(note)
+
+        self.assertEqual(
+            parts_summary(note), [("P", ["S", "Notes", "Détail"], [], "x")]
+        )
+
+    def test_une_seule_section_par_niveau(self):
+        process_note_parts(Note.objects.create(date="2025-11-24", body=self.BODY))
+        process_note_parts(Note.objects.create(date="2025-11-25", body=self.BODY))
+
+        self.assertEqual(
+            sorted(Section.objects.values_list("name", flat=True)),
+            ["Détail", "Notes", "S"],
+        )
+
+    def test_tache_sous_un_titre_todo_dans_un_chemin(self):
+        body = "# P\n## S\n### Notes\n#### TODO\n- Tâche"
+        note = Note.objects.create(date="2025-11-24", body=body)
+
+        process_note_parts(note)
+
+        part = note.parts.get()
+        self.assertEqual(levels(part.section), ["S", "Notes"])
+        self.assertEqual(list(part.tags.values_list("name", flat=True)), ["TODO"])
+        self.assertEqual(part.heading_path, "P › S › Notes › TODO")
+        todo = Todo.objects.get()
+        self.assertEqual(levels(todo.section), ["S", "Notes"])
+
+    def test_niveaux_inutilises_oublies_a_la_mise_a_jour(self):
+        note = Note.objects.create(date="2025-11-24", body=self.BODY)
+        process_note_parts(note)
+
+        note.body = "# P\n## S\nx"
+        process_note_parts(note)
+
+        self.assertEqual(list(Section.objects.values_list("name", flat=True)), ["S"])

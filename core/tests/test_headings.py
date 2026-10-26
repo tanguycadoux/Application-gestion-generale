@@ -36,7 +36,7 @@ class HeadingHierarchyTests(TestCase):
     def setUp(self):
         project = Project.objects.create(name="P")
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        section = Section.objects.create(project=project, name="S")
+        section = self.section = Section.objects.create(project=project, name="S")
         NotePart.objects.create(
             note=self.note, project=project, section=section, content="x"
         )
@@ -77,7 +77,7 @@ class HeadingHierarchyTests(TestCase):
         url = reverse("note_taking:notes_search")
         page = self.client.get(url).content.decode()
         results = self.client.post(
-            url, {"subjects": ["S"]}, HTTP_HX_REQUEST="true"
+            url, {"subjects": [str(self.section.pk)]}, HTTP_HX_REQUEST="true"
         ).content.decode()
         self.assertIn("<h", results)
 
