@@ -44,7 +44,7 @@ class ProgressTests(TestCase):
 
         self.client.post(url, {"completed": False}, content_type="application/json")
         todo.refresh_from_db()
-        self.assertEqual(todo.progress, 0)
+        self.assertEqual(todo.progress, 40)
 
 
 class SubjectAndProjectTests(TestCase):

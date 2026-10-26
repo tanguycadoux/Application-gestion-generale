@@ -63,6 +63,9 @@ class Todo(models.Model):
     completed_at = models.DateTimeField(
         "terminée le", null=True, blank=True, editable=False
     )
+    # Avancement retenu quand la tâche passe à terminée, rendu quand on la
+    # décoche (#237) ; 0 pour une tâche créée terminée.
+    progress_before_done = models.PositiveSmallIntegerField(default=0, editable=False)
 
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
@@ -116,19 +119,21 @@ class Todo(models.Model):
         # parent-enfant est refusée.
         self.clean()
 
-        old_parent_id = None
+        old_parent_id, old_progress, was_done = None, 0, False
         if self.pk:
-            old_parent_id = (
+            old_parent_id, old_progress, was_done = (
                 Todo.objects.filter(pk=self.pk)
-                .values_list("parent_id", flat=True)
+                .values_list("parent_id", "progress", "done")
                 .first()
-            )
+            ) or (None, 0, False)
             # L'avancement d'un parent se calcule, il ne se saisit pas (#164).
             computed = self.children_progress()
             if computed is not None:
                 self.progress = computed
         if not self.pk or not self.children.exists():
             self.done = self.progress == 100
+            if self.done and not was_done:
+                self.progress_before_done = old_progress
         if not self.done:
             self.completed_at = None
         elif self.completed_at is None:
