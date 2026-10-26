@@ -12,3 +12,24 @@ select = [
     "UP",              # syntaxe Python moderne
     "DJ",              # bonnes pratiques Django
 ]
+
+[tool.djlint]
+profile = "django"
+indent = 4
+
+[tool.djlint.per-file-ignores]
+# <a> ou <button> selon href, dans un seul gabarit : pas une imbrication.
+"core/templates/core/components/button.html" = "H054"
+# Positions de la frise par variables CSS (left-(--start)), voulues (#168).
+"todolist/templates/todolist/gantt.html" = "H021"
+# Tableau des notes : refonte en pause, avec le tri et les filtres communs (#178).
+"note_taking/templates/note_taking/note_list.html" = "H023 H043"
+
+[tool.coverage.run]
+source = ["app_gestion", "core", "images", "note_taking", "todolist"]
+omit = ["*/migrations/*", "*/tests/*", "app_gestion/asgi.py", "app_gestion/wsgi.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+sort = "Cover"
