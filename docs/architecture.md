@@ -47,7 +47,8 @@ todolist ──► note_taking ──► images ──► core
 | Module | Rôle |
 |---|---|
 | `models.py` | `Project` (nom unique, couleur, description), `Section` (niveau d'un chemin sous un projet, #295), `Tag`, partagés par les notes et les tâches |
-| `sections.py` | chemins : saisie (`split_path`, `join_path`), création et reprise d'un chemin (`section_for`), ancêtres, sous-arbre, oubli des sections inutilisées (`forget_unused_sections`) |
+| `sections.py` | chemins : saisie (`split_path`, `join_path`), création et reprise d'un chemin (`section_for`), ancêtres, sous-arbre et libellés (`with_ancestors`, `with_descendants`, `path_labels`), oubli des sections inutilisées (`forget_unused_sections`) |
+| `tags.py` | `forget_unused_tags`, appelée par `reprocess_notes` |
 | `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
 | `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
 | `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
@@ -103,7 +104,7 @@ Todo >── Todo (parent, option)
 ```
 
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
-- **`NotePart`** : morceau de note partageant projet, section (son sujet) et tags, avec les titres de sa section (`heading_path`, #240). **Données dérivées** de `Note.body`.
+- **`NotePart`** : morceau de note partageant projet, section (la dernière du chemin) et tags, avec les titres de sa section (`heading_path`, #240). **Données dérivées** de `Note.body`.
 - **`Project`, `Section`, `Tag`** : partagés par les notes et les tâches. Un projet a un nom unique, une couleur (#162) et une description. Une section est un niveau d'un chemin sous un projet (voir « Chemins sous un projet »).
 - **`Todo`** (tâche) : titre, projet, section (son sujet) et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date, le chemin et le texte de sa ligne (`note_part_date`, `note_path`, `note_part_text`), et son état dans la note (`note_state` : à revoir, revue, gardée sans sa ligne, écartée, #240). `Todo.objects` exclut les tâches écartées ; `Todo.all_objects` les compte.
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
@@ -163,7 +164,9 @@ Un chemin est une suite de niveaux sous un projet : « Réunion › Préparation
 - Le séparateur n'existe qu'à la **saisie** (« / » entre niveaux, « // » pour un « / » littéral : `split_path`, `join_path`) et à l'**affichage** (« › »). Les notes ne passent pas par ce texte : leurs titres donnent directement les niveaux.
 - Supprimer un niveau supprime ses descendants. `Section.project` est en cascade ; `NotePart.section` est protégé, `Todo.section` passe à vide.
 - `core` ne connaît aucune app : `forget_unused_sections` lit les clés étrangères qui mènent à `Section` sur le modèle, sans importer les apps.
-- Tant que #296 n'a pas étendu l'analyse des notes, `##` donne la seule section d'un chemin d'un niveau ; les sujets d'avant sont devenus des sections de premier rang, une par projet qui les utilisait.
+- **Dans les notes** (#296) : `#` donne le projet, `##` à `######` les niveaux du chemin, sans limite de profondeur (`NoteParser.current_path`). Les titres ne donnent plus de tags : seuls les blocs `{.metadata}` en donnent, avec une portée sur la branche, jamais un niveau. Le titre `TODO` (de `###` à `######`) est un marqueur hors du chemin, qui pose le tag `TODO` ; `heading_path` garde tous les titres tels qu'écrits, `TODO` compris, dont dépend l'identité des tâches (#240). #297 remplacera le marqueur par les cases à cocher.
+- **Recherche des note parts** : les chemins proposés sont ceux des note parts, avec leurs parents implicites (`with_ancestors`) ; choisir un niveau cherche aussi ses descendants (`with_descendants`). Libellés « Projet › Réunion › Préparation » en une requête (`path_labels`).
+- `reprocess_notes` recalcule les note parts, puis supprime les tags que plus rien n'utilise (`core/tags.py`) : un enregistrement de note ne supprime jamais de tag, pour ne pas faire disparaître un tag créé à la main. Les tâches déjà créées gardent leur section : une tâche générée prend celle de sa note part à sa création.
 
 ### Images (#25, #26)
 
