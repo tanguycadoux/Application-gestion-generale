@@ -5,23 +5,26 @@ from django.urls import reverse
 
 from note_taking.signals import NoteFollowUp, note_parts_processed
 
-from .services import create_todos_from_note_part
+from .services import (
+    create_todos_from_note_part,
+    mark_gone_lines,
+    note_lines,
+    note_todos_to_review,
+)
 
 
 @receiver(note_parts_processed)
 def create_todos_from_note_parts(
     sender, note, note_parts, **kwargs
 ) -> NoteFollowUp | None:
-    """Crée les tâches des note parts ; s'il y en a de nouvelles, propose leur
-    bilan (#239)."""
-    created = [
-        todo
-        for note_part in note_parts
-        for todo in create_todos_from_note_part(note_part)
-    ]
-    if not created:
+    """Crée les tâches des note parts et repère celles dont la ligne a disparu ;
+    s'il en reste à revoir, propose le bilan de la note (#239, #240)."""
+    for note_part in note_parts:
+        create_todos_from_note_part(note_part)
+    mark_gone_lines(note.date, note_lines(note_parts))
+
+    count = note_todos_to_review(note.date).count()
+    if not count:
         return None
-    label = "1 tâche créée" if len(created) == 1 else f"{len(created)} tâches créées"
-    ids = ",".join(str(todo.pk) for todo in created)
-    url = reverse("todolist:note_review", args=[str(note.date)])
-    return NoteFollowUp(label, f"{url}?ids={ids}")
+    label = "1 tâche à revoir" if count == 1 else f"{count} tâches à revoir"
+    return NoteFollowUp(label, reverse("todolist:note_review", args=[str(note.date)]))

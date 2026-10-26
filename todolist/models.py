@@ -24,7 +24,34 @@ TODO_TEXT_MAX_LENGTH = 500
 SOON_DAYS = 3
 
 
+class TodoManager(models.Manager):
+    """Tâches affichées : sans les tâches écartées (#240)."""
+
+    def get_queryset(self):
+        return super().get_queryset().exclude(note_state=Todo.NoteState.DISMISSED)
+
+
+def protect_unless_dismissed(collector, field, sub_objs, using):
+    """Un projet utilisé par une tâche est protégé ; ses tâches écartées, que plus
+    rien n'affiche, sont supprimées avec lui (#240)."""
+    dismissed = [obj for obj in sub_objs if obj.note_state == Todo.NoteState.DISMISSED]
+    active = [obj for obj in sub_objs if obj.note_state != Todo.NoteState.DISMISSED]
+    if active:
+        models.PROTECT(collector, field, active, using)
+    if dismissed:
+        models.CASCADE(collector, field, dismissed, using)
+
+
 class Todo(models.Model):
+    class NoteState(models.TextChoices):
+        """Où en est une tâche issue d'une note (#240) ; vide pour une tâche
+        saisie à la main."""
+
+        TO_REVIEW = "to_review", "à revoir"
+        REVIEWED = "reviewed", "revue"
+        DETACHED = "detached", "gardée sans sa ligne"
+        DISMISSED = "dismissed", "écartée"
+
     PRIORITY_CHOICES = [
         ("low", "Basse"),
         ("medium", "Moyenne"),
@@ -35,7 +62,7 @@ class Todo(models.Model):
     project = models.ForeignKey(
         Project,
         verbose_name="projet",
-        on_delete=models.PROTECT,
+        on_delete=protect_unless_dismissed,
         related_name="todos",
     )
     subject = models.ForeignKey(
@@ -76,6 +103,16 @@ class Todo(models.Model):
     # lignes parentes, séparés par « › » (#240). Avec la date et le texte, il
     # identifie la tâche ; vide pour une tâche créée avant #240, pas encore reprise.
     note_path = models.TextField(blank=True, default="")
+    # À revoir dans le bilan de sa note tant qu'elle n'y a pas été enregistrée,
+    # ou quand sa ligne disparaît ; écartée, elle n'est plus affichée ni recréée.
+    note_state = models.CharField(
+        "état dans sa note",
+        max_length=10,
+        choices=NoteState.choices,
+        blank=True,
+        default="",
+        editable=False,
+    )
 
     priority = models.CharField(
         "priorité", max_length=10, choices=PRIORITY_CHOICES, default="medium"
@@ -104,8 +141,15 @@ class Todo(models.Model):
     # Ancêtres dont l'avancement a changé au dernier enregistrement (#164).
     updated_ancestor_ids: list[int]
 
+    # Toutes les tâches, écartées comprises : l'identité des tâches issues des
+    # notes les compte, pour ne pas les recréer.
+    all_objects = models.Manager()
+    objects = TodoManager()
+
     class Meta:
         verbose_name = "tâche"
+        # Sans les tâches écartées : listes, sous-tâches, formulaires (#240).
+        default_manager_name = "objects"
         constraints = [
             models.UniqueConstraint(
                 fields=[

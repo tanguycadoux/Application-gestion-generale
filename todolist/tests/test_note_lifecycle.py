@@ -4,8 +4,6 @@ Une tâche générée est identifiée par la date de la note, le chemin des titr
 tels qu'écrits (sans `TODO`) et le chemin de sa ligne.
 """
 
-import unittest
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -104,7 +102,6 @@ class ToReviewTests(LifecycleTestCase):
             {"date": "2025-11-24", "body": body},
         )
 
-    @unittest.expectedFailure
     def test_tache_creee_a_revoir(self):
         self.save_note(self.BODY)
 
@@ -113,26 +110,23 @@ class ToReviewTests(LifecycleTestCase):
             {Todo.NoteState.TO_REVIEW},
         )
 
-    @unittest.expectedFailure
     def test_tache_saisie_a_la_main_sans_etat(self):
         todo = Todo.objects.create(title="T", project=Project.objects.create(name="P"))
 
         self.assertEqual(todo.note_state, "")
 
-    @unittest.expectedFailure
     def test_plus_tard_le_bilan_revient(self):
         note = self.save_note(self.BODY)
 
-        response = self.edit(note, self.BODY + "\n\ntexte")
+        response = self.edit(note, self.BODY + "\n\n# Q\ntexte")
 
         self.assertRedirects(response, review_url())
 
-    @unittest.expectedFailure
     def test_bilan_enregistre_ne_revient_pas(self):
         note = self.save_note(self.BODY)
         self.client.post(review_url(), review_data(new=Todo.objects.order_by("pk")))
 
-        response = self.edit(note, self.BODY + "\n\ntexte")
+        response = self.edit(note, self.BODY + "\n\n# Q\ntexte")
 
         self.assertRedirects(
             response, reverse("note_taking:note_detail", args=[note.pk])
@@ -148,7 +142,6 @@ class GoneLineTests(LifecycleTestCase):
     def state(self, todo: Todo) -> str:
         return Todo.all_objects.get(pk=todo.pk).note_state
 
-    @unittest.expectedFailure
     def test_ligne_retiree_a_revoir(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A")
@@ -156,7 +149,6 @@ class GoneLineTests(LifecycleTestCase):
         self.assertEqual(self.state(self.b), Todo.NoteState.TO_REVIEW)
         self.assertEqual(self.state(self.a), Todo.NoteState.REVIEWED)
 
-    @unittest.expectedFailure
     def test_bilan_separe_nouvelles_et_disparues(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A\n- B modifiée")
@@ -167,7 +159,6 @@ class GoneLineTests(LifecycleTestCase):
         gone = [form.instance.title for form in response.context["gone_formset"]]
         self.assertEqual((new, gone), (["B modifiée"], ["B"]))
 
-    @unittest.expectedFailure
     def test_garder(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A")
@@ -177,7 +168,6 @@ class GoneLineTests(LifecycleTestCase):
 
         self.assertEqual(self.state(self.b), Todo.NoteState.DETACHED)
 
-    @unittest.expectedFailure
     def test_ecarter(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A")
@@ -187,7 +177,6 @@ class GoneLineTests(LifecycleTestCase):
         self.assertEqual(self.state(self.b), Todo.NoteState.DISMISSED)
         self.assertFalse(Todo.objects.filter(pk=self.b.pk).exists())
 
-    @unittest.expectedFailure
     def test_ecartee_pas_recreee(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A")
@@ -198,16 +187,9 @@ class GoneLineTests(LifecycleTestCase):
         self.assertEqual(Todo.all_objects.filter(title="B").count(), 1)
         self.assertEqual(self.state(self.b), Todo.NoteState.DISMISSED)
 
-    @unittest.expectedFailure
-    def test_remplacer_garde_avancement_echeance_et_sous_taches(self):
-        self.prepare()
-        Todo.objects.filter(pk=self.b.pk).update(progress=60, due_date="2025-12-01")
-        child = Todo.objects.create(
-            title="Enfant", project=self.b.project, parent=self.b
-        )
-        self.save_note("# P\n### TODO\n- A\n- B modifiée\n  - Sous-ligne")
-        new = Todo.objects.get(title="B modifiée")
-
+    def replace_b(self, body: str, new_title: str):
+        self.save_note(body)
+        new = Todo.objects.get(title=new_title)
         self.client.post(
             review_url(),
             review_data(
@@ -217,6 +199,13 @@ class GoneLineTests(LifecycleTestCase):
                 gone=[(self.b, "replace", new)],
             ),
         )
+        return new
+
+    def test_remplacer_garde_avancement_et_echeance(self):
+        self.prepare()
+        Todo.objects.filter(pk=self.b.pk).update(progress=60, due_date="2025-12-01")
+
+        new = self.replace_b("# P\n### TODO\n- A\n- B modifiée", "B modifiée")
 
         b = Todo.objects.get(pk=self.b.pk)
         self.assertEqual(
@@ -224,14 +213,22 @@ class GoneLineTests(LifecycleTestCase):
             ("B modifiée", "B modifiée", 60, "2025-12-01", Todo.NoteState.REVIEWED),
         )
         self.assertFalse(Todo.all_objects.filter(pk=new.pk).exists())
+
+    def test_remplacer_garde_et_reprend_les_sous_taches(self):
+        self.prepare()
+        Todo.objects.create(title="Enfant", project=self.b.project, parent=self.b)
+        body = "# P\n### TODO\n- A\n- B modifiée\n  - Sous-ligne"
+
+        self.replace_b(body, "B modifiée")
+
+        b = Todo.objects.get(pk=self.b.pk)
         self.assertEqual(
             sorted(b.children.values_list("title", flat=True)),
-            [child.title, "Sous-ligne"],
+            ["Enfant", "Sous-ligne"],
         )
-        self.save_note("# P\n### TODO\n- A\n- B modifiée\n  - Sous-ligne")
+        self.save_note(body)
         self.assertEqual(Todo.objects.count(), 4)
 
-    @unittest.expectedFailure
     def test_remplacer_garde_un_titre_renomme(self):
         self.prepare()
         Todo.objects.filter(pk=self.b.pk).update(title="Renommée")
@@ -245,7 +242,6 @@ class GoneLineTests(LifecycleTestCase):
 
         self.assertEqual(Todo.objects.get(pk=self.b.pk).title, "Renommée")
 
-    @unittest.expectedFailure
     def test_remplacer_sans_tache_choisie(self):
         self.prepare()
         self.save_note("# P\n### TODO\n- A")
@@ -262,7 +258,6 @@ class DeleteTests(LifecycleTestCase):
     def delete(self, todo: Todo):
         return self.client.post(reverse("todolist:todo_delete", args=[todo.pk]))
 
-    @unittest.expectedFailure
     def test_supprimer_une_tache_de_note_l_ecarte(self):
         self.save_note("# P\n### TODO\n- A")
         todo = Todo.objects.get()
@@ -273,7 +268,6 @@ class DeleteTests(LifecycleTestCase):
         self.assertFalse(Todo.objects.exists())
         self.assertEqual(Todo.all_objects.get().note_state, Todo.NoteState.DISMISSED)
 
-    @unittest.expectedFailure
     def test_supprimer_une_tache_saisie_a_la_main(self):
         todo = Todo.objects.create(title="T", project=Project.objects.create(name="P"))
 
@@ -281,7 +275,6 @@ class DeleteTests(LifecycleTestCase):
 
         self.assertFalse(Todo.all_objects.exists())
 
-    @unittest.expectedFailure
     def test_parent_saisi_a_la_main_avec_enfant_de_note(self):
         self.save_note("# P\n### TODO\n- A")
         child = Todo.objects.get()
@@ -307,7 +300,6 @@ class DeleteTests(LifecycleTestCase):
 
         self.assertEqual(Todo.objects.get(title="A").progress, 100)
 
-    @unittest.expectedFailure
     def test_projet_utilise_seulement_par_des_ecartees(self):
         self.save_note("# P\n### TODO\n- A")
         project = Todo.objects.get().project
