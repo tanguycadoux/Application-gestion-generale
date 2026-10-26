@@ -36,6 +36,14 @@
     border-collapse: collapse;
 }
 
+/* Légende au-dessus du tableau, à gauche et en gris, comme dans Quarto (#230). */
+.rendered-content caption {
+    caption-side: top;
+    padding: .5rem 0;
+    text-align: left;
+    color: var(--color-slate-600);
+}
+
 .rendered-content :is(th, td) {
     border: 1px solid;
     padding: .2rem;

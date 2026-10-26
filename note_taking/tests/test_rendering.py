@@ -388,6 +388,85 @@ class TaskListRenderingTests(SimpleTestCase):
         )
 
 
+TABLE = "| a |\n|---|\n| 1 |"
+TABLE_BODY = "<thead><tr><th>a</th></tr></thead><tbody><tr><td>1</td></tr></tbody>"
+
+
+class TableCaptionRenderingTests(SimpleTestCase):
+    """Légendes de tableau « : Légende » comme dans Quarto (#230).
+
+    Les résultats attendus sont ceux de Pandoc : un paragraphe qui commence par
+    « : » ou « Table: », juste avant ou juste après un tableau, en est la légende.
+    """
+
+    def assertCaption(self, text: str, caption: str, attrs: str = ""):
+        self.assertHTMLEqual(
+            render_markdown(text),
+            f"<table{attrs}><caption>{caption}</caption>{TABLE_BODY}</table>",
+        )
+
+    def test_legende_apres_le_tableau(self):
+        self.assertCaption(
+            f"{TABLE}\n\n: Rétreint **thermique**",
+            "Rétreint <strong>thermique</strong>",
+        )
+
+    def test_legende_avant_le_tableau(self):
+        self.assertCaption(f": Avant\n\n{TABLE}", "Avant")
+
+    def test_legende_collee_au_tableau(self):
+        self.assertCaption(f"{TABLE}\n: Après", "Après")
+        self.assertCaption(f": Avant\n{TABLE}", "Avant")
+
+    def test_formes_de_la_legende(self):
+        for text in (": L", ":L", "Table: L", "table: L", "\n: L"):
+            with self.subTest(text=text):
+                self.assertCaption(f"{TABLE}\n\n{text}", "L")
+
+    def test_legende_sur_plusieurs_lignes(self):
+        self.assertCaption(f"{TABLE}\n\n: deux\nlignes", "deux\nlignes")
+
+    def test_attributs_reportes_sur_le_tableau(self):
+        self.assertCaption(
+            f"{TABLE}\n\n: L {{#tbl-x .large}}", "L", ' id="tbl-x" class="large"'
+        )
+
+    def test_legende_d_avant_prioritaire(self):
+        html = render_markdown(f": avant\n\n{TABLE}\n\n: après")
+
+        self.assertHTMLEqual(
+            html,
+            f"<table><caption>avant</caption>{TABLE_BODY}</table><p>: après</p>",
+        )
+
+    def test_legende_entre_deux_tableaux_au_premier(self):
+        html = render_markdown(f"{TABLE}\n\n: L\n\n{TABLE}")
+
+        self.assertHTMLEqual(
+            html,
+            f"<table><caption>L</caption>{TABLE_BODY}</table>"
+            f"<table>{TABLE_BODY}</table>",
+        )
+
+    def test_legende_dans_un_callout(self):
+        html = render_markdown(f"::: {{.callout-note}}\n{TABLE}\n\n: L\n:::")
+
+        self.assertInHTML(f"<table><caption>L</caption>{TABLE_BODY}</table>", html)
+
+    def test_paragraphe_sans_tableau_voisin(self):
+        for text in ("Texte\n\n: pas de tableau", f"{TABLE}\n\nTexte\n\n: loin"):
+            with self.subTest(text=text):
+                html = render_markdown(text)
+
+                self.assertNotIn("<caption>", html)
+                self.assertIn("<p>: ", html)
+
+    def test_bloc_de_code_inchange(self):
+        html = render_markdown(f"```\n{TABLE}\n: L\n```")
+
+        self.assertIn(f"<code>{TABLE}\n: L\n</code>", html)
+
+
 class CalloutRenderingTests(SimpleTestCase):
     def test_titre_en_attribut(self):
         html = render_markdown(
