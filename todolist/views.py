@@ -55,6 +55,13 @@ def todo_list(request):
     )
 
 
+def with_subtasks(count: int) -> str:
+    """« et sa sous-tâche », « et ses 3 sous-tâches », ou rien (#223)."""
+    if count == 0:
+        return ""
+    return " et sa sous-tâche" if count == 1 else f" et ses {count} sous-tâches"
+
+
 class TodoDetailView(DetailView):
     model = Todo
     template_name = "todolist/todo_detail.html"
@@ -70,6 +77,11 @@ class TodoDetailView(DetailView):
         context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
         context["children"] = context["children_groups"][0].rows
         context["gantt"] = gantt_chart(todo)
+        # Les sous-tâches sont supprimées avec la tâche : la confirmation le dit (#223).
+        context["delete_confirm"] = (
+            f"Supprimer définitivement la tâche « {todo.title} »"
+            f"{with_subtasks(len(context['children']))} ?"
+        )
         return context
 
 
@@ -109,10 +121,17 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
     model = Todo
     http_method_names = ["post"]
     success_url = reverse_lazy("todolist:todo_list")
-    success_message = "La tâche « %(title)s » a été supprimée."
+
+    def form_valid(self, form):
+        # Compté avant la suppression, qui emporte les sous-tâches (#223).
+        self.subtasks = self.object.descendants_count()
+        return super().form_valid(form)
 
     def get_success_message(self, cleaned_data):
-        return self.success_message % {"title": self.object.title}
+        title = self.object.title
+        if self.subtasks:
+            return f"La tâche « {title} »{with_subtasks(self.subtasks)} ont été supprimées."
+        return f"La tâche « {title} » a été supprimée."
 
 
 @require_POST

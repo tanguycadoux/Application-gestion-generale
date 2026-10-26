@@ -133,6 +133,16 @@ class Todo(models.Model):
         if old_parent_id not in (None, self.parent_id):
             update_ancestors_progress(old_parent_id)
 
+    def descendants_count(self) -> int:
+        """Nombre de sous-tâches, à tous les niveaux : supprimées avec la tâche."""
+        count, level = 0, [self.pk]
+        while level:
+            level = list(
+                Todo.objects.filter(parent_id__in=level).values_list("pk", flat=True)
+            )
+            count += len(level)
+        return count
+
     def children_progress(self) -> int | None:
         """Moyenne arrondie de l'avancement des enfants ; None sans enfant."""
         values = list(self.children.values_list("progress", flat=True))
