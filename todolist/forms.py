@@ -20,7 +20,7 @@ class TodoForm(forms.ModelForm):
         ]
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
-            "progress": forms.NumberInput(attrs={"min": 0, "max": 100, "step": 5}),
+            "progress": forms.NumberInput(attrs={"min": 0, "max": 100}),
         }
 
     def __init__(self, *args, **kwargs):

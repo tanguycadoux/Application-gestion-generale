@@ -1,7 +1,6 @@
 """Tests du modèle des tâches : sujet, avancement, projet obligatoire, sans héritage
 forcé du parent (#163)."""
 
-import unittest
 from datetime import date
 
 from django.core.exceptions import ValidationError
@@ -30,7 +29,6 @@ class ProgressTests(TestCase):
 
         self.assertTrue(todo.completed)
 
-    @unittest.expectedFailure
     def test_avancement_au_pourcent_pres(self):
         """76 % se saisit : le champ n'impose pas de pas de 5 %."""
         form = TodoForm(
