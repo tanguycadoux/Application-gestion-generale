@@ -21,6 +21,7 @@ from pathlib import PurePosixPath
 from django.core.files.base import ContentFile, File
 
 from core.exceptions import AppError
+from images.exceptions import ImageError
 from images.models import Image
 from images.services import import_image
 
@@ -40,6 +41,8 @@ class ImportReport:
     # (nom du fichier, message d'erreur)
     failed: list[tuple[str, str]] = field(default_factory=list)
     images_imported: list[str] = field(default_factory=list)
+    # (nom du fichier, message d'erreur) : fichier qui n'est pas une image lisible.
+    images_failed: list[tuple[str, str]] = field(default_factory=list)
     # Images déjà en base sous ce nom : gardées, le fichier importé est écarté.
     images_kept: list[str] = field(default_factory=list)
     # Fichiers ni note, ni image, ni archive (ou mal placés dans une archive).
@@ -67,8 +70,12 @@ def import_files(files: Iterable[File]) -> ImportReport:
         name = PurePosixPath(image.name or "").name
         if Image.objects.filter(name=name).exists():
             report.images_kept.append(name)
-        else:
+            continue
+        try:
             import_image(image)
+        except ImageError as e:
+            report.images_failed.append((name, str(e)))
+        else:
             report.images_imported.append(name)
 
     for note_file in sorted(notes, key=lambda f: f.name or ""):
