@@ -1,7 +1,6 @@
 """Tests de la vue de complétion d'une tâche (case à cocher de la liste)."""
 
 import json
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -96,14 +95,12 @@ class UncheckRestoresProgressTests(TestCase):
     def progress(self) -> int:
         return Todo.objects.get(pk=self.todo.pk).progress
 
-    @unittest.expectedFailure
     def test_cocher_puis_decocher(self):
         self.toggle(True)
         self.toggle(False)
 
         self.assertEqual(self.progress(), 60)
 
-    @unittest.expectedFailure
     def test_avancement_porte_a_100_dans_le_formulaire_puis_decoche(self):
         self.todo.progress = 100
         self.todo.save()
@@ -119,7 +116,6 @@ class UncheckRestoresProgressTests(TestCase):
 
         self.assertEqual(self.progress(), 0)
 
-    @unittest.expectedFailure
     def test_recocher_retient_le_dernier_avancement(self):
         self.toggle(True)
         self.toggle(False)
