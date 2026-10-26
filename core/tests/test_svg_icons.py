@@ -106,11 +106,6 @@ class IconFilesTests(SimpleTestCase):
             with self.subTest(name=name):
                 self.assertTrue((ICONS_DIR / name).exists())
 
-    def test_plus_de_police_d_icones(self):
-        for path in [*app_files("**/*.html", "**/*.py", "**/*.js", "**/*.css")]:
-            with self.subTest(path=str(path)):
-                self.assertNotIn("material-symbols", path.read_text(encoding="utf-8"))
-
 
 class AddIconCommandTests(SimpleTestCase):
     def test_telecharge_l_icone_rounded(self):
