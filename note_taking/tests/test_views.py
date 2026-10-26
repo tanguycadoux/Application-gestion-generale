@@ -3,7 +3,6 @@
 import re
 import shutil
 import tempfile
-import unittest
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -77,14 +76,12 @@ class UpdateSourceFileViewTests(ViewTestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    @unittest.expectedFailure
     def test_get_refuse(self):
         """#219 : la mise à jour n'accepte qu'un POST."""
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 405)
 
-    @unittest.expectedFailure
     def test_retour_sur_la_page_de_la_note(self):
         """#219 : la redirection ne dépend pas de l'en-tête Referer."""
         response = self.client.post(
@@ -118,7 +115,6 @@ class NoteListSortTests(ViewTestCase):
             self.dates(response), ["2025-11-24", "2025-11-25", "2025-11-26"]
         )
 
-    @unittest.expectedFailure
     def test_tri_inconnu_revient_au_tri_par_defaut(self):
         for params in (
             {"sort": "foo", "direction": "asc"},
