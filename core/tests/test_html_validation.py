@@ -81,11 +81,11 @@ class HtmlValidationTests(TestCase):
         self.parent = Todo.objects.create(
             title="Parent",
             project=project,
-            subject=Subject.objects.create(name="Réunion"),
+            subject=Subject.objects.get(name="Réunion"),
             due_date=TODAY,
             description="Première ligne\nSeconde ligne",
         )
-        self.parent.tags.add(Tag.objects.create(name="urgent"))
+        self.parent.tags.add(Tag.objects.get_or_create(name="urgent")[0])
         # Sous-tâche incohérente : autre projet, échéance après le parent.
         Todo.objects.create(
             title="Enfant",
