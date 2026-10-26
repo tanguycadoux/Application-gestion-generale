@@ -18,6 +18,8 @@ from django.urls import reverse
 
 from core.templatetags.ui import BUTTON_VARIANTS
 
+from .stylesheets import components_layer, read_source_css
+
 SHAPE = "rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
 
 TOAST_TYPES = {
@@ -127,21 +129,18 @@ class AlertStyleTests(TestCase):
 
 
 class AlertStylesheetTests(SimpleTestCase):
-    """La feuille ne garde que les animations, dont la barre de progression.
-
-    La version navigateur de Tailwind génère les classes d'un élément ajouté par
-    script après coup : une largeur de départ lue sur `w-full` valait 0 (#154).
-    La barre est donc animée par la feuille, chargée au départ.
+    """Les règles propres des alertes ne gardent que les animations (#154), dont la
+    barre de progression ; elles sont dans la source de la feuille Tailwind (#217).
     """
 
-    def test_feuille_dans_le_layer_components(self):
+    def test_regles_dans_le_layer_components(self):
         """Hors layer, ces règles l'emporteraient sur toute classe Tailwind."""
-        css = read_static("core/alert_system.css")
+        css = components_layer(read_source_css())
 
-        self.assertTrue(css.lstrip().startswith("@layer components {"))
+        self.assertIn(".alert__toast-progress {", css)
 
-    def test_feuille_reduite_aux_animations(self):
-        css = read_static("core/alert_system.css")
+    def test_regles_reduites_aux_animations(self):
+        css = components_layer(read_source_css())
 
         self.assertNotRegex(css, r"\b(?:color|background|border|box-shadow)\s*:")
         self.assertIn(".alert__toast-progress {", css)

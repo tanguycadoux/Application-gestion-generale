@@ -1,5 +1,6 @@
 # Dépendances d'exécution, maintenues à la main (versions épinglées)
 Django==6.1.2
 django-htmx==1.29.0
+django-tailwind-cli==4.8.1
 Markdown==3.11.2
 Pillow==13.0.0

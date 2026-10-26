@@ -10,12 +10,14 @@ from note_taking.models import Note
 from todolist.forms import TodoForm
 from todolist.models import Todo
 
+from .stylesheets import read_source_css
+
 FORM_GRID = "grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3"
 
 
 class FieldBaseStyleTests(TestCase):
     def setUp(self):
-        self.html = self.client.get("/").content.decode()
+        self.html = read_source_css()
 
     def test_style_de_base_des_champs(self):
         self.assertIn(

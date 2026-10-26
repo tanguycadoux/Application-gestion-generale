@@ -1,7 +1,6 @@
 """Tailwind compilé et htmx servis en local, sans CDN (#217)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -21,7 +20,6 @@ class FrontAssetsTests(TestCase):
     def pages(self) -> dict[str, str]:
         return {name: self.client.get(reverse(name)).content.decode() for name in PAGES}
 
-    @unittest.expectedFailure
     def test_feuille_tailwind_compilee(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
@@ -33,7 +31,6 @@ class FrontAssetsTests(TestCase):
                 )
                 self.assertNotIn("text/tailwindcss", html)
 
-    @unittest.expectedFailure
     def test_htmx_local_charge_une_fois(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
@@ -41,7 +38,6 @@ class FrontAssetsTests(TestCase):
                     html.count('<script src="/static/vendor/htmx/htmx.min.js">'), 1
                 )
 
-    @unittest.expectedFailure
     def test_aucun_script_externe(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
@@ -51,13 +47,11 @@ class FrontAssetsTests(TestCase):
                     [s for s in sources if not s.startswith("/static/")], []
                 )
 
-    @unittest.expectedFailure
     def test_htmx_embarque_avec_licence_et_readme(self):
         for name in ("htmx.min.js", "LICENSE", "README.md"):
             with self.subTest(name=name):
                 self.assertIsNotNone(finders.find(f"vendor/htmx/{name}"))
 
-    @unittest.expectedFailure
     def test_source_unique_de_la_feuille(self):
         """Thème, styles de base et animations des alertes : une seule source."""
         css = SOURCE_CSS.read_text(encoding="utf-8")

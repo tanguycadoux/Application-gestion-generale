@@ -13,6 +13,10 @@ db.sqlite3
 db.sqlite3-journal
 media/
 
+# Tailwind : CLI téléchargé et feuille compilée
+.django_tailwind_cli/
+static/css/tailwind.css
+
 # mypy
 .mypy_cache/
 

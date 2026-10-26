@@ -6,6 +6,8 @@ from pathlib import Path
 from django.conf import settings
 from django.test import TestCase
 
+from .stylesheets import read_source_css
+
 APPS = ("core", "images", "note_taking", "todolist")
 
 # Lien qui porte lui-même un style de lien de texte (couleur, soulignement).
@@ -24,7 +26,7 @@ def templates() -> list[Path]:
 
 class LinkStyleTests(TestCase):
     def setUp(self):
-        self.html = self.client.get("/").content.decode()
+        self.html = read_source_css()
 
     def test_style_de_base_des_liens_de_texte(self):
         self.assertIn("a:not([class]) {", self.html)
