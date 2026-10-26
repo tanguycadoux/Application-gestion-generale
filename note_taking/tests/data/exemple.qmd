@@ -66,10 +66,16 @@ Détails avec m3 et m4.
 
 ## Mesures
 
-### TODO
+- [ ] Commander les capteurs
+- [x] Calibrer le banc
 
-- Commander les capteurs
-- Calibrer le banc
+### Actions
+
+::: {.metadata}
+todo: true
+:::
+
+- Relever les mesures
 
 ### Photos
 

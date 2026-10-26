@@ -143,12 +143,23 @@
       "path": [
         "Mesures"
       ],
+      "tags": [],
+      "content": [
+        "- [ ] Commander les capteurs",
+        "- [x] Calibrer le banc"
+      ]
+    },
+    {
+      "project": "Projet Alpha",
+      "path": [
+        "Mesures",
+        "Actions"
+      ],
       "tags": [
         "TODO"
       ],
       "content": [
-        "- Commander les capteurs",
-        "- Calibrer le banc"
+        "- Relever les mesures"
       ]
     },
     {

@@ -82,7 +82,9 @@ E_j &= E_x
 \\end{aligned}
 $$
 
-### TODO
+::: {.metadata}
+todo: true
+:::
 - Relire le compte rendu
 """
 

@@ -10,7 +10,7 @@ from todolist.models import Todo
 
 class NoteTodoTitleTests(TestCase):
     def titles(self, *lines: str) -> list[str]:
-        body = "# P\n### TODO\n" + "\n".join(lines)
+        body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note = Note.objects.create(date="2025-11-24", body=body)
         process_note_parts(note)
         return list(Todo.objects.order_by("pk").values_list("title", flat=True))
@@ -35,18 +35,20 @@ class NoteTodoTitleTests(TestCase):
             ],
         )
 
-    def test_cases_retirees_sans_terminer_la_tache(self):
-        """Décision du 2026-10-23 : `[x]` ne crée pas de tâche terminée."""
+    def test_case_cochee_ignoree(self):
+        """Décision du 2026-10-27 : `[x]` ne crée pas de tâche, terminée ou non."""
         self.assertEqual(
             self.titles("- [ ] à faire", "- [x] cochée", "* [X] majuscule"),
-            ["à faire", "cochée", "majuscule"],
+            ["à faire"],
         )
         self.assertFalse(Todo.objects.filter(done=True).exists())
 
-    def test_texte_sans_marqueur_garde_ses_tirets(self):
+    def test_ligne_sans_marqueur_ignoree(self):
+        """Seuls les éléments de liste sont des tâches ; un tiret dans le texte
+        reste dans le titre."""
         self.assertEqual(
             self.titles("Relire - corriger", "- Pièce 3-4"),
-            ["Relire - corriger", "Pièce 3-4"],
+            ["Pièce 3-4"],
         )
 
     def test_marqueur_seul_ignore(self):

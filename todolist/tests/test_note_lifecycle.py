@@ -27,23 +27,27 @@ class LifecycleTestCase(TestCase):
 
 class IdentityTests(LifecycleTestCase):
     def test_meme_ligne_sous_deux_sujets(self):
-        self.save_note("# P\n## A\n### TODO\n- Tâche\n## B\n### TODO\n- Tâche")
+        self.save_note(
+            "# P\n## A\n::: {.metadata}\ntodo: true\n:::\n- Tâche\n## B\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
+        )
 
         self.assertEqual(self.titles(), ["Tâche", "Tâche"])
 
     def test_meme_ligne_sous_deux_parents(self):
-        self.save_note("# P\n### TODO\n- A\n  - Relire\n- B\n  - Relire")
+        self.save_note(
+            "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - Relire\n- B\n  - Relire"
+        )
 
         relire = Todo.objects.filter(title="Relire").select_related("parent")
         self.assertEqual(sorted(todo.parent.title for todo in relire), ["A", "B"])
 
     def test_chemin_retenu(self):
-        self.save_note("# P\n## S\n### TODO\n- A\n  - B")
+        self.save_note("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B")
 
         self.assertEqual(Todo.objects.get(title="B").note_path, "P › S › A")
 
     def test_reenregistree_sans_doublon(self):
-        body = "# P\n## A\n### TODO\n- Tâche\n  - Sous-tâche"
+        body = "# P\n## A\n::: {.metadata}\ntodo: true\n:::\n- Tâche\n  - Sous-tâche"
         self.save_note(body)
         self.save_note(body)
 
@@ -59,7 +63,7 @@ class IdentityTests(LifecycleTestCase):
             note_part_text="Tâche",
         )
 
-        self.save_note("# P\n## A\n### TODO\n- Tâche")
+        self.save_note("# P\n## A\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         todo = Todo.objects.get()
         self.assertEqual((todo.title, todo.note_path), ("Renommée", "P › A"))
@@ -96,7 +100,7 @@ def review_data(new=(), gone=()) -> dict:
 
 
 class ToReviewTests(LifecycleTestCase):
-    BODY = "# P\n### TODO\n- A\n- B"
+    BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B"
 
     def edit(self, note: Note, body: str):
         return self.client.post(
@@ -137,7 +141,7 @@ class ToReviewTests(LifecycleTestCase):
 
 class GoneLineTests(LifecycleTestCase):
     def prepare(self):
-        self.note = self.save_note("# P\n### TODO\n- A\n- B")
+        self.note = self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B")
         Todo.objects.update(note_state=Todo.NoteState.REVIEWED)
         self.a, self.b = Todo.objects.order_by("pk")
 
@@ -146,14 +150,14 @@ class GoneLineTests(LifecycleTestCase):
 
     def test_ligne_retiree_a_revoir(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.assertEqual(self.state(self.b), Todo.NoteState.TO_REVIEW)
         self.assertEqual(self.state(self.a), Todo.NoteState.REVIEWED)
 
     def test_bilan_separe_nouvelles_et_disparues(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A\n- B modifiée")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B modifiée")
 
         response = self.client.get(review_url())
 
@@ -165,7 +169,7 @@ class GoneLineTests(LifecycleTestCase):
         """Le choix de la nouvelle ligne ne s'affiche qu'avec « La remplacer
         par », sans JavaScript : la cellule suit l'action de sa rangée."""
         self.prepare()
-        self.save_note("# P\n### TODO\n- A\n- B modifiée")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B modifiée")
 
         html = self.client.get(review_url()).content.decode()
 
@@ -182,16 +186,16 @@ class GoneLineTests(LifecycleTestCase):
 
     def test_garder(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.client.post(review_url(), review_data(gone=[(self.b, "keep", None)]))
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.assertEqual(self.state(self.b), Todo.NoteState.DETACHED)
 
     def test_ecarter(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.client.post(review_url(), review_data(gone=[(self.b, "dismiss", None)]))
 
@@ -200,10 +204,10 @@ class GoneLineTests(LifecycleTestCase):
 
     def test_ecartee_pas_recreee(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         self.client.post(review_url(), review_data(gone=[(self.b, "dismiss", None)]))
 
-        self.save_note("# P\n### TODO\n- A\n- B")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B")
 
         self.assertEqual(Todo.all_objects.filter(title="B").count(), 1)
         self.assertEqual(self.state(self.b), Todo.NoteState.DISMISSED)
@@ -226,7 +230,9 @@ class GoneLineTests(LifecycleTestCase):
         self.prepare()
         Todo.objects.filter(pk=self.b.pk).update(progress=60, due_date="2025-12-01")
 
-        new = self.replace_b("# P\n### TODO\n- A\n- B modifiée", "B modifiée")
+        new = self.replace_b(
+            "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B modifiée", "B modifiée"
+        )
 
         b = Todo.objects.get(pk=self.b.pk)
         self.assertEqual(
@@ -238,7 +244,9 @@ class GoneLineTests(LifecycleTestCase):
     def test_remplacer_garde_et_reprend_les_sous_taches(self):
         self.prepare()
         Todo.objects.create(title="Enfant", project=self.b.project, parent=self.b)
-        body = "# P\n### TODO\n- A\n- B modifiée\n  - Sous-ligne"
+        body = (
+            "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- B modifiée\n  - Sous-ligne"
+        )
 
         self.replace_b(body, "B modifiée")
 
@@ -253,7 +261,7 @@ class GoneLineTests(LifecycleTestCase):
     def test_remplacer_garde_un_titre_renomme(self):
         self.prepare()
         Todo.objects.filter(pk=self.b.pk).update(title="Renommée")
-        self.save_note("# P\n### TODO\n- A\n- C")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n- C")
         new = Todo.objects.get(title="C")
 
         self.client.post(
@@ -265,7 +273,7 @@ class GoneLineTests(LifecycleTestCase):
 
     def test_remplacer_sans_tache_choisie(self):
         self.prepare()
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         response = self.client.post(
             review_url(), review_data(gone=[(self.b, "replace", None)])
@@ -280,11 +288,11 @@ class DeleteTests(LifecycleTestCase):
         return self.client.post(reverse("todolist:todo_delete", args=[todo.pk]))
 
     def test_supprimer_une_tache_de_note_l_ecarte(self):
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         todo = Todo.objects.get()
 
         self.delete(todo)
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.assertFalse(Todo.objects.exists())
         self.assertEqual(Todo.all_objects.get().note_state, Todo.NoteState.DISMISSED)
@@ -299,7 +307,7 @@ class DeleteTests(LifecycleTestCase):
     # Un arbre qui contient une tâche issue d'une note est écarté en entier, même
     # ses tâches saisies à la main : le rétablir le rend intact (#290).
     def test_parent_saisi_a_la_main_avec_enfant_de_note(self):
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         child = Todo.objects.get()
         parent = Todo.objects.create(title="Parent", project=child.project)
         Todo.objects.filter(pk=child.pk).update(parent=parent)
@@ -316,7 +324,7 @@ class DeleteTests(LifecycleTestCase):
         )
 
     def test_enfant_saisi_a_la_main_ecarte_avec_sa_tache_de_note(self):
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         parent = Todo.objects.get()
         child = Todo.objects.create(
             title="Enfant", project=parent.project, parent=parent
@@ -331,7 +339,7 @@ class DeleteTests(LifecycleTestCase):
 
     def test_tache_ecartee_portee_par_un_arbre_saisi_a_la_main(self):
         """Une tâche déjà écartée sous un arbre supprimé n'est pas emportée."""
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         child = Todo.objects.get()
         parent = Todo.objects.create(title="Parent", project=child.project)
         Todo.objects.filter(pk=child.pk).update(parent=parent)
@@ -343,7 +351,7 @@ class DeleteTests(LifecycleTestCase):
         self.assertIsNone(Todo.all_objects.get(pk=child.pk).parent_id)
 
     def test_sous_tache_ecartee_hors_de_l_avancement_du_parent(self):
-        self.save_note("# P\n### TODO\n- A\n  - B\n  - C")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C")
         b = Todo.objects.get(title="B")
         Todo.objects.filter(title="C").update(progress=100)
         b.progress = 0
@@ -354,7 +362,7 @@ class DeleteTests(LifecycleTestCase):
         self.assertEqual(Todo.objects.get(title="A").progress, 100)
 
     def test_projet_utilise_seulement_par_des_ecartees(self):
-        self.save_note("# P\n### TODO\n- A")
+        self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
         project = Todo.objects.get().project
         self.delete(Todo.objects.get())
         Note.objects.all().delete()

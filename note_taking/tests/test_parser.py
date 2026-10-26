@@ -185,39 +185,72 @@ class HierarchyTests(SimpleTestCase):
         self.assertEqual(parts("# P\n#hashtag"), [("P", [], [], ["#hashtag"])])
 
 
-class TodoMarkerTests(SimpleTestCase):
-    """`TODO` marque une section de tâches sans entrer dans le chemin (#297 le
-    remplacera par les cases à cocher)."""
+class TodoKeyTests(SimpleTestCase):
+    """`todo: true` dans un bloc marque la branche : ses note parts reçoivent le tag
+    `TODO`, et chaque élément de liste y est une tâche (#297). Un titre `TODO` n'a
+    plus de sens propre."""
 
-    def test_titre_todo_hors_du_chemin_et_tag(self):
+    BLOCK = "::: {.metadata}\ntodo: true\n:::\n"
+
+    def test_branche_marquee(self):
         self.assertEqual(
-            parts("# P\n## S\n### TODO\n- a"),
+            parts("# P\n## S\n" + self.BLOCK + "- a"),
             [("P", ["S"], ["TODO"], ["- a"])],
         )
 
-    def test_todo_a_n_importe_quelle_profondeur(self):
+    def test_sous_niveaux_herites(self):
+        raw = "# P\n## S\n" + self.BLOCK + "### Détail\n- a"
+        self.assertEqual(parts(raw), [("P", ["S", "Détail"], ["TODO"], ["- a"])])
+
+    def test_niveau_suivant_n_herite_pas(self):
+        raw = "# P\n## S1\n" + self.BLOCK + "- a\n## S2\n- b"
         self.assertEqual(
-            parts("# P\n## S\n### Notes\n#### TODO\n- a"),
-            [("P", ["S", "Notes"], ["TODO"], ["- a"])],
+            parts(raw),
+            [("P", ["S1"], ["TODO"], ["- a"]), ("P", ["S2"], [], ["- b"])],
         )
 
-    def test_niveaux_sous_le_titre_todo_gardes(self):
+    def test_faux_retire_le_marqueur_d_un_niveau_parent(self):
+        raw = (
+            "# P\n## S\n"
+            + self.BLOCK
+            + "- a\n### Notes\n::: {.metadata}\ntodo: false\n:::\ntexte"
+        )
         self.assertEqual(
-            parts("# P\n### TODO\n#### Détail\n- a"),
-            [("P", ["Détail"], ["TODO"], ["- a"])],
+            parts(raw),
+            [("P", ["S"], ["TODO"], ["- a"]), ("P", ["S", "Notes"], [], ["texte"])],
         )
 
-    def test_titre_todo_garde_dans_les_titres_de_la_section(self):
-        """L'identité des tâches (#240) repose sur les titres tels qu'écrits."""
-        note = parse_note("2025-11-24", "# P\n## S\n### TODO\n- a")
+    def test_avec_des_tags_dans_le_meme_bloc(self):
+        raw = "# P\n::: {.metadata}\ntags: [m1]\ntodo: true\n:::\n- a"
+        self.assertEqual(parts(raw), [("P", [], ["TODO", "m1"], ["- a"])])
 
-        self.assertEqual(note.parts[0].headings, ["P", "S", "TODO"])
+    def test_valeur_invalide(self):
+        with self.assertRaisesMessage(NoteParseError, "« true » ou « false »"):
+            parse("# P\n::: {.metadata}\ntodo: oui\n:::\nx")
 
-    def test_todo_au_niveau_du_sujet_est_un_niveau_comme_un_autre(self):
-        self.assertEqual(parts("# P\n## TODO\nx"), [("P", ["TODO"], [], ["x"])])
+    def test_bloc_avant_tout_titre_ignore(self):
+        self.assertEqual(
+            parts(self.BLOCK + "# P\nx"),
+            [("P", [], [], ["x"])],
+        )
 
-    def test_titre_todo_ne_vaut_que_tel_quel(self):
-        self.assertEqual(parts("# P\n### Todo\nx"), [("P", ["Todo"], [], ["x"])])
+    def test_titre_todo_est_un_niveau_comme_un_autre(self):
+        """L'ancien marqueur : plus de tag `TODO`, plus de tâches."""
+        self.assertEqual(
+            parts("# P\n## S\n### TODO\n- a"),
+            [("P", ["S", "TODO"], [], ["- a"])],
+        )
+
+    def test_cle_inconnue_n_herite_pas_de_tags_perimes(self):
+        """Un bloc sans `tags` ne reprend pas ceux d'un bloc d'avant."""
+        raw = (
+            "# P\n### A\n::: {.metadata}\ntags: [m1]\n:::\nx\n"
+            "### B\n::: {.metadata}\nautre: 1\n:::\ny"
+        )
+        self.assertEqual(
+            parts(raw),
+            [("P", ["A"], ["m1"], ["x"]), ("P", ["B"], [], ["y"])],
+        )
 
 
 class LocalMetadataTests(SimpleTestCase):

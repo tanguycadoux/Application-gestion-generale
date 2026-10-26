@@ -80,7 +80,7 @@ class ReprocessNotesTests(TestCase):
         self.assertEqual(self.parts(self.note), [("P", [], "x")])
 
     def test_todo_existante_non_recreee(self):
-        self.note.body = "# P\n## S\n### TODO\n- Tâche"
+        self.note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
         self.note.save()
         self.reprocess()
         todo = Todo.objects.get()
