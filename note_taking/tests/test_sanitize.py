@@ -43,6 +43,12 @@ class DangerousHtmlTests(SimpleTestCase):
         self.assertNotIn("<style", html)
         self.assertNotIn("position", html)
 
+    def test_champ_de_formulaire_retire(self):
+        # Les cases des listes (#231) sont ajoutées après le filtrage.
+        html = render_markdown('<input type="text" name="q">')
+
+        self.assertNotIn("<input", html)
+
     def test_image_en_data_retiree(self):
         html = render_markdown('<img src="data:image/svg+xml,&lt;svg&gt;" alt="a">')
 
