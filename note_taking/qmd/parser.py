@@ -2,13 +2,17 @@
 
 Une note est découpée selon ses titres :
 
-- `#` : projet ;
-- `##` : sujet ;
-- `###` à `######` : tags, cumulés en profondeur.
+- `#` : projet (la seule règle propre à l'application, #287) ;
+- `##` à `######` : le chemin sous le projet, un niveau par titre, à
+  n'importe quelle profondeur.
 
-Des blocs `::: {.metadata}` ajoutent des tags au niveau de titre courant.
-Le texte partageant le même projet, le même sujet et les mêmes tags forme
-une note part.
+Des blocs `::: {.metadata}` ajoutent des tags à la branche où ils sont écrits,
+sous-niveaux compris : une portée, jamais un niveau du chemin. Le texte
+partageant le même projet, le même chemin et les mêmes tags forme une note part.
+
+Le titre `TODO` (de `###` à `######`) marque une section de tâches : il n'entre
+pas dans le chemin, et la note part reçoit le tag `TODO` (#297 le remplace par
+les cases à cocher).
 """
 
 import re
@@ -27,12 +31,15 @@ BLOCK_END = ":::"
 CODE_FENCE = "```"
 # Séparateur des titres d'une section, du projet au plus profond (#240).
 HEADING_SEPARATOR = " › "
+# Titre qui marque une section de tâches, de `###` à `######` (#297).
+TODO_TITLE = "TODO"
 
 
 @dataclass
 class ParsedPart:
     project: str | None
-    subject: str | None
+    # Titres de `##` à `######`, sans `TODO` : les niveaux sous le projet (#287).
+    path: list[str]
     tags: list[str]
     lines: list[str]
     # Titres de la section de sa première ligne, du projet au plus profond (#240).
@@ -53,7 +60,7 @@ class ParsedNote:
             "content": [
                 {
                     "project": part.project,
-                    "subject": part.subject,
+                    "path": part.path,
                     "tags": part.tags,
                     "content": part.lines,
                 }
@@ -64,7 +71,7 @@ class ParsedNote:
 
 @dataclass
 class Level:
-    """Niveau de titre : 1 = projet, 2 = sujet, 3 à 6 = tags."""
+    """Niveau de titre : 1 = projet, 2 à 6 = chemin sous le projet."""
 
     title: str | None = None
     tags: set[str] | None = None
@@ -193,11 +200,23 @@ class NoteParser:
 
     # Note parts
 
+    def is_todo_marker(self, level: int, state: Level) -> bool:
+        return level > 2 and state.title == TODO_TITLE
+
+    def current_path(self) -> list[str]:
+        return [
+            state.title
+            for level, state in self.levels.items()
+            if level > 1
+            and state.title is not None
+            and not self.is_todo_marker(level, state)
+        ]
+
     def current_tags(self) -> set[str]:
         tags: set[str] = set()
         for level, state in self.levels.items():
-            if level > 2 and state.title is not None:
-                tags.add(state.title)
+            if self.is_todo_marker(level, state):
+                tags.add(TODO_TITLE)
             if state.tags is not None:
                 tags |= state.tags
         return tags
@@ -207,19 +226,17 @@ class NoteParser:
         if project is None:
             # Texte avant le premier projet : ignoré pour l'instant (#36).
             return
-        subject = self.levels[2].title
+        path = self.current_path()
         tags = self.current_tags()
 
         for part in self.note.parts:
-            if (part.project, part.subject, set(part.tags)) == (project, subject, tags):
+            if (part.project, part.path, set(part.tags)) == (project, path, tags):
                 part.lines.append(line)
                 return
         headings = [
             state.title for state in self.levels.values() if state.title is not None
         ]
-        self.note.parts.append(
-            ParsedPart(project, subject, list(tags), [line], headings)
-        )
+        self.note.parts.append(ParsedPart(project, path, list(tags), [line], headings))
 
     def clean_parts(self) -> None:
         """Retire les parts vides et les lignes vides en bordure."""

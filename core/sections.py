@@ -91,6 +91,55 @@ def subtree(section: Section) -> list[Section]:
     return found
 
 
+def parent_map() -> dict[int, int | None]:
+    """Le parent de chaque section : une requête pour tout l'arbre."""
+    return dict(Section.objects.values_list("pk", "parent_id"))
+
+
+def with_ancestors(pks: Iterable[int]) -> set[int]:
+    """Les sections données et leurs ancêtres : les parents implicites d'un chemin."""
+    parents = parent_map()
+    found: set[int] = set()
+    for pk in pks:
+        current: int | None = pk
+        while current is not None and current not in found:
+            found.add(current)
+            current = parents.get(current)
+    return found
+
+
+def with_descendants(pks: Iterable[int]) -> set[int]:
+    """Les sections données et leurs descendants : filtrer sur un niveau les inclut."""
+    children: dict[int, list[int]] = {}
+    for pk, parent in parent_map().items():
+        if parent is not None:
+            children.setdefault(parent, []).append(pk)
+    found: set[int] = set()
+    pending = list(pks)
+    while pending:
+        pk = pending.pop()
+        if pk not in found:
+            found.add(pk)
+            pending.extend(children.get(pk, []))
+    return found
+
+
+def path_labels() -> dict[int, str]:
+    """« Projet › Réunion › Préparation » pour chaque section, en deux requêtes."""
+    sections = {
+        section.pk: section for section in Section.objects.select_related("project")
+    }
+    labels = {}
+    for pk, section in sections.items():
+        names = [section.name]
+        parent = section.parent_id
+        while parent is not None:
+            names.insert(0, sections[parent].name)
+            parent = sections[parent].parent_id
+        labels[pk] = LABEL_SEPARATOR.join([section.project.name, *names])
+    return labels
+
+
 def forget_unused_sections() -> int:
     """Supprime les sections que rien n'utilise, descendants compris ; renvoie le
     nombre supprimé. Un niveau reste tant qu'un de ses descendants sert.

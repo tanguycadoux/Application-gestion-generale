@@ -48,5 +48,5 @@ class SharedSubjectTagTests(TestCase):
 
         response = self.client.get(reverse("note_taking:notes_search"))
 
-        choices = [v for v, _ in response.context["form"].fields["subjects"].choices]
-        self.assertEqual(choices, ["Nouveau sujet"])
+        choices = [v for _, v in response.context["form"].fields["subjects"].choices]
+        self.assertEqual(choices, ["P › Nouveau sujet"])

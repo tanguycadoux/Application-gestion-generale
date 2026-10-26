@@ -9,6 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from core.models import Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 
@@ -208,7 +209,7 @@ class NoteJsonViewTests(ViewTestCase):
                 "file date": "2025-11-24",
                 "note metadata": {"date": "2025-11-24"},
                 "content": [
-                    {"project": "P", "subject": None, "tags": ["A"], "content": ["x"]}
+                    {"project": "P", "path": ["A"], "tags": [], "content": ["x"]}
                 ],
             },
         )
@@ -266,7 +267,8 @@ class RenderedPartsDisplayTests(ViewTestCase):
 
     def test_resultats_de_recherche(self):
         response = self.client.post(
-            reverse("note_taking:notes_search"), {"subjects": ["S"]}
+            reverse("note_taking:notes_search"),
+            {"subjects": [str(Section.objects.get(name="S").pk)]},
         )
 
         self.assertRenderedAsIs(response)
@@ -296,7 +298,8 @@ class RenderedContentContainerTests(ViewTestCase):
 
     def test_resultats_de_recherche(self):
         response = self.client.post(
-            reverse("note_taking:notes_search"), {"subjects": ["S"]}
+            reverse("note_taking:notes_search"),
+            {"subjects": [str(Section.objects.get(name="S").pk)]},
         )
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)

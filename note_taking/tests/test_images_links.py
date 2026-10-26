@@ -36,7 +36,7 @@ class NotePartImagesTests(TestCase):
         )
 
         self.assertEqual(
-            {part.tags.get().name: set(part.images.all()) for part in note.parts.all()},
+            {part.section.name: set(part.images.all()) for part in note.parts.all()},
             {"A": {self.banc}, "B": {self.capteur, self.banc}},
         )
 

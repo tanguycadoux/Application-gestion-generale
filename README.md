@@ -188,16 +188,18 @@ Une note est structurée de cette manière :
 
 ```
 # Projet (exemple : ASTERICS)
-## Sujet (exemple : Caractérisation mécanique)
-### Tag 1 (exemple : Mesure géométrique des pièces et échantillons)
-#### Tag 2
-##### Tag 3
-###### Tag 4
+## Réunion
+### Préparation
+#### Ordre du jour
 ```
 
-Les titres sont cumulatifs, ce qui signifie qu'un texte contenu sous "Tag 2" hérite du projet, sujet et Tag 1. Par convention, même si un titre contient une virgule, il est considéré comme un tag à part entière (par exemple le titre "Conception, approvisionnement et fabrication" donnera le tag `Conception, approvisionnement et fabrication` et non les tags `Conception` et `approvisionnement et fabrication`).
+Un seul niveau a un sens propre à l'application : `#` donne le **projet** (#287). Les titres suivants, `##` à `######`, forment le **chemin** sous le projet, sans limite de profondeur : ici « Réunion › Préparation › Ordre du jour ». Un texte hérite du projet et du chemin des titres au-dessus de lui. Un titre est un niveau, quel que soit son texte : une virgule ou une barre oblique n'y change rien (« Conception, approvisionnement et fabrication », « Rapport RT17/A »).
 
-Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même sujet et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, sujets et tags sont communs aux notes et aux TODO (app `core`). Un projet utilisé par une note ou une TODO ne peut pas être supprimé. Un sujet appartient à son projet (#295) : le même titre `##` sous deux projets est deux sujets, des *sections* du modèle, premier niveau d'un chemin sous le projet (la hiérarchie complète arrive avec #287). Un sujet qui n'est plus utilisé est supprimé à l'enregistrement d'une note ; un tag qui n'est plus utilisé reste en base mais n'est plus proposé dans la recherche.
+Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même chemin et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, chemins et tags sont communs aux notes et aux TODO (app `core`). Un projet utilisé par une note ou une TODO ne peut pas être supprimé.
+
+Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#295) : le même titre sous deux projets est deux sections, et deux titres qui ne diffèrent que par la casse sont le même niveau, écrit comme la première fois. Une section qu'aucune note ni tâche n'utilise plus est supprimée à l'enregistrement d'une note.
+
+Le titre `TODO` (de `###` à `######`) est un marqueur de tâches, pas un niveau du chemin : voir « Génération des TODO ». Il disparaîtra avec les cases à cocher (#297).
 
 Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
 
@@ -211,42 +213,61 @@ tags: [tag supplémentaire 1, tag supplémentaire 2]
 :::
 ```
 
-Lorsque des tags sont spécifiés de cette manière, ils ajoutent les tags à ceux déjà présents précédemment, et sont conservés dans les titres de niveau plus profonds. Si au même niveau un autre jeu de tags est donné, il remplace le précédent :
+Ce sont les **seuls tags** d'une note (#296) : les titres font le chemin, pas des tags. Un tag a une **portée**, jamais un niveau : il s'applique à la branche où il est écrit, sous-niveaux compris. Si au même niveau un autre jeu de tags est donné, il remplace le précédent :
 
 ```
 # Projet
 ## Sujet
-### Tag 1
+### Section 1
 
-Tags : Tag 1
+Tags : aucun
 
 ::: {.metadata}
 tags: [m1, m2]
 :::
 
-Tags : Tag 1, m1, m2
+Tags : m1, m2
 
 ::: {.metadata}
 tags: [m3, m4]
 :::
 
-Tags : Tag 1, m3, m4
+Tags : m3, m4
 
-#### Tag 2
-##### Tag 3
+#### Section 2
 
-Tags : Tag 1, m3, m4, Tag 2, Tag 3
+Tags : m3, m4
 
 ::: {.metadata}
 tags: [m5, m6]
 :::
 
-Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6
+Tags : m3, m4, m5, m6
 
-###### Tag 4
+### Section 3
 
-Tags : Tag 1, m3, m4, Tag 2, Tag 3, m5, m6, Tag 4
+Tags : aucun
 ```
+
+Un niveau qui doit apparaître dans le chemin s'écrit donc en titre, pas en tag. Ces deux notes ne donnent pas la même chose :
+
+```
+# P                     chemin : S › S-S
+## S                    tag    : tag, sur toute la branche de S
+::: {.metadata}
+tags: [tag]
+:::
+### S-S
+```
+
+```
+# P                     chemin : S › tag › S-S
+## S                    tags   : aucun
+### tag
+#### S-S
+```
+
+Ces tags restent transverses : on les retrouve quel que soit le projet. Après une évolution de l'analyse, `python manage.py reprocess_notes` recalcule les note parts de toutes les notes et supprime les tags que plus rien n'utilise.
 
 ### Génération des TODO
 
@@ -265,7 +286,7 @@ Le titre de la TODO est le texte de la ligne, sans son marqueur de liste (`-`, `
 
 Une ligne en sous-liste crée une sous-tâche de la ligne au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section sans `TODO`, puis lignes parentes) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
 
-Chaque TODO est rattachée au projet et au sujet de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
+Chaque TODO est rattachée au projet et à la dernière section du chemin de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
 
 Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
 
@@ -296,7 +317,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 
 - liste des notes, triable par colonne (`/note_taking/notes/`),
 - vue détail d'une note, rendu markdown complet (`/note_taking/note/<id>/md/`) et résultat de l'analyse en JSON (`/note_taking/note/<id>/json/`),
-- recherche des note parts par projet(s) et sujet(s) (`/note_taking/notes/search/`), les sujets proposés étant filtrés selon les projets cochés,
+- recherche des note parts par projet(s) et chemin(s) (`/note_taking/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.
 
 ## Gestion des tâches
@@ -304,7 +325,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 Les tâches peuvent être créées manuellement ou générées depuis les notes (lignes d'une section marquée du tag TODO). Une tâche possède :
 
 - un titre et une description,
-- un projet (obligatoire), un sujet facultatif et des tags ; une tâche issue d'une note reprend le projet, le sujet et les tags de sa note part,
+- un projet (obligatoire), un sujet facultatif et des tags ; une tâche issue d'une note reprend le projet, la section et les tags de sa note part à sa création,
 - une priorité (basse, moyenne, haute),
 - une date d'échéance facultative,
 - un avancement de 0 à 100 %,

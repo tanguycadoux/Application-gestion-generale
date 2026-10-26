@@ -1,8 +1,8 @@
 from django import forms
 from django.forms.renderers import DjangoTemplates
 
-from .models import Project, Section
-from .sections import LABEL_SEPARATOR
+from .models import Project
+from .sections import path_labels
 
 
 class SectionChoiceField(forms.ModelChoiceField):
@@ -13,17 +13,9 @@ class SectionChoiceField(forms.ModelChoiceField):
     """
 
     def label_from_instance(self, obj):
-        if not hasattr(self, "_sections"):
-            self._sections = {
-                section.pk: section
-                for section in Section.objects.select_related("project")
-            }
-        section = self._sections[obj.pk]
-        chain = [section]
-        while chain[0].parent_id:
-            chain.insert(0, self._sections[chain[0].parent_id])
-        names = [section.project.name] + [level.name for level in chain]
-        return LABEL_SEPARATOR.join(names)
+        if not hasattr(self, "_labels"):
+            self._labels = path_labels()
+        return self._labels[obj.pk]
 
 
 class GridFormRenderer(DjangoTemplates):

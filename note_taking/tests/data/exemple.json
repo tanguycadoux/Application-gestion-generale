@@ -6,7 +6,7 @@
   "content": [
     {
       "project": "Projet Alpha",
-      "subject": null,
+      "path": [],
       "tags": [],
       "content": [
         "Texte au niveau du projet."
@@ -14,7 +14,9 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
+      "path": [
+        "Calcul thermique"
+      ],
       "tags": [],
       "content": [
         "Introduction du sujet."
@@ -22,44 +24,48 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
+      "path": [
+        "Calcul thermique",
         "Hypothèses"
       ],
+      "tags": [],
       "content": [
         "Première hypothèse."
       ]
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
+      "path": [
+        "Calcul thermique",
         "Hypothèses",
         "Matériaux"
       ],
+      "tags": [],
       "content": [
         "Acier inoxydable."
       ]
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
-        "304L",
+      "path": [
+        "Calcul thermique",
         "Hypothèses",
         "Matériaux",
-        "Nuances"
+        "Nuances",
+        "304L"
       ],
+      "tags": [],
       "content": [
         "Nuance retenue."
       ]
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
+      "path": [
+        "Calcul thermique",
         "Conception, approvisionnement et fabrication"
       ],
+      "tags": [],
       "content": [
         "Le titre contient une virgule mais reste un seul tag.",
         "",
@@ -78,9 +84,11 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
+      "path": [
+        "Calcul thermique",
+        "Résultats"
+      ],
       "tags": [
-        "Résultats",
         "m1",
         "m2"
       ],
@@ -90,9 +98,11 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
+      "path": [
+        "Calcul thermique",
+        "Résultats"
+      ],
       "tags": [
-        "Résultats",
         "m3"
       ],
       "content": [
@@ -101,10 +111,12 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
-        "Détails",
+      "path": [
+        "Calcul thermique",
         "Résultats",
+        "Détails"
+      ],
+      "tags": [
         "m3"
       ],
       "content": [
@@ -113,10 +125,12 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Calcul thermique",
-      "tags": [
-        "Détails",
+      "path": [
+        "Calcul thermique",
         "Résultats",
+        "Détails"
+      ],
+      "tags": [
         "m3",
         "m4"
       ],
@@ -126,7 +140,9 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Mesures",
+      "path": [
+        "Mesures"
+      ],
       "tags": [
         "TODO"
       ],
@@ -137,17 +153,18 @@
     },
     {
       "project": "Projet Alpha",
-      "subject": "Mesures",
-      "tags": [
+      "path": [
+        "Mesures",
         "Photos"
       ],
+      "tags": [],
       "content": [
         "![Banc de mesure](images/banc.png)"
       ]
     },
     {
       "project": "Projet Beta",
-      "subject": null,
+      "path": [],
       "tags": [
         "interne"
       ],
@@ -157,7 +174,9 @@
     },
     {
       "project": "Projet Beta",
-      "subject": "Revue",
+      "path": [
+        "Revue"
+      ],
       "tags": [
         "interne",
         "revue"
@@ -168,9 +187,11 @@
     },
     {
       "project": "Projet Beta",
-      "subject": "Revue",
+      "path": [
+        "Revue",
+        "Points ouverts"
+      ],
       "tags": [
-        "Points ouverts",
         "interne",
         "revue"
       ],
@@ -185,9 +206,11 @@
     },
     {
       "project": "Projet Beta",
-      "subject": "Revue",
+      "path": [
+        "Revue",
+        "Décisions"
+      ],
       "tags": [
-        "Décisions",
         "interne",
         "revue"
       ],

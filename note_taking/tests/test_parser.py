@@ -1,7 +1,8 @@
 """Tests du parseur de notes qmd (`parse_note_raw_file_as_dict`).
 
-Ces tests figent le comportement actuel décrit dans le README, afin de
-détecter toute régression lors de la réécriture du parseur (#23).
+Ces tests figent le comportement décrit dans le README : `#` donne le projet, les
+titres `##` à `######` le chemin sous le projet (#287), et seuls les blocs
+`{.metadata}` donnent des tags.
 
 Le test `ExampleNoteTests` compare l'analyse complète de
 `data/exemple.qmd` au résultat attendu `data/exemple.json`. Pour
@@ -44,9 +45,9 @@ def normalize(parsed: dict) -> dict:
 
 
 def parts(raw: str) -> list[tuple]:
-    """Résumé des note parts : (projet, sujet, tags triés, lignes)."""
+    """Résumé des note parts : (projet, chemin, tags triés, lignes)."""
     return [
-        (part["project"], part["subject"], sorted(part["tags"]), part["content"])
+        (part["project"], part["path"], sorted(part["tags"]), part["content"])
         for part in parse(raw)["content"]
     ]
 
@@ -63,7 +64,7 @@ class ParsedNoteTests(SimpleTestCase):
                 parts=[
                     ParsedPart(
                         project="P",
-                        subject="S",
+                        path=["S"],
                         tags=[],
                         lines=["x"],
                         headings=["P", "S"],
@@ -81,7 +82,7 @@ class ParsedNoteTests(SimpleTestCase):
                 "file date": "2025-11-24",
                 "note metadata": {},
                 "content": [
-                    {"project": "P", "subject": None, "tags": ["A"], "content": ["x"]}
+                    {"project": "P", "path": ["A"], "tags": [], "content": ["x"]}
                 ],
             },
         )
@@ -127,26 +128,30 @@ class HierarchyTests(SimpleTestCase):
     def test_projet_et_sujet(self):
         self.assertEqual(
             parts("# P\n## S\nx"),
-            [("P", "S", [], ["x"])],
+            [("P", ["S"], [], ["x"])],
         )
 
     def test_texte_au_niveau_projet(self):
-        self.assertEqual(parts("# P\nx"), [("P", None, [], ["x"])])
+        self.assertEqual(parts("# P\nx"), [("P", [], [], ["x"])])
 
-    def test_titres_3_a_6_cumules_en_tags(self):
+    def test_titres_2_a_6_forment_le_chemin(self):
         raw = "# P\n## S\n### T3\n#### T4\n##### T5\n###### T6\nx"
         self.assertEqual(
             parts(raw),
-            [("P", "S", ["T3", "T4", "T5", "T6"], ["x"])],
+            [("P", ["S", "T3", "T4", "T5", "T6"], [], ["x"])],
         )
 
-    def test_titre_moins_profond_retire_les_tags_plus_profonds(self):
+    def test_niveau_saute(self):
+        """Un `###` sans `##` au-dessus est le premier niveau du chemin."""
+        self.assertEqual(parts("# P\n### A\nx"), [("P", ["A"], [], ["x"])])
+
+    def test_titre_moins_profond_retire_les_niveaux_plus_profonds(self):
         raw = "# P\n## S\n### A\n#### B\nx\n### C\ny"
         self.assertEqual(
             parts(raw),
             [
-                ("P", "S", ["A", "B"], ["x"]),
-                ("P", "S", ["C"], ["y"]),
+                ("P", ["S", "A", "B"], [], ["x"]),
+                ("P", ["S", "C"], [], ["y"]),
             ],
         )
 
@@ -154,30 +159,71 @@ class HierarchyTests(SimpleTestCase):
         raw = "# P\n## S1\n### A\nx\n## S2\ny"
         self.assertEqual(
             parts(raw),
-            [("P", "S1", ["A"], ["x"]), ("P", "S2", [], ["y"])],
+            [("P", ["S1", "A"], [], ["x"]), ("P", ["S2"], [], ["y"])],
         )
 
-    def test_nouveau_projet_retire_sujet_et_titres(self):
+    def test_nouveau_projet_retire_le_chemin(self):
         raw = "# P1\n## S\n### A\nx\n# P2\ny"
         self.assertEqual(
             parts(raw),
-            [("P1", "S", ["A"], ["x"]), ("P2", None, [], ["y"])],
+            [("P1", ["S", "A"], [], ["x"]), ("P2", [], [], ["y"])],
         )
 
-    def test_titre_avec_virgule_reste_un_seul_tag(self):
+    def test_titre_avec_virgule_reste_un_seul_niveau(self):
         self.assertEqual(
             parts("# P\n### Conception, fabrication\nx"),
-            [("P", None, ["Conception, fabrication"], ["x"])],
+            [("P", ["Conception, fabrication"], [], ["x"])],
+        )
+
+    def test_titre_avec_barre_reste_un_seul_niveau(self):
+        self.assertEqual(
+            parts("# P\n## Rapport RT17/A\nx"),
+            [("P", ["Rapport RT17/A"], [], ["x"])],
         )
 
     def test_diese_sans_espace_n_est_pas_un_titre(self):
-        self.assertEqual(parts("# P\n#hashtag"), [("P", None, [], ["#hashtag"])])
+        self.assertEqual(parts("# P\n#hashtag"), [("P", [], [], ["#hashtag"])])
+
+
+class TodoMarkerTests(SimpleTestCase):
+    """`TODO` marque une section de tâches sans entrer dans le chemin (#297 le
+    remplacera par les cases à cocher)."""
+
+    def test_titre_todo_hors_du_chemin_et_tag(self):
+        self.assertEqual(
+            parts("# P\n## S\n### TODO\n- a"),
+            [("P", ["S"], ["TODO"], ["- a"])],
+        )
+
+    def test_todo_a_n_importe_quelle_profondeur(self):
+        self.assertEqual(
+            parts("# P\n## S\n### Notes\n#### TODO\n- a"),
+            [("P", ["S", "Notes"], ["TODO"], ["- a"])],
+        )
+
+    def test_niveaux_sous_le_titre_todo_gardes(self):
+        self.assertEqual(
+            parts("# P\n### TODO\n#### Détail\n- a"),
+            [("P", ["Détail"], ["TODO"], ["- a"])],
+        )
+
+    def test_titre_todo_garde_dans_les_titres_de_la_section(self):
+        """L'identité des tâches (#240) repose sur les titres tels qu'écrits."""
+        note = parse_note("2025-11-24", "# P\n## S\n### TODO\n- a")
+
+        self.assertEqual(note.parts[0].headings, ["P", "S", "TODO"])
+
+    def test_todo_au_niveau_du_sujet_est_un_niveau_comme_un_autre(self):
+        self.assertEqual(parts("# P\n## TODO\nx"), [("P", ["TODO"], [], ["x"])])
+
+    def test_titre_todo_ne_vaut_que_tel_quel(self):
+        self.assertEqual(parts("# P\n### Todo\nx"), [("P", ["Todo"], [], ["x"])])
 
 
 class LocalMetadataTests(SimpleTestCase):
     def test_tags_ajoutes(self):
         raw = "# P\n### A\n::: {.metadata}\ntags: [m1, m2]\n:::\nx"
-        self.assertEqual(parts(raw), [("P", None, ["A", "m1", "m2"], ["x"])])
+        self.assertEqual(parts(raw), [("P", ["A"], ["m1", "m2"], ["x"])])
 
     def test_meme_niveau_remplace(self):
         raw = (
@@ -187,25 +233,25 @@ class LocalMetadataTests(SimpleTestCase):
         )
         self.assertEqual(
             parts(raw),
-            [("P", None, ["A", "m1"], ["x"]), ("P", None, ["A", "m2"], ["y"])],
+            [("P", ["A"], ["m1"], ["x"]), ("P", ["A"], ["m2"], ["y"])],
         )
 
     def test_herites_en_profondeur(self):
         raw = "# P\n### A\n::: {.metadata}\ntags: [m1]\n:::\n#### B\nx"
-        self.assertEqual(parts(raw), [("P", None, ["A", "B", "m1"], ["x"])])
+        self.assertEqual(parts(raw), [("P", ["A", "B"], ["m1"], ["x"])])
 
     def test_niveau_projet_et_sujet(self):
         raw = (
             "# P\n::: {.metadata}\ntags: [p]\n:::\n"
             "## S\n::: {.metadata}\ntags: [s]\n:::\nx"
         )
-        self.assertEqual(parts(raw), [("P", "S", ["p", "s"], ["x"])])
+        self.assertEqual(parts(raw), [("P", ["S"], ["p", "s"], ["x"])])
 
     def test_nouveau_projet_retire_les_tags_du_projet(self):
         raw = "# P1\n::: {.metadata}\ntags: [p]\n:::\nx\n# P2\ny"
         self.assertEqual(
             parts(raw),
-            [("P1", None, ["p"], ["x"]), ("P2", None, [], ["y"])],
+            [("P1", [], ["p"], ["x"]), ("P2", [], [], ["y"])],
         )
 
     def test_tags_non_tableau(self):
@@ -215,21 +261,29 @@ class LocalMetadataTests(SimpleTestCase):
     def test_tags_vides_ignores(self):
         """#20 : `tags: []` ou une virgule en trop produisaient un tag vide."""
         raw = "# P\n### A\n::: {.metadata}\ntags: [m1, , ]\n:::\nx"
-        self.assertEqual(parts(raw), [("P", None, ["A", "m1"], ["x"])])
+        self.assertEqual(parts(raw), [("P", ["A"], ["m1"], ["x"])])
 
     def test_titre_suivant_meme_niveau_n_herite_pas(self):
         raw = "# P\n## S\n### A\n::: {.metadata}\ntags: [m1]\n:::\nx\n### B\ny"
         self.assertEqual(
             parts(raw),
-            [("P", "S", ["A", "m1"], ["x"]), ("P", "S", ["B"], ["y"])],
+            [("P", ["S", "A"], ["m1"], ["x"]), ("P", ["S", "B"], [], ["y"])],
         )
 
     def test_sujet_suivant_n_herite_pas(self):
         raw = "# P\n## S1\n::: {.metadata}\ntags: [m1]\n:::\nx\n## S2\ny"
         self.assertEqual(
             parts(raw),
-            [("P", "S1", ["m1"], ["x"]), ("P", "S2", [], ["y"])],
+            [("P", ["S1"], ["m1"], ["x"]), ("P", ["S2"], [], ["y"])],
         )
+
+    def test_un_tag_du_bloc_n_est_jamais_un_niveau(self):
+        """Le tag est une portée sur la branche ; un niveau s'écrit en titre (#287)."""
+        as_tag = "# P\n## S\n::: {.metadata}\ntags: [tag]\n:::\n### S-S\nx"
+        as_title = "# P\n## S\n### tag\n#### S-S\nx"
+
+        self.assertEqual(parts(as_tag), [("P", ["S", "S-S"], ["tag"], ["x"])])
+        self.assertEqual(parts(as_title), [("P", ["S", "tag", "S-S"], [], ["x"])])
 
 
 class IgnoredBlocksTests(SimpleTestCase):
@@ -237,13 +291,13 @@ class IgnoredBlocksTests(SimpleTestCase):
         raw = "# P\n```\n# pas un titre\n::: {.metadata}\n```\nx"
         self.assertEqual(
             parts(raw),
-            [("P", None, [], ["```", "# pas un titre", "::: {.metadata}", "```", "x"])],
+            [("P", [], [], ["```", "# pas un titre", "::: {.metadata}", "```", "x"])],
         )
 
     def test_callout_titres_non_interpretes(self):
         raw = '# P\n::: {.callout-note title="t"}\n## pas un titre\nc\n:::\nx'
-        [(project, subject, tags, content)] = parts(raw)
-        self.assertEqual((project, subject, tags), ("P", None, []))
+        [(project, path, tags, content)] = parts(raw)
+        self.assertEqual((project, path, tags), ("P", [], []))
         self.assertIn("## pas un titre", content)
 
     def test_callout_conserve_dans_le_contenu(self):
@@ -253,7 +307,7 @@ class IgnoredBlocksTests(SimpleTestCase):
             [
                 (
                     "P",
-                    None,
+                    [],
                     [],
                     [
                         '::: {.callout-note title="t"}',
@@ -273,15 +327,15 @@ class FixedBugsTests(SimpleTestCase):
     def test_indentation_conservee(self):
         self.assertEqual(
             parts("# P\n- a\n    - b"),
-            [("P", None, [], ["- a", "    - b"])],
+            [("P", [], [], ["- a", "    - b"])],
         )
 
     def test_ligne_horizontale_conservee(self):
         raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
-        self.assertEqual(parts(raw), [("P", None, [], ["avant", "---", "apres"])])
+        self.assertEqual(parts(raw), [("P", [], [], ["avant", "---", "apres"])])
 
     def test_texte_avant_premier_projet_ignore(self):
-        self.assertEqual(parts("intro\n# P\nx"), [("P", None, [], ["x"])])
+        self.assertEqual(parts("intro\n# P\nx"), [("P", [], [], ["x"])])
 
     def test_metadonnee_contenant_deux_points(self):
         result = parse("---\nheure: 10:30\n---\n# P\nx")
@@ -291,7 +345,7 @@ class FixedBugsTests(SimpleTestCase):
         result = parse("\n---\ndate: 2025-11-24\n---\n# P\nx")
         self.assertEqual(result["note metadata"], {"date": "2025-11-24"})
         self.assertEqual(
-            parts("\n---\ndate: 2025-11-24\n---\n# P\nx"), [("P", None, [], ["x"])]
+            parts("\n---\ndate: 2025-11-24\n---\n# P\nx"), [("P", [], [], ["x"])]
         )
 
 
@@ -300,19 +354,19 @@ class GroupingTests(SimpleTestCase):
         raw = "# P\n### A\nx\n### B\ny\n### A\nz"
         self.assertEqual(
             parts(raw),
-            [("P", None, ["A"], ["x", "z"]), ("P", None, ["B"], ["y"])],
+            [("P", ["A"], [], ["x", "z"]), ("P", ["B"], [], ["y"])],
         )
 
     def test_lignes_vides_en_bordure_retirees(self):
         self.assertEqual(
             parts("# P\n\n\nx\n\ny\n\n"),
-            [("P", None, [], ["x", "", "y"])],
+            [("P", [], [], ["x", "", "y"])],
         )
 
     def test_part_vide_supprimee(self):
         self.assertEqual(
             parts("# P\n### Vide\n\n\n### A\nx"),
-            [("P", None, ["A"], ["x"])],
+            [("P", ["A"], [], ["x"])],
         )
 
     def test_note_sans_contenu(self):

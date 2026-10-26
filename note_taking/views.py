@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
+from core.sections import with_descendants
 from core.templatetags.ui import date_text
 from images.models import Image
 from images.services import delete_image as delete_image_service
@@ -207,7 +208,8 @@ def notes_search(request):
             results_qs = results_qs.filter(project__in=projects)
 
         if subjects:
-            results_qs = results_qs.filter(section__name__in=subjects)
+            sections = with_descendants({int(pk) for pk in subjects})
+            results_qs = results_qs.filter(section_id__in=sections)
 
         results = list(results_qs)
 
