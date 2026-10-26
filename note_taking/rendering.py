@@ -128,6 +128,9 @@ ALLOWED_ATTRIBUTES = {
     "td": {"style", "colspan", "rowspan"},
 }
 IMG_TAG_REGEX = re.compile(r"<img\b")
+IMG_PERCENT_WIDTH_REGEX = re.compile(
+    r'(?<=<img )([^>]*?)width="(?P<width>\d+(?:\.\d+)?%)"'
+)
 
 ALLOWED_URL_SCHEMES = {"http", "https", "mailto"}
 # Alignement des colonnes de tableau, produit par l'extension tables.
@@ -180,7 +183,9 @@ def lazy_images(html: str) -> str:
 
     Appliqué au HTML filtré : `<img` n'y est que le début d'une balise.
     """
-    return IMG_TAG_REGEX.sub('<img loading="lazy" decoding="async"', html)
+    html = IMG_TAG_REGEX.sub('<img loading="lazy" decoding="async"', html)
+    # `{width=80%}` de Quarto : l'attribut width n'accepte que des pixels (#259).
+    return IMG_PERCENT_WIDTH_REGEX.sub(r'\1style="width: \g<width>"', html)
 
 
 def sanitize_html(html: str) -> str:

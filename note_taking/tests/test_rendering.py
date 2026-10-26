@@ -35,7 +35,7 @@ class NotePartRenderingTests(TestCase):
     def test_largeur_d_image_appliquee(self):
         html = self.render("![a](image:999){width=50%}")
 
-        self.assertIn('width="50%"', html)
+        self.assertIn('style="width: 50%"', html)
         self.assertNotIn("{width", html)
 
     def test_identifiant_de_figure_applique(self):
@@ -282,7 +282,7 @@ class NoteMarkdownViewTests(TestCase):
 
         self.assertContains(
             response,
-            f'<img loading="lazy" decoding="async" alt="Banc" src="{image.file.url}" width="80%">',
+            f'<img loading="lazy" decoding="async" alt="Banc" src="{image.file.url}" style="width: 80%">',
             html=True,
         )
 

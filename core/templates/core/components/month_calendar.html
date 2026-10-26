@@ -10,7 +10,7 @@ Calendrier mensuel partagé (#167), à inclure avec :
 <section id="calendar" aria-labelledby="calendar-title" data-component="month-calendar">
     <header class="mb-2 flex items-center gap-2">
         <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
-        <nav aria-label="Mois" class="flex items-center gap-1" hx-boost="true" hx-target="#calendar" hx-select="#calendar" hx-swap="outerHTML">
+        <nav aria-label="Mois" class="flex items-center gap-1" data-hx-boost="true" data-hx-target="#calendar" data-hx-select="#calendar" data-hx-swap="outerHTML">
             {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
                 {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
                 {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}

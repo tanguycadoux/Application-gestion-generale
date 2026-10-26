@@ -67,6 +67,14 @@ class DateFormatsTests(SimpleTestCase):
             '<time datetime="2025-11-25T00:30:00+01:00">25 novembre 2025</time>',
         )
 
+    def test_heure_a_la_seconde(self):
+        """Le format de datetime n'admet que trois décimales au plus (#259)."""
+        moment = datetime.datetime(2025, 11, 24, 10, 0, 5, 985044, tzinfo=datetime.UTC)
+
+        html = render('{% date_time d "moyen" %}', d=moment)
+
+        self.assertIn('datetime="2025-11-24T11:00:05+01:00"', html)
+
     def test_format_inconnu_refuse(self):
         with self.assertRaises(ValueError):
             render('{{ d|date_text:"autre" }}', d=datetime.date(2025, 11, 24))

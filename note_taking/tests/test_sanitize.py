@@ -62,7 +62,7 @@ class KeptHtmlTests(SimpleTestCase):
         html = render_markdown("![Banc](/media/banc.png){#fig-banc width=80%}")
 
         self.assertInHTML(
-            '<img loading="lazy" decoding="async" alt="Banc" id="fig-banc" src="/media/banc.png" width="80%">',
+            '<img loading="lazy" decoding="async" alt="Banc" id="fig-banc" src="/media/banc.png" style="width: 80%">',
             html,
         )
 

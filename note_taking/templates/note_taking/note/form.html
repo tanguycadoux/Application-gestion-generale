@@ -4,7 +4,7 @@
     {% if form.non_field_errors %}<div class="col-span-2">{{ form.non_field_errors }}</div>{% endif %}
     <label for="date">Date :</label>
     <div class="min-w-0">
-        <input type="date" name="date" id="date" placeholder="Date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
+        <input type="date" name="date" id="date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
         {{ form.date.errors }}
     </div>
     {% if form.body.errors %}<div class="col-span-2">{{ form.body.errors }}</div>{% endif %}

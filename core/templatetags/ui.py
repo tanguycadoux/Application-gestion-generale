@@ -162,8 +162,14 @@ def date_time(value, style: str = "moyen") -> str:
     if value in (None, ""):
         return ""
     value = _local(value)
+    # Une heure se donne à la seconde : le format n'admet que 3 décimales (#259).
+    machine = (
+        value.isoformat(timespec="seconds")
+        if isinstance(value, datetime.datetime)
+        else value.isoformat()
+    )
     return format_html(
-        '<time datetime="{}">{}</time>', value.isoformat(), date_text(value, style)
+        '<time datetime="{}">{}</time>', machine, date_text(value, style)
     )
 
 
