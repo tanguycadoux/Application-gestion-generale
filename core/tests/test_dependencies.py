@@ -2,7 +2,6 @@
 
 import ast
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -60,7 +59,6 @@ class DependencyTests(TestCase):
             with self.subTest(app=app):
                 self.assertLessEqual(imported_apps(app), ALLOWED[app])
 
-    @unittest.expectedFailure  # l'accueil de core cite note_taking et todolist
     def test_gabarits_dans_le_sens_prevu(self):
         for app in APPS:
             with self.subTest(app=app):
