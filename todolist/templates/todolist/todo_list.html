@@ -38,7 +38,7 @@
     {% if dismissed_rows %}
         <details class="mt-6">
             <summary class="mb-2 cursor-pointer"><h2 class="inline">Écartées ({{ dismissed_rows|length }})</h2></summary>
-            <p class="mb-2 text-slate-600">Tâches issues des notes, supprimées : leur note ne les recrée pas. Rétablir une tâche rétablit aussi ses sous-tâches écartées.</p>
+            <p class="mb-2 text-slate-600">Tâches retirées dont l'arbre contient une tâche issue d'une note : leur note ne les recrée pas. Rétablir une tâche rétablit aussi ses sous-tâches écartées.</p>
             <table class="w-full border-collapse text-left">
                 <thead>
                     <tr class="text-sm text-slate-600">
@@ -57,8 +57,10 @@
                             <td class="p-2">
                                 {% if row.note %}
                                     <a href="{% url 'note_taking:note_detail' row.note.pk %}">Note du {% date_time row.note.date "moyen" %}</a>
-                                {% else %}
+                                {% elif row.task.created_from_note %}
                                     {% date_time row.task.note_part_date "moyen" %}
+                                {% else %}
+                                    Saisie à la main
                                 {% endif %}
                             </td>
                             <td class="p-2 text-right">

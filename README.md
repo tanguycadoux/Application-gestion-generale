@@ -95,6 +95,7 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | créer, ajouter | `add` |
 | modifier | `edit` |
 | supprimer | `delete` |
+| écarter, rétablir (tâche issue d'une note) | `playlist_remove`, `restore_from_trash` |
 | enregistrer | `save` |
 | exporter | `download` |
 | importer | `upload` |
@@ -273,7 +274,7 @@ Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, so
 
 « Enregistrer les tâches » les rend revues et revient à la note ; « Plus tard » y revient sans rien changer, et le bilan reviendra au prochain enregistrement.
 
-Supprimer une tâche issue d'une note l'**écarte** : elle n'est plus affichée, et la note ne la recrée pas. La section repliée « Écartées » de la liste des tâches permet de la **rétablir**, avec ses sous-tâches écartées (#290). Si sa tâche parente est elle-même écartée, elle revient sans parent, et le message le signale.
+Une tâche issue d'une note s'**écarte** au lieu de se supprimer : elle n'est plus affichée, et la note ne la recrée pas. Tout son arbre est écarté avec elle, sous-tâches saisies à la main comprises, et de même pour une tâche saisie à la main qui porte une tâche issue d'une note : le bouton « Écarter la tâche » remplace alors « Supprimer la tâche ». La section repliée « Écartées » de la liste des tâches permet de la **rétablir**, avec ses sous-tâches écartées (#290). Si sa tâche parente est elle-même écartée, elle revient sans parent, et le message le signale.
 
 ### Images
 

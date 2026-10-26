@@ -19,7 +19,11 @@
 
             <form method="post" action="{% url 'todolist:todo_delete' object.pk %}" data-confirm="{{ delete_confirm }}">
                 {% csrf_token %}
-                {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
+                {% if dismisses %}
+                    {% button "Écarter la tâche" icon="playlist_remove" variant="ghost-danger" icon_only=True %}
+                {% else %}
+                    {% button "Supprimer la tâche" icon="delete" variant="ghost-danger" icon_only=True %}
+                {% endif %}
             </form>
         </header>
 

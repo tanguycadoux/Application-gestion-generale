@@ -162,27 +162,39 @@ def mark_gone_lines(note_date: date, lines: set[tuple[str, str]]) -> None:
     Todo.objects.filter(pk__in=gone).update(note_state=Todo.NoteState.TO_REVIEW)
 
 
-def remove_task(todo: Todo) -> None:
-    """Supprime une tâche et ses sous-tâches (#240).
-
-    Une tâche issue d'une note est écartée plutôt que supprimée : elle n'est plus
-    affichée, et le prochain enregistrement de la note ne la recrée pas. Une
-    tâche saisie à la main est supprimée ; une tâche écartée qu'elle portait est
-    détachée, pour ne pas partir avec elle.
-    """
+def visible_subtree(todo: Todo) -> list[Todo]:
+    """La tâche et ses sous-tâches affichées, à tous les niveaux."""
     subtree, level = [todo], [todo]
     while level:
         level = list(Todo.objects.filter(parent__in=level))
         subtree += level
-    manual = {task.pk for task in subtree if not task.created_from_note}
-    from_note = [task for task in subtree if task.created_from_note]
-    Todo.objects.filter(pk__in=[task.pk for task in from_note]).update(
-        note_state=Todo.NoteState.DISMISSED
-    )
-    Todo.all_objects.filter(
-        pk__in=[task.pk for task in from_note], parent__in=manual
-    ).update(parent=None)
-    Todo.all_objects.filter(pk__in=manual).delete()
+    return subtree
+
+
+def removal_dismisses(todo: Todo) -> bool:
+    """Retirer la tâche l'écarte-t-il ? Oui si son arbre contient une tâche issue
+    d'une note (#290)."""
+    return any(task.created_from_note for task in visible_subtree(todo))
+
+
+def remove_task(todo: Todo) -> None:
+    """Écarte ou supprime une tâche et ses sous-tâches (#240, #290).
+
+    Un arbre qui contient une tâche issue d'une note est écarté en entier, tâches
+    saisies à la main comprises : il n'est plus affiché, le prochain
+    enregistrement de la note ne recrée pas ses tâches, et le rétablir le rend
+    intact. Un arbre saisi à la main est supprimé ; une tâche déjà écartée qu'il
+    portait est détachée, pour ne pas partir avec lui.
+    """
+    subtree = visible_subtree(todo)
+    pks = [task.pk for task in subtree]
+    if any(task.created_from_note for task in subtree):
+        Todo.objects.filter(pk__in=pks).update(note_state=Todo.NoteState.DISMISSED)
+    else:
+        Todo.all_objects.filter(
+            parent__in=pks, note_state=Todo.NoteState.DISMISSED
+        ).update(parent=None)
+        Todo.all_objects.filter(pk__in=pks).delete()
     update_ancestors_progress(todo.parent_id)
 
 
@@ -234,29 +246,31 @@ def dismissed_rows() -> list[DismissedRow]:
 def restore_task(todo: Todo) -> Todo | None:
     """Rétablit une tâche écartée et ses sous-tâches écartées (#290).
 
-    Chacune redevient revue si sa ligne est encore dans la note, gardée sans sa
-    ligne sinon. La tâche retrouve son parent s'il est encore affiché ; s'il est
-    écarté, elle est rétablie à la racine, et le parent écarté est renvoyé pour
-    le signaler.
+    Chacune redevient revue si sa ligne est encore dans sa note, gardée sans sa
+    ligne sinon ; une tâche saisie à la main le redevient. La tâche retrouve son
+    parent s'il est encore affiché ; s'il est écarté, elle est rétablie à la
+    racine, et le parent écarté est renvoyé pour le signaler.
     """
     subtree = dismissed_subtree(todo)
-    note = (
-        Note.objects.filter(date=todo.note_part_date).first()
-        if todo.note_part_date
-        else None
+    notes = Note.objects.filter(
+        date__in={task.note_part_date for task in subtree if task.created_from_note}
     )
-    lines = note_lines(note.parts.prefetch_related("tags")) if note else set()
-    for state, keep in (
-        (Todo.NoteState.REVIEWED, True),
-        (Todo.NoteState.DETACHED, False),
-    ):
-        Todo.all_objects.filter(
-            pk__in=[
-                task.pk
-                for task in subtree
-                if ((task.note_path, task.note_part_text) in lines) == keep
-            ]
-        ).update(note_state=state)
+    lines: dict[date | None, set[tuple[str, str]]] = {
+        note.date: note_lines(note.parts.prefetch_related("tags")) for note in notes
+    }
+    states: dict[str, list[int]] = {}
+    for task in subtree:
+        if not task.created_from_note:
+            state = ""
+        elif (task.note_path, task.note_part_text) in lines.get(
+            task.note_part_date, set()
+        ):
+            state = Todo.NoteState.REVIEWED
+        else:
+            state = Todo.NoteState.DETACHED
+        states.setdefault(state, []).append(task.pk)
+    for state, pks in states.items():
+        Todo.all_objects.filter(pk__in=pks).update(note_state=state)
 
     dismissed_parent = None
     if todo.parent_id and not Todo.objects.filter(pk=todo.parent_id).exists():

@@ -6,7 +6,6 @@ bouton, confirmation et message (#290).
 """
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -105,14 +104,12 @@ class DismissTests(DeleteTestCase):
             reverse("todolist:todo_detail", args=[task.pk])
         ).content.decode()
 
-    @unittest.expectedFailure
     def test_bouton_ecarter(self):
         html = self.detail(self.a)
 
         self.assertIn("Écarter la tâche", html)
         self.assertNotIn("Supprimer la tâche", html)
 
-    @unittest.expectedFailure
     def test_confirmation(self):
         self.assertEqual(
             self.confirm(self.a),
@@ -120,17 +117,14 @@ class DismissTests(DeleteTestCase):
             "de la liste des tâches permet de revenir en arrière.",
         )
 
-    @unittest.expectedFailure
     def test_message(self):
         self.assertEqual(self.delete(self.b), ["La tâche « B » est écartée."])
 
-    @unittest.expectedFailure
     def test_message_avec_sous_taches(self):
         self.assertEqual(
             self.delete(self.a), ["La tâche « A » et sa sous-tâche sont écartées."]
         )
 
-    @unittest.expectedFailure
     def test_parent_saisi_a_la_main(self):
         parent = Todo.objects.create(title="Parent", project=self.a.project)
         Todo.objects.filter(pk=self.a.pk).update(parent=parent)

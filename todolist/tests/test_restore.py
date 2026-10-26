@@ -5,8 +5,6 @@ son parent s'il est encore affiché, sinon elle revient à la racine, signalé. 
 de suppression définitive : sa ligne reviendrait en tâche.
 """
 
-import unittest
-
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -65,7 +63,6 @@ class MixedTreeTests(RestoreTestCase):
             title="M", project=self.task("A").project, parent=self.task("A")
         )
 
-    @unittest.expectedFailure
     def test_tache_saisie_a_la_main_retablie_comme_telle(self):
         remove_task(self.task("A"))
 
@@ -75,7 +72,6 @@ class MixedTreeTests(RestoreTestCase):
         self.assertEqual((manual.note_state, manual.parent), ("", self.task("A")))
         self.assertEqual(self.task("B").note_state, Todo.NoteState.REVIEWED)
 
-    @unittest.expectedFailure
     def test_racine_saisie_a_la_main_dans_les_ecartees(self):
         Todo.objects.filter(pk=self.manual.pk).update(parent=None)
         Todo.objects.filter(title="D").update(parent=self.manual)

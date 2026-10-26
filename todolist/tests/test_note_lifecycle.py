@@ -5,7 +5,6 @@ tels qu'écrits (sans `TODO`) et le chemin de sa ligne.
 """
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -299,7 +298,6 @@ class DeleteTests(LifecycleTestCase):
 
     # Un arbre qui contient une tâche issue d'une note est écarté en entier, même
     # ses tâches saisies à la main : le rétablir le rend intact (#290).
-    @unittest.expectedFailure
     def test_parent_saisi_a_la_main_avec_enfant_de_note(self):
         self.save_note("# P\n### TODO\n- A")
         child = Todo.objects.get()
@@ -317,7 +315,6 @@ class DeleteTests(LifecycleTestCase):
             Todo.all_objects.get(pk=parent.pk).note_state, Todo.NoteState.DISMISSED
         )
 
-    @unittest.expectedFailure
     def test_enfant_saisi_a_la_main_ecarte_avec_sa_tache_de_note(self):
         self.save_note("# P\n### TODO\n- A")
         parent = Todo.objects.get()
@@ -332,7 +329,6 @@ class DeleteTests(LifecycleTestCase):
             Todo.all_objects.get(pk=child.pk).note_state, Todo.NoteState.DISMISSED
         )
 
-    @unittest.expectedFailure
     def test_tache_ecartee_portee_par_un_arbre_saisi_a_la_main(self):
         """Une tâche déjà écartée sous un arbre supprimé n'est pas emportée."""
         self.save_note("# P\n### TODO\n- A")
