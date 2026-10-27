@@ -36,6 +36,12 @@ Calendrier mensuel partagé (#167), à inclure avec :
                     {% endfor %}
                 </tr>
             {% endfor %}
+            {% comment %}Place de six semaines réservée : la hauteur ne change pas d'un mois à l'autre (#275).{% endcomment %}
+            {% for spare in calendar.spare_weeks %}
+                <tr aria-hidden="true" data-spare-week>
+                    <td colspan="7" class="h-24 p-0"></td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
 </section>
