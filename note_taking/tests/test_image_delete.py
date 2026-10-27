@@ -82,7 +82,7 @@ class ImageDeleteTests(TestCase):
             html,
         )
         self.assertIn('popovertarget="delete-image"', html)
-        self.assertIn("Supprimer définitivement l&#x27;image", html)
+        self.assertIn("Supprimer définitivement l'image ?", html)
         self.assertNotRegex(html, r"<button[^>]*disabled")
 
     def test_bouton_desactive_avec_la_raison_si_l_image_est_utilisee(self):

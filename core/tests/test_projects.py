@@ -164,7 +164,7 @@ class ProjectPagesTests(TestCase):
     def test_bouton_desactive_avec_la_raison(self):
         html = self.client.get(reverse("core:projects")).content.decode()
 
-        self.assertIn("Supprimer définitivement le projet « Libre » ?", html)
+        self.assertIn("Supprimer définitivement le projet ?", html)
         self.assertIn(f'popovertarget="delete-project-{self.unused.pk}"', html)
         self.assertNotIn(f'popovertarget="delete-project-{self.used.pk}"', html)
         self.assertInHTML(

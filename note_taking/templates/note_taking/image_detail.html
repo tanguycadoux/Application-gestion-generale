@@ -9,9 +9,7 @@
             <h1 class="flex-1">{{ image.name }}</h1>
             <div class="flex flex-col items-end">
                 {% url 'note_taking:delete_image' image.pk as url %}
-                {% with message="Supprimer définitivement l'image "|add:image.name|add:" ?" %}
-                    {% confirm_button "Supprimer l'image" id="delete-image" icon="delete" message=message action=url disabled=notes.exists describedby="image-usage" %}
-                {% endwith %}
+                {% confirm_button "Supprimer l'image" id="delete-image" icon="delete" message="Supprimer définitivement l'image ?" action=url disabled=notes.exists describedby="image-usage" %}
                 {% if notes %}
                     <p id="image-usage" class="max-w-64 text-right text-sm text-slate-600">Suppression impossible : l'image est utilisée par {{ notes|length }} note{{ notes|length|pluralize }}.</p>
                 {% endif %}

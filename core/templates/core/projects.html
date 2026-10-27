@@ -36,8 +36,8 @@
                         {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
 
                         {% url 'core:project_delete' project.pk as url %}
-                        {% with pk=project.pk|stringformat:"d" %}{% with message="Supprimer définitivement le projet « "|add:project.name|add:" » ?" id="delete-project-"|add:pk %}
-                            {% confirm_button "Supprimer le projet" id=id icon="delete" icon_only=True message=message action=url disabled=project.usage describedby=project.usage_id %}
+                        {% with pk=project.pk|stringformat:"d" %}{% with id="delete-project-"|add:pk %}
+                            {% confirm_button "Supprimer le projet" id=id icon="delete" icon_only=True message="Supprimer définitivement le projet ?" action=url disabled=project.usage describedby=project.usage_id %}
                         {% endwith %}{% endwith %}
                     </div>
                 </article>

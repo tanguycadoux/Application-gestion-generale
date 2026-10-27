@@ -182,7 +182,7 @@ class SectionDeleteButtonTests(SectionDeleteTestCase):
         )
         assert popover is not None
         body = popover.group("body")
-        self.assertIn("Supprimer définitivement le niveau « A » ?", body)
+        self.assertIn("Supprimer définitivement le niveau ?", body)
         self.assertIn(f'<form method="post" action="{self.url(section)}"', body)
         self.assertIn("csrfmiddlewaretoken", body)
         self.assertIn(BUTTON_VARIANTS["danger"], body)
@@ -192,7 +192,7 @@ class SectionDeleteButtonTests(SectionDeleteTestCase):
         self.level("A", "B", "C")
 
         self.assertIn(
-            "Supprimer définitivement le niveau « A » et ses 2 sous-niveaux ?",
+            "Supprimer définitivement le niveau et ses 2 sous-niveaux ?",
             self.html(),
         )
 
