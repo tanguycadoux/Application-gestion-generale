@@ -211,12 +211,15 @@ class MultiProjectFilterTests(NoteListTestCase):
         self.assertNotIn("overflow-auto", panel)
         self.assertNotIn("max-h-", panel)
 
-    def test_le_contour_de_focus_de_la_recherche_a_de_la_place(self):
+    def test_le_champ_de_recherche_s_aligne_et_son_contour_n_est_pas_rogne(self):
         panel = self.panel()
-        box = panel[panel.index("data-choice-search-box") :].split("</div>")[0]
+        box = panel[panel.index("data-choice-search-box") :].split(">")[0]
 
-        # Un contour de 2 px à 2 px du champ (feuille de style de base) : marge intérieure.
-        self.assertIn("p-1", box)
+        # Pas de marge autour du champ (aligné sur les autres), et aucun
+        # conteneur du panneau ne rogne le contour de focus.
+        self.assertNotRegex(box, r'class="[^"]*p-')
+        for clip in ("overflow-hidden", "overflow-auto", "overflow-y-auto"):
+            self.assertNotIn(clip, panel)
 
     def test_union_des_projets_coches(self):
         response = self.get(project=["Alpha", "Gamma"])
