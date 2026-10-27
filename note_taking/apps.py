@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 from core.app_registry import (
+    DashboardBlock,
     NavItem,
     NavSection,
     ProjectUsage,
@@ -27,7 +28,16 @@ class NoteTakingConfig(AppConfig):
     section_usages = (SectionUsage("note_parts", "note part", "note parts"),)
 
     def ready(self):
-        from . import renaming
+        from . import dashboard, renaming
+
+        self.dashboard_blocks = (
+            DashboardBlock(
+                "Note du jour",
+                10,
+                "note_taking/dashboard_today.html",
+                dashboard.today_note,
+            ),
+        )
 
         self.section_renamer = SectionRenamer(
             occurrences=renaming.find_occurrences, rename=renaming.rename_titles
