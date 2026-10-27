@@ -21,12 +21,6 @@ function alertIcon(name, className) {
   return icon;
 }
 
-// Classes des variantes du composant button, transmises par le gabarit de base
-// (core/templatetags/ui.py, BUTTON_VARIANTS) plutôt que recopiées ici.
-function buttonVariants() {
-  return JSON.parse(document.getElementById("button-variants").textContent);
-}
-
 window.Alert = (function () {
   /* --- TOASTS --- */
 
@@ -92,42 +86,8 @@ window.Alert = (function () {
     }, duration_ms);
   }
 
-  /* --- POPOVER --- */
-
-  // Confirmation à côté d'un élément : « Annuler » (ghost) puis l'action (danger).
-  async function confirmAt(element, message, { ok_label = "Supprimer", cancel_label = "Annuler" } = {}) {
-    const variants = buttonVariants();
-    const cancelButton = alertElement("button", variants.ghost, cancel_label);
-    const okButton = alertElement("button", variants.danger, ok_label);
-    for (const button of [cancelButton, okButton]) {
-      button.type = "button";
-    }
-
-    const content = [
-      alertElement("p", "mb-3 font-semibold", message),
-      alertElement("div", "flex justify-end gap-2", null, [cancelButton, okButton]),
-    ];
-    const { pop, ready, close } = createPopoverBase(element, content);
-
-    await ready;
-
-    return new Promise((resolve) => {
-      okButton.onclick = () => {
-        pop.remove();
-        resolve(true);
-      };
-      cancelButton.onclick = () => {
-        pop.remove();
-        resolve(false);
-      };
-
-      close.then(() => resolve(false));
-    });
-  }
-
   return {
     toast,
-    confirmAt,
   };
 })();
 

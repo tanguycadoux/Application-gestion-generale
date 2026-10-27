@@ -19,7 +19,7 @@ TITLE_REGEX = re.compile(r"<title>(?P<title>.*?)</title>", re.DOTALL)
 TAG_REGEX = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.DOTALL)
 
 
-LABEL_ATTR_REGEX = re.compile(r'(?:aria-label|title|data-confirm)="(?P<value>[^"]*)"')
+LABEL_ATTR_REGEX = re.compile(r'(?:aria-label|title)="(?P<value>[^"]*)"')
 
 
 def visible_text(html: str) -> str:

@@ -30,6 +30,16 @@ class TreeRow:
     def usage_id(self) -> str:
         return f"niveau-{self.section.pk}-usage"
 
+    @property
+    def delete_confirm(self) -> str:
+        """Texte de la confirmation : le niveau et ce qui disparaît avec lui."""
+        below = ""
+        if self.descendants == 1:
+            below = " et son sous-niveau"
+        elif self.descendants:
+            below = f" et ses {self.descendants} sous-niveaux"
+        return f"Supprimer définitivement le niveau « {self.section.name} »{below} ?"
+
 
 def section_tree(project: Project) -> list[TreeRow]:
     """Les niveaux du projet, parents d'abord, frères triés par nom."""

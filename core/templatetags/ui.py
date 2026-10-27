@@ -12,7 +12,7 @@ from django import template
 from django.template.defaultfilters import date as format_date
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html, json_script
+from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
 from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
@@ -68,13 +68,6 @@ INDENT_CLASSES = ["pl-0", "pl-6", "pl-12", "pl-18", "pl-24", "pl-30", "pl-36"]
 def indent_class(depth: int) -> str:
     """Indentation d'un niveau de l'arbre des chemins, borné à la profondeur max."""
     return INDENT_CLASSES[min(depth, len(INDENT_CLASSES) - 1)]
-
-
-@register.simple_tag
-def button_variants_json() -> str:
-    """Classes des variantes de bouton pour les scripts qui créent des boutons
-    (alertes, #154), dans un `<script id="button-variants" type="application/json">`."""
-    return json_script(BUTTON_VARIANTS, "button-variants")
 
 
 @register.inclusion_tag("core/components/button.html")
@@ -133,6 +126,52 @@ def button(
         "describedby": describedby,
         "popovertarget": popovertarget,
         "popovertargetaction": popovertargetaction,
+    }
+
+
+@register.inclusion_tag("core/components/confirm_button.html", takes_context=True)
+def confirm_button(
+    context,
+    label: str,
+    id: str,
+    message: str,
+    action: str,
+    icon: str = "",
+    variant: str = "ghost-danger",
+    icon_only: bool = False,
+    confirm_label: str = "Supprimer",
+    confirm_icon: str = "delete",
+    confirm_variant: str = "danger",
+    disabled: bool = False,
+    describedby: str = "",
+) -> dict:
+    """Bouton qui demande confirmation avant d'envoyer un POST (#292).
+
+    Une popover HTML native, sans JavaScript : le bouton l'ouvre, le navigateur
+    la ferme (Échap, clic à côté, « Annuler ») et la place sous le bouton
+    (`.confirm-popover`). Elle contient le `message` et le formulaire POST vers
+    `action`, avec « Annuler » puis l'action.
+
+    - `label`, `icon`, `variant`, `icon_only` : le bouton de la page (comme `button`) ;
+    - `id` : identifiant de la popover, unique dans la page ;
+    - `confirm_label`, `confirm_icon`, `confirm_variant` : l'action de la popover
+      (« Supprimer » en `danger` par défaut, « Rétablir » en `primary`) ;
+    - `disabled`, `describedby` : bouton désactivé relié à la raison, sans popover.
+    """
+    return {
+        "label": label,
+        "id": id,
+        "message": message,
+        "action": action,
+        "icon": icon,
+        "variant": variant,
+        "icon_only": icon_only,
+        "confirm_label": confirm_label,
+        "confirm_icon": confirm_icon,
+        "confirm_variant": confirm_variant,
+        "disabled": disabled,
+        "describedby": describedby,
+        "csrf_token": context.get("csrf_token", ""),
     }
 
 

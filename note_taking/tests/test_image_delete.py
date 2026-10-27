@@ -81,7 +81,8 @@ class ImageDeleteTests(TestCase):
             f'action="{reverse("note_taking:delete_image", args=[self.image.pk])}"',
             html,
         )
-        self.assertIn("data-confirm=", html)
+        self.assertIn('popovertarget="delete-image"', html)
+        self.assertIn("Supprimer définitivement l&#x27;image", html)
         self.assertNotRegex(html, r"<button[^>]*disabled")
 
     def test_bouton_desactive_avec_la_raison_si_l_image_est_utilisee(self):
@@ -93,11 +94,12 @@ class ImageDeleteTests(TestCase):
         self.assertRegex(html, r"<button[^>]*disabled")
         self.assertIn("utilisée par 2 notes", html)
 
-    def test_script_de_confirmation_charge(self):
+    def test_confirmation_sans_script(self):
+        """La popover est native : plus de script de confirmation (#292)."""
         html = self.detail()
 
-        self.assertIsNotNone(finders.find("core/confirm.js"))
-        self.assertIn("core/confirm.js", html)
+        self.assertIsNone(finders.find("core/confirm.js"))
+        self.assertNotIn("core/confirm.js", html)
 
     def test_raison_juste_sous_le_bouton(self):
         self.use()

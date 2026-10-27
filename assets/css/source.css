@@ -92,7 +92,7 @@
         animation: fadeIn .1s ease-out;
     }
 
-    /* Popover native de confirmation (essai) : sous son bouton, alignée sur son
+    /* Popover native de confirmation (#292) : sous son bouton, alignée sur son
        bord droit, par l'ancre implicite de popovertarget ; retournée au-dessus
        si la place manque. Sans ancrage CSS, le navigateur la centre. */
     .confirm-popover:popover-open {

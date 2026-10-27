@@ -25,14 +25,10 @@
                     {% button "Renommer le niveau « "|add:row.section.name|add:" »" icon="edit" href=url variant="ghost" icon_only=True %}
 
                     {# Un niveau utilisé se renomme, il ne se supprime pas : le bouton est désactivé, relié à ce qui l'utilise. #}
-                    <form method="post" action="{% url 'core:section_delete' project.pk row.section.pk %}" data-confirm="Supprimer définitivement le niveau « {{ row.section.name }} »{% if row.descendants == 1 %} et son sous-niveau{% elif row.descendants %} et ses {{ row.descendants }} sous-niveaux{% endif %} ?">
-                        {% csrf_token %}
-                        {% if row.total %}
-                            {% button "Supprimer le niveau « "|add:row.section.name|add:" »" icon="delete" variant="ghost-danger" icon_only=True disabled=True describedby=row.usage_id %}
-                        {% else %}
-                            {% button "Supprimer le niveau « "|add:row.section.name|add:" »" icon="delete" variant="ghost-danger" icon_only=True %}
-                        {% endif %}
-                    </form>
+                    {% url 'core:section_delete' project.pk row.section.pk as url %}
+                    {% with pk=row.section.pk|stringformat:"d" %}{% with label="Supprimer le niveau « "|add:row.section.name|add:" »" id="delete-section-"|add:pk %}
+                        {% confirm_button label id=id icon="delete" icon_only=True message=row.delete_confirm action=url disabled=row.total describedby=row.usage_id %}
+                    {% endwith %}{% endwith %}
                 </li>
             {% endfor %}
         </ul>

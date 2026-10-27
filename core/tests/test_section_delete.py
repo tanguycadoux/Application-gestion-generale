@@ -172,28 +172,27 @@ class SectionDeleteButtonTests(SectionDeleteTestCase):
     def test_niveau_inutilise_confirmation_par_popover(self):
         section = self.level("A")
 
-        form = re.search(
-            rf'<form method="post" action="{re.escape(self.url(section))}"'
-            r' data-confirm="(?P<message>[^"]*)">(?P<body>.*?)</form>',
-            self.html(),
+        html = self.html()
+
+        self.assertIn(f'popovertarget="delete-section-{section.pk}"', html)
+        popover = re.search(
+            rf'<div id="delete-section-{section.pk}" popover[^>]*>(?P<body>.*?)</div>',
+            html,
             re.DOTALL,
         )
-
-        assert form is not None
-        self.assertEqual(
-            form.group("message"), "Supprimer définitivement le niveau « A » ?"
-        )
-        self.assertIn("csrfmiddlewaretoken", form.group("body"))
-        self.assertIn('aria-label="Supprimer le niveau « A »"', form.group("body"))
-        self.assertIn(BUTTON_VARIANTS["ghost-danger"], form.group("body"))
-        self.assertNotIn("disabled", form.group("body"))
+        assert popover is not None
+        body = popover.group("body")
+        self.assertIn("Supprimer définitivement le niveau « A » ?", body)
+        self.assertIn(f'<form method="post" action="{self.url(section)}"', body)
+        self.assertIn("csrfmiddlewaretoken", body)
+        self.assertIn(BUTTON_VARIANTS["danger"], body)
+        self.assertIn('aria-label="Supprimer le niveau « A »"', html)
 
     def test_confirmation_avec_les_sous_niveaux(self):
         self.level("A", "B", "C")
 
         self.assertIn(
-            'data-confirm="Supprimer définitivement le niveau « A » '
-            'et ses 2 sous-niveaux ?"',
+            "Supprimer définitivement le niveau « A » et ses 2 sous-niveaux ?",
             self.html(),
         )
 

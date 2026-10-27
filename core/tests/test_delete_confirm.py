@@ -1,7 +1,7 @@
 """Tests de la suppression : un seul fonctionnement, confirmation par popover (#126).
 
-Comme pour les images : un bouton dans un formulaire POST portant `data-confirm`,
-et des vues limitées à POST, sans page de confirmation.
+Un bouton qui ouvre une popover native (`{% confirm_button %}`, #292) contenant un
+formulaire POST, et des vues limitées à POST, sans page de confirmation.
 """
 
 import re
@@ -23,21 +23,32 @@ def page_header(html: str) -> str:
 
 
 class DeleteFormTestCase(TestCase):
-    def assert_delete_form(self, html: str, action: str, message: str):
-        header = page_header(html)
-        form = re.search(
-            rf'<form method="post" action="{re.escape(action)}"'
-            r' data-confirm="(?P<message>[^"]*)">(?P<body>.*?)</form>',
-            header,
+    def assert_delete_popover(
+        self, html: str, popover_id: str, action: str, message: str
+    ):
+        """Le bouton ouvre une popover native qui porte le message et le formulaire :
+        « Annuler » (sans envoi), puis « Supprimer » en danger (#292)."""
+        self.assertRegex(
+            html,
+            rf'<button type="button" class="{re.escape(BUTTON_VARIANTS["ghost-danger"])}"'
+            rf'[^>]*popovertarget="{popover_id}"',
+        )
+        popover = re.search(
+            rf'<div id="{popover_id}" popover class="confirm-popover[^"]*">(.*?)</div>',
+            html,
             re.DOTALL,
         )
-        assert form is not None, header
-        self.assertEqual(form.group("message"), message)
-        self.assertIn("csrfmiddlewaretoken", form.group("body"))
-        self.assertIn(
-            f'<button type="submit" class="{BUTTON_VARIANTS["ghost-danger"]}"',
-            form.group("body"),
-        )
+        assert popover is not None, html
+        self.assertIn(message, popover[1])
+        form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
+        assert form is not None
+        self.assertIn(f'action="{action}"', form[0])
+        self.assertIn("csrfmiddlewaretoken", form[0])
+        self.assertNotIn("data-confirm", html)
+        cancel = form[0].index('popovertargetaction="hide"')
+        submit = form[0].index('type="submit"')
+        self.assertLess(cancel, submit)
+        self.assertIn(BUTTON_VARIANTS["danger"], form[0][submit - 10 :])
 
 
 class NoteDeleteTests(DeleteFormTestCase):
@@ -50,8 +61,11 @@ class NoteDeleteTests(DeleteFormTestCase):
             reverse("note_taking:note_detail", args=[self.note.date])
         ).content.decode()
 
-        self.assert_delete_form(
-            html, self.url, "Supprimer définitivement la note du 24 novembre 2025 ?"
+        self.assert_delete_popover(
+            page_header(html),
+            "delete-note",
+            self.url,
+            "Supprimer définitivement la note du 24 novembre 2025 ?",
         )
 
     def test_pas_de_page_de_confirmation(self):
