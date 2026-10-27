@@ -396,6 +396,7 @@ def filter_panel(
             field_data["choices"] = column_filter.choices()
             field_data["selected"] = list(values.get(column_filter.key, ()))
             field_data["singular"] = column_filter.singular
+            field_data["noun"] = column_filter.noun
         fields.append(field_data)
     # Le curseur va dans le premier champ où l'on tape ; des boutons radio n'en ont pas.
     focused = False

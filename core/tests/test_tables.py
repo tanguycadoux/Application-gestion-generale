@@ -189,6 +189,15 @@ class MultiChoiceComponentTests(SimpleTestCase):
         self.assertEqual(panel["kept"], [("sort", "date")])
         self.assertTrue(panel["active"])
 
+    def test_panneau_donne_le_nom_pluriel_pour_le_resume_repliable(self):
+        request = self.request("?project=A")
+        active = self.filters.read(request.GET)
+
+        panel = filter_panel(request, self.filters, active, "projects")
+
+        assert panel is not None
+        self.assertEqual(panel["fields"][0]["noun"], "valeurs")
+
     def test_panneau_sans_valeur_ne_coche_rien(self):
         request = self.request()
 
@@ -556,6 +565,15 @@ class ChoiceSearchScriptTests(SimpleTestCase):
 
         self.assertIn('normalize("NFD")', js)
         self.assertIn("toLowerCase()", js)
+
+    def test_la_saisie_ouvre_la_liste_repliee(self):
+        self.assertIn("details.open = true", self.script())
+
+    def test_le_nombre_de_cases_cochees_suit_les_clics(self):
+        js = self.script()
+
+        self.assertIn("data-choice-count", js)
+        self.assertIn('addEventListener("change"', js)
 
     def test_une_case_cochee_n_est_jamais_masquee(self):
         js = self.script()

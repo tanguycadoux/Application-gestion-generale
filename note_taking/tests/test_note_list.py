@@ -167,6 +167,60 @@ class NoteListTableTests(NoteListTestCase):
 class MultiProjectFilterTests(NoteListTestCase):
     """Le filtre par projet : plusieurs projets cochés, réunis par « ou »."""
 
+    def panel(self, **params) -> str:
+        html = self.get(**params).content.decode()
+        return html[html.index('id="filters-projects"') :].split("</form>")[0]
+
+    def test_zone_des_projets_repliable_comme_un_details_natif(self):
+        panel = self.panel()
+
+        self.assertIn("<details", panel)
+        self.assertRegex(
+            panel,
+            r"<summary[^>]*>\s*Projets \(<span data-choice-count>0</span> sur 3\)",
+        )
+
+    def test_repliee_quand_aucun_projet_n_est_coche(self):
+        self.assertRegex(self.panel(), r"<details data-choice-details>")
+
+    def test_ouverte_d_office_quand_un_projet_est_coche(self):
+        panel = self.panel(project="Alpha")
+
+        self.assertRegex(panel, r"<details data-choice-details open>")
+
+    def test_le_resume_compte_les_projets_coches(self):
+        panel = self.panel(project=["Alpha", "Gamma"])
+
+        self.assertRegex(panel, r"Projets \(<span data-choice-count>2</span> sur 3\)")
+
+    def test_toutes_les_cases_restent_dans_le_details_sans_javascript(self):
+        panel = self.panel()
+        details = panel[panel.index("<details") : panel.index("</details>")]
+
+        self.assertEqual(details.count('type="checkbox" name="project"'), 3)
+
+    def test_la_recherche_est_hors_du_details_donc_toujours_visible(self):
+        panel = self.panel()
+
+        self.assertLess(panel.index("data-choice-search-box"), panel.index("<details"))
+
+    def test_aucune_barre_de_defilement_dans_le_panneau(self):
+        panel = self.panel()
+
+        self.assertNotIn("overflow-y-auto", panel)
+        self.assertNotIn("overflow-auto", panel)
+        self.assertNotIn("max-h-", panel)
+
+    def test_le_champ_de_recherche_s_aligne_et_son_contour_n_est_pas_rogne(self):
+        panel = self.panel()
+        box = panel[panel.index("data-choice-search-box") :].split(">")[0]
+
+        # Pas de marge autour du champ (aligné sur les autres), et aucun
+        # conteneur du panneau ne rogne le contour de focus.
+        self.assertNotRegex(box, r'class="[^"]*p-')
+        for clip in ("overflow-hidden", "overflow-auto", "overflow-y-auto"):
+            self.assertNotIn(clip, panel)
+
     def test_union_des_projets_coches(self):
         response = self.get(project=["Alpha", "Gamma"])
 
@@ -220,7 +274,7 @@ class MultiProjectFilterTests(NoteListTestCase):
         panel = html[html.index('id="filters-projects"') :].split("</form>")[0]
 
         # Le champ ne se montre qu'avec le script ; sans lui toutes les cases sont là.
-        self.assertRegex(panel, r"<div hidden data-choice-search-box>")
+        self.assertRegex(panel, r"<div hidden data-choice-search-box[ >]")
         self.assertIn('placeholder="Chercher un projet"', panel)
         self.assertIn("autofocus", panel)
         self.assertEqual(panel.count("data-choice-item"), 3)
