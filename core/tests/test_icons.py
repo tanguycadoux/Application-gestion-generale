@@ -8,8 +8,9 @@ from django.test import SimpleTestCase
 
 APPS = ("core", "images", "note_taking", "todolist")
 
-BUTTON_TAG_REGEX = re.compile(r"\{% button .*?%\}")
-ICON_REGEX = re.compile(r'\bicon="(?P<icon>[a-z_]+)"')
+# `confirm_button` (#292) compte aussi ; son gabarit passe l'icône en variable.
+BUTTON_TAG_REGEX = re.compile(r"\{% (?:confirm_)?button .*?%\}")
+ICON_REGEX = re.compile(r'\bicon=(?:"(?P<icon>[a-z_]+)"|[a-z_]+)')
 
 # Une icône par action, la même partout (README, section Composants).
 ACTION_ICONS = {
@@ -47,13 +48,13 @@ class IconTests(SimpleTestCase):
     def test_pas_d_icone_ecrite_dans_le_libelle(self):
         for path, tag in button_tags():
             with self.subTest(path=path.name, tag=tag):
-                self.assertNotRegex(tag, r'\{% button "[+✓×]')
+                self.assertNotRegex(tag, r'\{% (?:confirm_)?button "[+✓×]')
 
     def test_une_icone_par_action(self):
         for path, tag in button_tags():
-            label = re.match(r'\{% button "(?P<label>[^"]*)"', tag)
+            label = re.match(r'\{% (?:confirm_)?button "(?P<label>[^"]*)"', tag)
             icon = ICON_REGEX.search(tag)
-            if label is None or icon is None:
+            if label is None or icon is None or icon.group("icon") is None:
                 continue
             verb = label.group("label").split()[0]
             if verb in ACTION_ICONS:

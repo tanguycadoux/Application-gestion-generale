@@ -13,7 +13,7 @@ async function importFiles(files) {
             // Un refus est déjà noté par le serveur pour le rechargement ; une panne
             // réseau n'a pas de message : on l'affiche et on ne recharge pas.
             if (error.network) {
-                window.Alert?.toast(error.message, { type: "error" });
+                window.Toast?.show(error.message, "error");
                 return;
             }
         }

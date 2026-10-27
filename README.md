@@ -68,6 +68,8 @@ Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Sect
 
 Messages de confirmation (#192) : chaque création, modification et suppression d'un projet, d'une note, d'une tâche ou d'une image affiche un toast de succès, de la même forme : l'objet nommé, au présent (« Le projet « ASTERICS » est créé. », « La tâche « Relire » est modifiée. », « La note du 24 novembre 2025 est supprimée. », « L'image « banc.png » est supprimée. »). Une note se nomme par sa date au format moyen. Si l'analyse d'une note échoue, seul le message d'erreur s'affiche. `core/tests/test_action_messages.py` vérifie chaque message.
 
+Toasts (#293) : les messages sont des notifications **rendues par le serveur** (`{% message_toast %}`, reprise de research-paper-relationship-graph), en bas à droite : visibles sans JavaScript, où elles restent affichées. `core/static/core/toasts.js` ajoute un bouton de fermeture, la touche Échap et la disparition des **succès et informations seulement** (6 s, en pause au survol et au focus) ; les avertissements et les erreurs restent jusqu'à leur fermeture. Une erreur est annoncée par `role="alert"`, les autres messages par `role="status"`. Un script en crée un par `Toast.show(message, "error")` ou `"success"`.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |
@@ -77,6 +79,7 @@ Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templa
 | `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True form="id" describedby="id" %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) ; `form="id"` relie un `<button>` placé hors de son formulaire (pas un lien) ; `describedby="id"` pose `aria-describedby`, par exemple vers la raison pour laquelle le bouton est désactivé |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
 | `{% project_badge projet %}` | pastille d'un projet : un point de sa couleur devant son nom, rien sans projet |
+| `{% kbd "←" %}` | raccourci clavier en `<kbd>` discret (bordure, petite taille) ; un bouton dont la page gère le raccourci l'annonce avec `keyshortcuts="ArrowLeft"` (`aria-keyshortcuts`) |
 
 Exemples :
 
@@ -106,7 +109,7 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | mois précédent, suivant | `chevron_left`, `chevron_right` |
 | aujourd'hui, note du jour | `today` |
 
-Confirmation avant envoi : un formulaire qui porte `data-confirm="message"` ouvre une popover de confirmation (`Alert.confirmAt`) à côté de son bouton d'envoi, avec « Annuler » en `ghost` puis « Supprimer » en `danger` (`core/static/core/confirm.js`, chargé par le gabarit de base) ; sans JavaScript, il s'envoie directement. Toute suppression passe par là (#126) : un bouton `ghost-danger` dans un formulaire POST portant `data-confirm`, vers une vue limitée à POST ; il n'y a pas de page de confirmation. Les tâches (supprimer, écarter, rétablir) confirment par une **popover HTML native** (attribut `popover`, boutons `popovertarget`), sans JavaScript : le navigateur l'ouvre, la ferme (Échap, clic à côté, « Annuler ») et la place sous son bouton par l'ancrage CSS (`.confirm-popover`) ; le formulaire est dans la popover, avec « Annuler » puis l'action (« Supprimer » ou « Écarter » en `danger`, « Rétablir » en `primary`). Les autres suppressions gardent `data-confirm` jusqu'à #292, qui les convertit toutes.
+Confirmation avant envoi (#126, #292) : toute suppression, tout écart ou rétablissement passe par `{% confirm_button %}` (`core/templatetags/ui.py`), une **popover HTML native** sans JavaScript. Le bouton de la page (`type="button"`, `popovertarget`) l'ouvre ; le navigateur la ferme (Échap, clic à côté, « Annuler ») et la place sous le bouton, alignée sur son bord droit, par l'ancrage CSS (`.confirm-popover`, retournée au-dessus si la place manque). Elle contient le message et un formulaire POST, avec « Annuler » (`ghost`) puis l'action (« Supprimer » ou « Écarter » en `danger`, « Rétablir » en `primary`). Sans JavaScript, elle fonctionne aussi. Le bouton d'une suppression impossible est désactivé, relié à sa raison (`describedby`), et n'ouvre rien. Le message **ne reprend pas le nom de l'objet** (un titre de tâche peut être très long, avec un lien) : la page ou la ligne montre déjà de quoi il s'agit ; il dit seulement ce qui disparaît avec lui (« et ses 2 sous-tâches »). La popover ne défile jamais : le texte passe à la ligne et la hauteur s'adapte. Les vues de suppression n'acceptent que POST : il n'y a pas de page de confirmation.
 
 Les principes de ces composants (un composant par rôle, l'apparence en variante, des paramètres ajoutés seulement quand une page en a besoin) sont décrits dans `docs/architecture.md`, section « Composants d'interface ».
 
@@ -167,7 +170,7 @@ Une note peut être :
 
 - créée et modifiée directement dans l'application (`/notes/new/`, puis `/notes/<AAAA-MM-JJ>/edit/`),
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
-- mise à jour depuis un fichier source, depuis sa vue détail.
+- remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
 À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
 
@@ -349,7 +352,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 ### Fonctionnalités
 
 - liste des notes, triable par colonne (`/notes/list/`),
-- vue détail d'une note, rendu markdown complet (`/notes/<AAAA-MM-JJ>/md/`) et résultat de l'analyse en JSON (`/notes/<AAAA-MM-JJ>/json/`),
+- page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
 - recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.
 
@@ -369,7 +372,7 @@ Une tâche sans sous-tâche est terminée à 100 % d'avancement. Une tâche qui 
 
 Le détail d'une tâche qui a des sous-tâches montre, sous leur tableau, une **frise de type Gantt** (#168, `todolist/gantt.py`, `todolist/gantt.html`) : la tâche observée en première ligne, puis une ligne par sous-tâche, indentée comme dans le tableau ; une barre de sa création à son échéance (jusqu'à aujourd'hui, bord droit en pointillés, si elle n'en a pas), remplie selon son avancement, aux couleurs du signal de son échéance ; un trait pour aujourd'hui et un trait pointillé pour l'échéance de la tâche ; un repère au début de chaque mois. Les positions, en pourcentage de l'axe, passent par des variables CSS lues par des classes Tailwind (`left-(--start)`), sans localisation (`unlocalize`).
 
-L'accueil des tâches est un calendrier du mois (#167), sur le même composant que celui des notes (`core/month_calendar.py`, `core/components/month_calendar.html` ; chaque app fournit le gabarit d'une case) : une tâche en cours s'y place à son échéance, une tâche terminée à sa date de complétion (`completed_at`, remplie quand elle passe à terminée, vidée sinon) ; trois tâches au plus par case (point du projet, titre en lien, terminées atténuées, en retard en rouge), puis « + N autres » ; un « + » au survol crée une tâche avec cette échéance.
+L'accueil des tâches est un calendrier du mois (#167), sur le même composant que celui des notes (`core/month_calendar.py`, `core/components/month_calendar.html` ; chaque app fournit le gabarit d'une case) : une tâche en cours s'y place à son échéance, une tâche terminée à sa date de complétion (`completed_at`, remplie quand elle passe à terminée, vidée sinon) ; trois tâches au plus par case (point du projet, titre en lien, terminées atténuées, en retard en rouge), puis « + N autres » ; un « + » au survol crée une tâche avec cette échéance. Les deux calendriers gardent la hauteur de six semaines, même pour un mois plus court, pour ne pas sauter d'un mois à l'autre (#275), et les flèches ← et → changent de mois (#276, raccourci annoncé aux lecteurs d'écran, sans effet pendant la saisie).
 
 Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais **signalés** (#165), sur le parent comme sur l'enfant : échéance d'une sous-tâche après celle de son parent, projet différent de celui du parent, parent terminé avec une sous-tâche en cours. Le détail d'une tâche les liste dans un encadré « À corriger », avec un lien vers l'autre tâche ; les listes marquent une tâche incohérente d'une icône d'avertissement.
 
