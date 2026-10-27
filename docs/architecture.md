@@ -46,7 +46,7 @@ todolist ──► note_taking ──► images ──► core
 
 - Tout en anglais, un préfixe par domaine : `/notes/`, `/tasks/`, `/projects/`, `/images/` (les chemins des projets sous `/projects/<id>/paths/`, leurs suggestions sous `/paths/`). Les collections sont au pluriel, l'action est en fin de chemin (`/notes/<AAAA-MM-JJ>/edit/`), le `/` final est partout, les mots composés se séparent par des tirets. Le tableau des notes est `/notes/list/`, le calendrier `/notes/`.
 - Les paramètres de requête sont en anglais aussi : `month` (`AAAA-MM`), `name`, `project`, `path`, `headings`, `q`, `sort`, `direction`.
-- **Une note s'adresse par sa date**, au format ISO (`/notes/2026-07-21/`), seule adresse qui fait foi, actions comprises (`edit`, `delete`, `export`, `md`, `json`, `source`). Le convertisseur `date` (`core/converters.py`) refuse une date impossible : 404. L'adresse par id (`/notes/<id>/`, `/notes/<id>/edit/`, et les anciennes `/note_taking/note/<id>/…`) redirige vers elle par une redirection permanente qui garde la méthode (308). Changer la date d'une note change son adresse : l'enregistrement redirige vers la nouvelle, et l'ancienne mène à « introuvable ».
+- **Une note s'adresse par sa date**, au format ISO (`/notes/2026-07-21/`), seule adresse qui fait foi, actions comprises (`edit`, `delete`, `export`, `json`, `source`). Le convertisseur `date` (`core/converters.py`) refuse une date impossible : 404. L'adresse par id (`/notes/<id>/`, `/notes/<id>/edit/`, et les anciennes `/note_taking/note/<id>/…`) redirige vers elle par une redirection permanente qui garde la méthode (308). Changer la date d'une note change son adresse : l'enregistrement redirige vers la nouvelle, et l'ancienne mène à « introuvable ».
 - Les adresses se construisent par `{% url %}` / `reverse`, jamais à la main ; une note se passe par sa date (`args=[note.date]`).
 
 ## Éléments communs de `core`
@@ -132,6 +132,7 @@ Export et import (#64, #114) : l'export produit une archive zip à la dispositio
 `process_note_parts` supprime et recrée les note parts d'une note, avec leurs liens (tags, images), à chaque enregistrement (import, mise à jour, formulaire), en tout ou rien (#221) : si l'analyse échoue, les note parts et les tâches d'avant restent intactes, et le texte de la note, déjà enregistré, n'est pas annulé. Conséquences :
 
 - aucune donnée saisie ne doit être rattachée à une note part, car elle serait perdue au prochain enregistrement ;
+- **les note parts sont un index, pas ce qu'on affiche** (#234) : la page d'une note rend `Note.body` en entier (`render_note_body`, `NoteDetail`), dans l'ordre écrit, texte d'avant le premier titre compris. Les blocs `{.metadata}` s'y affichent en pastilles (`render_metadata`, tags et `todo: true`). Les note parts servent à la recherche, aux liens vers les images, aux tâches, et plus tard à la fiche projet, aux liens entre notes et à l'assistant. La vue « Markdown » (`note_md`) a disparu : l'ancienne adresse par id mène à la note ;
 - après une évolution du parseur, `python manage.py reprocess_notes` recalcule toutes les notes (`--dry-run` pour simuler).
 
 ### Tâches issues des notes

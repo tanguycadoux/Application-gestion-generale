@@ -154,7 +154,6 @@ class HtmlValidationTests(TestCase):
             "notes_accueil": reverse("note_taking:index"),
             "notes_liste": reverse("note_taking:notes_list"),
             "note": reverse("note_taking:note_detail", args=[note]),
-            "note_markdown": reverse("note_taking:note_md", args=[note]),
             "note_nouvelle": reverse("note_taking:new_note"),
             "note_modifier": reverse("note_taking:edit_note", args=[note]),
             "recherche": reverse("note_taking:notes_search"),

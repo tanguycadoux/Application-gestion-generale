@@ -48,9 +48,6 @@ class PageTitlesTests(TestCase):
             reverse("note_taking:note_detail", args=[note]): (
                 "Note du 24 novembre 2025 · Notes"
             ),
-            reverse("note_taking:note_md", args=[note]): (
-                "Note du 24 novembre 2025 en Markdown · Notes"
-            ),
             reverse("note_taking:new_note"): "Nouvelle note · Notes",
             reverse("note_taking:edit_note", args=[note]): (
                 "Modifier la note du 24 novembre 2025 · Notes"
