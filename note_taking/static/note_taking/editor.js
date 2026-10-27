@@ -42,10 +42,11 @@ const highlighting = HighlightStyle.define([
 ]);
 
 const theme = EditorView.theme({
-    "&.cm-focused": {
-        outline: "2px solid var(--color-blue-700)",
-        outlineOffset: "2px",
-    },
+    // Remplit son conteneur et défile en interne ; la mise au point est dessinée par
+    // le conteneur (focus-within), CodeMirror réécrivant lui-même la classe de son
+    // élément racine.
+    "&": { flex: "1 1 0", minHeight: "0" },
+    "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.5" },
     ".cm-content": { padding: "0.25rem 0.5rem" },
 });
@@ -103,20 +104,26 @@ function mountEditor(textarea) {
         }),
     });
 
-    // Mêmes bordures que les champs de formulaire (assets/css/source.css), et la
-    // même hauteur que l'ancien <textarea>, ajustable à la souris.
-    view.dom.classList.add(
-        "col-span-2",
-        "h-96",
+    // Conteneur à nous, aux bordures des champs de formulaire (assets/css/source.css) :
+    // il prend la place restante du formulaire, l'éditeur défile dedans.
+    const frame = document.createElement("div");
+    frame.className = [
+        "flex",
+        "min-h-48",
         "min-w-0",
-        "resize-y",
+        "flex-1",
+        "flex-col",
         "overflow-hidden",
         "rounded-lg",
         "border",
         invalid ? "border-red-800" : "border-slate-300",
         "bg-white",
-    );
-    textarea.after(view.dom);
+        "focus-within:outline-2",
+        "focus-within:outline-offset-2",
+        "focus-within:outline-blue-700",
+    ].join(" ");
+    frame.append(view.dom);
+    textarea.after(frame);
     textarea.hidden = true;
     return view;
 }

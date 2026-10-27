@@ -4,11 +4,14 @@
 {% block title %}Nouvelle note{% endblock title %}
 
 {% block content %}
-    <header class="mb-4 flex items-start">
-        <h1 class="flex-1">Nouvelle note</h1>
+    {# Colonne de la hauteur de la page : le formulaire prend la place restante (#89). #}
+    <div class="flex h-full flex-col">
+        <header class="mb-4 flex items-start">
+            <h1 class="flex-1">Nouvelle note</h1>
 
-        {% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}
-    </header>
+            {% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}
+        </header>
 
-    {% include "note_taking/note/form.html" with form_action=request.path %}
+        {% include "note_taking/note/form.html" with form_action=request.path %}
+    </div>
 {% endblock content %}

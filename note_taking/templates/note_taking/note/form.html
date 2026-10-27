@@ -1,16 +1,19 @@
 {% load static vendor %}
 
-<form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
+<form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} class="flex min-h-0 flex-1 flex-col gap-3">
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="col-span-2">{{ form.non_field_errors }}</div>{% endif %}
-    <label for="date">Date :</label>
-    <div class="min-w-0">
-        <input type="date" name="date" id="date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
-        {{ form.date.errors }}
+    {% if form.non_field_errors %}<div>{{ form.non_field_errors }}</div>{% endif %}
+    <div class="flex items-baseline gap-3">
+        <label for="date">Date :</label>
+        <div class="min-w-0">
+            <input type="date" name="date" id="date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
+            {{ form.date.errors }}
+        </div>
     </div>
-    {% if form.body.errors %}<div class="col-span-2">{{ form.body.errors }}</div>{% endif %}
+    {% if form.body.errors %}<div>{{ form.body.errors }}</div>{% endif %}
     <label for="body" class="sr-only">Contenu de la note</label>
-    <textarea name="body" id="body" class="col-span-2 h-96 w-full font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
+    {# Le texte occupe la place restante et défile dans sa zone ; editor.js le remplace par CodeMirror. #}
+    <textarea name="body" id="body" class="min-h-48 w-full flex-1 resize-none font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
 </form>
 
 {# Éditeur (#89) : CodeMirror embarqué remplace le <textarea> ; sans lui, le <textarea> reste. #}
