@@ -246,7 +246,8 @@ class ImportViewTests(TestCase):
         self.assertContains(response, "Notes créées (1)")
         self.assertContains(response, "Notes ignorées, déjà en base (1)")
         self.assertContains(
-            response, f'href="{reverse("note_taking:note_detail", args=[existing.pk])}"'
+            response,
+            f'href="{reverse("note_taking:note_detail", args=[existing.date])}"',
         )
 
     def test_compte_rendu_aussi_pour_un_seul_fichier(self):

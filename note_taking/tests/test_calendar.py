@@ -55,24 +55,24 @@ class IndexCalendarTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
         process_note_parts(note)
 
-        response = self.get("?mois=2025-11")
+        response = self.get("?month=2025-11")
 
         self.assertContains(
-            response, f'href="{reverse("note_taking:note_detail", args=[note.pk])}"'
+            response, f'href="{reverse("note_taking:note_detail", args=[note.date])}"'
         )
         self.assertContains(response, "Projet A")
-        self.assertContains(response, 'href="?mois=2025-10"')
-        self.assertContains(response, 'href="?mois=2025-12"')
+        self.assertContains(response, 'href="?month=2025-10"')
+        self.assertContains(response, 'href="?month=2025-12"')
 
     def test_mois_invalide_ignore(self):
-        response = self.get("?mois=n-importe")
+        response = self.get("?month=n-importe")
 
         self.assertEqual(
             response.context["calendar"].month, timezone.localdate().replace(day=1)
         )
 
     def test_creation_d_une_note_pour_un_jour_passe_sans_note(self):
-        response = self.get("?mois=2025-11")
+        response = self.get("?month=2025-11")
 
         self.assertContains(
             response, f'href="{reverse("note_taking:new_note")}?date=2025-11-12"'
@@ -96,11 +96,11 @@ class IndexCalendarTests(TestCase):
 
         self.assertContains(response, "Ouvrir la note du jour")
         self.assertContains(
-            response, f'href="{reverse("note_taking:note_detail", args=[note.pk])}"'
+            response, f'href="{reverse("note_taking:note_detail", args=[note.date])}"'
         )
 
     def test_navigation_entre_les_mois_par_htmx(self):
-        response = self.get("?mois=2025-11")
+        response = self.get("?month=2025-11")
 
         self.assertContains(response, 'id="calendar"')
         self.assertContains(response, 'data-hx-boost="true"')
@@ -118,16 +118,16 @@ class CalendarDayLinkTests(TestCase):
     def test_case_d_un_jour_avec_note(self):
         note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
         process_note_parts(note)
-        href = reverse("note_taking:note_detail", args=[note.pk])
+        href = reverse("note_taking:note_detail", args=[note.date])
 
-        html = self.get("?mois=2025-11")
+        html = self.get("?month=2025-11")
 
         self.assertRegex(html, self.CELL_LINK.format(href=re.escape(href)))
 
     def test_case_d_un_jour_sans_note(self):
         href = f"{reverse('note_taking:new_note')}?date=2025-11-12"
 
-        html = self.get("?mois=2025-11")
+        html = self.get("?month=2025-11")
 
         self.assertRegex(html, self.CELL_LINK.format(href=re.escape(href)))
         self.assertIn('aria-label="Créer la note du 12 novembre 2025"', html)
@@ -135,7 +135,7 @@ class CalendarDayLinkTests(TestCase):
     def test_jour_futur_non_cliquable(self):
         future = timezone.localdate().replace(day=1) + timedelta(days=62)
 
-        html = self.get(f"?mois={future:%Y-%m}")
+        html = self.get(f"?month={future:%Y-%m}")
 
         self.assertNotIn(f"?date={future.isoformat()}", html)
 
@@ -147,7 +147,7 @@ class CalendarMarkupTests(TestCase):
         return self.client.get(reverse("note_taking:index") + query).content.decode()
 
     def test_tableau_avec_jours_de_la_semaine_en_en_tete(self):
-        html = self.get("?mois=2025-11")
+        html = self.get("?month=2025-11")
 
         self.assertIn("<table", html)
         self.assertIn('<caption class="sr-only">', html)
@@ -156,7 +156,7 @@ class CalendarMarkupTests(TestCase):
         self.assertEqual(html.count("<tr"), 1 + 5)
 
     def test_dates_balisees(self):
-        html = self.get("?mois=2025-11")
+        html = self.get("?month=2025-11")
 
         self.assertRegex(html, r'<time datetime="2025-11-12"[^>]*>12</time>')
         self.assertNotRegex(html, r"<span[^>]*><time")
@@ -167,14 +167,14 @@ class CalendarMarkupTests(TestCase):
         self.assertEqual(html.count('aria-current="date"'), 1)
 
     def test_navigation_entre_les_mois(self):
-        html = self.get("?mois=2025-11")
+        html = self.get("?month=2025-11")
 
         self.assertIn('<nav aria-label="Mois"', html)
 
     def test_jours_futurs_visiblement_inactifs(self):
         future = timezone.localdate().replace(day=1) + timedelta(days=62)
 
-        html = self.get(f"?mois={future:%Y-%m}")
+        html = self.get(f"?month={future:%Y-%m}")
 
         self.assertIn("cursor-not-allowed", html)
         self.assertIn("border-dashed", html)

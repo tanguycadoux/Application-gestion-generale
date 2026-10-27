@@ -10,7 +10,7 @@
     {% url 'note_taking:new_note' as new_url %}
     <div class="my-4 flex flex-wrap items-center gap-2">
         {% if today_note %}
-            {% url 'note_taking:note_detail' today_note.pk as url %}
+            {% url 'note_taking:note_detail' today_note.date as url %}
             {% button "Ouvrir la note du jour" icon="today" href=url %}
         {% else %}
             {% with day=today|date:"Y-m-d" %}

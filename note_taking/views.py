@@ -4,7 +4,7 @@ from functools import partial
 
 from django.contrib import messages
 from django.db.models import Prefetch
-from django.http import FileResponse, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -35,8 +35,8 @@ from .services import (
 
 
 def index(request):
-    """Accueil : note du jour et calendrier du mois demandé (?mois=AAAA-MM)."""
-    today, calendar = requested_month_calendar(request.GET.get("mois", ""))
+    """Accueil : note du jour et calendrier du mois demandé (?month=AAAA-MM)."""
+    today, calendar = requested_month_calendar(request.GET.get("month", ""))
 
     return render(
         request,
@@ -51,6 +51,8 @@ def index(request):
 
 class NoteDetail(DetailView):
     model = Note
+    slug_field = "date"
+    slug_url_kwarg = "note_date"
 
 
 class NoteList(ListView):
@@ -145,8 +147,33 @@ def delete_image(request, pk):
     return redirect("note_taking:images_list")
 
 
-def note_md(request, pk):
+# Action d'une ancienne adresse par id -> nom de l'adresse par date.
+ID_ACTIONS = {
+    "md": "note_md",
+    "json": "note_json",
+    "export": "export_note",
+    "edit": "edit_note",
+    "delete": "delete_note",
+}
+
+
+def note_by_id(request, pk, action=""):
+    """Les anciennes adresses par id mènent à celle par date (#273).
+
+    Redirection permanente qui garde la méthode (308) : un formulaire envoyé à
+    l'ancienne adresse arrive aussi.
+    """
+    name = ID_ACTIONS.get(action, "") if action else "note_detail"
+    if not name:
+        raise Http404
     note = get_object_or_404(Note, pk=pk)
+    response = HttpResponse(status=308)
+    response["Location"] = reverse(f"note_taking:{name}", args=[note.date])
+    return response
+
+
+def note_md(request, note_date):
+    note = get_object_or_404(Note, date=note_date)
 
     if note.body:
         html_content = render_note_body(note.body)
@@ -173,8 +200,8 @@ def import_files(request):
 
 
 @require_POST
-def update_source_file(request, pk):
-    note = get_object_or_404(Note, pk=pk)
+def update_source_file(request, note_date):
+    note = get_object_or_404(Note, date=note_date)
     file = request.FILES.get("note_update_source_file")
     if file is None:
         messages.error(request, "Choisir un fichier.")
@@ -190,8 +217,8 @@ def update_source_file(request, pk):
     return redirect(next_page(note))
 
 
-def note_json(request, pk):
-    note = get_object_or_404(Note, pk=pk)
+def note_json(request, note_date):
+    note = get_object_or_404(Note, date=note_date)
     return JsonResponse(parse_note(str(note.date), note.body).as_dict())
 
 
@@ -282,7 +309,7 @@ def next_page(note: Note) -> str:
     app (#239), sinon la note."""
     if note.follow_ups:
         return note.follow_ups[0].url
-    return reverse("note_taking:note_detail", args=[note.pk])
+    return reverse("note_taking:note_detail", args=[note.date])
 
 
 def new_note(request):
@@ -295,7 +322,7 @@ def new_note(request):
         note_date = parse_date_param(request.GET.get("date", ""))
         existing = Note.objects.filter(date=note_date).first() if note_date else None
         if existing:
-            return redirect("note_taking:note_detail", pk=existing.pk)
+            return redirect("note_taking:note_detail", note_date=existing.date)
         form = NewNoteForm(initial={"date": note_date} if note_date else None)
     return render(request, "note_taking/note_new.html", {"form": form})
 
@@ -313,12 +340,12 @@ def note_today(request):
     today = timezone.localdate()
     note = Note.objects.filter(date=today).first()
     if note:
-        return redirect("note_taking:note_detail", pk=note.pk)
+        return redirect("note_taking:note_detail", note_date=note.date)
     return redirect(f"{reverse('note_taking:new_note')}?date={today.isoformat()}")
 
 
-def edit_note(request, pk):
-    note = get_object_or_404(Note, pk=pk)
+def edit_note(request, note_date):
+    note = get_object_or_404(Note, date=note_date)
 
     if request.method == "POST":
         form = NewNoteForm(request.POST, instance=note)
@@ -332,9 +359,9 @@ def edit_note(request, pk):
 
 
 @require_POST
-def delete_note(request, pk):
+def delete_note(request, note_date):
     """Supprime une note ; la confirmation se fait par popover (data-confirm)."""
-    note = get_object_or_404(Note, pk=pk)
+    note = get_object_or_404(Note, date=note_date)
     name = note_name(note)
     note.delete()
     messages.success(request, f"{name} est supprimée.")
@@ -346,9 +373,9 @@ def export_notes(request):
     return zip_response(write_notes_archive, f"notes-{timezone.localdate()}.zip")
 
 
-def export_note(request, pk):
+def export_note(request, note_date):
     """Télécharge l'archive zip d'une note et des images qu'elle référence."""
-    note = get_object_or_404(Note, pk=pk)
+    note = get_object_or_404(Note, date=note_date)
     return zip_response(partial(write_note_archive, note), f"{note.date}.zip")
 
 

@@ -38,14 +38,14 @@ class NameFormTests(RenameTestCase):
         response = self.client.get(self.url(self.section("Réunion")))
 
         self.assertContains(response, "Renommer « Réunion »")
-        self.assertContains(response, 'name="nom"')
+        self.assertContains(response, 'name="name"')
         self.assertContains(response, "Nouveau nom")
         self.assertNotContains(response, "Bilan")
 
     def test_nom_vide_ou_blanc(self):
         self.note("# P\n## Réunion\nx")
 
-        response = self.client.get(self.url(self.section("Réunion")), {"nom": "   "})
+        response = self.client.get(self.url(self.section("Réunion")), {"name": "   "})
 
         self.assertContains(response, "Écrivez le nouveau nom.")
         self.assertNotContains(response, "Bilan")
@@ -54,7 +54,7 @@ class NameFormTests(RenameTestCase):
         self.note("# P\n## Réunion\nx")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": " Réunion "}
+            self.url(self.section("Réunion")), {"name": " Réunion "}
         )
 
         self.assertContains(response, "C&#x27;est déjà son nom.")
@@ -63,7 +63,7 @@ class NameFormTests(RenameTestCase):
         self.note("# P\n## Réunion\nx\n## Rencontre\ny")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "rencontre"}
+            self.url(self.section("Réunion")), {"name": "rencontre"}
         )
 
         self.assertContains(response, "existe déjà à cet endroit")
@@ -73,7 +73,7 @@ class NameFormTests(RenameTestCase):
     def test_meme_nom_sous_un_autre_parent_permis(self):
         self.note("# P\n## A\n### Suite\nx\n## B\n### Autre\ny")
 
-        response = self.client.get(self.url(self.section("Autre")), {"nom": "Suite"})
+        response = self.client.get(self.url(self.section("Autre")), {"name": "Suite"})
 
         self.assertContains(response, "Bilan")
 
@@ -81,7 +81,7 @@ class NameFormTests(RenameTestCase):
         self.note("# P\n## Réunion\nx")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "RÉUNION"}
+            self.url(self.section("Réunion")), {"name": "RÉUNION"}
         )
 
         self.assertContains(response, "Bilan")
@@ -90,7 +90,7 @@ class NameFormTests(RenameTestCase):
         self.note("# P\n## Réunion\nx")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "A" * 201}
+            self.url(self.section("Réunion")), {"name": "A" * 201}
         )
 
         self.assertContains(response, "ne dépasse pas 200 caractères")
@@ -113,7 +113,7 @@ class ReviewTests(RenameTestCase):
         self.note("# P\n### Réunion\nz", day="2025-11-25")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "Rencontre"}
+            self.url(self.section("Réunion")), {"name": "Rencontre"}
         )
 
         self.assertContains(response, "Bilan : « Réunion » devient « Rencontre »")
@@ -121,14 +121,14 @@ class ReviewTests(RenameTestCase):
         self.assertContains(response, "Note du 24 novembre 2025, ligne 2")
         self.assertContains(response, "Note du 25 novembre 2025, ligne 2")
         html = response.content.decode()
-        self.assertEqual(html.count('name="titres"'), 2)
+        self.assertEqual(html.count('name="headings"'), 2)
         self.assertEqual(html.count("checked"), 2)
 
     def test_les_descendants_ne_sont_pas_des_titres_a_reecrire(self):
         self.note("# P\n## Réunion\nx\n### Suite\ny")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "Rencontre"}
+            self.url(self.section("Réunion")), {"name": "Rencontre"}
         )
 
         self.assertContains(response, "1 titre à réécrire")
@@ -138,26 +138,26 @@ class ReviewTests(RenameTestCase):
         note = self.note("# P\n## Réunion\nx")
 
         response = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "Rencontre"}
+            self.url(self.section("Réunion")), {"name": "Rencontre"}
         )
 
         self.assertContains(
-            response, f'href="{reverse("note_taking:note_detail", args=[note.pk])}"'
+            response, f'href="{reverse("note_taking:note_detail", args=[note.date])}"'
         )
 
     def test_niveau_sans_titre_dans_les_notes(self):
         section = section_for(self.project, ["Manuel"])
         assert section is not None
 
-        response = self.client.get(self.url(section), {"nom": "Autre"})
+        response = self.client.get(self.url(section), {"name": "Autre"})
 
         self.assertContains(response, "Aucun titre des notes n'a ce nom")
-        self.assertNotContains(response, 'name="titres"')
+        self.assertNotContains(response, 'name="headings"')
 
     def test_le_bilan_n_ecrit_rien(self):
         note = self.note("# P\n## Réunion\nx")
 
-        self.client.get(self.url(self.section("Réunion")), {"nom": "Rencontre"})
+        self.client.get(self.url(self.section("Réunion")), {"name": "Rencontre"})
 
         note.refresh_from_db()
         self.assertEqual(note.body, "# P\n## Réunion\nx")
@@ -167,10 +167,10 @@ class ReviewTests(RenameTestCase):
         self.note("# P\n## Réunion\nx")
 
         html = self.client.get(
-            self.url(self.section("Réunion")), {"nom": "Rencontre"}
+            self.url(self.section("Réunion")), {"name": "Rencontre"}
         ).content.decode()
 
-        self.assertIn('<input type="hidden" name="nom" value="Rencontre">', html)
+        self.assertIn('<input type="hidden" name="name" value="Rencontre">', html)
         self.assertIn("csrfmiddlewaretoken", html)
         self.assertIn(">Annuler<", html)
         self.assertIn(">Renommer<", html)
@@ -178,7 +178,9 @@ class ReviewTests(RenameTestCase):
 
 class ApplyTests(RenameTestCase):
     def apply(self, section: Section, name: str, keys: list[str] | None = None):
-        return self.client.post(self.url(section), {"nom": name, "titres": keys or []})
+        return self.client.post(
+            self.url(section), {"name": name, "headings": keys or []}
+        )
 
     def keys(self, section: Section, name: str) -> list[str]:
         return [o.key for o in find_occurrences(self.project, levels(section))]
@@ -277,7 +279,7 @@ class ApplyTests(RenameTestCase):
 
         self.assertRedirects(
             response,
-            f"{self.url(section)}?nom=Rencontre",
+            f"{self.url(section)}?name=Rencontre",
             fetch_redirect_response=False,
         )
         self.assertIn("Une note a changé depuis le bilan", self.messages(response)[0])
@@ -310,7 +312,7 @@ class ApplyTests(RenameTestCase):
         section = self.section("Réunion")
 
         response = self.client.post(
-            self.url(section), {"titres": self.keys(section, "")}
+            self.url(section), {"headings": self.keys(section, "")}
         )
 
         self.assertContains(response, "Nouveau nom")

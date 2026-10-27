@@ -88,8 +88,8 @@ function titleSource(urls) {
             const data = await fetchResults(
                 urls.sections,
                 {
-                    projet: above?.project ?? "",
-                    chemin: joinPath(above?.path ?? []),
+                    project: above?.project ?? "",
+                    path: joinPath(above?.path ?? []),
                     q: query,
                 },
                 context,

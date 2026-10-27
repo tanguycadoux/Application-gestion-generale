@@ -111,7 +111,7 @@ class SaveInHeaderTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         html = self.client.get(
-            reverse("note_taking:edit_note", args=[note.pk])
+            reverse("note_taking:edit_note", args=[note.date])
         ).content.decode()
 
         self.assert_save_in_header(html, "note-form", "Enregistrer la note")
@@ -133,7 +133,7 @@ class FormPagesTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         html = self.client.get(
-            reverse("note_taking:edit_note", args=[note.pk])
+            reverse("note_taking:edit_note", args=[note.date])
         ).content.decode()
 
         self.assertNotIn(FORM_GRID, html)
@@ -151,7 +151,7 @@ class FormPagesTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         html = self.client.get(
-            reverse("note_taking:note_detail", args=[note.pk])
+            reverse("note_taking:note_detail", args=[note.date])
         ).content.decode()
 
         self.assertIn('<p class="flex items-baseline gap-2">', html)

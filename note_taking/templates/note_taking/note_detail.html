@@ -7,20 +7,20 @@
     <header class="flex items-start mb-4">
         <h1 class="flex-1">Note du {% date_time object.date "long" %}</h1>
 
-        {% url 'note_taking:export_note' note.pk as url %}
+        {% url 'note_taking:export_note' note.date as url %}
         {% button "Exporter la note" icon="download" href=url variant="ghost" icon_only=True %}
 
-        {% url 'note_taking:edit_note' note.pk as url %}
+        {% url 'note_taking:edit_note' note.date as url %}
         {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        <form method="post" action="{% url 'note_taking:delete_note' note.pk %}" data-confirm="Supprimer définitivement la note du {{ object.date|date_text:"moyen" }} ?">
+        <form method="post" action="{% url 'note_taking:delete_note' note.date %}" data-confirm="Supprimer définitivement la note du {{ object.date|date_text:"moyen" }} ?">
             {% csrf_token %}
             {% button "Supprimer la note" icon="delete" variant="ghost-danger" icon_only=True %}
         </form>
     </header>
 
     <div class="border border-red-500 p-1">
-        <form method="post" action="{% url 'note_taking:update_source_file' object.pk %}" enctype="multipart/form-data">
+        <form method="post" action="{% url 'note_taking:update_source_file' object.date %}" enctype="multipart/form-data">
             {% csrf_token %}
             <p class="flex items-baseline gap-2">
                 <label for="note_update_source_file">Modifier le fichier source de la note</label>
@@ -32,8 +32,8 @@
 
     <div class="mb-4">
         <span>Voir la note au format :</span>
-        <a target="_blank" href="{% url 'note_taking:note_md' note.pk %}">Markdown</a>
-        <a target="_blank" href="{% url 'note_taking:note_json' note.pk %}">JSON</a>
+        <a target="_blank" href="{% url 'note_taking:note_md' note.date %}">Markdown</a>
+        <a target="_blank" href="{% url 'note_taking:note_json' note.date %}">JSON</a>
     </div>
 
     {% for note_part in object.parts.all %}

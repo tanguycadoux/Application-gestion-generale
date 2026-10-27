@@ -79,7 +79,7 @@
             {% endif %}
             {% if origin_note %}
                 <dt class="font-semibold">Note d'origine</dt>
-                <dd><a href="{% url 'note_taking:note_detail' origin_note.pk %}">Note du {% date_time origin_note.date "long" %}</a></dd>
+                <dd><a href="{% url 'note_taking:note_detail' origin_note.date %}">Note du {% date_time origin_note.date "long" %}</a></dd>
             {% endif %}
         </dl>
 

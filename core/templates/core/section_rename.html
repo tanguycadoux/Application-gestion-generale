@@ -15,7 +15,7 @@
 
     <form method="get" action="{% url 'core:section_rename' project.pk section.pk %}" class="mb-4 flex flex-wrap items-center gap-2">
         <label for="new-name" class="font-medium">Nouveau nom</label>
-        <input type="text" name="nom" id="new-name" value="{{ new_name|default:section.name }}" required maxlength="200" class="w-80 max-w-full"{% if error %} aria-invalid="true" aria-describedby="new-name-error"{% endif %}>
+        <input type="text" name="name" id="new-name" value="{{ new_name|default:section.name }}" required maxlength="200" class="w-80 max-w-full"{% if error %} aria-invalid="true" aria-describedby="new-name-error"{% endif %}>
         {% button "Voir le bilan" icon="search" variant="ghost" %}
     </form>
     {% if error %}<p id="new-name-error" class="mb-4 text-red-800" role="alert">{{ error }}</p>{% endif %}
@@ -23,7 +23,7 @@
     {% if new_name and not error %}
         <form method="post" action="{% url 'core:section_rename' project.pk section.pk %}">
             {% csrf_token %}
-            <input type="hidden" name="nom" value="{{ new_name }}">
+            <input type="hidden" name="name" value="{{ new_name }}">
 
             <section aria-labelledby="review-title" class="mb-4">
                 <h2 id="review-title" class="mb-2">Bilan : « {{ section.name }} » devient « {{ new_name }} »</h2>
@@ -35,7 +35,7 @@
                             {% for occurrence in occurrences %}
                                 <li class="py-2">
                                     <label class="flex items-start gap-2">
-                                        <input type="checkbox" name="titres" value="{{ occurrence.key }}" checked class="mt-1">
+                                        <input type="checkbox" name="headings" value="{{ occurrence.key }}" checked class="mt-1">
                                         <span>
                                             <span class="font-medium">{{ occurrence.where }}</span>
                                             <span class="block text-sm text-slate-600">{{ occurrence.chain }}</span>

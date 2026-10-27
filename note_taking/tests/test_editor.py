@@ -18,7 +18,7 @@ class NoteEditorPageTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
         return {
             "nouvelle note": reverse("note_taking:new_note"),
-            "édition": reverse("note_taking:edit_note", args=[note.pk]),
+            "édition": reverse("note_taking:edit_note", args=[note.date]),
         }
 
     def test_import_map_avant_le_module(self):

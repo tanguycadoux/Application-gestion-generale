@@ -66,39 +66,39 @@ class SectionSuggestionsTests(TestCase):
         return [item["name"] for item in response.json()["results"]]
 
     def test_premiers_niveaux_du_projet(self):
-        self.assertEqual(self.names(projet="ASTERICS"), ["Analyse", "Réunion"])
+        self.assertEqual(self.names(project="ASTERICS"), ["Analyse", "Réunion"])
 
     def test_niveaux_sous_un_chemin(self):
         self.assertEqual(
-            self.names(projet="ASTERICS", chemin="Réunion"), ["Bilan", "Préparation"]
+            self.names(project="ASTERICS", path="Réunion"), ["Bilan", "Préparation"]
         )
 
     def test_filtre_sur_le_nom(self):
         self.assertEqual(
-            self.names(projet="ASTERICS", chemin="Réunion", q="prép"), ["Préparation"]
+            self.names(project="ASTERICS", path="Réunion", q="prép"), ["Préparation"]
         )
 
     def test_projet_et_niveaux_trouves_sans_tenir_compte_de_la_casse(self):
         self.assertEqual(
-            self.names(projet="asterics", chemin="réunion"), ["Bilan", "Préparation"]
+            self.names(project="asterics", path="réunion"), ["Bilan", "Préparation"]
         )
 
     def test_barre_oblique_separe_les_niveaux_du_chemin(self):
         section_for(self.project, ["Réunion", "Préparation", "Salle"])
 
         self.assertEqual(
-            self.names(projet="ASTERICS", chemin="Réunion/Préparation"), ["Salle"]
+            self.names(project="ASTERICS", path="Réunion/Préparation"), ["Salle"]
         )
 
     def test_projet_inconnu_ou_absent(self):
-        self.assertEqual(self.names(projet="Inconnu"), [])
+        self.assertEqual(self.names(project="Inconnu"), [])
         self.assertEqual(self.names(), [])
 
     def test_chemin_inconnu(self):
-        self.assertEqual(self.names(projet="ASTERICS", chemin="Inconnu"), [])
+        self.assertEqual(self.names(project="ASTERICS", path="Inconnu"), [])
 
     def test_niveaux_d_un_autre_projet_non_proposes(self):
-        self.assertNotIn("Autre", self.names(projet="ASTERICS"))
+        self.assertNotIn("Autre", self.names(project="ASTERICS"))
 
 
 class ElsewhereSuggestionsTests(TestCase):
@@ -122,37 +122,37 @@ class ElsewhereSuggestionsTests(TestCase):
 
     def test_rien_sans_saisie(self):
         """Sans lettre tapée, la liste d'ailleurs noierait celle du niveau."""
-        self.assertEqual(self.get(projet="ASTERICS")["elsewhere"], [])
+        self.assertEqual(self.get(project="ASTERICS")["elsewhere"], [])
 
     def test_niveau_d_un_autre_projet_avec_son_chemin(self):
         self.assertEqual(
-            self.elsewhere(projet="ASTERICS", q="autre"), {"Autre": "PDS1 › Autre"}
+            self.elsewhere(project="ASTERICS", q="autre"), {"Autre": "PDS1 › Autre"}
         )
 
     def test_tous_les_niveaux_pas_seulement_ceux_du_meme_rang(self):
         """« Bilan » est au 2e niveau sous PDS1 : proposé sous un 1er niveau."""
         self.assertEqual(
-            self.elsewhere(projet="ASTERICS", q="bilan"),
+            self.elsewhere(project="ASTERICS", q="bilan"),
             {"Bilan": "PDS1 › Autre › Bilan"},
         )
 
     def test_niveaux_du_meme_projet_hors_du_chemin_courant(self):
         self.assertEqual(
-            self.elsewhere(projet="ASTERICS", chemin="Analyse", q="prép"),
+            self.elsewhere(project="ASTERICS", path="Analyse", q="prép"),
             {"Préparation": "ASTERICS › Réunion › Préparation"},
         )
 
     def test_casse_et_accents_ignores(self):
-        self.assertIn("Préparation", self.elsewhere(projet="PDS1", q="PREPARATION"))
+        self.assertIn("Préparation", self.elsewhere(project="PDS1", q="PREPARATION"))
 
     def test_nom_deja_propose_au_niveau_n_est_pas_repete(self):
-        data = self.get(projet="ASTERICS", q="réu")
+        data = self.get(project="ASTERICS", q="réu")
 
         self.assertEqual([item["name"] for item in data["results"]], ["Réunion"])
         self.assertEqual(data["elsewhere"], [])
 
     def test_meme_nom_a_plusieurs_endroits_une_seule_entree(self):
-        where = self.elsewhere(projet="Inconnu", q="réunion")
+        where = self.elsewhere(project="Inconnu", q="réunion")
 
         self.assertEqual(where, {"Réunion": "ASTERICS › Réunion (+1)"})
 
@@ -160,8 +160,8 @@ class ElsewhereSuggestionsTests(TestCase):
         """Un projet qu'on vient de taper n'existe pas encore : rien au niveau, mais
         les noms existants restent utiles."""
         for params in (
-            {"projet": "Nouveau"},
-            {"projet": "ASTERICS", "chemin": "Inconnu"},
+            {"project": "Nouveau"},
+            {"project": "ASTERICS", "path": "Inconnu"},
             {},
         ):
             with self.subTest(params=params):
@@ -186,8 +186,8 @@ class ReadOnlyTests(TestCase):
         before = Section.objects.count()
 
         for params in (
-            {"projet": "Nouveau", "chemin": "A/B", "q": "x"},
-            {"projet": "ASTERICS", "chemin": "Nouveau/Niveau", "q": "x"},
+            {"project": "Nouveau", "path": "A/B", "q": "x"},
+            {"project": "ASTERICS", "path": "Nouveau/Niveau", "q": "x"},
         ):
             response = self.client.get(reverse("core:section_suggestions"), params)
             self.assertEqual(response.status_code, 200)

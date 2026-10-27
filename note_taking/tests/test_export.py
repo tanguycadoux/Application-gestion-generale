@@ -163,7 +163,7 @@ class NoteExportTests(TestCase):
 
     def test_telechargement_depuis_la_page_de_la_note(self):
         response = self.client.get(
-            reverse("note_taking:export_note", args=[self.note.pk])
+            reverse("note_taking:export_note", args=[self.note.date])
         )
 
         self.assertEqual(response["Content-Type"], "application/zip")
@@ -173,11 +173,11 @@ class NoteExportTests(TestCase):
 
     def test_bouton_dans_l_en_tete_de_la_note(self):
         response = self.client.get(
-            reverse("note_taking:note_detail", args=[self.note.pk])
+            reverse("note_taking:note_detail", args=[self.note.date])
         )
 
         self.assertContains(
             response,
-            f'href="{reverse("note_taking:export_note", args=[self.note.pk])}"',
+            f'href="{reverse("note_taking:export_note", args=[self.note.date])}"',
         )
         self.assertContains(response, 'aria-label="Exporter la note"')

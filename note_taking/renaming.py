@@ -145,7 +145,7 @@ def find_occurrences(project: Project, levels: list[str]) -> list[HeadingOccurre
                 f"Note du {date_text(found.note.date, 'moyen')}, "
                 f"ligne {found.heading.number}"
             ),
-            url=reverse("note_taking:note_detail", args=[found.note.pk]),
+            url=reverse("note_taking:note_detail", args=[found.note.date]),
             chain=LABEL_SEPARATOR.join([project.name, *found.heading.path]),
         )
         for found in located(project, levels)

@@ -105,7 +105,7 @@ class ToReviewTests(LifecycleTestCase):
 
     def edit(self, note: Note, body: str):
         return self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": body},
         )
 
@@ -136,7 +136,7 @@ class ToReviewTests(LifecycleTestCase):
         response = self.edit(note, self.BODY + "\n\n# Q\ntexte")
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[note.pk])
+            response, reverse("note_taking:note_detail", args=[note.date])
         )
 
 

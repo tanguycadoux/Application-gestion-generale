@@ -40,7 +40,7 @@ class PageTitlesTests(TestCase):
         )
 
     def pages(self) -> dict[str, str]:
-        note, todo = self.note.pk, self.todo.pk
+        note, todo = self.note.date, self.todo.pk
         return {
             "/": "Gestion générale",
             reverse("note_taking:index"): "Gestion des notes",

@@ -43,7 +43,7 @@ class ViewTestCase(TestCase):
 class UpdateSourceFileViewTests(ViewTestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=HEADER + "# P\nx")
-        self.url = reverse("note_taking:update_source_file", args=[self.note.pk])
+        self.url = reverse("note_taking:update_source_file", args=[self.note.date])
 
     def test_mise_a_jour_reussie(self):
         response = self.client.post(
@@ -72,7 +72,7 @@ class UpdateSourceFileViewTests(ViewTestCase):
 
     def test_note_inexistante(self):
         response = self.client.post(
-            reverse("note_taking:update_source_file", args=[999])
+            reverse("note_taking:update_source_file", args=["2000-01-01"])
         )
 
         self.assertEqual(response.status_code, 404)
@@ -93,7 +93,7 @@ class UpdateSourceFileViewTests(ViewTestCase):
 
         self.assertRedirects(
             response,
-            reverse("note_taking:note_detail", args=[self.note.pk]),
+            reverse("note_taking:note_detail", args=[self.note.date]),
             fetch_redirect_response=False,
         )
 
@@ -141,7 +141,7 @@ class NoteFormViewTests(ViewTestCase):
         note = Note.objects.get()
         self.assertRedirects(
             response,
-            reverse("note_taking:note_detail", args=[note.pk]),
+            reverse("note_taking:note_detail", args=[note.date]),
             fetch_redirect_response=False,
         )
         self.assertEqual(note.parts.count(), 1)
@@ -160,7 +160,7 @@ class NoteFormViewTests(ViewTestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": "# P\n### A\ny"},
         )
 
@@ -175,7 +175,7 @@ class NoteFormViewTests(ViewTestCase):
         body = "# P\ny\n# Q\n![a](absente.png)"
 
         response = self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": body},
         )
 
@@ -188,7 +188,7 @@ class NoteFormViewTests(ViewTestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         response = self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": "# P\n![a](absente.png)"},
         )
 
@@ -201,7 +201,7 @@ class NoteJsonViewTests(ViewTestCase):
     def test_analyse_au_format_json(self):
         note = Note.objects.create(date="2025-11-24", body=HEADER + "# P\n### A\nx")
 
-        response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
+        response = self.client.get(reverse("note_taking:note_json", args=[note.date]))
 
         self.assertEqual(
             response.json(),
@@ -217,7 +217,7 @@ class NoteJsonViewTests(ViewTestCase):
     def test_note_sans_contenu(self):
         note = Note.objects.create(date="2025-11-24", body="")
 
-        response = self.client.get(reverse("note_taking:note_json", args=[note.pk]))
+        response = self.client.get(reverse("note_taking:note_json", args=[note.date]))
 
         self.assertEqual(response.json()["content"], [])
 
@@ -237,7 +237,7 @@ class ClearNotesRemovedTests(ViewTestCase):
         for url in (
             reverse("note_taking:index"),
             reverse("note_taking:notes_list"),
-            reverse("note_taking:note_detail", args=[note.pk]),
+            reverse("note_taking:note_detail", args=[note.date]),
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
@@ -260,7 +260,7 @@ class RenderedPartsDisplayTests(ViewTestCase):
 
     def test_detail_de_la_note(self):
         response = self.client.get(
-            reverse("note_taking:note_detail", args=[self.note.pk])
+            reverse("note_taking:note_detail", args=[self.note.date])
         )
 
         self.assertRenderedAsIs(response)
@@ -291,7 +291,7 @@ class RenderedContentContainerTests(ViewTestCase):
 
     def test_detail_de_la_note(self):
         response = self.client.get(
-            reverse("note_taking:note_detail", args=[self.note.pk])
+            reverse("note_taking:note_detail", args=[self.note.date])
         )
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
@@ -305,6 +305,8 @@ class RenderedContentContainerTests(ViewTestCase):
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
 
     def test_vue_markdown_complete(self):
-        response = self.client.get(reverse("note_taking:note_md", args=[self.note.pk]))
+        response = self.client.get(
+            reverse("note_taking:note_md", args=[self.note.date])
+        )
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)

@@ -43,7 +43,8 @@ class ImageDetailTests(TestCase):
         for note in (earlier, later):
             with self.subTest(note=note):
                 self.assertIn(
-                    f'href="{reverse("note_taking:note_detail", args=[note.pk])}"', html
+                    f'href="{reverse("note_taking:note_detail", args=[note.date])}"',
+                    html,
                 )
         self.assertEqual(html.count('<time datetime="2025-11-24"'), 1)
         self.assertLess(

@@ -49,7 +49,7 @@ class RedirectAfterSaveTests(TestCase):
 
         note = Note.objects.get()
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[note.pk])
+            response, reverse("note_taking:note_detail", args=[note.date])
         )
 
     def test_modification_qui_cree_une_tache(self):
@@ -60,7 +60,7 @@ class RedirectAfterSaveTests(TestCase):
         mark_reviewed()
 
         response = self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": BODY},
         )
 
@@ -72,12 +72,12 @@ class RedirectAfterSaveTests(TestCase):
         mark_reviewed()
 
         response = self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": BODY + "\n\n# Q\ntexte"},
         )
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[note.pk])
+            response, reverse("note_taking:note_detail", args=[note.date])
         )
 
     def test_remplacement_par_le_fichier_source(self):
@@ -88,7 +88,7 @@ class RedirectAfterSaveTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("note_taking:update_source_file", args=[note.pk]),
+            reverse("note_taking:update_source_file", args=[note.date]),
             {"note_update_source_file": file},
         )
 
@@ -122,7 +122,7 @@ class ReviewPageTests(TestCase):
         self.assertContains(response, "Première")
         self.assertContains(response, "Seconde")
         self.assertContains(
-            response, reverse("note_taking:note_detail", args=[self.note.pk])
+            response, reverse("note_taking:note_detail", args=[self.note.date])
         )
 
     def test_seulement_les_taches_de_la_note(self):
@@ -156,7 +156,7 @@ class ReviewPageTests(TestCase):
         response = self.client.post(self.url(), data)
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[self.note.pk])
+            response, reverse("note_taking:note_detail", args=[self.note.date])
         )
         self.first.refresh_from_db()
         self.assertEqual(
@@ -181,7 +181,7 @@ class ReviewPageTests(TestCase):
         response = self.client.get(self.url())
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[self.note.pk])
+            response, reverse("note_taking:note_detail", args=[self.note.date])
         )
 
     def test_note_inexistante(self):
