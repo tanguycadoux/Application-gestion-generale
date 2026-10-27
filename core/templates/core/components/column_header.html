@@ -26,30 +26,48 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                 <form method="get" class="space-y-3">
                     {% for name, value in filter.kept %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
                     {# Seuls les champs défilent : les boutons restent visibles sous une longue liste. #}
-                    <div class="max-h-72 space-y-3 overflow-y-auto">
+                    <div class="max-h-[min(28rem,70vh)] space-y-3 overflow-y-auto">
                     {% for field in filter.fields %}
                         {% if field.kind == "text" %}
                             <div>
                                 <label for="{{ field.id }}" class="mb-1 block font-medium">{{ field.label }} contenant</label>
-                                <input type="search" id="{{ field.id }}" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if forloop.first %} autofocus{% endif %} class="w-full">
+                                <input type="search" id="{{ field.id }}" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if field.autofocus %} autofocus{% endif %} class="w-full">
                             </div>
                         {% elif field.kind == "dates" %}
                             <fieldset class="space-y-2">
                                 <legend class="mb-1 font-medium">{{ field.label }}</legend>
                                 <div class="flex items-center gap-2">
                                     <label for="{{ field.id }}-from" class="w-8">Du</label>
-                                    <input type="date" id="{{ field.id }}-from" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if forloop.first %} autofocus{% endif %}>
+                                    <input type="date" id="{{ field.id }}-from" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if field.autofocus %} autofocus{% endif %}>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <label for="{{ field.id }}-to" class="w-8">au</label>
                                     <input type="date" id="{{ field.id }}-to" name="{{ field.params.1 }}" value="{{ field.values.1 }}">
                                 </div>
                             </fieldset>
+                        {% elif field.kind == "multichoice" %}
+                            {# Plusieurs choix à cocher ; la recherche (core/table_filters.js) n'apparaît qu'avec JavaScript, sans elle toutes les cases restent visibles. #}
+                            <fieldset class="space-y-2" data-choice-filter>
+                                <legend class="mb-1 font-medium">{{ field.label }}</legend>
+                                <div hidden data-choice-search-box>
+                                    <label for="{{ field.id }}-search" class="sr-only">Chercher un {{ field.singular }}</label>
+                                    <input type="search" id="{{ field.id }}-search" placeholder="Chercher un {{ field.singular }}" autocomplete="off"{% if field.autofocus %} autofocus{% endif %} class="w-full">
+                                </div>
+                                <div class="max-h-40 space-y-1 overflow-y-auto">
+                                    {% for choice in field.choices %}
+                                        <label class="flex items-center gap-2" data-choice-item>
+                                            <input type="checkbox" name="{{ field.params.0 }}" value="{{ choice.value }}"{% if choice.value in field.selected %} checked{% endif %}>
+                                            {% if choice.project %}{% project_badge choice.project %}{% else %}{{ choice.label }}{% endif %}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                <p hidden data-choice-empty class="text-slate-600">Aucun {{ field.singular }} ne correspond.</p>
+                            </fieldset>
                         {% elif field.kind == "choice" %}
                             {% if field.many %}
                                 <div>
                                     <label for="{{ field.id }}" class="mb-1 block font-medium">{{ field.label }}</label>
-                                    <select id="{{ field.id }}" name="{{ field.params.0 }}" class="w-full"{% if forloop.first %} autofocus{% endif %}>
+                                    <select id="{{ field.id }}" name="{{ field.params.0 }}" class="w-full"{% if field.autofocus %} autofocus{% endif %}>
                                         {% if not field.has_default %}<option value="">Tous</option>{% endif %}
                                         {% for choice in field.choices %}
                                             <option value="{{ choice.value }}"{% if field.selected == choice.value %} selected{% endif %}>{{ choice.label }}</option>

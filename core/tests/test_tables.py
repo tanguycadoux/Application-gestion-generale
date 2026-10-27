@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from django.contrib.staticfiles import finders
+from django.http import QueryDict
 from django.test import RequestFactory, SimpleTestCase
 
 from core.tables import (
@@ -10,6 +12,7 @@ from core.tables import (
     Column,
     DateRangeFilter,
     Filters,
+    MultiChoiceFilter,
     Sort,
     Sorting,
     TextFilter,
@@ -109,6 +112,134 @@ class SortItemsKeyTests(SimpleTestCase):
         )
 
         self.assertEqual([g["root"]["n"] for g in ordered], [3, 1, None])
+
+
+class MultiChoiceFilterTests(SimpleTestCase):
+    def setUp(self):
+        self.filter = MultiChoiceFilter(
+            "project",
+            "Projet",
+            [Choice("A", "Alpha"), Choice("B", "Bêta"), Choice("C", "Gamma")],
+            keep,
+            noun="projets",
+        )
+
+    def read(self, query: str):
+        return self.filter.read(QueryDict(query), [])
+
+    def test_plusieurs_valeurs_repetees_dans_l_url(self):
+        self.assertEqual(self.read("project=A&project=C"), ("A", "C"))
+
+    def test_aucune_valeur_n_est_pas_un_filtre(self):
+        self.assertIsNone(self.read(""))
+        self.assertIsNone(self.read("project="))
+
+    def test_valeurs_inconnues_ignorees_doublons_retires(self):
+        self.assertEqual(self.read("project=A&project=Z&project=A"), ("A",))
+        self.assertIsNone(self.read("project=Z"))
+
+    def test_ordre_des_choix_et_non_de_l_url(self):
+        self.assertEqual(self.read("project=C&project=A"), ("A", "C"))
+
+    def test_lit_aussi_un_dictionnaire_simple(self):
+        self.assertEqual(self.filter.read({"project": "B"}, []), ("B",))
+        self.assertEqual(self.filter.read({"project": ["A", "B"]}, []), ("A", "B"))
+        self.assertIsNone(self.filter.read({}, []))
+
+    def test_description_un_ou_plusieurs(self):
+        self.assertEqual(self.filter.describe(("B",)), "Bêta")
+        self.assertEqual(self.filter.describe(("A", "C")), "2 projets")
+
+    def test_pastille_a_cote_de_chaque_valeur(self):
+        self.assertEqual(
+            [c.label for c in self.filter.selected_choices(("A", "C"))],
+            ["Alpha", "Gamma"],
+        )
+
+
+class MultiChoiceComponentTests(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.filters = Filters(
+            {
+                "projects": [
+                    MultiChoiceFilter(
+                        "project",
+                        "Projet",
+                        [Choice("A", "Alpha"), Choice("B", "Bêta")],
+                        keep,
+                    )
+                ]
+            }
+        )
+
+    def request(self, query=""):
+        return self.factory.get("/notes/list/" + query)
+
+    def test_panneau_coche_les_valeurs_choisies(self):
+        request = self.request("?project=B&sort=date")
+        active = self.filters.read(request.GET)
+
+        panel = filter_panel(request, self.filters, active, "projects")
+
+        assert panel is not None
+        field = panel["fields"][0]
+        self.assertEqual(field["kind"], "multichoice")
+        self.assertEqual(field["selected"], ["B"])
+        self.assertEqual(panel["kept"], [("sort", "date")])
+        self.assertTrue(panel["active"])
+
+    def test_panneau_sans_valeur_ne_coche_rien(self):
+        request = self.request()
+
+        panel = filter_panel(
+            request, self.filters, self.filters.read(request.GET), "projects"
+        )
+
+        assert panel is not None
+        self.assertEqual(panel["fields"][0]["selected"], [])
+        self.assertFalse(panel["active"])
+
+    def test_resume_une_pastille_retirable_par_valeur(self):
+        request = self.request("?project=A&project=B&sort=date&page=2")
+        active = self.filters.read(request.GET)
+
+        summary = summary_context(request, self.filters, active)
+
+        self.assertEqual(
+            [item["text"] for item in summary["active"]],
+            ["Projet : Alpha", "Projet : Bêta"],
+        )
+        first = summary["active"][0]["remove_url"]
+        self.assertIn("project=B", first)
+        self.assertNotIn("project=A", first)
+        self.assertIn("sort=date", first)
+        self.assertNotIn("page", first)
+
+    def test_retirer_la_derniere_valeur_retire_le_parametre(self):
+        request = self.request("?project=A")
+        active = self.filters.read(request.GET)
+
+        summary = summary_context(request, self.filters, active)
+
+        self.assertEqual(summary["active"][0]["remove_url"], "/notes/list/")
+
+    def test_retirer_tous_les_filtres(self):
+        request = self.request("?project=A&project=B&sort=date")
+        active = self.filters.read(request.GET)
+
+        summary = summary_context(request, self.filters, active)
+
+        self.assertEqual(summary["clear_url"], "?sort=date")
+
+    def test_retirer_le_filtre_de_la_colonne(self):
+        request = self.request("?project=A&project=B&sort=date")
+        active = self.filters.read(request.GET)
+
+        panel = filter_panel(request, self.filters, active, "projects")
+
+        assert panel is not None
+        self.assertEqual(panel["remove_url"], "?sort=date")
 
 
 class FilterReadingTests(SimpleTestCase):
@@ -352,6 +483,35 @@ class ComponentContextTests(SimpleTestCase):
         assert panel is not None
         self.assertFalse(panel["fields"][0]["many"])
 
+    def test_le_curseur_va_dans_le_premier_champ_de_saisie(self):
+        filters = Filters(
+            {
+                "c": [
+                    ChoiceFilter("state", "État", [("a", "A"), ("b", "B")], keep),
+                    TextFilter("title", "Titre", keep),
+                    MultiChoiceFilter("project", "Projet", [("A", "A")], keep),
+                ]
+            }
+        )
+
+        panel = filter_panel(self.request(), filters, None, "c")
+
+        assert panel is not None
+        # Les boutons radio n'ont pas de curseur ; un seul champ prend le focus.
+        self.assertEqual(
+            [f["autofocus"] for f in panel["fields"]], [False, True, False]
+        )
+
+    def test_le_curseur_va_dans_la_recherche_d_un_filtre_a_choix_multiples(self):
+        filters = Filters(
+            {"c": [MultiChoiceFilter("project", "Projet", [("A", "A")], keep)]}
+        )
+
+        panel = filter_panel(self.request(), filters, None, "c")
+
+        assert panel is not None
+        self.assertTrue(panel["fields"][0]["autofocus"])
+
     def test_colonne_sans_filtre(self):
         self.assertIsNone(filter_panel(self.request(), self.filters, None, "autre"))
         self.assertIsNone(filter_panel(self.request(), None, None, "date"))
@@ -382,3 +542,28 @@ class ComponentContextTests(SimpleTestCase):
         self.assertEqual(
             summary_context(self.request(), None, None), {"active": [], "errors": []}
         )
+
+
+class ChoiceSearchScriptTests(SimpleTestCase):
+    def script(self) -> str:
+        path = finders.find("core/table_filters.js")
+        assert isinstance(path, str)
+        with open(path, encoding="utf-8") as file:
+            return file.read()
+
+    def test_casse_et_accents_ignores(self):
+        js = self.script()
+
+        self.assertIn('normalize("NFD")', js)
+        self.assertIn("toLowerCase()", js)
+
+    def test_une_case_cochee_n_est_jamais_masquee(self):
+        js = self.script()
+
+        self.assertIn("!matches && !checked", js)
+
+    def test_message_quand_rien_ne_correspond(self):
+        self.assertIn("data-choice-empty", self.script())
+
+    def test_le_champ_n_est_montre_qu_avec_le_script(self):
+        self.assertIn("box.hidden = false", self.script())

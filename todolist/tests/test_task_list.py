@@ -239,7 +239,8 @@ class TaskFilterTests(TaskListTestCase):
         html = self.get(title="été", project="ALPHA").content.decode()
 
         self.assertIn("Titre : contient « été »", html)
-        self.assertIn("Projet : ALPHA", html)
+        # La pastille du projet suit son libellé dans la puce retirable.
+        self.assertRegex(html, r"Projet :\s*<span class=\"inline-flex[^>]*>.*?ALPHA")
         self.assertIn("Retirer tous les filtres", html)
 
     def test_sans_resultat_le_tableau_reste_pour_changer_les_filtres(self):
@@ -271,6 +272,65 @@ class TaskFilterTests(TaskListTestCase):
         self.assertIn('id="filters-title"', html)
         self.assertRegex(
             html, r'<input type="radio" name="state" value="dismissed" checked>'
+        )
+
+
+class MultiProjectTests(TaskListTestCase):
+    """Le filtre par projet : plusieurs projets cochés, réunis par « ou »."""
+
+    def setUp(self):
+        super().setUp()
+        self.gamma = Project.objects.create(name="GAMMA", color="sky")
+        Todo.objects.create(title="Tâche gamma", project=self.gamma)
+
+    def test_union_des_projets_coches(self):
+        response = self.get(project=["ALPHA", "GAMMA"])
+
+        self.assertEqual(self.titles(response), ["Été à préparer", "Tâche gamma"])
+
+    def test_aucun_projet_coche_les_montre_tous(self):
+        self.assertEqual(len(self.titles(self.get(project=[]))), 5)
+
+    def test_avec_l_etat_et_un_autre_filtre(self):
+        response = self.get(state="all", project=["ALPHA", "BETA"], title="i")
+
+        self.assertEqual(self.titles(response), ["Finie", "Bilan"])
+
+    def test_cases_a_cocher_avec_pastille_et_recherche(self):
+        html = self.get(project=["ALPHA", "GAMMA"]).content.decode()
+        panel = html[html.index('id="filters-title"') :].split("</form>")[0]
+
+        self.assertIn(
+            '<input type="checkbox" name="project" value="ALPHA" checked>', panel
+        )
+        self.assertIn('<input type="checkbox" name="project" value="BETA">', panel)
+        self.assertIn(
+            '<input type="checkbox" name="project" value="GAMMA" checked>', panel
+        )
+        self.assertIn("data-choice-search-box", panel)
+        self.assertIn("bg-sky-500", panel)
+
+    def test_une_pastille_retirable_par_projet(self):
+        html = self.get(project=["ALPHA", "GAMMA"], title="a").content.decode()
+
+        self.assertEqual(html.count("(retirer ce filtre)"), 3)
+        self.assertIn('href="?project=GAMMA&amp;title=a"', html)
+
+    def test_s_applique_aux_ecartees(self):
+        Todo.all_objects.create(
+            title="Écartée gamma",
+            project=self.gamma,
+            created_from_note=True,
+            note_part_date=TODAY,
+            note_part_text="Écartée gamma",
+            note_state=Todo.NoteState.DISMISSED,
+        )
+
+        response = self.get(state="dismissed", project=["GAMMA", "BETA"])
+
+        self.assertEqual(
+            [row.task.title for row in response.context["dismissed_rows"]],
+            ["Écartée gamma"],
         )
 
 

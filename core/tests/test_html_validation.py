@@ -155,7 +155,7 @@ class HtmlValidationTests(TestCase):
             "notes_liste": reverse("note_taking:notes_list"),
             "notes_liste_filtres": (
                 reverse("note_taking:notes_list")
-                + "?sort=date&project=ASTERICS&date_from=2000-01-01"
+                + "?sort=date&project=ASTERICS&project=PDS1&date_from=2000-01-01"
             ),
             "note": reverse("note_taking:note_detail", args=[note]),
             "note_markdown": reverse("note_taking:note_md", args=[note]),
@@ -167,7 +167,8 @@ class HtmlValidationTests(TestCase):
             "taches_accueil": reverse("todolist:index"),
             "taches_liste": reverse("todolist:todo_list"),
             "taches_liste_filtres": (
-                reverse("todolist:todo_list") + "?state=all&title=e&sort=-due"
+                reverse("todolist:todo_list")
+                + "?state=all&title=e&sort=-due&project=ASTERICS&project=PDS1"
             ),
             "taches_liste_ecartees": reverse("todolist:todo_list") + "?state=dismissed",
             "tache": reverse("todolist:todo_detail", args=[parent]),

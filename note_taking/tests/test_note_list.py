@@ -16,7 +16,7 @@ def make_note(day: str, *projects: str) -> Note:
     return note
 
 
-class NoteListTableTests(TestCase):
+class NoteListTestCase(TestCase):
     def setUp(self):
         make_note("2025-11-24", "Alpha")
         make_note("2025-11-25", "Beta", "Alpha")
@@ -30,6 +30,8 @@ class NoteListTableTests(TestCase):
     def dates(self, response) -> list[str]:
         return [str(note.date) for note in response.context["notes"]]
 
+
+class NoteListTableTests(NoteListTestCase):
     def test_tri_par_defaut_du_plus_recent_au_plus_ancien(self):
         response = self.get()
 
@@ -120,7 +122,8 @@ class NoteListTableTests(TestCase):
         html = self.get(project="Alpha", sort="date").content.decode()
 
         self.assertIn('aria-label="Filtres actifs"', html)
-        self.assertIn("Projet : Alpha", html)
+        # Une pastille retirable par projet, avec sa couleur.
+        self.assertRegex(html, r"Projet :\s*<span class=\"inline-flex[^>]*>.*?Alpha")
         self.assertIn('href="?sort=date"', html)
 
     def test_entonnoirs_dans_les_en_tetes(self):
@@ -159,3 +162,79 @@ class NoteListTableTests(TestCase):
 
         self.assertNotIn("table-column-head", html)
         self.assertNotIn("table.js", html)
+
+
+class MultiProjectFilterTests(NoteListTestCase):
+    """Le filtre par projet : plusieurs projets cochés, réunis par « ou »."""
+
+    def test_union_des_projets_coches(self):
+        response = self.get(project=["Alpha", "Gamma"])
+
+        self.assertEqual(
+            self.dates(response), ["2025-12-02", "2025-11-25", "2025-11-24"]
+        )
+
+    def test_aucun_projet_coche_les_montre_tous(self):
+        self.assertEqual(len(self.dates(self.get(project=[]))), 4)
+        self.assertEqual(len(self.dates(self.get(project=""))), 4)
+
+    def test_note_des_deux_projets_coches_une_seule_fois(self):
+        response = self.get(project=["Alpha", "Beta"])
+
+        self.assertEqual(self.dates(response).count("2025-11-25"), 1)
+        self.assertEqual(len(self.dates(response)), 3)
+
+    def test_valeurs_inconnues_ignorees(self):
+        response = self.get(project=["Gamma", "Inconnu"])
+
+        self.assertEqual(self.dates(response), ["2025-12-02"])
+
+    def test_cases_a_cocher_et_non_boutons_radio(self):
+        html = self.get(project=["Alpha", "Gamma"]).content.decode()
+
+        self.assertIn(
+            '<input type="checkbox" name="project" value="Alpha" checked>', html
+        )
+        self.assertIn(
+            '<input type="checkbox" name="project" value="Gamma" checked>', html
+        )
+        self.assertIn('<input type="checkbox" name="project" value="Beta">', html)
+        self.assertNotIn('type="radio" name="project"', html)
+
+    def test_pastille_a_cote_de_chaque_case(self):
+        html = self.get().content.decode()
+        panel = html[html.index('id="filters-projects"') :].split("</form>")[0]
+
+        self.assertEqual(panel.count("size-2.5"), 3)
+
+    def test_resume_une_pastille_retirable_par_projet(self):
+        html = self.get(project=["Alpha", "Gamma"], sort="date").content.decode()
+
+        self.assertEqual(html.count("(retirer ce filtre)"), 2)
+        self.assertIn('href="?project=Gamma&amp;sort=date"', html)
+        self.assertIn('href="?project=Alpha&amp;sort=date"', html)
+        self.assertIn("Retirer tous les filtres", html)
+
+    def test_recherche_dans_la_liste_cachee_sans_javascript(self):
+        html = self.get().content.decode()
+        panel = html[html.index('id="filters-projects"') :].split("</form>")[0]
+
+        # Le champ ne se montre qu'avec le script ; sans lui toutes les cases sont là.
+        self.assertRegex(panel, r"<div hidden data-choice-search-box>")
+        self.assertIn('placeholder="Chercher un projet"', panel)
+        self.assertIn("autofocus", panel)
+        self.assertEqual(panel.count("data-choice-item"), 3)
+        self.assertNotRegex(panel, r"<label[^>]*data-choice-item[^>]*hidden")
+        self.assertRegex(
+            panel, r"<p hidden data-choice-empty[^>]*>Aucun projet ne correspond.</p>"
+        )
+
+    def test_script_de_recherche_charge_sur_la_page(self):
+        response = self.get()
+
+        self.assertContains(response, "core/table_filters.js")
+
+    def test_les_projets_inconnus_des_notes_ne_sont_pas_proposes(self):
+        Project.objects.create(name="Sans note", color="teal")
+
+        self.assertNotContains(self.get(), 'value="Sans note"')

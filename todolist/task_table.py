@@ -8,7 +8,14 @@ filtres sont dans le panneau de la colonne « Tâche ».
 
 from core.models import Project
 from core.sections import path_labels, with_descendants
-from core.tables import Choice, ChoiceFilter, Filters, TextFilter, fold
+from core.tables import (
+    Choice,
+    ChoiceFilter,
+    Filters,
+    MultiChoiceFilter,
+    TextFilter,
+    fold,
+)
 
 from .models import Todo
 
@@ -34,8 +41,9 @@ def filter_title(tasks: list[Todo], text: str) -> list[Todo]:
     return [task for task in tasks if needle in fold(task.title)]
 
 
-def filter_project(tasks: list[Todo], name: str) -> list[Todo]:
-    return [task for task in tasks if task.project.name == name]
+def filter_projects(tasks: list[Todo], names: tuple[str, ...]) -> list[Todo]:
+    """Les tâches d'au moins un des projets cochés."""
+    return [task for task in tasks if task.project.name in names]
 
 
 def filter_path(tasks: list[Todo], section_id: str) -> list[Todo]:
@@ -53,11 +61,13 @@ def task_filters() -> Filters:
             "title": [
                 ChoiceFilter("state", "État", STATES, keep_all, default=OPEN),
                 TextFilter("title", "Titre", filter_title),
-                ChoiceFilter(
+                MultiChoiceFilter(
                     "project",
                     "Projet",
                     [Choice(p.name, p.name, p) for p in projects],
-                    filter_project,
+                    filter_projects,
+                    noun="projets",
+                    singular="projet",
                 ),
                 ChoiceFilter(
                     "path",

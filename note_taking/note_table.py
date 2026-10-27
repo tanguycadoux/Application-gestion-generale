@@ -5,10 +5,10 @@ from django.db.models import F, QuerySet
 from core.models import Project
 from core.tables import (
     Choice,
-    ChoiceFilter,
     Column,
     DateRangeFilter,
     Filters,
+    MultiChoiceFilter,
     Sort,
     Sorting,
 )
@@ -29,9 +29,10 @@ def filter_dates(notes: QuerySet, value) -> QuerySet:
     return notes
 
 
-def filter_project(notes: QuerySet, name: str) -> QuerySet:
-    # `distinct` : une note qui a plusieurs parties du projet ne compte qu'une fois.
-    return notes.filter(parts__project__name=name).distinct()
+def filter_projects(notes: QuerySet, names: tuple[str, ...]) -> QuerySet:
+    # Les notes d'au moins un des projets cochés. `distinct` : une note qui a
+    # plusieurs parties de ces projets ne compte qu'une fois.
+    return notes.filter(parts__project__name__in=names).distinct()
 
 
 def project_choices() -> list[Choice]:
@@ -44,7 +45,14 @@ FILTERS = Filters(
     {
         "date": [DateRangeFilter("date", "Date", filter_dates)],
         "projects": [
-            ChoiceFilter("project", "Projet", project_choices, filter_project)
+            MultiChoiceFilter(
+                "project",
+                "Projet",
+                project_choices,
+                filter_projects,
+                noun="projets",
+                singular="projet",
+            )
         ],
     }
 )
