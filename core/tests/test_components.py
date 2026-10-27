@@ -166,6 +166,35 @@ class ButtonTests(SimpleTestCase):
             render('{% button "OK" variant="autre" %}')
 
 
+class KbdTests(SimpleTestCase):
+    def test_raccourci_en_kbd(self):
+        html = render('{% kbd "←" %}')
+
+        self.assertHTMLEqual(
+            html,
+            '<kbd class="rounded border border-slate-300 bg-white px-1 text-xs'
+            ' text-slate-600">←</kbd>',
+        )
+
+    def test_texte_echappe(self):
+        self.assertIn("&lt;b&gt;", render("{% kbd keys %}", keys="<b>"))
+
+
+class ButtonShortcutTests(SimpleTestCase):
+    def test_raccourci_annonce_sur_un_lien(self):
+        html = render('{% button "Suivant" href="/x/" keyshortcuts="ArrowRight" %}')
+
+        self.assertIn('aria-keyshortcuts="ArrowRight"', html)
+
+    def test_raccourci_annonce_sur_un_bouton(self):
+        html = render('{% button "Suivant" keyshortcuts="Control+S" %}')
+
+        self.assertIn('aria-keyshortcuts="Control+S"', html)
+
+    def test_pas_d_attribut_sans_raccourci(self):
+        self.assertNotIn("aria-keyshortcuts", render('{% button "Suivant" %}'))
+
+
 class TagListTests(SimpleTestCase):
     TAG = (
         "rounded-2xl border border-slate-300 bg-slate-200"
