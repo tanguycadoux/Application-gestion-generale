@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 
+from django.contrib.staticfiles import finders
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -82,6 +83,42 @@ class ReservedHeightTests(TestCase):
         ).content.decode()
 
         self.assertIn('<tr aria-hidden="true" data-spare-week>', html)
+
+
+class KeyboardShortcutTests(TestCase):
+    """Les flèches changent de mois (#276) ; le comportement se vérifie dans le navigateur."""
+
+    def get(self, url_name):
+        return self.client.get(reverse(url_name), {"month": "2026-10"}).content.decode()
+
+    def test_boutons_annoncent_les_fleches(self):
+        for url_name in ("note_taking:index", "todolist:index"):
+            with self.subTest(url_name=url_name):
+                html = self.get(url_name)
+
+                self.assertRegex(
+                    html,
+                    r'<a [^>]*href="\?month=2026-09"[^>]*aria-keyshortcuts="ArrowLeft"',
+                )
+                self.assertRegex(
+                    html,
+                    r'<a [^>]*href="\?month=2026-11"[^>]*aria-keyshortcuts="ArrowRight"',
+                )
+
+    def test_raccourci_affiche_en_kbd(self):
+        for url_name in ("note_taking:index", "todolist:index"):
+            with self.subTest(url_name=url_name):
+                html = self.get(url_name)
+
+                self.assertEqual(html.count("<kbd"), 2)
+                self.assertIn(">←</kbd>", html)
+                self.assertIn(">→</kbd>", html)
+
+    def test_script_charge_et_servi(self):
+        response = self.client.get(reverse("note_taking:index"))
+
+        self.assertContains(response, 'src="/static/core/month_calendar.js"')
+        self.assertIsNotNone(finders.find("core/month_calendar.js"))
 
 
 class SharedComponentTests(TestCase):
