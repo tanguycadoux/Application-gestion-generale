@@ -122,6 +122,10 @@ export function shiftItems(view, direction) {
 
 export const listKeymap = [
     { key: "Enter", run: continueList },
+    // Tab et Maj+Tab dans une liste ; ailleurs ils gardent leur rôle (passer au champ suivant).
+    // Échap puis Tab, ou Ctrl+M, quittent l'éditeur : CodeMirror laisse alors passer Tab.
+    { key: "Tab", run: (view) => shiftItems(view, 1) },
+    { key: "Shift-Tab", run: (view) => shiftItems(view, -1) },
     { key: "Mod-]", run: (view) => shiftItems(view, 1) },
     { key: "Mod-[", run: (view) => shiftItems(view, -1) },
 ];
