@@ -15,6 +15,7 @@ import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { Strikethrough, TaskList, parser } from "@lezer/markdown";
 import { createOutline } from "./outline.js";
+import { suggestions } from "./suggestions.js";
 
 // Sans @codemirror/lang-markdown, qui fait charger l'analyseur HTML : seul l'analyseur
 // Markdown est embarqué. Les cases `- [ ]` et le barré `~~x~~` sont ceux de Pandoc.
@@ -84,6 +85,11 @@ function mountEditor(textarea) {
     };
     if (invalid) attributes["aria-invalid"] = "true";
 
+    // Adresses des listes de suggestions (#90), sur le formulaire.
+    const { projectsUrl, sectionsUrl, imagesUrl } = textarea.form.dataset;
+    const suggest = projectsUrl && sectionsUrl && imagesUrl
+        ? suggestions({ projects: projectsUrl, sections: sectionsUrl, images: imagesUrl })
+        : [];
     let outline;
     const view = new EditorView({
         state: EditorState.create({
@@ -92,6 +98,7 @@ function mountEditor(textarea) {
                 history(),
                 drawSelection(),
                 markdown.extension,
+                suggest,
                 syntaxHighlighting(highlighting),
                 EditorView.lineWrapping,
                 search({ top: true }),

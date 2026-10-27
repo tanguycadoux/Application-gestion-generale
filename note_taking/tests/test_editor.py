@@ -65,6 +65,21 @@ class NoteEditorPageTests(TestCase):
                 self.assertIn('aria-label="Plan de la note"', template.group("button"))
                 self.assertIn("data-editor-toolbar", html)
 
+    def test_adresses_des_listes_de_suggestions_sur_le_formulaire(self):
+        for page, url in self.pages().items():
+            with self.subTest(page=page):
+                html = self.client.get(url).content.decode()
+                self.assertIn(
+                    f'data-projects-url="{reverse("core:project_suggestions")}"', html
+                )
+                self.assertIn(
+                    f'data-sections-url="{reverse("core:section_suggestions")}"', html
+                )
+                self.assertIn(
+                    f'data-images-url="{reverse("note_taking:image_suggestions")}"',
+                    html,
+                )
+
     def test_pas_de_script_sur_les_autres_pages(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
@@ -95,7 +110,7 @@ class NoteEditorScriptsTests(TestCase):
     def test_modules_des_scripts_dans_la_liste_embarquee(self):
         names = {p.name for p in load_packages()}
 
-        for script in ("editor.js", "outline.js"):
+        for script in ("editor.js", "outline.js", "suggestions.js"):
             # Les imports relatifs sont nos propres fichiers.
             modules = {
                 name
@@ -106,7 +121,7 @@ class NoteEditorScriptsTests(TestCase):
                 self.assertLessEqual(modules, names)
 
     def test_scripts_sans_adresse_externe(self):
-        for name in ("editor.js", "note_form.js", "outline.js"):
+        for name in ("editor.js", "note_form.js", "outline.js", "suggestions.js"):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
 

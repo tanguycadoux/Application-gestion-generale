@@ -35,6 +35,13 @@
     "sha256": "1155a69fb8d6f56c1d644e3e93222348481d6b2df78d6bebcf3293fe209f3fd7"
   },
   {
+    "name": "@codemirror/autocomplete",
+    "version": "6.20.3",
+    "entry": "dist/index.js",
+    "integrity": "sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==",
+    "sha256": "2796fb2771a559ee9fbaa65367b96105368dd9ded1bb686df0e005be48801dcd"
+  },
+  {
     "name": "@codemirror/streamparser",
     "version": "6.0.0",
     "entry": "dist/index.js",
