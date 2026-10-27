@@ -168,7 +168,7 @@ Une note peut être :
 
 - créée et modifiée directement dans l'application (`/notes/new/`, puis `/notes/<AAAA-MM-JJ>/edit/`),
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
-- mise à jour depuis un fichier source, depuis sa vue détail.
+- remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
 À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
 
@@ -350,7 +350,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 ### Fonctionnalités
 
 - liste des notes, triable par colonne (`/notes/list/`),
-- vue détail d'une note, rendu markdown complet (`/notes/<AAAA-MM-JJ>/md/`) et résultat de l'analyse en JSON (`/notes/<AAAA-MM-JJ>/json/`),
+- page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
 - recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.
 

@@ -13,7 +13,7 @@ from core.icons import icon_svg
 from images.models import Image
 
 from .qmd.lists import LIST_ITEM_REGEX, Marker, parse_marker, text_column
-from .qmd.parser import BLOCK_END, METADATA_BLOCK_START
+from .qmd.parser import METADATA_BLOCK_START, TODO_TAG
 
 
 class NoSetextHeadingsExtension(markdown.Extension):
@@ -504,6 +504,13 @@ CALLOUT_START_REGEX = re.compile(r"^:::\s*\{\.callout-(?P<type>\w+)(?P<attrs>[^}
 CALLOUT_TITLE_ATTR_REGEX = re.compile(r'title="(?P<title>[^"]*)"')
 CALLOUT_HEADING_REGEX = re.compile(r"^#+\s+(?P<title>.+)$")
 
+# Bloc de métadonnées maison : ::: {.metadata} … ::: (tags, todo), affiché en pastilles
+METADATA_START_REGEX = re.compile("^" + re.escape(METADATA_BLOCK_START) + "$")
+TAG_CLASSES = (
+    "rounded-2xl border border-slate-300 bg-slate-200 px-[.4rem] py-[.1rem] "
+    "text-[.8rem] font-semibold"
+)
+
 # Blocs Quarto ::: {…} … :::, éventuellement imbriqués
 DIV_START_REGEX = re.compile(r"^:::+\s*\{[^}]*\}$")
 DIV_END_REGEX = re.compile(r"^:::+$")
@@ -652,6 +659,7 @@ def match_block_start(line: str):
         (CALLOUT_START_REGEX, render_callout),
         (LAYOUT_START_REGEX, render_layout),
         (COLUMNS_START_REGEX, render_columns),
+        (METADATA_START_REGEX, render_metadata),
     ):
         start = regex.match(line)
         if start:
@@ -771,6 +779,30 @@ def render_columns(start: re.Match[str], body: list[str]) -> str:
     return f'<div class="flex gap-4 my-2">{"".join(columns_html)}</div>'
 
 
+def render_metadata(start: re.Match[str], body: list[str]) -> str:
+    """Les tags d'un bloc `{.metadata}` en pastilles, comme ceux d'une note part.
+
+    `todo: true` s'affiche comme le tag `TODO` que ses note parts reçoivent.
+    Une autre clé, ou une ligne mal écrite, n'est pas affichée : l'analyse
+    la signale à l'enregistrement.
+    """
+    tags: list[str] = []
+    for line in body:
+        key, _, value = line.partition(":")
+        value = value.strip()
+        if key.strip() == "tags" and value.startswith("[") and value.endswith("]"):
+            tags += [tag.strip() for tag in value[1:-1].split(",") if tag.strip()]
+        elif key.strip() == "todo" and value == "true":
+            tags.append(TODO_TAG)
+    if not tags:
+        return ""
+    items = "".join(f'<li class="{TAG_CLASSES}">{escape(tag)}</li>' for tag in tags)
+    return (
+        '<ul class="note-tags m-0 my-2 flex list-none flex-wrap gap-[.4rem] p-0">'
+        f"{items}</ul>"
+    )
+
+
 def render_callout(start: re.Match[str], body: list[str]) -> str:
     """Encadré à la manière de Quarto.
 
@@ -839,38 +871,15 @@ def render_note_body(body: str) -> str:
     """Rend le body complet d'une note, tel qu'écrit dans le fichier qmd.
 
     Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
-    a son propre h1.
+    a son propre h1. Les blocs `{.metadata}` s'affichent en pastilles.
     """
-    html = render_markdown(
-        remote_images_as_links(resolve_image_paths(strip_metadata_blocks(body)))
-    )
+    html = render_markdown(remote_images_as_links(resolve_image_paths(body)))
     return HEADING_TAG_REGEX.sub(shift_heading, html)
 
 
 def shift_heading(match: re.Match[str]) -> str:
     level = min(int(match.group("level")) + 1, 6)
     return f"<{match.group('slash')}h{level}"
-
-
-def strip_metadata_blocks(text: str) -> str:
-    """Retire les blocs `::: {.metadata}`, lus à l'analyse mais pas affichés."""
-    kept: list[str] = []
-    in_code_block = False
-    in_metadata_block = False
-
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith(CODE_FENCE) and not in_metadata_block:
-            in_code_block = not in_code_block
-
-        if in_metadata_block:
-            in_metadata_block = stripped != BLOCK_END
-        elif not in_code_block and stripped == METADATA_BLOCK_START:
-            in_metadata_block = True
-        else:
-            kept.append(line)
-
-    return "\n".join(kept)
 
 
 def resolve_image_paths(content: str) -> str:
