@@ -48,10 +48,22 @@ class ConversionTests(SimpleTestCase):
             "# P\r\n- [ ] A\r\n- [ ] B\r\n",
         )
 
-    def test_toutes_profondeurs_de_trois_a_six(self):
-        for hashes in ("###", "####", "#####", "######"):
+    def test_toutes_profondeurs_de_deux_a_six(self):
+        """Le niveau 2, un simple « sujet » avant #297, est converti lui aussi (#322)."""
+        for hashes in ("##", "###", "####", "#####", "######"):
             with self.subTest(hashes=hashes):
                 self.assertEqual(convert(f"# P\n{hashes} TODO\n- A"), "# P\n- [ ] A")
+
+    def test_titre_de_niveau_deux_sous_le_projet(self):
+        self.assertEqual(
+            convert("# P\n## TODO\n\n- A\n- B\n\n# Q\ntexte"),
+            "# P\n- [ ] A\n- [ ] B\n\n# Q\ntexte",
+        )
+
+    def test_projet_nomme_todo_non_converti(self):
+        body = "# TODO\n- A\n"
+
+        self.assertEqual(convert_todo_sections(body).sections, 0)
 
     def test_section_arretee_par_un_titre_de_meme_niveau(self):
         self.assertEqual(
@@ -78,7 +90,7 @@ class ConversionTests(SimpleTestCase):
         self.assertEqual(result.body, "# P\n- [ ] A\n## S\n- [ ] B")
 
     def test_note_sans_section_inchangee(self):
-        body = "# P\n## TODO\n- A\n### Todo\n- B\n"
+        body = "# P\n## Todo\n- A\n### TODOS\n- B\n"
         result = convert_todo_sections(body)
 
         self.assertEqual((result.body, result.sections, result.changes), (body, 0, []))
