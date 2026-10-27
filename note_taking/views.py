@@ -182,6 +182,8 @@ def update_source_file(request, pk):
             messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
         else:
             messages.success(request, f"{note_name(note)} est modifiée.")
+            if note.warnings:
+                messages.warning(request, warnings_message(note.warnings))
     return redirect(next_page(note))
 
 
@@ -257,7 +259,19 @@ def save_note_parts(request, note: Note, done: str) -> str:
         )
     else:
         messages.success(request, f"{note_name(note)} est {done}.")
+        if note.warnings:
+            messages.warning(request, warnings_message(note.warnings))
     return next_page(note)
+
+
+def warnings_message(warnings: tuple[str, ...]) -> str:
+    """Le premier avertissement de l'analyse d'une note (titre qui saute un niveau,
+    #305), puis le nombre des autres : les lister tous noierait le toast."""
+    others = len(warnings) - 1
+    if not others:
+        return warnings[0]
+    plural = "s" if others > 1 else ""
+    return f"{warnings[0]} {others} autre{plural} titre{plural} à vérifier."
 
 
 def next_page(note: Note) -> str:

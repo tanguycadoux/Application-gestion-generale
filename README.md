@@ -203,6 +203,8 @@ Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#29
 
 Une tâche s'écrit en case à cocher, `- [ ] texte` : voir « Génération des TODO ».
 
+Un titre peut **sauter un niveau** (`# Projet` puis `### Détail`, sans `##`) : le chemin reste « Détail » sous le projet, car il se fait des titres et pas de leur niveau. L'enregistrement de la note (création, modification, remplacement par le fichier source) **le signale** par un avertissement après le message de succès (« Ligne 5 : le titre « Détail » (###) saute un niveau sous « Projet » (#). »), avec le nombre des autres titres dans le même cas ; le compte rendu d'import les liste sous chaque note créée. Un titre `##` à `######` **sans projet** (`#`) au-dessus de lui est signalé aussi : son contenu n'est pas enregistré. Le texte de la note n'est jamais réécrit.
+
 Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
 
 ### Chemins d'un projet : arbre et renommage
