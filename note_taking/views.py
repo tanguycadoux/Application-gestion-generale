@@ -21,7 +21,7 @@ from images.exceptions import ImageError
 from images.models import Image
 from images.services import delete_image as delete_image_service
 
-from . import importing
+from . import importing, note_table
 from .captures import import_capture
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
@@ -62,59 +62,37 @@ class NoteDetail(DetailView):
 
 
 class NoteList(ListView):
+    """Le tableau des notes : tri (`?sort=`) et filtres (`?project=`, `?date_from=`)
+    dans l'URL, côté serveur (#178, `note_table.py`)."""
+
     model = Note
     context_object_name = "notes"
 
-    DEFAULT_ORDERING = "-date"
-    # Tris proposés par l'interface ; toute autre valeur revient au tri par défaut (#219).
-    SORT_FIELDS = ("date",)
-    DIRECTIONS = ("asc", "desc")
-
-    def requested_sort(self) -> tuple[str | None, str | None]:
-        sort = self.request.GET.get("sort")
-        direction = self.request.GET.get("direction")
-        if sort in self.SORT_FIELDS and direction in self.DIRECTIONS:
-            return sort, direction
-        return None, None
-
     def get_queryset(self):
+        self.sort = note_table.SORTING.read(self.request.GET.get("sort"))
+        self.active_filters = note_table.FILTERS.read(self.request.GET)
         # Projets de chaque note préchargés : une requête pour toute la liste (#188).
-        qs = (
+        # Le filtre par projet ne cache pas les autres projets d'une note.
+        notes = (
             super()
             .get_queryset()
             .prefetch_related(
                 Prefetch("parts", queryset=NotePart.objects.select_related("project"))
             )
         )
-
-        sort, direction = self.requested_sort()
-
-        if not sort or not direction:
-            return qs.order_by(self.DEFAULT_ORDERING)
-
-        ordering = sort if direction == "asc" else f"-{sort}"
-        return qs.order_by(ordering)
+        notes = note_table.FILTERS.apply(notes, self.active_filters)
+        return note_table.SORTING.apply(notes, self.sort)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        sort, direction = self.requested_sort()
-        if not sort or not direction:
-            next_direction = "asc"
-            next_sort = self.DEFAULT_ORDERING.lstrip("-")
-        elif direction == "asc":
-            next_direction = "desc"
-            next_sort = sort
-        else:
-            next_direction = None
-            next_sort = None
-
         context.update(
             {
-                "sort": sort,
-                "direction": direction,
-                "next_sort": next_sort,
-                "next_direction": next_direction,
+                "sorting": note_table.SORTING,
+                "sort": self.sort,
+                "filters": note_table.FILTERS,
+                "active_filters": self.active_filters,
+                # L'export prend toutes les notes, filtrées ou non.
+                "note_count": Note.objects.count(),
             }
         )
         return context

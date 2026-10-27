@@ -153,6 +153,10 @@ class HtmlValidationTests(TestCase):
             "chemin_nom_refuse": f"{rename}?name=Réunion",
             "notes_accueil": reverse("note_taking:index"),
             "notes_liste": reverse("note_taking:notes_list"),
+            "notes_liste_filtres": (
+                reverse("note_taking:notes_list")
+                + "?sort=date&project=ASTERICS&project=PDS1&date_from=2000-01-01"
+            ),
             "note": reverse("note_taking:note_detail", args=[note]),
             "note_nouvelle": reverse("note_taking:new_note"),
             "note_modifier": reverse("note_taking:edit_note", args=[note]),

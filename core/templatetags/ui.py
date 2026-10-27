@@ -16,6 +16,7 @@ from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
 from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
+from core.tables import header_context, summary_context
 
 register = template.Library()
 
@@ -377,3 +378,32 @@ def calendar_number_classes(day, inactive: bool = False) -> str:
     if day.is_weekend:
         return "text-sm text-slate-400"
     return "text-sm text-slate-600"
+
+
+@register.inclusion_tag("core/components/column_header.html", takes_context=True)
+def column_header(context, label: str, column: str, classes: str = "") -> dict:
+    """En-tête de colonne d'un tableau trié et filtré côté serveur (#178).
+
+    `{% column_header "Date" "date" classes="p-2" %}` : avec `sorting` et `sort`
+    dans le contexte de la page, un lien qui trie par la colonne (ou inverse le
+    tri) ; avec `filters` et `active_filters`, un entonnoir qui ouvre les filtres
+    de la colonne. Voir `core/tables.py`.
+    """
+    header = header_context(
+        context["request"],
+        label,
+        column,
+        context.get("sorting"),
+        context.get("sort"),
+        context.get("filters"),
+        context.get("active_filters"),
+    )
+    return {**header, "classes": classes}
+
+
+@register.inclusion_tag("core/components/filter_summary.html", takes_context=True)
+def filter_summary(context) -> dict:
+    """Les filtres actifs au-dessus d'un tableau, chacun retiré d'un clic."""
+    return summary_context(
+        context["request"], context.get("filters"), context.get("active_filters")
+    )

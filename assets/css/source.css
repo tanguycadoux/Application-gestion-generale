@@ -85,6 +85,22 @@
         }
     }
 
+    /* Filtres d'un en-tête de colonne (#178) : popover native sous l'entonnoir,
+       alignée sur son bord gauche par l'ancre implicite de popovertarget ;
+       retournée si la place manque. Sans ancrage CSS, le navigateur la centre. */
+    .table-filter-popover:popover-open {
+        animation: fadeIn .1s ease-out;
+    }
+
+    @supports (position-area: bottom) {
+        .table-filter-popover {
+            inset: auto;
+            margin: 0.25rem 0;
+            position-area: bottom span-right;
+            position-try-fallbacks: flip-block, flip-inline;
+        }
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: scale(0.98); }
         to   { opacity: 1; transform: scale(1); }
