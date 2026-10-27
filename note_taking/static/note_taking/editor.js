@@ -3,7 +3,7 @@
 // page (aucun CDN). Le <textarea> reste dans la page, caché : c'est lui que le
 // formulaire envoie, et il reste l'éditeur si ce script ne se charge pas.
 import { EditorSelection, EditorState } from "@codemirror/state";
-import { EditorView, drawSelection, keymap } from "@codemirror/view";
+import { EditorView, drawSelection, dropCursor, keymap } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import {
     HighlightStyle,
@@ -52,6 +52,8 @@ const theme = EditorView.theme({
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.5" },
     ".cm-content": { padding: "0.25rem 0.5rem" },
+    // Où une image déposée s'insérera : un trait bleu bien visible.
+    ".cm-dropCursor": { borderLeft: "2px solid var(--color-blue-700)" },
 });
 
 // Textes du panneau de recherche (Ctrl+F), en anglais par défaut.
@@ -131,6 +133,8 @@ function mountEditor(textarea) {
             extensions: [
                 history(),
                 drawSelection(),
+                // Trait vertical à l'endroit où une image (ou du texte) déposée s'insérera.
+                dropCursor(),
                 markdown.extension,
                 suggest,
                 syntaxHighlighting(highlighting),
