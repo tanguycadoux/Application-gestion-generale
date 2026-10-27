@@ -128,15 +128,18 @@ class FormPagesTests(TestCase):
 
         self.assertIn(f'<form id="todo-form" method="post" class="{FORM_GRID}">', html)
 
-    def test_formulaire_de_note_en_grille(self):
+    def test_formulaire_de_note_en_colonne_de_la_hauteur_restante(self):
+        """Pas de grille : un seul champ large, qui défile dans sa zone (#89)."""
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         html = self.client.get(
             reverse("note_taking:edit_note", args=[note.pk])
         ).content.decode()
 
-        self.assertIn(FORM_GRID, html)
-        self.assertIn('class="col-span-2 h-96 w-full font-mono"', html)
+        self.assertNotIn(FORM_GRID, html)
+        self.assertIn('class="flex min-h-0 flex-1 flex-col gap-3"', html)
+        self.assertIn('class="min-h-48 w-full flex-1 resize-none font-mono"', html)
+        self.assertIn('<div class="flex h-full flex-col">', html)
 
     def test_import_libelle_a_gauche(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
