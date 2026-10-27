@@ -118,7 +118,13 @@ class NoteEditorScriptsTests(TestCase):
     def test_modules_des_scripts_dans_la_liste_embarquee(self):
         names = {p.name for p in load_packages()}
 
-        for script in ("editor.js", "outline.js", "suggestions.js"):
+        for script in (
+            "editor.js",
+            "outline.js",
+            "suggestions.js",
+            "capture.js",
+            "images_capture.js",
+        ):
             # Les imports relatifs sont nos propres fichiers.
             modules = {
                 name
@@ -129,7 +135,14 @@ class NoteEditorScriptsTests(TestCase):
                 self.assertLessEqual(modules, names)
 
     def test_scripts_sans_adresse_externe(self):
-        for name in ("editor.js", "note_form.js", "outline.js", "suggestions.js"):
+        for name in (
+            "editor.js",
+            "note_form.js",
+            "outline.js",
+            "suggestions.js",
+            "capture.js",
+            "images_capture.js",
+        ):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
 

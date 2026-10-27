@@ -16,10 +16,12 @@ from core.exceptions import AppError
 from core.sections import with_descendants
 from core.suggestions import rank_by_name
 from core.templatetags.ui import date_text
+from images.exceptions import ImageError
 from images.models import Image
 from images.services import delete_image as delete_image_service
 
 from . import importing
+from .captures import import_capture
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
@@ -378,4 +380,35 @@ def image_suggestions(request):
                 for image in images
             ]
         }
+    )
+
+
+@require_POST
+def image_capture(request):
+    """Importe une image collée ou déposée (#196) : l'éditeur insère la référence
+    renvoyée ; la page des images se recharge ensuite (`notify`) et y affiche le
+    message de succès ou de refus."""
+    notify = bool(request.POST.get("notify"))
+
+    def refuse(text: str):
+        if notify:
+            messages.error(request, text)
+        return JsonResponse({"error": text}, status=400)
+
+    file = request.FILES.get("image")
+    if file is None:
+        return refuse("Aucune image reçue.")
+    try:
+        image = import_capture(file)
+    except ImageError as e:
+        return refuse(str(e))
+    if notify:
+        messages.success(request, f"L'image « {image.name} » est importée.")
+    return JsonResponse(
+        {
+            "name": image.name,
+            "reference": f"images/{image.name}",
+            "url": image.file.url,
+        },
+        status=201,
     )
