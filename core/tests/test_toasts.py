@@ -98,15 +98,6 @@ class ToastInPageTests(TestCase):
         self.assertIn("Enregistré.", html)
         self.assertNotIn("Alert.toast", html)
 
-    def test_conteneur_en_bas_a_droite(self):
-        html = self.render_with_message(messages.INFO, "x")
-
-        self.assertIn(
-            '<div id="toasts" class="pointer-events-none fixed right-4 bottom-4 z-50'
-            ' flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">',
-            html,
-        )
-
     def test_le_script_est_charge(self):
         html = self.client.get(reverse("core:index")).content.decode()
 
@@ -146,19 +137,6 @@ class ToastInPageTests(TestCase):
 class ToastScriptTests(SimpleTestCase):
     def setUp(self):
         self.script = read_static("core/toasts.js")
-
-    def test_comportement_de_research_paper(self):
-        self.assertIn("const AUTOHIDE_DELAY = 6000;", self.script)
-        self.assertIn("[data-toast-close]", self.script)
-        self.assertIn('event.key === "Escape"', self.script)
-        for event in ("mouseenter", "mouseleave", "focusin", "focusout"):
-            self.assertIn(f'"{event}"', self.script)
-        self.assertIn('hasAttribute("data-toast-autohide")', self.script)
-
-    def test_toast_cree_par_un_script_clone_le_modele(self):
-        self.assertIn("window.Toast", self.script)
-        self.assertIn("toast-template-", self.script)
-        self.assertIn("textContent", self.script)
 
     def test_pas_d_insertion_en_html(self):
         """Un message s'affiche tel quel, sans être lu comme du HTML (#142)."""

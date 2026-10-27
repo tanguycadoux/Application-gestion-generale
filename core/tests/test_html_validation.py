@@ -22,6 +22,8 @@ from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.models import Todo
 
+from .debug_urls import DebugUrlsTestCase
+
 TODAY = timezone.localdate()
 
 NOTE_BODY = """# ASTERICS
@@ -62,6 +64,8 @@ Légende commune
 ```python
 print("<b>")
 ```
+
+Voir @tbl-retreint et @fig-banc.
 
 - Sous-liste
   - à 2 espaces
@@ -180,6 +184,32 @@ class HtmlValidationTests(TestCase):
         with tempfile.TemporaryDirectory() as directory:
             paths = []
             for name, url in self.pages().items():
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200, url)
+                path = Path(directory) / f"{name}.html"
+                path.write_bytes(response.content)
+                paths.append(path)
+
+            errors = html_validator.validate(paths)
+
+        self.assertEqual(errors, [], "\n" + "\n".join(errors))
+
+
+@unittest.skipUnless(
+    html_validator.is_available(),
+    "validateur HTML absent : python manage.py install_validator (Java requis)",
+)
+class DebugPagesValidationTests(DebugUrlsTestCase):
+    """Les pages réservées au mode DEBUG (#235), dont la galerie des alertes (#156)."""
+
+    def test_pages_de_debug_valides(self):
+        pages = {
+            "galerie_des_alertes": reverse("core:alerts_gallery"),
+            "analyse_json_choix": reverse("note_taking:debug_note_json"),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            paths = []
+            for name, url in pages.items():
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200, url)
                 path = Path(directory) / f"{name}.html"

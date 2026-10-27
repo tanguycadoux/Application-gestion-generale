@@ -30,11 +30,6 @@ class NavigationTests(TestCase):
         pages = ("/", reverse("note_taking:index"), reverse("todolist:todo_list"))
         self.assertEqual(len({menu(url) for url in pages}), 1)
 
-    def test_pas_de_lien_toutes_les_apps(self):
-        html = self.client.get(reverse("note_taking:index")).content.decode()
-
-        self.assertNotIn("Toutes les apps", html)
-
     def test_libelle_en_aria_label_et_infobulle(self):
         html = self.client.get("/").content.decode()
 

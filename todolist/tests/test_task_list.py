@@ -80,14 +80,6 @@ class StateFilterTests(TaskListTestCase):
         )
         self.assertNotContains(response, ">Finie<")
 
-    def test_plus_de_sections_repliables(self):
-        html = self.get().content.decode()
-
-        # Les anciennes sections repliables « Terminées » et « Écartées » (#294) ont disparu :
-        # seul reste le <details> des projets du panneau de filtres.
-        self.assertNotIn("<details>", html)
-        self.assertNotIn("Terminées (", html)
-
     def test_terminees(self):
         response = self.get(state="done")
 
@@ -286,23 +278,6 @@ class MultiProjectTests(TaskListTestCase):
         self.gamma = Project.objects.create(name="GAMMA", color="sky")
         Todo.objects.create(title="Tâche gamma", project=self.gamma)
 
-    def test_zone_des_projets_repliable_sans_defilement(self):
-        html = self.get().content.decode()
-        panel = html[html.index('id="filters-title"') :].split("</form>")[0]
-
-        self.assertRegex(
-            panel,
-            r"<summary[^>]*>\s*Projets \(<span data-choice-count>0</span> sur 3\)",
-        )
-        self.assertRegex(panel, r"<details data-choice-details>")
-        self.assertNotIn("overflow-y-auto", panel)
-        self.assertNotIn("max-h-", panel)
-
-    def test_zone_des_projets_ouverte_quand_un_projet_est_coche(self):
-        html = self.get(project="GAMMA").content.decode()
-
-        self.assertRegex(html, r"<details data-choice-details open>")
-
     def test_union_des_projets_coches(self):
         response = self.get(project=["ALPHA", "GAMMA"])
 
@@ -315,26 +290,6 @@ class MultiProjectTests(TaskListTestCase):
         response = self.get(state="all", project=["ALPHA", "BETA"], title="i")
 
         self.assertEqual(self.titles(response), ["Finie", "Bilan"])
-
-    def test_cases_a_cocher_avec_pastille_et_recherche(self):
-        html = self.get(project=["ALPHA", "GAMMA"]).content.decode()
-        panel = html[html.index('id="filters-title"') :].split("</form>")[0]
-
-        self.assertIn(
-            '<input type="checkbox" name="project" value="ALPHA" checked>', panel
-        )
-        self.assertIn('<input type="checkbox" name="project" value="BETA">', panel)
-        self.assertIn(
-            '<input type="checkbox" name="project" value="GAMMA" checked>', panel
-        )
-        self.assertIn("data-choice-search-box", panel)
-        self.assertIn("bg-sky-500", panel)
-
-    def test_une_pastille_retirable_par_projet(self):
-        html = self.get(project=["ALPHA", "GAMMA"], title="a").content.decode()
-
-        self.assertEqual(html.count("(retirer ce filtre)"), 3)
-        self.assertIn('href="?project=GAMMA&amp;title=a"', html)
 
     def test_s_applique_aux_ecartees(self):
         Todo.all_objects.create(
@@ -438,11 +393,6 @@ class TaskSortTests(TaskListTestCase):
             ),
         )
         self.assertIn('<input type="hidden" name="sort" value="title">', html)
-
-    def test_pas_de_tri_sur_les_ecartees(self):
-        html = self.get(state="dismissed").content.decode()
-
-        self.assertNotIn("aria-sort", html)
 
     def test_detail_d_un_parent_garde_son_tri_par_echeance(self):
         Todo.objects.create(

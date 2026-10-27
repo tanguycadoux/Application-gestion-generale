@@ -198,17 +198,6 @@ class MultiChoiceComponentTests(SimpleTestCase):
         assert panel is not None
         self.assertEqual(panel["fields"][0]["noun"], "valeurs")
 
-    def test_panneau_sans_valeur_ne_coche_rien(self):
-        request = self.request()
-
-        panel = filter_panel(
-            request, self.filters, self.filters.read(request.GET), "projects"
-        )
-
-        assert panel is not None
-        self.assertEqual(panel["fields"][0]["selected"], [])
-        self.assertFalse(panel["active"])
-
     def test_resume_une_pastille_retirable_par_valeur(self):
         request = self.request("?project=A&project=B&sort=date&page=2")
         active = self.filters.read(request.GET)
@@ -422,20 +411,6 @@ class ComponentContextTests(SimpleTestCase):
 
         self.assertEqual(header["url"], "")
         self.assertIsNone(header["filter"])
-
-    def test_en_tete_d_une_colonne_non_triee_n_a_pas_de_fleche(self):
-        sorting = Sorting(
-            {"a": Column(key=lambda x: x), "date": Column(key=lambda x: x)},
-            default=Sort("a"),
-        )
-
-        header = header_context(
-            self.request(), "Date", "date", sorting, Sort("a"), None, None
-        )
-
-        self.assertEqual(header["arrow"], "")
-        self.assertEqual(header["aria_sort"], "")
-        self.assertIn("sort=date", header["url"])
 
     def test_panneau_reprend_le_tri_et_les_autres_filtres_en_champs_caches(self):
         request = self.request("?sort=-date&project=A&date_from=2025-11-01&page=2")

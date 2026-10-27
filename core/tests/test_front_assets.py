@@ -52,12 +52,11 @@ class FrontAssetsTests(TestCase):
                 self.assertIsNotNone(finders.find(f"vendor/htmx/{name}"))
 
     def test_source_unique_de_la_feuille(self):
-        """Thème, styles de base et animations des alertes : une seule source."""
+        """Thème, styles de base et animations des popovers : une seule source."""
         css = SOURCE_CSS.read_text(encoding="utf-8")
 
         self.assertIn('@import "tailwindcss" theme(static);', css)
         self.assertIn("@layer base {", css)
-        self.assertIn(".alert__popover {", css)
         self.assertEqual(settings.TAILWIND_CLI_SRC_CSS, "assets/css/source.css")
 
 

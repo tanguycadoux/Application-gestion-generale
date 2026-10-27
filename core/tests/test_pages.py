@@ -4,7 +4,7 @@ from django.contrib.staticfiles import finders
 from django.test import TestCase
 from django.urls import reverse
 
-STATIC_FILES = ("core/alert_system.js", "vendor/htmx/htmx.min.js")
+STATIC_FILES = ("core/toasts.js", "vendor/htmx/htmx.min.js")
 
 
 class CommonPagesTests(TestCase):
