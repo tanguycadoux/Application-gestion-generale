@@ -54,10 +54,33 @@ class WithDebugTests(DebugUrlsTestCase):
         self.assertContains(response, "Galerie des alertes")
         self.assertContains(response, "/static/core/alerts_gallery.js")
 
-    def test_avertissement_de_cache_present_et_cache(self):
+    def test_un_toast_par_niveau_rendu_par_le_serveur(self):
         response = self.client.get(reverse("core:alerts_gallery"))
 
-        self.assertContains(response, '<p id="gallery-warning" role="status" hidden')
+        self.assertContains(
+            response, '<p class="flex-1">', count=5 + 2
+        )  # + 2 modèles de base
+        for text in (
+            "Une information.",
+            "Un point d&#x27;attention.",
+            "Quelque chose a échoué.",
+        ):
+            self.assertContains(response, text)
+        self.assertContains(response, 'role="alert"', count=1 + 1)  # erreur + modèle
+
+    def test_popover_de_confirmation_native(self):
+        response = self.client.get(reverse("core:alerts_gallery"))
+
+        self.assertContains(response, 'id="gallery-confirm" popover')
+        self.assertContains(response, f'action="{reverse("core:alerts_gallery")}"')
+
+    def test_confirmer_n_efface_rien_et_dit_le_succes(self):
+        response = self.client.post(reverse("core:alerts_gallery"), follow=True)
+
+        self.assertRedirects(response, reverse("core:alerts_gallery"))
+        self.assertContains(
+            response, "Confirmation reçue : rien n&#x27;a été supprimé."
+        )
 
     def test_section_debug_en_dernier_dans_le_menu(self):
         html = self.client.get("/").content.decode()
