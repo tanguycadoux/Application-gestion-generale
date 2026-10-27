@@ -68,6 +68,8 @@ Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Sect
 
 Messages de confirmation (#192) : chaque création, modification et suppression d'un projet, d'une note, d'une tâche ou d'une image affiche un toast de succès, de la même forme : l'objet nommé, au présent (« Le projet « ASTERICS » est créé. », « La tâche « Relire » est modifiée. », « La note du 24 novembre 2025 est supprimée. », « L'image « banc.png » est supprimée. »). Une note se nomme par sa date au format moyen. Si l'analyse d'une note échoue, seul le message d'erreur s'affiche. `core/tests/test_action_messages.py` vérifie chaque message.
 
+Toasts (#293) : les messages sont des notifications **rendues par le serveur** (`{% message_toast %}`, reprise de research-paper-relationship-graph), en bas à droite : visibles sans JavaScript, où elles restent affichées. `core/static/core/toasts.js` ajoute un bouton de fermeture, la touche Échap et la disparition des **succès et informations seulement** (6 s, en pause au survol et au focus) ; les avertissements et les erreurs restent jusqu'à leur fermeture. Une erreur est annoncée par `role="alert"`, les autres messages par `role="status"`. Un script en crée un par `Toast.show(message, "error")` ou `"success"`.
+
 Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templatetags/ui.py`, gabarits dans `core/templates/core/components/`) :
 
 | Balise | Rendu |
