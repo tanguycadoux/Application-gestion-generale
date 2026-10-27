@@ -1,6 +1,6 @@
 """Ce que chaque app déclare à core dans son AppConfig, sans que core la connaisse.
 
-- `home_link` : son entrée dans le menu de l'accueil général ;
+- `nav_section` : sa section du menu commun (#232) ;
 - `project_usages` : ce qui, chez elle, utilise un projet (pour l'afficher et
   refuser la suppression d'un projet utilisé) ;
 - `section_usages` : ce qui, chez elle, utilise un niveau de chemin (compteurs de
@@ -19,10 +19,22 @@ from django.db.models import Q
 
 
 @dataclass(frozen=True)
-class HomeLink:
+class NavItem:
+    """Une page du menu : nom d'URL, libellé et icône."""
+
     url_name: str
     label: str
     icon: str
+
+
+@dataclass(frozen=True)
+class NavSection:
+    """Les pages d'une app dans le menu commun, sous son titre. `order` range les
+    sections (Notes, Tâches, Projets) quel que soit l'ordre d'INSTALLED_APPS."""
+
+    label: str
+    order: int
+    items: tuple[NavItem, ...]
 
 
 @dataclass(frozen=True)
@@ -75,9 +87,11 @@ class SectionRenamer:
     rename: Callable[..., list[str]]
 
 
-def home_links() -> list[HomeLink]:
-    links = (getattr(config, "home_link", None) for config in apps.get_app_configs())
-    return [link for link in links if link]
+def nav_sections() -> list[NavSection]:
+    sections = (
+        getattr(config, "nav_section", None) for config in apps.get_app_configs()
+    )
+    return sorted((s for s in sections if s), key=lambda section: section.order)
 
 
 def project_usages() -> list[ProjectUsage]:

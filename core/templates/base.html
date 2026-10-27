@@ -23,10 +23,34 @@
     {# Lien d'évitement (#191) : premier élément atteint au clavier, visible au focus. #}
     <a href="#contenu" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-white focus:p-2 focus:font-semibold focus:shadow-lg">Aller au contenu</a>
 
-    <nav aria-label="Menu principal" class="p-4 bg-slate-200">
-        {% block nav %}{% endblock nav %}
+    {# Menu commun (#232) : les sections viennent des AppConfig (core.context_processors), replié en icônes par nav.js. #}
+    <nav id="main-nav" aria-label="Menu principal" class="group/nav flex flex-col gap-4 overflow-y-auto bg-slate-200 p-4 w-60 data-collapsed:w-18">
+        <ul>
+            <li>{% nav_link "core:index" "Accueil" "home" %}</li>
+        </ul>
+
+        {% for section in nav_sections %}
+            <div>
+                <p id="nav-section-{{ forloop.counter }}" class="mb-1 px-2 text-sm font-semibold text-slate-600 group-data-collapsed/nav:hidden">{{ section.label }}</p>
+                <hr class="hidden border-slate-400 group-data-collapsed/nav:block">
+                <ul aria-labelledby="nav-section-{{ forloop.counter }}">
+                    {% for item in section.items %}
+                        <li>{% nav_link item.url_name item.label item.icon %}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+
+        {# Sans JavaScript le bouton ne ferait rien : nav.js le montre. #}
+        <button type="button" id="nav-toggle" hidden aria-controls="main-nav" aria-expanded="true" aria-label="Replier le menu" title="Replier le menu" class="mt-auto flex items-center gap-2 rounded-2xl py-2 pr-3 pl-2 hover:bg-white">
+            <span class="group-data-collapsed/nav:hidden">{% icon "left_panel_close" %}</span>
+            <span class="hidden group-data-collapsed/nav:inline">{% icon "left_panel_open" %}</span>
+            <span class="font-medium whitespace-nowrap group-data-collapsed/nav:hidden">Replier</span>
+        </button>
     </nav>
-    
+    {# Sans defer : l'état du menu est posé avant le premier affichage, la page ne saute pas. #}
+    <script src="{% static 'core/nav.js' %}"></script>
+
     <main id="contenu" class="p-4 h-full box-border overflow-auto">
         {% block content %}{% endblock content %}
     </main>

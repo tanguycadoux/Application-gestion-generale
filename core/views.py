@@ -8,7 +8,7 @@ from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
-from .app_registry import home_links, project_usages, section_renamers
+from .app_registry import project_usages, section_renamers
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
@@ -20,7 +20,7 @@ from .suggestions import section_suggestions as find_sections
 
 
 def index(request):
-    return render(request, "core/index.html", {"home_links": home_links()})
+    return render(request, "core/index.html")
 
 
 def with_usage(projects):
