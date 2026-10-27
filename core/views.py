@@ -2,9 +2,10 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
 from .app_registry import home_links, project_usages, section_renamers
@@ -13,6 +14,8 @@ from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
 from .section_tree import section_tree
 from .sections import check_new_name, levels
+from .suggestions import project_suggestions as find_projects
+from .suggestions import section_suggestions as find_sections
 
 
 def index(request):
@@ -172,3 +175,24 @@ def rename_section(request, pk, section_pk):
         f"Le niveau « {path[-1]} » est renommé « {new_name} ». {' '.join(report)}".strip(),
     )
     return redirect("core:project_paths", pk=pk)
+
+
+@require_GET
+def project_suggestions(request):
+    """Les projets, pour les suggestions de l'éditeur (#90) : `?q=` filtre par nom."""
+    projects = find_projects(request.GET.get("q", ""))
+    return JsonResponse(
+        {"results": [{"name": p.name, "color": p.color} for p in projects]}
+    )
+
+
+@require_GET
+def section_suggestions(request):
+    """Les niveaux sous un chemin d'un projet, pour l'éditeur (#90) : `?projet=`,
+    `?chemin=` (« Réunion/Préparation », vide pour les premiers niveaux), `?q=`."""
+    sections = find_sections(
+        request.GET.get("projet", ""),
+        request.GET.get("chemin", ""),
+        request.GET.get("q", ""),
+    )
+    return JsonResponse({"results": [{"name": s.name} for s in sections]})

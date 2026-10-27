@@ -7,6 +7,8 @@ app_name = "core"
 urlpatterns = [
     path("", views.index, name="index"),
     path("projets/", views.projects, name="projects"),
+    path("projets/suggestions/", views.project_suggestions, name="project_suggestions"),
+    path("chemins/suggestions/", views.section_suggestions, name="section_suggestions"),
     path("projets/nouveau/", views.ProjectCreateView.as_view(), name="project_create"),
     path(
         "projets/<int:pk>/modifier/",

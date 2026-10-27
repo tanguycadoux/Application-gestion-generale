@@ -25,6 +25,7 @@ urlpatterns = [
     path("note/<int:pk>/edit/", views.edit_note, name="edit_note"),
     path("note/<int:pk>/delete/", views.delete_note, name="delete_note"),
     path("images/", views.ImageList.as_view(), name="images_list"),
+    path("images/suggestions/", views.image_suggestions, name="image_suggestions"),
     path("images/<int:pk>/", views.ImageDetail.as_view(), name="image_detail"),
     path("images/<int:pk>/delete/", views.delete_image, name="delete_image"),
 ]

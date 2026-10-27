@@ -9,11 +9,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
 from core.sections import with_descendants
+from core.suggestions import rank_by_name
 from core.templatetags.ui import date_text
 from images.models import Image
 from images.services import delete_image as delete_image_service
@@ -356,4 +357,25 @@ def zip_response(write, filename: str) -> FileResponse:
     archive.seek(0)
     return FileResponse(
         archive, as_attachment=True, filename=filename, content_type="application/zip"
+    )
+
+
+@require_GET
+def image_suggestions(request):
+    """Les images, pour les suggestions de l'éditeur (#90) : la référence à écrire
+    dans la note et l'adresse de la vignette ; `?q=` filtre par nom."""
+    images = rank_by_name(
+        Image.objects.all(), request.GET.get("q", ""), lambda image: image.name
+    )
+    return JsonResponse(
+        {
+            "results": [
+                {
+                    "name": image.name,
+                    "reference": f"images/{image.name}",
+                    "url": image.file.url,
+                }
+                for image in images
+            ]
+        }
     )
