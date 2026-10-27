@@ -2,6 +2,8 @@
 
 Avant #297, un titre `TODO` (de `###` à `######`) marquait une section de tâches :
 chaque ligne y était une tâche. Maintenant une tâche est une case `- [ ] texte`.
+Un titre `TODO` de niveau `##` n'était alors qu'un niveau de chemin ordinaire ; il est
+converti de la même façon (#322), le niveau `#` restant un projet.
 Cette conversion réécrit le texte d'une note : le titre `TODO` est retiré, et
 chaque élément de liste de sa section reçoit sa case.
 
@@ -34,6 +36,8 @@ from .parser import (
 )
 
 TODO_TITLE = "TODO"
+# Le niveau 1 est un projet, jamais une section.
+MIN_TODO_LEVEL = 2
 # Une case en tête du texte d'un élément : « [ ] » vide, « [x] » cochée.
 BOX_REGEX = re.compile(r"^\[(?P<state>[ xX])\](?:\s|$)")
 
@@ -87,9 +91,9 @@ def heading_level(line: str) -> tuple[int, str] | None:
 
 
 def is_todo_heading(line: str) -> int | None:
-    """Niveau du titre si c'est un titre `TODO` de `###` à `######`."""
+    """Niveau du titre si c'est un titre `TODO` de `##` à `######`."""
     found = heading_level(line)
-    if found and 3 <= found[0] <= MAX_LEVEL and found[1] == TODO_TITLE:
+    if found and MIN_TODO_LEVEL <= found[0] <= MAX_LEVEL and found[1] == TODO_TITLE:
         return found[0]
     return None
 
