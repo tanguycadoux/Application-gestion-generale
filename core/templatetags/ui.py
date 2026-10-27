@@ -90,6 +90,7 @@ def button(
     describedby: str = "",
     popovertarget: str = "",
     popovertargetaction: str = "",
+    keyshortcuts: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -104,7 +105,9 @@ def button(
     - `describedby` : identifiant du texte qui décrit le bouton (`aria-describedby`),
       par exemple la raison pour laquelle il est désactivé ;
     - `popovertarget`, `popovertargetaction` : popover native que le bouton
-      ouvre, ou ferme avec `"hide"` ; pas pour un lien.
+      ouvre, ou ferme avec `"hide"` ; pas pour un lien ;
+    - `keyshortcuts` : raccourci clavier que gère la page, annoncé aux technologies
+      d'assistance (`aria-keyshortcuts`, par exemple `"ArrowLeft"`, #276).
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
@@ -133,7 +136,22 @@ def button(
         "describedby": describedby,
         "popovertarget": popovertarget,
         "popovertargetaction": popovertargetaction,
+        "keyshortcuts": keyshortcuts,
     }
+
+
+@register.simple_tag
+def kbd(keys: str) -> SafeString:
+    """Un raccourci clavier (`←`, `Ctrl+K`) en `<kbd>` discret (#276).
+
+    La police à chasse fixe est celle du reset de Tailwind. Réutilisé par la
+    palette de commandes (#202).
+    """
+    return format_html(
+        '<kbd class="rounded border border-slate-300 bg-white px-1 text-xs'
+        ' text-slate-600">{}</kbd>',
+        keys,
+    )
 
 
 @register.inclusion_tag("core/components/tag_list.html")
