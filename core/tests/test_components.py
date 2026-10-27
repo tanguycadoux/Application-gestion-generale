@@ -224,3 +224,62 @@ class LoadUiLibraryTests(SimpleTestCase):
         html = Template('{% load ui %}{% button "OK" %}').render(Context())
 
         self.assertIn(">OK</button>", html)
+
+
+class ConfirmButtonTests(SimpleTestCase):
+    """`{% confirm_button %}` : popover native, sans JavaScript (#292)."""
+
+    SOURCE = (
+        '{% confirm_button "Supprimer le projet" id="delete-p1" icon="delete"'
+        ' icon_only=True message="Supprimer « A » ?" action="/projects/1/delete/" %}'
+    )
+
+    def test_le_bouton_ouvre_la_popover(self):
+        html = render(self.SOURCE)
+
+        self.assertIn('type="button"', html)
+        self.assertIn('aria-label="Supprimer le projet"', html)
+        self.assertIn('popovertarget="delete-p1"', html)
+        self.assertIn(f'class="{GHOST_DANGER}"', html)
+
+    def test_la_popover_porte_le_message_et_le_formulaire(self):
+        html = render(self.SOURCE)
+
+        self.assertIn(
+            '<div id="delete-p1" popover class="confirm-popover min-w-48 max-w-80', html
+        )
+        self.assertIn('<p class="mb-3 font-semibold">Supprimer « A » ?</p>', html)
+        self.assertIn('<form method="post" action="/projects/1/delete/"', html)
+        self.assertIn('name="csrfmiddlewaretoken"', html)
+        self.assertNotIn("data-confirm", html)
+
+    def test_annuler_puis_l_action_en_danger_par_defaut(self):
+        html = render(self.SOURCE)
+
+        cancel = html.index('popovertarget="delete-p1" popovertargetaction="hide"')
+        action = html.index('type="submit"')
+        self.assertLess(cancel, action)
+        self.assertIn(f'<button type="submit" class="{DANGER}"', html)
+        self.assertIn(">Supprimer</button>", html)
+
+    def test_libelle_et_variante_de_l_action(self):
+        html = render(
+            '{% confirm_button "Rétablir" id="r" icon="restore_from_trash"'
+            ' variant="ghost" message="Rétablir ?" action="/x/"'
+            ' confirm_label="Rétablir" confirm_icon="restore_from_trash"'
+            ' confirm_variant="primary" %}'
+        )
+
+        self.assertIn(f'<button type="submit" class="{PRIMARY}"', html)
+        self.assertIn(f'class="{GHOST}"', html)
+
+    def test_desactive_sans_popover_et_relie_a_sa_raison(self):
+        html = render(
+            '{% confirm_button "Supprimer" id="p" icon="delete" icon_only=True'
+            ' message="?" action="/x/" disabled=True describedby="raison" %}'
+        )
+
+        self.assertIn(" disabled", html)
+        self.assertIn('aria-describedby="raison"', html)
+        self.assertNotIn("popover", html)
+        self.assertNotIn("<form", html)

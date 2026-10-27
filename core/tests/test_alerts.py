@@ -1,9 +1,8 @@
-"""Tests des alertes : toasts des messages Django et popover de confirmation.
+"""Tests des alertes : toasts des messages Django.
 
 Le projet n'a pas de lanceur de tests JavaScript : les tests du script le lisent.
 """
 
-import json
 import re
 from pathlib import Path
 from typing import Any
@@ -15,8 +14,6 @@ from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
-
-from core.templatetags.ui import BUTTON_VARIANTS
 
 from .stylesheets import components_layer, read_source_css
 
@@ -96,21 +93,8 @@ class AlertStyleTests(TestCase):
     def setUp(self):
         self.script = read_static("core/alert_system.js")
 
-    def test_classes_des_boutons_transmises_aux_scripts(self):
-        html = self.client.get("/").content.decode()
-
-        match = re.search(
-            r'<script id="button-variants" type="application/json">(.*?)</script>',
-            html,
-        )
-        assert match is not None
-        self.assertEqual(json.loads(match.group(1)), BUTTON_VARIANTS)
-        self.assertLess(
-            html.index('id="button-variants"'), html.index("core/alert_system.js")
-        )
-
     def test_forme_commune(self):
-        """Une seule définition, utilisée par le toast et par la popover."""
+        """Une seule définition, utilisée par le toast et par la popover de colonne."""
         self.assertIn(f'const ALERT_SHAPE = "{SHAPE}";', self.script)
         self.assertGreaterEqual(self.script.count("${ALERT_SHAPE}"), 2)
 
@@ -120,12 +104,6 @@ class AlertStyleTests(TestCase):
                 for value in classes:
                     self.assertIn(f'"{value}"', self.script)
         self.assertIn("border-l-4", self.script)
-
-    def test_boutons_de_la_popover_selon_les_variantes(self):
-        self.assertIn('getElementById("button-variants")', self.script)
-        self.assertLess(
-            self.script.index("variants.ghost"), self.script.index("variants.danger")
-        )
 
 
 class AlertStylesheetTests(SimpleTestCase):

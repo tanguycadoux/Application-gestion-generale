@@ -349,7 +349,7 @@ def edit_note(request, note_date):
 
 @require_POST
 def delete_note(request, note_date):
-    """Supprime une note ; la confirmation se fait par popover (data-confirm)."""
+    """Supprime une note ; la confirmation se fait par popover native (`confirm_button`, #292)."""
     note = get_object_or_404(Note, date=note_date)
     name = note_name(note)
     note.delete()

@@ -108,7 +108,7 @@ class DatesInPagesTests(TestCase):
         ).content.decode()
 
         self.assertInHTML(f"<h1 class='flex-1'>Note du {self.LONG}</h1>", html)
-        self.assertIn('data-confirm="Supprimer définitivement la note du 24', html)
+        self.assertIn("Supprimer définitivement la note du 24", html)
 
     def test_tableau_des_notes_en_format_court(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()

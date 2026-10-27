@@ -13,10 +13,10 @@
         {% url 'note_taking:edit_note' note.date as url %}
         {% button "Modifier la note" icon="edit" href=url variant="ghost" icon_only=True %}
 
-        <form method="post" action="{% url 'note_taking:delete_note' note.date %}" data-confirm="Supprimer définitivement la note du {{ object.date|date_text:"moyen" }} ?">
-            {% csrf_token %}
-            {% button "Supprimer la note" icon="delete" variant="ghost-danger" icon_only=True %}
-        </form>
+        {% url 'note_taking:delete_note' note.date as url %}
+        {% with day=object.date|date_text:"moyen" %}{% with message="Supprimer définitivement la note du "|add:day|add:" ?" %}
+            {% confirm_button "Supprimer la note" id="delete-note" icon="delete" icon_only=True message=message action=url %}
+        {% endwith %}{% endwith %}
     </header>
 
     {% if content %}
