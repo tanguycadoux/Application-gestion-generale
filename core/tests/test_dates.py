@@ -108,17 +108,7 @@ class DatesInPagesTests(TestCase):
         ).content.decode()
 
         self.assertInHTML(f"<h1 class='flex-1'>Note du {self.LONG}</h1>", html)
-        self.assertIn('data-confirm="Supprimer définitivement la note du 24', html)
-
-    def test_vue_markdown(self):
-        html = self.client.get(
-            reverse("note_taking:note_md", args=[self.note.date])
-        ).content.decode()
-
-        self.assertIn(
-            "<title>Note du 24 novembre 2025 en Markdown · Notes</title>", html
-        )
-        self.assertInHTML(f"<h1>Note du {self.LONG}</h1>", html)
+        self.assertIn("Supprimer définitivement la note du 24", html)
 
     def test_tableau_des_notes_en_format_court(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()

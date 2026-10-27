@@ -7,16 +7,3 @@
     {# Navigation entre les mois du calendrier sans recharger la page (#167). #}
 {% endblock extra_head %}
 
-{% block nav %}
-    <ul class="mb-4">
-        <li>{% nav_link "core:index" "Toutes les apps" "apps" %}</li>
-    </ul>
-
-    <hr class="hidden">
-
-    <ul>
-        <li>{% nav_link "todolist:index" "Accueil" "home" %}</li>
-
-        <li>{% nav_link "todolist:todo_list" "Liste des tâches" "checklist" %}</li>
-    </ul>
-{% endblock nav %}

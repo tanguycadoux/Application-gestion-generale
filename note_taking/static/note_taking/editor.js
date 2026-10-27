@@ -98,9 +98,9 @@ async function insertCaptures(view, files, form) {
                 userEvent: "input.paste",
             });
             separator = "\n\n";
-            window.Alert?.toast(`L'image « ${image.name} » est importée.`, { type: "success" });
+            window.Toast?.show(`L'image « ${image.name} » est importée.`, "success");
         } catch (error) {
-            window.Alert?.toast(error.message, { type: "error" });
+            window.Toast?.show(error.message, "error");
         }
     }
     view.focus();

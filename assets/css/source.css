@@ -60,39 +60,16 @@
 }
 
 @layer components {
-    /* Animations des alertes (#154) ; leur apparence est en classes Tailwind,
-       dans core/static/core/alert_system.js. Dans le layer components, les
-       classes Tailwind (layer utilities) peuvent surcharger ces règles. */
-
-    /* Apparition d'un toast */
-    .alert__toast {
-        opacity: 0;
-        transform: translateY(-1em);
-        transition: opacity 0.25s ease-out, transform 0.25s ease-out;
-    }
-    .alert__toast.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    /* Barre de progression d'un toast : de toute la largeur à rien, sur la durée
-       du toast (animation-duration, donnée par le script). */
-    .alert__toast-progress {
-        width: 100%;
-        animation: alert-toast-progress linear forwards;
-    }
-
-    @keyframes alert-toast-progress {
-        from { width: 100%; }
-        to   { width: 0; }
-    }
+    /* Animations de la popover de colonne (#154) ; son apparence est en classes
+       Tailwind, dans core/static/core/alert_system.js. Dans le layer components,
+       les classes Tailwind (layer utilities) peuvent surcharger ces règles. */
 
     /* Apparition de la popover */
     .alert__popover {
         animation: fadeIn .1s ease-out;
     }
 
-    /* Popover native de confirmation (essai) : sous son bouton, alignée sur son
+    /* Popover native de confirmation (#292) : sous son bouton, alignée sur son
        bord droit, par l'ancre implicite de popovertarget ; retournée au-dessus
        si la place manque. Sans ancrage CSS, le navigateur la centre. */
     .confirm-popover:popover-open {

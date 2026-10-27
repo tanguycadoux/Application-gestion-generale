@@ -78,9 +78,7 @@ def todo_list(request):
     rows = dismissed_rows()
     for row in rows:
         # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
-        row.confirm = (
-            f"Rétablir la tâche « {row.task.title} »{with_subtasks(row.subtasks)} ?"
-        )
+        row.confirm = f"Rétablir la tâche{with_subtasks(row.subtasks)} ?"
     return render(
         request,
         "todolist/todo_list.html",
@@ -140,15 +138,16 @@ class TodoDetailView(DetailView):
         context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
         context["children"] = context["children_groups"][0].rows
         context["gantt"] = gantt_chart(todo)
-        # Les sous-tâches partent avec la tâche : la confirmation le dit (#223).
+        # Les sous-tâches partent avec la tâche : la confirmation le dit (#223). Le titre
+        # n'y figure pas : il peut être très long, et la page est celle de la tâche.
         # Un arbre qui contient une tâche issue d'une note est écarté (#290).
         subtasks = with_subtasks(len(context["children"]))
         context["dismisses"] = removal_dismisses(todo)
         context["delete_confirm"] = (
-            f"Écarter la tâche « {todo.title} »{subtasks} ? La section « Écartées » "
+            f"Écarter la tâche{subtasks} ? La section « Écartées » "
             "de la liste des tâches permet de revenir en arrière."
             if context["dismisses"]
-            else f"Supprimer définitivement la tâche « {todo.title} »{subtasks} ?"
+            else f"Supprimer définitivement la tâche{subtasks} ?"
         )
         return context
 

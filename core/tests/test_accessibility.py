@@ -15,7 +15,7 @@ class BaseTemplateTests(TestCase):
     def test_menu_principal_nomme(self):
         for name, html in self.pages().items():
             with self.subTest(page=name):
-                self.assertIn('<nav aria-label="Menu principal"', html)
+                self.assertRegex(html, r'<nav [^>]*aria-label="Menu principal"')
 
     def test_lien_d_evitement_en_tete_vers_le_contenu(self):
         for name, html in self.pages().items():

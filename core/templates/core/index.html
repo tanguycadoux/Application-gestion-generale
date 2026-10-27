@@ -3,16 +3,16 @@
 
 {% block title %}Gestion générale{% endblock title %}
 
-{% block nav %}
-    <ul>
-        {% for link in home_links %}
-            <li>{% nav_link link.url_name link.label link.icon %}</li>
-        {% endfor %}
-
-        <li>{% nav_link "core:projects" "Projets" "folder" %}</li>
-    </ul>
-{% endblock nav %}
-
 {% block content %}
-    <h1>Application de gestion générale</h1>
+    <h1 class="mb-4">Application de gestion générale</h1>
+
+    {# Un bloc par entrée déclarée par les apps (`dashboard_blocks` de leur AppConfig, #233). #}
+    <div class="grid gap-6 lg:grid-cols-2">
+        {% for block in blocks %}
+            <section aria-labelledby="dashboard-block-{{ forloop.counter }}" class="rounded-lg border border-slate-200 p-4">
+                <h2 id="dashboard-block-{{ forloop.counter }}" class="mb-3">{{ block.title }}</h2>
+                {{ block.html }}
+            </section>
+        {% endfor %}
+    </div>
 {% endblock content %}

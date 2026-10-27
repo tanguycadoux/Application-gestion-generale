@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load ui static %}
+
+{% block title %}Galerie des alertes{% endblock title %}
+{% block title_suffix %} · Debug{% endblock title_suffix %}
+
+{% block content %}
+    {# Page de développement (#156, #235) : seulement avec DEBUG = True. #}
+    <h1 class="mb-2">Galerie des alertes</h1>
+    <p class="mb-4 text-slate-600">Page de développement : les alertes de l'interface, pour juger leur rendu sans déclencher de vrais messages.</p>
+
+    <section aria-labelledby="gallery-confirm-title" class="mb-6">
+        <h2 id="gallery-confirm-title" class="mb-2">Confirmation</h2>
+        <p class="mb-3">La popover native de <code>{% templatetag openblock %} confirm_button {% templatetag closeblock %}</code>, ouverte au chargement ; le bouton la rouvre. Confirmer n'efface rien : un message de succès s'affiche.</p>
+        {% url 'core:alerts_gallery' as url %}
+        {% confirm_button "Supprimer l'exemple" id="gallery-confirm" icon="delete" message="Supprimer définitivement cet élément ?" action=url %}
+    </section>
+
+    <section aria-labelledby="gallery-messages" class="mb-6">
+        <h2 id="gallery-messages" class="mb-2">Messages du serveur</h2>
+        <p class="mb-3">Le HTML de <code>{% templatetag openblock %} message_toast {% templatetag closeblock %}</code>, un par niveau et un message long. Ici ils restent : dans l'application, <code>toasts.js</code> fait disparaître les informations et les succès au bout de 6 s.</p>
+        <div id="gallery-toasts" class="flex max-w-sm flex-col gap-2">
+            {% for toast in toasts %}
+                {% message_toast toast %}
+            {% endfor %}
+        </div>
+    </section>
+
+    <section aria-labelledby="gallery-script" class="mb-6">
+        <h2 id="gallery-script" class="mb-2">Toasts créés par un script</h2>
+        <p class="mb-3"><code>Toast.show(message, niveau)</code>, comme à l'échec d'une case à cocher : en bas à droite, le succès disparaît, l'erreur reste.</p>
+        <div class="flex gap-2">
+            <span id="gallery-show-success">{% button "Un succès" icon="check_circle" variant="ghost" type="button" %}</span>
+            <span id="gallery-show-error">{% button "Une erreur" icon="error" variant="ghost" type="button" %}</span>
+        </div>
+    </section>
+
+    {# Sans toasts.js avant lui : ce script, `defer` comme lui et placé plus haut, s'exécute le premier. #}
+    <script src="{% static 'core/alerts_gallery.js' %}" defer></script>
+{% endblock content %}

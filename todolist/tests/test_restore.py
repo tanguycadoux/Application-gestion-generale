@@ -53,7 +53,7 @@ class DismissedListTests(RestoreTestCase):
 
         response = self.client.get(reverse("todolist:todo_list"))
 
-        self.assertContains(response, "Rétablir la tâche « A » et ses 2 sous-tâches ?")
+        self.assertContains(response, "Rétablir la tâche et ses 2 sous-tâches ?")
 
     def test_confirmation_par_une_popover_native(self):
         """Essai : popover HTML (`popover`, `popovertarget`), sans JavaScript ; le
@@ -70,7 +70,7 @@ class DismissedListTests(RestoreTestCase):
             re.DOTALL,
         )
         assert popover is not None
-        self.assertIn("Rétablir la tâche « A » et ses 2 sous-tâches ?", popover[1])
+        self.assertIn("Rétablir la tâche et ses 2 sous-tâches ?", popover[1])
         form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
         assert form is not None
         self.assertIn(reverse("todolist:todo_restore", args=[pk]), form[0])
