@@ -61,10 +61,21 @@ class ProjectBadgeTests(TestCase):
 
         self.assertHTMLEqual(
             render("{% project_badge p %}", p=project),
-            '<span class="inline-flex items-center gap-1.5">'
-            '<span class="size-2.5 shrink-0 rounded-full bg-teal-500"'
-            ' aria-hidden="true"></span>ASTERICS</span>',
+            "<span>"
+            '<span class="mr-1.5 inline-block size-2.5 rounded-full align-middle'
+            ' bg-teal-500" aria-hidden="true"></span>ASTERICS</span>',
         )
+
+    def test_pastille_dans_le_texte_de_la_ligne(self):
+        """Le nom reste dans la ligne de texte : un conteneur flex prenait pour ligne
+        de base celle du rond, vide, et décalait le nom des titres et du texte autour."""
+        project = Project.objects.create(name="ASTERICS", color="teal")
+
+        html = render("{% project_badge p %}", p=project)
+
+        self.assertNotIn("flex", html)
+        self.assertIn("inline-block", html)
+        self.assertIn("align-middle", html)
 
     def test_pastille_sans_projet(self):
         self.assertEqual(render("{% project_badge p %}", p=None).strip(), "")
