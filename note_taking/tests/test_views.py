@@ -98,40 +98,6 @@ class UpdateSourceFileViewTests(ViewTestCase):
         )
 
 
-class NoteListSortTests(ViewTestCase):
-    """#219 : seuls les tris proposés par l'interface sont acceptés."""
-
-    def setUp(self):
-        for day in ("2025-11-24", "2025-11-26", "2025-11-25"):
-            Note.objects.create(date=day, body="# P\nx")
-        self.url = reverse("note_taking:notes_list")
-
-    def dates(self, response) -> list[str]:
-        return [str(note.date) for note in response.context["notes"]]
-
-    def test_tri_par_date(self):
-        response = self.client.get(self.url, {"sort": "date", "direction": "asc"})
-
-        self.assertEqual(
-            self.dates(response), ["2025-11-24", "2025-11-25", "2025-11-26"]
-        )
-
-    def test_tri_inconnu_revient_au_tri_par_defaut(self):
-        for params in (
-            {"sort": "foo", "direction": "asc"},
-            {"sort": "body", "direction": "asc"},
-            {"sort": "date", "direction": "foo"},
-        ):
-            with self.subTest(params=params):
-                response = self.client.get(self.url, params)
-
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(
-                    self.dates(response), ["2025-11-26", "2025-11-25", "2025-11-24"]
-                )
-                self.assertIsNone(response.context["sort"])
-
-
 class NoteFormViewTests(ViewTestCase):
     def test_creation(self):
         response = self.client.post(

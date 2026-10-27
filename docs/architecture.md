@@ -58,6 +58,7 @@ todolist ──► note_taking ──► images ──► core
 | `tags.py` | `forget_unused_tags`, appelée par `reprocess_notes` |
 | `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
 | `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
+| `tables.py`, `components/column_header.html`, `components/filter_summary.html` | tri et filtres des tableaux côté serveur, dans l'URL, et leurs composants `{% column_header %}` et `{% filter_summary %}` (#178, section « Tableaux triés et filtrés ») |
 | `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
 | `forms.py` | formulaires des projets, et rendu en grille de `{{ form }}` (`GridFormRenderer`, réglage `FORM_RENDERER`, #132) |
 | `icons.py`, `management/commands/add_icon.py` | icônes Material Symbols en SVG (`static/icons/`), et leur téléchargement (#218) |
@@ -66,6 +67,15 @@ todolist ──► note_taking ──► images ──► core
 | `exceptions.py` | `AppError`, base des erreurs métier |
 
 Les couleurs des projets (#162) sont des familles de Tailwind réservées aux projets. Un projet créé sans couleur, par une note ou une tâche, reçoit la moins utilisée. Seule la pastille (`project_badge`) les emploie.
+
+## Tableaux triés et filtrés (#178)
+
+Un seul mécanisme pour les tableaux de toutes les apps, calqué sur `research-paper-relationship-graph` : **côté serveur, dans l'URL**. La page se partage, fonctionne sans JavaScript, et tout le tableau est trié et filtré, pas seulement ce qui est affiché. `core/tables.py` ne connaît aucune app.
+
+- **Tri** : `?sort=date` (croissant), `?sort=-date` (décroissant). `Sorting` déclare les colonnes (`Column` : une expression pour un queryset, ou une clé pour une liste Python), le tri par défaut et les égalités, toujours départagées dans le même ordre jusqu'à `pk`. Les lignes sans valeur restent à la fin dans les deux sens. Un clic sur la colonne triée inverse le sens ; un clic sur une autre colonne commence par son sens naturel (`descending_first`). Un tri inconnu revient au tri par défaut. `Sorting.apply` trie un queryset, `Sorting.sort_items` une liste Python (tableau arborescent).
+- **Filtres** : `Filters` range les filtres par colonne, une colonne pouvant en porter plusieurs dans le même panneau. Types : `TextFilter` (contient), `ChoiceFilter` (un choix, avec une valeur par défaut qui n'est pas un filtre actif ; des radios, ou un `<select>` au-delà de six choix, sauf pour des projets, qui gardent leur pastille), `DateRangeFilter` (`<clé>_from`, `<clé>_to`, AAAA-MM-JJ, bornes inversées remises dans l'ordre, date mal écrite signalée sans bloquer l'autre borne). Chaque filtre lit ses paramètres (`?project=ASTERICS&date_from=2025-11-01`) et porte la fonction qui l'applique à ce que la page filtre ; `Filters.read` donne les filtres actifs et leurs erreurs de saisie, `Filters.apply` les applique.
+- **Composants** : `{% column_header "Date" "date" classes="…" %}` rend l'en-tête (`<th>`, lien de tri avec `aria-sort` et flèche, entonnoir) à partir de `sorting`, `sort`, `filters` et `active_filters` du contexte de la page ; `{% filter_summary %}` liste les filtres actifs au-dessus du tableau, chacun retiré d'un clic, avec les erreurs de saisie. L'entonnoir ouvre une **popover HTML native** sans JavaScript, ancrée à son bouton par l'ancrage CSS (`.table-filter-popover`, `assets/css/source.css`, comme `.confirm-popover`). Le formulaire d'une colonne reprend le tri et les autres filtres en champs cachés ; tout changement de tri ou de filtre repart de la première page. L'entonnoir d'un filtre actif est bleu et annoncé (`filtre actif`). Un tableau filtré sans résultat reste affiché, pour changer les filtres.
+- **Tableau des notes** (`note_taking/note_table.py`) : tri par date ; filtres « Date » (de, à) et « Projets » (un des projets qui ont des notes, avec sa pastille). Le filtre par projet ne cache pas les autres projets d'une note (le préchargement est indépendant du filtre) ; l'export prend toutes les notes, filtrées ou non. La popover provisoire (`table.js`) a disparu.
 
 ## Organisation de `note_taking`
 

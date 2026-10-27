@@ -348,7 +348,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 
 ### Fonctionnalités
 
-- liste des notes, triable par colonne (`/notes/list/`),
+- liste des notes (`/notes/list/`), triable par date et filtrable par date ou par projet (#178) : tri et filtres sont dans l'adresse (`?sort=-date&project=ASTERICS&date_from=2025-11-01`) et s'ouvrent depuis les en-têtes de colonne, sans JavaScript ;
 - vue détail d'une note, rendu markdown complet (`/notes/<AAAA-MM-JJ>/md/`) et résultat de l'analyse en JSON (`/notes/<AAAA-MM-JJ>/json/`),
 - recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.

@@ -3,12 +3,6 @@
 
 {% block title %}Liste des notes{% endblock title %}
 
-{% block extra_head %}
-    {{ block.super }}
-    {% load static %}
-    <script src="{% static 'note_taking/table.js' %}" defer></script>
-{% endblock extra_head %}
-
 {% block content %}
     <h1>Liste des notes</h1>
 
@@ -22,7 +16,7 @@
             {% button "Importer" icon="upload" %}
         </form>
         {% url 'note_taking:export_notes' as export_url %}
-        {% with count=notes.count %}
+        {% with count=note_count %}
             {% if count == 1 %}
                 {% button "Exporter la note" icon="download" href=export_url %}
             {% else %}
@@ -34,40 +28,12 @@
     </section>
     <hr class="hidden">
 
+    {% filter_summary %}
     <table class="border-collapse rounded-[.6rem] text-left outline outline-slate-300">
         <thead class="border-b border-slate-300">
             <tr>
-                <th scope="col" class="bg-slate-100 px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
-                    <a class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-slate-200 data-active:bg-slate-200"
-                        {% if next_sort %}
-                            href="?sort={{ next_sort }}&direction={{ next_direction }}"
-                        {% else %}
-                            href="{% url 'note_taking:notes_list' %}"
-                        {% endif %}
-                    >
-                        <span>
-                            Date
-                            {% if sort == "date" %}
-                                {% if direction == "asc" %}
-                                    <span>&#x1F869;</span>
-                                {% elif direction == "desc" %}
-                                    <span>&#x1F86B;</span>
-                                {% endif %}
-                            {% endif %}
-                        </span>
-                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-slate-100">
-                            &centerdot;&centerdot;&centerdot;
-                        </span>
-                    </a>
-                </th>
-                <th scope="col" class="bg-slate-100 px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
-                    <button class="table-column-head grid w-full cursor-pointer grid-cols-[1fr_auto] items-baseline rounded-[.6rem] bg-inherit p-[.4rem] text-left font-semibold text-black hover:bg-slate-200 data-active:bg-slate-200">
-                        <span>Projets</span>
-                        <span class="table-column-head__options cursor-pointer select-none rounded-[.2rem] bg-inherit p-[.2rem] hover:bg-slate-100">
-                            &centerdot;&centerdot;&centerdot;
-                        </span>
-                    </button>
-                </th>
+                {% column_header "Date" "date" classes="bg-slate-100 px-[.4rem] py-[.6rem] font-semibold text-black" %}
+                {% column_header "Projets" "projects" classes="bg-slate-100 px-[.4rem] py-[.6rem] font-semibold text-black" %}
             </tr>
         </thead>
         <tbody>
@@ -84,6 +50,12 @@
                                 {% endfor %}
                             </ul>
                         {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" class="p-[.6rem]">
+                        {% if active_filters %}Aucune note ne répond aux filtres.{% else %}Aucune note.{% endif %}
                     </td>
                 </tr>
             {% endfor %}

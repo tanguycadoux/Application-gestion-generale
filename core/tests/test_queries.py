@@ -74,5 +74,8 @@ class ListQueriesTests(TestCase):
 
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
-        self.assertLess(html.index(">A<"), html.index(">B<"))
-        self.assertEqual(html.count(">B<"), 1)
+        # Les lignes du tableau, pas le panneau de filtres, qui liste aussi les projets.
+        rows = html[html.index("<tbody") :]
+
+        self.assertLess(rows.index(">A<"), rows.index(">B<"))
+        self.assertEqual(rows.count(">B<"), 1)
