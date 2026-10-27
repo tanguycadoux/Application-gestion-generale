@@ -21,6 +21,10 @@ const IMAGE_PATH_TRIGGER = /!\[[^\]\n]*\]\(images\/([^)\s]*)$/;
 
 const phrases = { Completions: "Suggestions" };
 
+// Les deux parties de la liste des niveaux : ceux d'ici, puis les noms d'ailleurs.
+const HERE = { name: "À ce niveau", rank: 0 };
+const ELSEWHERE = { name: "Ailleurs", rank: 1 };
+
 async function fetchResults(url, params, context) {
     const controller = new AbortController();
     context.addEventListener("abort", () => controller.abort());
@@ -31,7 +35,7 @@ async function fetchResults(url, params, context) {
             headers: { Accept: "application/json" },
         });
         if (!response.ok) return null;
-        return (await response.json()).results;
+        return await response.json();
     } catch {
         // Requête annulée (la saisie a changé) ou serveur injoignable : pas de liste.
         return null;
@@ -73,25 +77,36 @@ function titleSource(urls) {
         const from = line.from + match[0].length;
         const query = context.state.sliceDoc(from, context.pos);
 
-        let results;
+        let options;
         if (heading.level === 1) {
-            results = await fetchResults(urls.projects, { q: query }, context);
+            const data = await fetchResults(urls.projects, { q: query }, context);
+            options = (data?.results ?? []).map((project) => ({ label: project.name }));
         } else {
+            // Sans projet connu au-dessus (titre qui saute un niveau), il n'y a rien à ce
+            // niveau, mais les noms existants servent encore.
             const above = pathAbove(headings, line, heading.level);
-            if (!above) return null;
-            results = await fetchResults(
+            const data = await fetchResults(
                 urls.sections,
-                { projet: above.project, chemin: joinPath(above.path), q: query },
+                {
+                    projet: above?.project ?? "",
+                    chemin: joinPath(above?.path ?? []),
+                    q: query,
+                },
                 context,
             );
+            options = [
+                ...(data?.results ?? []).map((level) => ({ label: level.name, section: HERE })),
+                // « Ailleurs » : où le nom est déjà utilisé, pour ne pas confondre deux « Bilan ».
+                ...(data?.elsewhere ?? []).map((level) => ({
+                    label: level.name,
+                    detail: level.where,
+                    section: ELSEWHERE,
+                })),
+            ];
         }
-        if (!results?.length) return null;
-        return {
-            from,
-            // La liste est déjà filtrée par le serveur (casse et accents ignorés).
-            filter: false,
-            options: results.map((result) => ({ label: result.name })),
-        };
+        if (!options.length) return null;
+        // La liste est déjà filtrée par le serveur (casse et accents ignorés).
+        return { from, filter: false, options };
     };
 }
 
@@ -104,7 +119,8 @@ function imageSource(urls) {
         const inPath = IMAGE_PATH_TRIGGER.exec(before);
         const created = inPath ?? IMAGE_TRIGGER.exec(before);
         if (!created) return null;
-        const results = await fetchResults(urls.images, { q: inPath ? inPath[1] : created[1] }, context);
+        const data = await fetchResults(urls.images, { q: inPath ? inPath[1] : created[1] }, context);
+        const results = data?.results;
         if (!results?.length) return null;
         const from = context.pos - (inPath ? inPath[1].length : created[0].length);
         return {

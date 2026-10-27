@@ -8,7 +8,7 @@ import unicodedata
 from collections.abc import Callable, Iterable
 
 from .models import Project, Section
-from .sections import split_path
+from .sections import path_labels, split_path
 
 LIMIT = 50
 
@@ -62,3 +62,29 @@ def section_suggestions(project_name: str, path: str, query: str) -> list[Sectio
             return []
     siblings = Section.objects.filter(project=project, parent=parent)
     return rank_by_name(siblings, query, lambda section: section.name)
+
+
+def elsewhere_suggestions(query: str, taken: Iterable[str]) -> list[tuple[str, str]]:
+    """Les noms de niveau de tous les projets et de tous les rangs, avec où on les
+    trouve : [("Bilan", "PDS1 › Autre › Bilan")], « (+2) » s'il y en a d'autres.
+
+    Un nom n'est proposé qu'une fois, et pas s'il est déjà dans `taken` (les niveaux
+    proposés à l'endroit où l'on écrit). Rien sans saisie : la liste de toute la base
+    noierait celle du niveau.
+    """
+    if not fold(query.strip()):
+        return []
+    names = dict(Section.objects.values_list("pk", "name"))
+    found: dict[str, list[tuple[str, str]]] = {}
+    for pk, label in path_labels().items():
+        found.setdefault(fold(names[pk]), []).append((label, names[pk]))
+    already = {fold(name) for name in taken}
+    entries = []
+    for key, places in found.items():
+        if key in already:
+            continue
+        places.sort(key=lambda place: fold(place[0]))
+        label, name = places[0]
+        more = f" (+{len(places) - 1})" if len(places) > 1 else ""
+        entries.append((name, label + more))
+    return rank_by_name(entries, query, lambda entry: entry[0])
