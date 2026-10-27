@@ -51,6 +51,9 @@ class ParsedNote:
     file_date: str
     metadata: dict[str, str] = field(default_factory=dict)
     parts: list[ParsedPart] = field(default_factory=list)
+    # Ce qui est accepté mais probablement pas voulu : un titre qui saute un niveau,
+    # un titre sans projet (#305). Le texte de la note n'est pas réécrit.
+    warnings: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         """Représentation JSON historique (vue note_json, tests)."""
@@ -128,7 +131,7 @@ class NoteParser:
         if line.startswith(CODE_FENCE):
             self.in_code_block = not self.in_code_block
 
-        if self.parse_title(line):
+        if self.parse_title(number, line):
             return
 
         if self.in_front_matter and self.in_metadata_block:
@@ -168,7 +171,7 @@ class NoteParser:
             return False
         return True
 
-    def parse_title(self, line: str) -> bool:
+    def parse_title(self, number: int, line: str) -> bool:
         """Met à jour la hiérarchie ; renvoie True si la ligne est un titre."""
         match = TITLE_REGEX.match(line)
         if not match or self.in_code_block or self.in_callout:
@@ -178,12 +181,33 @@ class NoteParser:
         self.current_level = level
         if level > MAX_LEVEL:
             return True
+        self.check_level(number + 1, level, match.group(2).strip())
 
         # Un nouveau titre remplace son niveau et efface les niveaux plus profonds.
         self.levels[level] = Level(title=match.group(2).strip())
         for deeper in range(level + 1, MAX_LEVEL + 1):
             self.levels[deeper] = Level()
         return True
+
+    def check_level(self, number: int, level: int, title: str) -> None:
+        """Signale un titre sans projet au-dessus, ou qui saute un niveau (#305) :
+        accepté tel quel, le chemin se fait des titres et pas de leur niveau."""
+        hashes = "#" * level
+        if self.levels[1].title is None:
+            if level > 1:
+                self.note.warnings.append(
+                    f"Ligne {number} : le titre « {title} » ({hashes}) n'a pas de "
+                    "projet (#) au-dessus de lui : son contenu n'est pas enregistré."
+                )
+            return
+        deepest = max(
+            current for current, state in self.levels.items() if state.title is not None
+        )
+        if level > deepest + 1:
+            self.note.warnings.append(
+                f"Ligne {number} : le titre « {title} » ({hashes}) saute un niveau "
+                f"sous « {self.levels[deepest].title} » ({'#' * deepest})."
+            )
 
     def parse_metadata_line(self, number: int, line: str) -> None:
         key, value = parse_key_value(line, number + 1)
