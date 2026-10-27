@@ -1,0 +1,28 @@
+{% load ui todo_ui %}
+{% if tasks %}
+    <table class="mb-3 w-full table-fixed border-collapse text-left">
+        <caption class="sr-only">Tâches en retard ou à échéance proche</caption>
+        <thead class="sr-only">
+            <tr>
+                <th scope="col">Tâche</th>
+                <th scope="col">Échéance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for todo in tasks %}
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2 align-baseline">
+                        <span class="line-clamp-2 break-words"><a href="{% url 'todolist:todo_detail' todo.pk %}" title="{{ todo.title }}">{{ todo.title }}</a></span>
+                        {% if todo.project %}<span class="ml-1">{% project_badge todo.project %}</span>{% endif %}
+                    </td>
+                    <td class="w-28 whitespace-nowrap p-2 text-right align-baseline text-sm {{ todo|remaining_class }}">{{ todo|remaining_text }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if others %}<p class="mb-3 text-sm text-slate-600">et {{ others }} autre{{ others|pluralize }}</p>{% endif %}
+{% else %}
+    <p class="mb-3 text-slate-600">Aucune tâche en retard ni à échéance proche.</p>
+{% endif %}
+{% url 'todolist:todo_list' as url %}
+{% button "Toutes les tâches" icon="checklist" href=url variant="ghost" %}

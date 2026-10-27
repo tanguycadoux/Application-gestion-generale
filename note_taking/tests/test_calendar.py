@@ -153,7 +153,8 @@ class CalendarMarkupTests(TestCase):
         self.assertIn('<caption class="sr-only">', html)
         self.assertEqual(html.count('<th scope="col"'), 7)
         self.assertRegex(html, r'<abbr title="lundi"[^>]*>Lun</abbr>')
-        self.assertEqual(html.count("<tr"), 1 + 5)
+        # En-tête, cinq semaines du mois, et la ligne réservée à la sixième (#275).
+        self.assertEqual(html.count("<tr"), 1 + 5 + 1)
 
     def test_dates_balisees(self):
         html = self.get("?month=2025-11")

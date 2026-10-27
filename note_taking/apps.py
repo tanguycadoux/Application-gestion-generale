@@ -1,17 +1,45 @@
 from django.apps import AppConfig
 
-from core.app_registry import HomeLink, ProjectUsage, SectionRenamer, SectionUsage
+from core.app_registry import (
+    DashboardBlock,
+    NavItem,
+    NavSection,
+    ProjectUsage,
+    SectionRenamer,
+    SectionUsage,
+)
 
 
 class NoteTakingConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "note_taking"
-    home_link = HomeLink("note_taking:index", "Prise de notes", "docs")
+    nav_section = NavSection(
+        "Notes",
+        10,
+        (
+            NavItem("note_taking:index", "Calendrier", "calendar_month"),
+            NavItem("note_taking:note_today", "Note du jour", "today"),
+            NavItem("note_taking:notes_list", "Les notes", "docs"),
+            NavItem("note_taking:notes_search", "Recherche de notes", "search"),
+            NavItem("note_taking:images_list", "Les images", "image"),
+        ),
+    )
     project_usages = (ProjectUsage("note_parts__note", "note", "notes"),)
     section_usages = (SectionUsage("note_parts", "note part", "note parts"),)
 
+    debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
+
     def ready(self):
-        from . import renaming
+        from . import dashboard, renaming
+
+        self.dashboard_blocks = (
+            DashboardBlock(
+                "Note du jour",
+                10,
+                "note_taking/dashboard_today.html",
+                dashboard.today_note,
+            ),
+        )
 
         self.section_renamer = SectionRenamer(
             occurrences=renaming.find_occurrences, rename=renaming.rename_titles

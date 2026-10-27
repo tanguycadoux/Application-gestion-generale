@@ -10,11 +10,12 @@ Calendrier mensuel partagé (#167), à inclure avec :
 <section id="calendar" aria-labelledby="calendar-title" data-component="month-calendar">
     <header class="mb-2 flex items-center gap-2">
         <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
+        <p class="text-sm text-slate-500">{% kbd "←" %} {% kbd "→" %} changer de mois</p>
         <nav aria-label="Mois" class="flex items-center gap-1" data-hx-boost="true" data-hx-target="#calendar" data-hx-select="#calendar" data-hx-swap="outerHTML">
             {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
-                {% button "Mois précédent" icon="chevron_left" href="?month="|add:previous variant="ghost" icon_only=True %}
+                {% button "Mois précédent" icon="chevron_left" href="?month="|add:previous variant="ghost" icon_only=True keyshortcuts="ArrowLeft" %}
                 {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}
-                {% button "Mois suivant" icon="chevron_right" href="?month="|add:next variant="ghost" icon_only=True %}
+                {% button "Mois suivant" icon="chevron_right" href="?month="|add:next variant="ghost" icon_only=True keyshortcuts="ArrowRight" %}
             {% endwith %}
         </nav>
     </header>
@@ -34,6 +35,12 @@ Calendrier mensuel partagé (#167), à inclure avec :
                     {% for day in week %}
                         <td class="h-24 p-0 align-top">{% include day_template %}</td>
                     {% endfor %}
+                </tr>
+            {% endfor %}
+            {% comment %}Place de six semaines réservée : la hauteur ne change pas d'un mois à l'autre (#275).{% endcomment %}
+            {% for spare in calendar.spare_weeks %}
+                <tr aria-hidden="true" data-spare-week>
+                    <td colspan="7" class="h-24 p-0"></td>
                 </tr>
             {% endfor %}
         </tbody>

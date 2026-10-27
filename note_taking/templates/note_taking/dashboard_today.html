@@ -1,0 +1,10 @@
+{% load ui %}
+<p class="mb-3">{% date_time today "long" %}</p>
+{% if note %}
+    {% url 'note_taking:note_detail' note.date as url %}
+    {% button "Ouvrir la note du jour" icon="today" href=url %}
+{% else %}
+    <p class="mb-3 text-slate-600">Pas encore de note aujourd'hui.</p>
+    {% url 'note_taking:new_note' as new_url %}
+    {% button "Créer la note du jour" icon="add" href=new_url|add:"?date="|add:today.isoformat %}
+{% endif %}

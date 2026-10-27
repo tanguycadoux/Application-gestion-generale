@@ -1,9 +1,0 @@
-{% extends "note_taking/base.html" %}
-{% load ui %}
-
-{% block title %}Note du {{ date|date_text:"moyen" }} en Markdown{% endblock title %}
-
-{% block content %}
-    <h1>Note du {% date_time date "long" %}</h1>
-    <div class="rendered-content">{{ content|safe }}</div>
-{% endblock content %}

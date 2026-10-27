@@ -44,11 +44,12 @@ def app_files(*patterns: str) -> list[Path]:
 
 def used_icons() -> set[str]:
     """Icônes citées par les gabarits, les composants, le rendu et les alertes."""
-    from core.app_registry import home_links
+    from core.app_registry import nav_sections
     from note_taking.rendering import CALLOUT_ICONS
 
     names: set[str] = set(CALLOUT_ICONS.values())
-    names |= {link.icon for link in home_links()}
+    names |= {item.icon for section in nav_sections() for item in section.items}
+    names |= {"left_panel_close", "left_panel_open"}
     for path in app_files("**/*.html", "**/*.py", "**/*.js"):
         text = path.read_text(encoding="utf-8")
         for regex in (

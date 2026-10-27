@@ -12,22 +12,3 @@
     <script src="{% static 'note_taking/math.js' %}" defer></script>
 {% endblock extra_head %}
 
-{% block nav %}
-    <ul class="mb-4">
-        <li>{% nav_link "core:index" "Toutes les apps" "apps" %}</li>
-    </ul>
-
-    <hr class="hidden">
-
-    <ul>
-        <li>{% nav_link "note_taking:index" "Accueil" "home" %}</li>
-
-        <li>{% nav_link "note_taking:note_today" "Note du jour" "today" %}</li>
-
-        <li>{% nav_link "note_taking:notes_list" "Les notes" "docs" %}</li>
-        
-        <li>{% nav_link "note_taking:notes_search" "Recherche de notes" "search" %}</li>
-        
-        <li>{% nav_link "note_taking:images_list" "Les images" "image" %}</li>
-    </ul>
-{% endblock nav %}

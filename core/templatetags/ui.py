@@ -12,7 +12,7 @@ from django import template
 from django.template.defaultfilters import date as format_date
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html, json_script
+from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
 from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
@@ -71,13 +71,6 @@ def indent_class(depth: int) -> str:
     return INDENT_CLASSES[min(depth, len(INDENT_CLASSES) - 1)]
 
 
-@register.simple_tag
-def button_variants_json() -> str:
-    """Classes des variantes de bouton pour les scripts qui créent des boutons
-    (alertes, #154), dans un `<script id="button-variants" type="application/json">`."""
-    return json_script(BUTTON_VARIANTS, "button-variants")
-
-
 @register.inclusion_tag("core/components/button.html")
 def button(
     label: str,
@@ -91,6 +84,7 @@ def button(
     describedby: str = "",
     popovertarget: str = "",
     popovertargetaction: str = "",
+    keyshortcuts: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -105,7 +99,9 @@ def button(
     - `describedby` : identifiant du texte qui décrit le bouton (`aria-describedby`),
       par exemple la raison pour laquelle il est désactivé ;
     - `popovertarget`, `popovertargetaction` : popover native que le bouton
-      ouvre, ou ferme avec `"hide"` ; pas pour un lien.
+      ouvre, ou ferme avec `"hide"` ; pas pour un lien ;
+    - `keyshortcuts` : raccourci clavier que gère la page, annoncé aux technologies
+      d'assistance (`aria-keyshortcuts`, par exemple `"ArrowLeft"`, #276).
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
@@ -134,7 +130,128 @@ def button(
         "describedby": describedby,
         "popovertarget": popovertarget,
         "popovertargetaction": popovertargetaction,
+        "keyshortcuts": keyshortcuts,
     }
+
+
+@register.inclusion_tag("core/components/confirm_button.html", takes_context=True)
+def confirm_button(
+    context,
+    label: str,
+    id: str,
+    message: str,
+    action: str,
+    icon: str = "",
+    variant: str = "ghost-danger",
+    icon_only: bool = False,
+    confirm_label: str = "Supprimer",
+    confirm_icon: str = "delete",
+    confirm_variant: str = "danger",
+    disabled: bool = False,
+    describedby: str = "",
+) -> dict:
+    """Bouton qui demande confirmation avant d'envoyer un POST (#292).
+
+    Une popover HTML native, sans JavaScript : le bouton l'ouvre, le navigateur
+    la ferme (Échap, clic à côté, « Annuler ») et la place sous le bouton
+    (`.confirm-popover`). Elle contient le `message` et le formulaire POST vers
+    `action`, avec « Annuler » puis l'action.
+
+    - `label`, `icon`, `variant`, `icon_only` : le bouton de la page (comme `button`) ;
+    - `id` : identifiant de la popover, unique dans la page ;
+    - `confirm_label`, `confirm_icon`, `confirm_variant` : l'action de la popover
+      (« Supprimer » en `danger` par défaut, « Rétablir » en `primary`) ;
+    - `disabled`, `describedby` : bouton désactivé relié à la raison, sans popover.
+    """
+    return {
+        "label": label,
+        "id": id,
+        "message": message,
+        "action": action,
+        "icon": icon,
+        "variant": variant,
+        "icon_only": icon_only,
+        "confirm_label": confirm_label,
+        "confirm_icon": confirm_icon,
+        "confirm_variant": confirm_variant,
+        "disabled": disabled,
+        "describedby": describedby,
+        "csrf_token": context.get("csrf_token", ""),
+    }
+
+
+# Alertes : une variante par niveau de message. Gris : `slate`, la famille des gris
+# de l'app.
+ALERT_BASE = "flex items-start gap-2 rounded-md border p-3 text-sm"
+ALERT_VARIANTS = {
+    "primary": "border-blue-200 bg-blue-50 text-blue-900",
+    "secondary": "border-slate-200 bg-slate-50 text-slate-900",
+    "danger": "border-red-200 bg-red-50 text-red-900",
+    "warning": "border-amber-200 bg-amber-50 text-amber-900",
+    "success": "border-green-200 bg-green-50 text-green-900",
+}
+ALERT_ICONS = {
+    "primary": "info",
+    "secondary": "info",
+    "danger": "error",
+    "warning": "warning",
+    "success": "check_circle",
+}
+
+# Niveaux de django.contrib.messages, en variantes d'alerte.
+MESSAGE_VARIANTS = {
+    "debug": "secondary",
+    "info": "primary",
+    "success": "success",
+    "warning": "warning",
+    "error": "danger",
+}
+
+TOAST_CLASSES = "pointer-events-auto shadow-lg"
+# Succès et informations disparaissent d'eux-mêmes (core/static/core/toasts.js) ;
+# les avertissements et les erreurs restent.
+AUTOHIDE_VARIANTS = {"primary", "secondary", "success"}
+
+
+def toast_context(message, level_tag: str) -> dict:
+    variant = MESSAGE_VARIANTS.get(level_tag, "primary")
+    return {
+        "message": message,
+        "icon": ALERT_ICONS[variant],
+        "classes": f"{ALERT_BASE} {ALERT_VARIANTS[variant]} {TOAST_CLASSES}",
+        # Une erreur interrompt les lecteurs d'écran ; les autres messages attendent.
+        "role": "alert" if variant == "danger" else "status",
+        "autohide": variant in AUTOHIDE_VARIANTS,
+    }
+
+
+@register.inclusion_tag("core/components/toast.html")
+def message_toast(message) -> dict:
+    """Un message de django.contrib.messages, en notification (toast) : HTML rendu
+    par le serveur (#293), visible sans JavaScript, où il reste alors affiché.
+    `toasts.js` ajoute la fermeture (bouton, Échap) et la disparition des succès."""
+    return toast_context(message, message.level_tag)
+
+
+@register.inclusion_tag("core/components/toast.html")
+def toast_template(level_tag: str) -> dict:
+    """Modèle de toast sans texte, cloné par `Toast.show` pour les messages créés
+    par un script (échec réseau, image importée)."""
+    return toast_context("", level_tag)
+
+
+@register.simple_tag
+def kbd(keys: str) -> SafeString:
+    """Un raccourci clavier (`←`, `Ctrl+K`) en `<kbd>` discret (#276).
+
+    La police à chasse fixe est celle du reset de Tailwind. Réutilisé par la
+    palette de commandes (#202).
+    """
+    return format_html(
+        '<kbd class="rounded border border-slate-300 bg-white px-1 text-xs'
+        ' text-slate-600">{}</kbd>',
+        keys,
+    )
 
 
 @register.inclusion_tag("core/components/tag_list.html")

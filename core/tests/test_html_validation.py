@@ -158,7 +158,6 @@ class HtmlValidationTests(TestCase):
                 + "?sort=date&project=ASTERICS&project=PDS1&date_from=2000-01-01"
             ),
             "note": reverse("note_taking:note_detail", args=[note]),
-            "note_markdown": reverse("note_taking:note_md", args=[note]),
             "note_nouvelle": reverse("note_taking:new_note"),
             "note_modifier": reverse("note_taking:edit_note", args=[note]),
             "recherche": reverse("note_taking:notes_search"),

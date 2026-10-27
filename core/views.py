@@ -1,14 +1,17 @@
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.messages.storage.base import Message
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
-from .app_registry import home_links, project_usages, section_renamers
+from .app_registry import dashboard_blocks, project_usages, section_renamers
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
@@ -20,7 +23,46 @@ from .suggestions import section_suggestions as find_sections
 
 
 def index(request):
-    return render(request, "core/index.html", {"home_links": home_links()})
+    """Accueil général : les blocs que chaque app déclare (#233)."""
+    blocks = [
+        {
+            "title": block.title,
+            "html": render_to_string(block.template, block.context(), request),
+        }
+        for block in dashboard_blocks()
+    ]
+    return render(request, "core/index.html", {"blocks": blocks})
+
+
+GALLERY_MESSAGES = (
+    (messages.INFO, "Une information."),
+    (messages.SUCCESS, "L'opération a réussi."),
+    (messages.WARNING, "Un point d'attention."),
+    (messages.ERROR, "Quelque chose a échoué."),
+    (
+        messages.INFO,
+        "Un message long, pour voir le retour à la ligne et la largeur maximale d'un "
+        "toast : une importation de plusieurs fichiers, dont un nom de fichier très "
+        "long comme capture-2026-10-27-153045-avec-un-nom-vraiment-beaucoup-trop-long"
+        ".png, a échoué.",
+    ),
+)
+
+
+def alerts_gallery(request):
+    """Galerie des alertes (#156) : un toast par niveau (rendu du serveur), des
+    toasts créés par un script, et la popover de confirmation ouverte, pour juger
+    leur rendu sans déclencher de vrais messages. Confirmer n'efface rien : un
+    message de succès revient. Réservée au développement : l'adresse n'est déclarée
+    qu'avec `DEBUG`, et la vue refuse aussi hors `DEBUG`, au cas où elle serait
+    branchée autrement."""
+    if not settings.DEBUG:
+        raise Http404
+    if request.method == "POST":
+        messages.success(request, "Confirmation reçue : rien n'a été supprimé.")
+        return redirect("core:alerts_gallery")
+    toasts = [Message(level, text) for level, text in GALLERY_MESSAGES]
+    return render(request, "core/debug/alerts_gallery.html", {"toasts": toasts})
 
 
 def with_usage(projects):
