@@ -83,6 +83,6 @@ class LiveToggleTests(TestCase):
         self.assertIn("outerHTML", script)
         # En cas d'échec, la case revient à son état et un toast le dit.
         self.assertIn("response.ok", script)
-        self.assertRegex(script, r'Alert\.toast\([^)]*type: "error"')
+        self.assertRegex(script, r'Toast\.show\([^)]*"error"\)')
         # Rechargement réservé aux pages sans mise à jour sur place (détail).
         self.assertIn('closest("table[data-live-rows]")', script)

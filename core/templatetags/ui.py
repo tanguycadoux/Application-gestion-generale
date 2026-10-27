@@ -175,6 +175,66 @@ def confirm_button(
     }
 
 
+# Alertes : une variante par niveau de message. Gris : `slate`, la famille des gris
+# de l'app.
+ALERT_BASE = "flex items-start gap-2 rounded-md border p-3 text-sm"
+ALERT_VARIANTS = {
+    "primary": "border-blue-200 bg-blue-50 text-blue-900",
+    "secondary": "border-slate-200 bg-slate-50 text-slate-900",
+    "danger": "border-red-200 bg-red-50 text-red-900",
+    "warning": "border-amber-200 bg-amber-50 text-amber-900",
+    "success": "border-green-200 bg-green-50 text-green-900",
+}
+ALERT_ICONS = {
+    "primary": "info",
+    "secondary": "info",
+    "danger": "error",
+    "warning": "warning",
+    "success": "check_circle",
+}
+
+# Niveaux de django.contrib.messages, en variantes d'alerte.
+MESSAGE_VARIANTS = {
+    "debug": "secondary",
+    "info": "primary",
+    "success": "success",
+    "warning": "warning",
+    "error": "danger",
+}
+
+TOAST_CLASSES = "pointer-events-auto shadow-lg"
+# Succès et informations disparaissent d'eux-mêmes (core/static/core/toasts.js) ;
+# les avertissements et les erreurs restent.
+AUTOHIDE_VARIANTS = {"primary", "secondary", "success"}
+
+
+def toast_context(message, level_tag: str) -> dict:
+    variant = MESSAGE_VARIANTS.get(level_tag, "primary")
+    return {
+        "message": message,
+        "icon": ALERT_ICONS[variant],
+        "classes": f"{ALERT_BASE} {ALERT_VARIANTS[variant]} {TOAST_CLASSES}",
+        # Une erreur interrompt les lecteurs d'écran ; les autres messages attendent.
+        "role": "alert" if variant == "danger" else "status",
+        "autohide": variant in AUTOHIDE_VARIANTS,
+    }
+
+
+@register.inclusion_tag("core/components/toast.html")
+def message_toast(message) -> dict:
+    """Un message de django.contrib.messages, en notification (toast) : HTML rendu
+    par le serveur (#293), visible sans JavaScript, où il reste alors affiché.
+    `toasts.js` ajoute la fermeture (bouton, Échap) et la disparition des succès."""
+    return toast_context(message, message.level_tag)
+
+
+@register.inclusion_tag("core/components/toast.html")
+def toast_template(level_tag: str) -> dict:
+    """Modèle de toast sans texte, cloné par `Toast.show` pour les messages créés
+    par un script (échec réseau, image importée)."""
+    return toast_context("", level_tag)
+
+
 @register.inclusion_tag("core/components/tag_list.html")
 def tag_list(tags) -> dict:
     """Liste de tags en pastilles ; rien n'est rendu si elle est vide."""
