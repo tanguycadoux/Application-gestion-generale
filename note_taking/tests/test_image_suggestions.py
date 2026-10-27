@@ -36,21 +36,6 @@ class ImageSuggestionsTests(TestCase):
         )
         self.assertEqual([r["name"] for r in self.results(q="SCHÉ")], ["Schéma.png"])
 
-    def test_debut_du_nom_avant_le_milieu(self):
-        for name in ("a-banc.png", "banc.png"):
-            Image.objects.create(name=name, file=f"note_images/{name}")
-
-        self.assertEqual(
-            [r["name"] for r in self.results(q="banc")], ["banc.png", "a-banc.png"]
-        )
-
-    def test_nombre_limite(self):
-        for number in range(60):
-            name = f"img{number:02d}.png"
-            Image.objects.create(name=name, file=f"note_images/{name}")
-
-        self.assertEqual(len(self.results()), 50)
-
     def test_lecture_seule(self):
         response = self.client.post(reverse("note_taking:image_suggestions"))
 

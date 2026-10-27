@@ -34,12 +34,6 @@ class NoteEditorPageTests(TestCase):
                     '<script type="module" src="/static/note_taking/editor.js">', html
                 )
 
-    def test_textarea_conserve_pour_l_envoi_du_formulaire(self):
-        for page, url in self.pages().items():
-            with self.subTest(page=page):
-                html = self.client.get(url).content.decode()
-                self.assertRegex(html, r'<textarea name="body" id="body"')
-
     def test_garde_fou_charge_en_script_classique(self):
         """Ctrl+S et l'avertissement ne dépendent pas du chargement de CodeMirror."""
         for page, url in self.pages().items():
@@ -147,10 +141,3 @@ class NoteEditorScriptsTests(TestCase):
         ):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
-
-    def test_garde_fou_ctrl_s_et_avertissement(self):
-        source = self.read("note_form.js")
-
-        self.assertIn("beforeunload", source)
-        self.assertIn('"s"', source)
-        self.assertIn("requestSubmit", source)

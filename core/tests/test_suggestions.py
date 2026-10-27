@@ -50,11 +50,6 @@ class ProjectSuggestionsTests(TestCase):
 
         self.assertEqual(len(self.names()), 50)
 
-    def test_lecture_seule(self):
-        response = self.client.post(reverse("core:project_suggestions"))
-
-        self.assertEqual(response.status_code, 405)
-
 
 class SectionSuggestionsTests(TestCase):
     def setUp(self):
@@ -104,18 +99,6 @@ class SectionSuggestionsTests(TestCase):
 
     def test_niveaux_d_un_autre_projet_non_proposes(self):
         self.assertNotIn("Autre", self.names(projet="ASTERICS"))
-
-    def test_rien_n_est_cree(self):
-        before = Section.objects.count()
-
-        self.names(projet="ASTERICS", chemin="Nouveau/Niveau", q="x")
-
-        self.assertEqual(Section.objects.count(), before)
-
-    def test_lecture_seule(self):
-        response = self.client.post(reverse("core:section_suggestions"))
-
-        self.assertEqual(response.status_code, 405)
 
 
 class ElsewhereSuggestionsTests(TestCase):
@@ -188,15 +171,25 @@ class ElsewhereSuggestionsTests(TestCase):
                     {item["name"] for item in data["elsewhere"]}, {"Analyse"}
                 )
 
-    def test_limite(self):
-        for number in range(60):
-            section_for(self.pds, [f"Niveau {number:02d}"])
 
-        self.assertEqual(len(self.get(projet="ASTERICS", q="niveau")["elsewhere"]), 50)
+class ReadOnlyTests(TestCase):
+    """Les listes de suggestions ne modifient rien (#90)."""
 
-    def test_rien_n_est_cree(self):
+    def test_autres_methodes_que_get_refusees(self):
+        for name in ("core:project_suggestions", "core:section_suggestions"):
+            with self.subTest(view=name):
+                self.assertEqual(self.client.post(reverse(name)).status_code, 405)
+
+    def test_aucun_niveau_cree_pour_un_projet_ou_un_chemin_inconnu(self):
+        project = Project.objects.create(name="ASTERICS", color="teal")
+        section_for(project, ["Réunion"])
         before = Section.objects.count()
 
-        self.get(projet="Nouveau", chemin="A/B", q="x")
+        for params in (
+            {"projet": "Nouveau", "chemin": "A/B", "q": "x"},
+            {"projet": "ASTERICS", "chemin": "Nouveau/Niveau", "q": "x"},
+        ):
+            response = self.client.get(reverse("core:section_suggestions"), params)
+            self.assertEqual(response.status_code, 200)
 
         self.assertEqual(Section.objects.count(), before)

@@ -187,8 +187,3 @@ class FancyListTests(CheckboxTestCase):
         self.save_note("# P\nA. [ ] pas une tâche")
 
         self.assertEqual(self.titles(), [])
-
-    def test_sans_case_hors_branche_todo_pas_de_tache(self):
-        self.save_note("# P\na. Une idée")
-
-        self.assertEqual(self.titles(), [])

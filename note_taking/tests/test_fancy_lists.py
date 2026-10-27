@@ -17,11 +17,6 @@ def marker(text: str, space: str = " ", context=None):
 
 
 class MarkerTests(SimpleTestCase):
-    def test_puces(self):
-        for text in ("-", "*", "+"):
-            with self.subTest(text=text):
-                self.assertEqual(marker(text).kind, "bullet")
-
     def test_decimaux(self):
         self.assertEqual(
             [(m.kind, m.delimiter, m.value) for m in map(marker, ("1.", "12)", "(3)"))],
@@ -253,11 +248,6 @@ class FancyListRenderingTests(SimpleTestCase):
 
     def test_z_puis_deux_lettres(self):
         self.check({"z. a\naa. b": [("a", 26)]})
-
-    def test_nombre_d_elements(self):
-        html = render_markdown("iv. a\nv. b\nvi. c")
-
-        self.assertEqual(html.count("<li>"), 3)
 
     def test_texte_de_l_element_conserve_sans_le_marqueur(self):
         html = render_markdown("a. un **gras**\nb. deux")

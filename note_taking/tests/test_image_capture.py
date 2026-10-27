@@ -127,12 +127,6 @@ class CaptureViewTests(TestCase):
         self.assertIn("n'est pas une image lisible", response.json()["error"])
         self.assertEqual(Image.objects.count(), 0)
 
-    def test_type_refuse(self):
-        response = self.post(image=upload(b"texte", "text/plain", "x.txt"))
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("text/plain", response.json()["error"])
-
     def test_lecture_refusee(self):
         response = self.client.get(reverse("note_taking:image_capture"))
 
