@@ -31,14 +31,14 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                         {% if field.kind == "text" %}
                             <div>
                                 <label for="{{ field.id }}" class="mb-1 block font-medium">{{ field.label }} contenant</label>
-                                <input type="search" id="{{ field.id }}" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if forloop.first %} autofocus{% endif %} class="w-full">
+                                <input type="search" id="{{ field.id }}" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if field.autofocus %} autofocus{% endif %} class="w-full">
                             </div>
                         {% elif field.kind == "dates" %}
                             <fieldset class="space-y-2">
                                 <legend class="mb-1 font-medium">{{ field.label }}</legend>
                                 <div class="flex items-center gap-2">
                                     <label for="{{ field.id }}-from" class="w-8">Du</label>
-                                    <input type="date" id="{{ field.id }}-from" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if forloop.first %} autofocus{% endif %}>
+                                    <input type="date" id="{{ field.id }}-from" name="{{ field.params.0 }}" value="{{ field.values.0 }}"{% if field.autofocus %} autofocus{% endif %}>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <label for="{{ field.id }}-to" class="w-8">au</label>
@@ -51,7 +51,7 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                                 <legend class="mb-1 font-medium">{{ field.label }}</legend>
                                 <div hidden data-choice-search-box>
                                     <label for="{{ field.id }}-search" class="sr-only">Chercher un {{ field.singular }}</label>
-                                    <input type="search" id="{{ field.id }}-search" placeholder="Chercher un {{ field.singular }}" autocomplete="off"{% if forloop.first %} autofocus{% endif %} class="w-full">
+                                    <input type="search" id="{{ field.id }}-search" placeholder="Chercher un {{ field.singular }}" autocomplete="off"{% if field.autofocus %} autofocus{% endif %} class="w-full">
                                 </div>
                                 <div class="max-h-40 space-y-1 overflow-y-auto">
                                     {% for choice in field.choices %}
@@ -67,7 +67,7 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                             {% if field.many %}
                                 <div>
                                     <label for="{{ field.id }}" class="mb-1 block font-medium">{{ field.label }}</label>
-                                    <select id="{{ field.id }}" name="{{ field.params.0 }}" class="w-full"{% if forloop.first %} autofocus{% endif %}>
+                                    <select id="{{ field.id }}" name="{{ field.params.0 }}" class="w-full"{% if field.autofocus %} autofocus{% endif %}>
                                         {% if not field.has_default %}<option value="">Tous</option>{% endif %}
                                         {% for choice in field.choices %}
                                             <option value="{{ choice.value }}"{% if field.selected == choice.value %} selected{% endif %}>{{ choice.label }}</option>

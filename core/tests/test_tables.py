@@ -461,6 +461,35 @@ class ComponentContextTests(SimpleTestCase):
         assert panel is not None
         self.assertFalse(panel["fields"][0]["many"])
 
+    def test_le_curseur_va_dans_le_premier_champ_de_saisie(self):
+        filters = Filters(
+            {
+                "c": [
+                    ChoiceFilter("state", "État", [("a", "A"), ("b", "B")], keep),
+                    TextFilter("title", "Titre", keep),
+                    MultiChoiceFilter("project", "Projet", [("A", "A")], keep),
+                ]
+            }
+        )
+
+        panel = filter_panel(self.request(), filters, None, "c")
+
+        assert panel is not None
+        # Les boutons radio n'ont pas de curseur ; un seul champ prend le focus.
+        self.assertEqual(
+            [f["autofocus"] for f in panel["fields"]], [False, True, False]
+        )
+
+    def test_le_curseur_va_dans_la_recherche_d_un_filtre_a_choix_multiples(self):
+        filters = Filters(
+            {"c": [MultiChoiceFilter("project", "Projet", [("A", "A")], keep)]}
+        )
+
+        panel = filter_panel(self.request(), filters, None, "c")
+
+        assert panel is not None
+        self.assertTrue(panel["fields"][0]["autofocus"])
+
     def test_colonne_sans_filtre(self):
         self.assertIsNone(filter_panel(self.request(), self.filters, None, "autre"))
         self.assertIsNone(filter_panel(self.request(), None, None, "date"))

@@ -380,6 +380,14 @@ def filter_panel(
             field_data["selected"] = list(values.get(column_filter.key, ()))
             field_data["singular"] = column_filter.singular
         fields.append(field_data)
+    # Le curseur va dans le premier champ où l'on tape ; des boutons radio n'en ont pas.
+    focused = False
+    for field_data in fields:
+        typed = field_data["kind"] in ("text", "dates", "multichoice") or (
+            field_data["kind"] == "choice" and field_data["many"]
+        )
+        field_data["autofocus"] = typed and not focused
+        focused = focused or typed
     return {
         "id": f"filters-{column}",
         "label": " et ".join(f.label.lower() for f in column_filters),
