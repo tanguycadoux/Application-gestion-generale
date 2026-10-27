@@ -16,6 +16,9 @@ class Note(models.Model):
     # Suites proposées par les autres apps au dernier recalcul des note parts
     # (#239) : tâches créées, par exemple.
     follow_ups: tuple[NoteFollowUp, ...] = ()
+    # Avertissements de l'analyse au dernier recalcul : titres qui sautent un niveau
+    # ou sans projet (#305).
+    warnings: tuple[str, ...] = ()
 
     def __str__(self):
         return f"{self.date}"

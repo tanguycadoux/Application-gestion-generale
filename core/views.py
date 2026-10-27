@@ -1,14 +1,18 @@
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, UpdateView
 
-from .app_registry import home_links, project_usages
+from .app_registry import home_links, project_usages, section_renamers
+from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
-from .models import Project
+from .models import Project, Section
+from .section_tree import section_tree
+from .sections import check_new_name, levels
 
 
 def index(request):
@@ -79,3 +83,70 @@ def delete_project(request, pk):
         project.delete()
         messages.success(request, f"Le projet « {project.name} » est supprimé.")
     return redirect("core:projects")
+
+
+def project_paths(request, pk):
+    """L'arbre des chemins d'un projet, avec ce qui utilise chaque niveau (#299)."""
+    project = get_object_or_404(Project, pk=pk)
+    return render(
+        request,
+        "core/project_paths.html",
+        {"project": project, "rows": section_tree(project)},
+    )
+
+
+def rename_section(request, pk, section_pk):
+    """Renommer un niveau de chemin, en trois temps (#299) : le nouveau nom, le bilan
+    des titres à réécrire où l'on décoche ce qu'on garde, puis l'écriture.
+
+    Le niveau est renommé en place si tous ses titres le sont (ses descendants et les
+    tâches qui le portent le suivent) ; sinon l'ancien et le nouveau coexistent.
+    """
+    project = get_object_or_404(Project, pk=pk)
+    section = get_object_or_404(Section, pk=section_pk, project=project)
+    source = request.POST if request.method == "POST" else request.GET
+    raw_name = source.get("nom", "")
+    new_name, error = check_new_name(section, raw_name) if raw_name else ("", "")
+    context = {
+        "project": project,
+        "section": section,
+        "chain": levels(section),
+        "new_name": raw_name,
+        "error": error,
+    }
+    if not raw_name or error:
+        return render(request, "core/section_rename.html", context)
+
+    renamers = section_renamers()
+    path = levels(section)
+    occurrences = [
+        occurrence
+        for renamer in renamers
+        for occurrence in renamer.occurrences(project, path)
+    ]
+    if request.method != "POST":
+        context.update(new_name=new_name, occurrences=occurrences)
+        return render(request, "core/section_rename.html", context)
+
+    chosen = request.POST.getlist("titres")
+    try:
+        with transaction.atomic():
+            if {occurrence.key for occurrence in occurrences} <= set(chosen):
+                # Tous renommés : le niveau l'est en place, avec ce qui le porte.
+                section.name = new_name
+                section.save(update_fields=["name"])
+            report = [
+                sentence
+                for renamer in renamers
+                for sentence in renamer.rename(project, path, new_name, chosen)
+            ]
+    except AppError as e:
+        messages.error(request, str(e))
+        return redirect(
+            f"{reverse('core:section_rename', args=[pk, section_pk])}?nom={new_name}"
+        )
+    messages.success(
+        request,
+        f"Le niveau « {path[-1]} » est renommé « {new_name} ». {' '.join(report)}".strip(),
+    )
+    return redirect("core:project_paths", pk=pk)

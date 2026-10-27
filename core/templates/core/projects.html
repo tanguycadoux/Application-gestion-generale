@@ -29,6 +29,9 @@
 
                     {# Barre d'outils compacte ; la raison d'une suppression impossible est dans la colonne d'informations, reliée au bouton. #}
                     <div class="flex items-center gap-1">
+                        {% url 'core:project_paths' project.pk as url %}
+                        {% button "Chemins du projet" icon="account_tree" href=url variant="ghost" icon_only=True %}
+
                         {% url 'core:project_edit' project.pk as url %}
                         {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
 

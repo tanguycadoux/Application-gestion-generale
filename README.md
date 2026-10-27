@@ -95,6 +95,8 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | créer, ajouter | `add` |
 | modifier | `edit` |
 | supprimer | `delete` |
+| renommer | `edit` |
+| chemins d'un projet | `account_tree` |
 | écarter, rétablir (tâche issue d'une note) | `playlist_remove`, `restore_from_trash` |
 | enregistrer | `save` |
 | exporter | `download` |
@@ -201,7 +203,15 @@ Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#29
 
 Une tâche s'écrit en case à cocher, `- [ ] texte` : voir « Génération des TODO ».
 
+Un titre peut **sauter un niveau** (`# Projet` puis `### Détail`, sans `##`) : le chemin reste « Détail » sous le projet, car il se fait des titres et pas de leur niveau. L'enregistrement de la note (création, modification, remplacement par le fichier source) **le signale** par un avertissement après le message de succès (« Ligne 5 : le titre « Détail » (###) saute un niveau sous « Projet » (#). »), avec le nombre des autres titres dans le même cas ; le compte rendu d'import les liste sous chaque note créée. Un titre `##` à `######` **sans projet** (`#`) au-dessus de lui est signalé aussi : son contenu n'est pas enregistré. Le texte de la note n'est jamais réécrit.
+
 Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`::: {.callout-note ...}`) ne sont pas interprétés.
+
+### Chemins d'un projet : arbre et renommage
+
+La page **Chemins** d'un projet (`/projets/<id>/chemins/`, bouton sur la page Projets, #299) montre l'arbre de ses niveaux, indenté, avec ce qui utilise chacun : note parts et tâches, **descendants compris**.
+
+**Renommer un niveau** réécrit ses titres dans les notes, en trois temps : le nouveau nom, puis un **bilan** qui liste chaque titre à réécrire (la note, la ligne, la suite des titres) avec une case cochée que l'on peut décocher, puis l'écriture, qui se fait en une seule fois. Un titre est repéré par la **suite des titres au-dessus de lui**, projet compris, et non par son niveau : `### Réunion` sans `##` au-dessus est le même niveau que `## Réunion`. Un titre décoché garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes. Si tous les titres sont renommés, le niveau l'est **en place** : ses sous-niveaux et les tâches saisies à la main qui le portent le suivent. Les tâches issues des notes gardent leur fiche (avancement, échéance, parent, état) et suivent leur nouveau chemin. Le nom est refusé s'il est vide, identique, ou déjà pris sous le même parent (la fusion de deux niveaux n'est pas encore possible) ; un simple changement de casse est permis. Si une note a changé entre le bilan et la confirmation, rien n'est écrit.
 
 ### Tags supplémentaires
 

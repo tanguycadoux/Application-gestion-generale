@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 from django.db.models import Q
 
-from core.app_registry import HomeLink, ProjectUsage
+from core.app_registry import HomeLink, ProjectUsage, SectionUsage
 
 
 class TodolistConfig(AppConfig):
@@ -10,6 +10,12 @@ class TodolistConfig(AppConfig):
     home_link = HomeLink("todolist:index", "Tâches", "checklist")
     project_usages = (
         ProjectUsage(
+            "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
+        ),
+    )
+
+    section_usages = (
+        SectionUsage(
             "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
         ),
     )

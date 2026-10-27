@@ -9,6 +9,11 @@ from django.dispatch import Signal
 # Un receveur peut renvoyer un `NoteFollowUp`.
 note_parts_processed = Signal()
 
+# Envoyé quand le renommage d'un niveau de chemin réécrit des titres d'une note
+# (#299), juste avant le recalcul de ses note parts, avec `note`, `old_body` et
+# `new_body`. Les tâches issues des notes suivent leurs titres (todolist).
+note_headings_renamed = Signal()
+
 
 @dataclass
 class NoteFollowUp:
