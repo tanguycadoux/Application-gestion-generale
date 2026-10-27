@@ -118,7 +118,8 @@ class TaskListPageTests(TestCase):
 
         self.assertEqual(table.count("<tbody"), 1)
         self.assertRegex(
-            table, r'<th scope="rowgroup" colspan="5"[^>]*>\s*<span class="inline-flex'
+            table,
+            r'<th scope="rowgroup" colspan="5"[^>]*>\s*<span><span class="mr-1.5 inline-block',
         )
         self.assertIn("bg-teal-500", table)
         self.assertLess(table.index(">Parent<"), table.index(">Enfant<"))
