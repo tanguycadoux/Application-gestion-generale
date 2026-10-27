@@ -39,7 +39,7 @@ class LazyPagesTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="![A](/a.png)")
 
         html = self.client.get(
-            reverse("note_taking:note_md", args=[note.date])
+            reverse("note_taking:note_detail", args=[note.date])
         ).content.decode()
 
         for attr in LAZY:

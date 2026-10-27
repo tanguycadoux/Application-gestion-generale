@@ -147,15 +147,6 @@ class FormPagesTests(TestCase):
         self.assertNotIn('<p class="flex flex-col">', html)
         self.assertIn('<p class="flex items-baseline gap-2">', html)
 
-    def test_fichier_source_libelle_a_gauche(self):
-        note = Note.objects.create(date="2025-11-24", body="# P\nx")
-
-        html = self.client.get(
-            reverse("note_taking:note_detail", args=[note.date])
-        ).content.decode()
-
-        self.assertIn('<p class="flex items-baseline gap-2">', html)
-
     def test_modification_d_une_todo_accessible(self):
         todo = Todo.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="T"

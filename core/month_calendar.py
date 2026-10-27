@@ -22,6 +22,10 @@ WEEKDAY_LABELS = [
 ]
 
 
+# Un mois occupe au plus six semaines (du lundi au dimanche).
+MAX_WEEKS = 6
+
+
 @dataclass
 class CalendarDay:
     date: date
@@ -40,6 +44,12 @@ class MonthCalendar:
     weekday_labels: list[tuple[str, str]] = field(
         default_factory=lambda: list(WEEKDAY_LABELS)
     )
+
+    @property
+    def spare_weeks(self) -> range:
+        """Les lignes à réserver sous un mois de moins de six semaines (#275) : la
+        hauteur du calendrier ne change pas d'un mois à l'autre."""
+        return range(MAX_WEEKS - len(self.weeks))
 
     def days(self) -> list:
         return [day for week in self.weeks for day in week]

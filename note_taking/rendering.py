@@ -13,7 +13,7 @@ from core.icons import icon_svg
 from images.models import Image
 
 from .qmd.lists import LIST_ITEM_REGEX, Marker, parse_marker, text_column
-from .qmd.parser import BLOCK_END, METADATA_BLOCK_START
+from .qmd.parser import METADATA_BLOCK_START, TODO_TAG
 
 
 class NoSetextHeadingsExtension(markdown.Extension):
@@ -504,6 +504,13 @@ CALLOUT_START_REGEX = re.compile(r"^:::\s*\{\.callout-(?P<type>\w+)(?P<attrs>[^}
 CALLOUT_TITLE_ATTR_REGEX = re.compile(r'title="(?P<title>[^"]*)"')
 CALLOUT_HEADING_REGEX = re.compile(r"^#+\s+(?P<title>.+)$")
 
+# Bloc de métadonnées maison : ::: {.metadata} … ::: (tags, todo), affiché en pastilles
+METADATA_START_REGEX = re.compile("^" + re.escape(METADATA_BLOCK_START) + "$")
+TAG_CLASSES = (
+    "rounded-2xl border border-slate-300 bg-slate-200 px-[.4rem] py-[.1rem] "
+    "text-[.8rem] font-semibold"
+)
+
 # Blocs Quarto ::: {…} … :::, éventuellement imbriqués
 DIV_START_REGEX = re.compile(r"^:::+\s*\{[^}]*\}$")
 DIV_END_REGEX = re.compile(r"^:::+$")
@@ -652,6 +659,7 @@ def match_block_start(line: str):
         (CALLOUT_START_REGEX, render_callout),
         (LAYOUT_START_REGEX, render_layout),
         (COLUMNS_START_REGEX, render_columns),
+        (METADATA_START_REGEX, render_metadata),
     ):
         start = regex.match(line)
         if start:
@@ -771,6 +779,30 @@ def render_columns(start: re.Match[str], body: list[str]) -> str:
     return f'<div class="flex gap-4 my-2">{"".join(columns_html)}</div>'
 
 
+def render_metadata(start: re.Match[str], body: list[str]) -> str:
+    """Les tags d'un bloc `{.metadata}` en pastilles, comme ceux d'une note part.
+
+    `todo: true` s'affiche comme le tag `TODO` que ses note parts reçoivent.
+    Une autre clé, ou une ligne mal écrite, n'est pas affichée : l'analyse
+    la signale à l'enregistrement.
+    """
+    tags: list[str] = []
+    for line in body:
+        key, _, value = line.partition(":")
+        value = value.strip()
+        if key.strip() == "tags" and value.startswith("[") and value.endswith("]"):
+            tags += [tag.strip() for tag in value[1:-1].split(",") if tag.strip()]
+        elif key.strip() == "todo" and value == "true":
+            tags.append(TODO_TAG)
+    if not tags:
+        return ""
+    items = "".join(f'<li class="{TAG_CLASSES}">{escape(tag)}</li>' for tag in tags)
+    return (
+        '<ul class="note-tags m-0 my-2 flex list-none flex-wrap gap-[.4rem] p-0">'
+        f"{items}</ul>"
+    )
+
+
 def render_callout(start: re.Match[str], body: list[str]) -> str:
     """Encadré à la manière de Quarto.
 
@@ -831,18 +863,111 @@ def resolve_image_refs(content: str) -> str:
     return IMAGE_REF_REGEX.sub(repl, content)
 
 
+# Numérotation des tableaux et figures, comme Quarto (#278). Quarto 1.10.19 écrit
+# « Table 1: » et « Figure 1: », même avec `lang: fr`.
+FLOAT_LABELS = {"tbl": "Table", "fig": "Figure"}
+NBSP = "\u00a0"
+FLOAT_REGEX = re.compile(
+    r'(?P<layout><figure class="my-2" id="(?P<layout_id>fig-[\w-]+)">.*?</figure>)'
+    r"|(?P<table><table(?P<table_attrs>[^>]*)>\s*<caption>)"
+    r"|<p>(?P<image><img [^>]*>)</p>",
+    re.DOTALL,
+)
+FIGCAPTION_OPEN_REGEX = re.compile(r"<figcaption[^>]*>(?:<p>)?")
+ID_ATTR_REGEX = re.compile(r'\bid="(?P<id>(?:fig|tbl)-[\w-]+)"')
+ALT_ATTR_REGEX = re.compile(r'\balt="(?P<alt>[^"]*)"')
+FIGCAPTION_CLASSES = "mt-2 text-sm text-center text-slate-600"
+# Le texte à ne pas toucher : code, liens et balises ; le reste est du texte.
+PROSE_SPLIT_REGEX = re.compile(
+    r"(<pre\b.*?</pre>|<code\b.*?</code>|<a\b.*?</a>|<[^>]+>)", re.DOTALL
+)
+# « @fig-x » : pas collé à un mot ni à un autre « @ » (adresse électronique).
+REFERENCE_REGEX = re.compile(r"(?<![\w@.])@(?P<id>(?:fig|tbl)-[\w-]*\w)")
+
+
+def number_floats(html: str) -> str:
+    """Numérote les tableaux et figures du HTML rendu, et relie les références.
+
+    Les numéros repartent de 1 et suivent l'ordre du texte rendu (une note, ou
+    une note part seule) : le même tableau n'a pas le même numéro dans les deux,
+    écart assumé avec Quarto. Seuls comptent les tableaux à `{#tbl-…}` et à
+    légende, et les figures à `{#fig-…}` et à légende : une image seule devient
+    une `<figure>`, comme dans Quarto. Une référence sans cible dans ce texte
+    s'écrit comme dans Quarto, `?@id` en gras.
+    """
+    numbers: dict[str, str] = {}
+    counters = {"tbl": 0, "fig": 0}
+
+    def label(float_id: str) -> str:
+        kind = float_id[:3]
+        counters[kind] += 1
+        numbers[float_id] = f"{FLOAT_LABELS[kind]}{NBSP}{counters[kind]}"
+        return numbers[float_id]
+
+    def number(match: re.Match[str]) -> str:
+        if match.group("layout"):
+            figure = match.group("layout")
+            number_text = label(match.group("layout_id"))
+            caption = FIGCAPTION_OPEN_REGEX.search(figure)
+            if caption is None:
+                # Sans légende, Quarto ne garde que « Figure N ».
+                return (
+                    figure.removesuffix("</figure>")
+                    + f'<figcaption class="{FIGCAPTION_CLASSES}">{number_text}'
+                    "</figcaption></figure>"
+                )
+            return (
+                figure[: caption.end()] + f"{number_text}: " + figure[caption.end() :]
+            )
+        if match.group("table"):
+            id_attr = ID_ATTR_REGEX.search(match.group("table_attrs"))
+            if id_attr is None or id_attr.group("id").startswith("fig-"):
+                return match.group(0)
+            return f"{match.group(0)}{label(id_attr.group('id'))}: "
+        image = match.group("image")
+        id_attr = ID_ATTR_REGEX.search(image)
+        alt = ALT_ATTR_REGEX.search(image)
+        if id_attr is None or not id_attr.group("id").startswith("fig-"):
+            return match.group(0)
+        figure_id = id_attr.group("id")
+        text = alt.group("alt") if alt else ""
+        image = image.replace(id_attr.group(0), "", 1).replace(" >", ">")
+        image = re.sub(r"\s{2,}", " ", image)
+        return (
+            f'<figure class="my-2" id="{figure_id}">{image}'
+            f'<figcaption class="{FIGCAPTION_CLASSES}">'
+            f"{label(figure_id)}{': ' + text if text else ''}</figcaption></figure>"
+        )
+
+    html = FLOAT_REGEX.sub(number, html)
+
+    def reference(match: re.Match[str]) -> str:
+        target = match.group("id")
+        if target not in numbers:
+            return f"<strong>?@{target}</strong>"
+        return f'<a href="#{target}" class="quarto-xref">{numbers[target]}</a>'
+
+    parts = PROSE_SPLIT_REGEX.split(html)
+    for index in range(0, len(parts), 2):
+        parts[index] = REFERENCE_REGEX.sub(reference, parts[index])
+    return "".join(parts)
+
+
 def render_note_part(content: str) -> str:
-    return render_markdown(remote_images_as_links(resolve_image_refs(content)))
+    return number_floats(
+        render_markdown(remote_images_as_links(resolve_image_refs(content)))
+    )
 
 
 def render_note_body(body: str) -> str:
     """Rend le body complet d'une note, tel qu'écrit dans le fichier qmd.
 
     Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
-    a son propre h1.
+    a son propre h1. Les blocs `{.metadata}` s'affichent en pastilles ; les
+    tableaux et figures sont numérotés (`number_floats`).
     """
-    html = render_markdown(
-        remote_images_as_links(resolve_image_paths(strip_metadata_blocks(body)))
+    html = number_floats(
+        render_markdown(remote_images_as_links(resolve_image_paths(body)))
     )
     return HEADING_TAG_REGEX.sub(shift_heading, html)
 
@@ -850,27 +975,6 @@ def render_note_body(body: str) -> str:
 def shift_heading(match: re.Match[str]) -> str:
     level = min(int(match.group("level")) + 1, 6)
     return f"<{match.group('slash')}h{level}"
-
-
-def strip_metadata_blocks(text: str) -> str:
-    """Retire les blocs `::: {.metadata}`, lus à l'analyse mais pas affichés."""
-    kept: list[str] = []
-    in_code_block = False
-    in_metadata_block = False
-
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith(CODE_FENCE) and not in_metadata_block:
-            in_code_block = not in_code_block
-
-        if in_metadata_block:
-            in_metadata_block = stripped != BLOCK_END
-        elif not in_code_block and stripped == METADATA_BLOCK_START:
-            in_metadata_block = True
-        else:
-            kept.append(line)
-
-    return "\n".join(kept)
 
 
 def resolve_image_paths(content: str) -> str:

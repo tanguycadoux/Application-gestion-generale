@@ -79,6 +79,7 @@ Composants partagés, à charger avec `{% load ui %}` (balises dans `core/templa
 | `{% button "Libellé" href=url icon="…" variant="…" type="submit" icon_only=True disabled=True form="id" describedby="id" %}` | bouton : `<a>` si `href` est fourni, sinon `<button type="…">` ; variantes `primary` (par défaut), `danger`, `ghost` (fond transparent) et `ghost-danger` (voir la règle d'usage ci-dessous) ; avec `icon_only`, le libellé passe en `aria-label` ; `disabled` désactive un `<button>` (pas un lien) ; `form="id"` relie un `<button>` placé hors de son formulaire (pas un lien) ; `describedby="id"` pose `aria-describedby`, par exemple vers la raison pour laquelle le bouton est désactivé |
 | `{% tag_list tags %}` | liste de tags en pastilles, rien si elle est vide |
 | `{% project_badge projet %}` | pastille d'un projet : un point de sa couleur devant son nom, rien sans projet |
+| `{% kbd "←" %}` | raccourci clavier en `<kbd>` discret (bordure, petite taille) ; un bouton dont la page gère le raccourci l'annonce avec `keyshortcuts="ArrowLeft"` (`aria-keyshortcuts`) |
 
 Exemples :
 
@@ -169,7 +170,7 @@ Une note peut être :
 
 - créée et modifiée directement dans l'application (`/notes/new/`, puis `/notes/<AAAA-MM-JJ>/edit/`),
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
-- mise à jour depuis un fichier source, depuis sa vue détail.
+- remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
 À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
 
@@ -351,7 +352,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 ### Fonctionnalités
 
 - liste des notes, triable par colonne (`/notes/list/`),
-- vue détail d'une note, rendu markdown complet (`/notes/<AAAA-MM-JJ>/md/`) et résultat de l'analyse en JSON (`/notes/<AAAA-MM-JJ>/json/`),
+- page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
 - recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.
 
@@ -371,7 +372,7 @@ Une tâche sans sous-tâche est terminée à 100 % d'avancement. Une tâche qui 
 
 Le détail d'une tâche qui a des sous-tâches montre, sous leur tableau, une **frise de type Gantt** (#168, `todolist/gantt.py`, `todolist/gantt.html`) : la tâche observée en première ligne, puis une ligne par sous-tâche, indentée comme dans le tableau ; une barre de sa création à son échéance (jusqu'à aujourd'hui, bord droit en pointillés, si elle n'en a pas), remplie selon son avancement, aux couleurs du signal de son échéance ; un trait pour aujourd'hui et un trait pointillé pour l'échéance de la tâche ; un repère au début de chaque mois. Les positions, en pourcentage de l'axe, passent par des variables CSS lues par des classes Tailwind (`left-(--start)`), sans localisation (`unlocalize`).
 
-L'accueil des tâches est un calendrier du mois (#167), sur le même composant que celui des notes (`core/month_calendar.py`, `core/components/month_calendar.html` ; chaque app fournit le gabarit d'une case) : une tâche en cours s'y place à son échéance, une tâche terminée à sa date de complétion (`completed_at`, remplie quand elle passe à terminée, vidée sinon) ; trois tâches au plus par case (point du projet, titre en lien, terminées atténuées, en retard en rouge), puis « + N autres » ; un « + » au survol crée une tâche avec cette échéance.
+L'accueil des tâches est un calendrier du mois (#167), sur le même composant que celui des notes (`core/month_calendar.py`, `core/components/month_calendar.html` ; chaque app fournit le gabarit d'une case) : une tâche en cours s'y place à son échéance, une tâche terminée à sa date de complétion (`completed_at`, remplie quand elle passe à terminée, vidée sinon) ; trois tâches au plus par case (point du projet, titre en lien, terminées atténuées, en retard en rouge), puis « + N autres » ; un « + » au survol crée une tâche avec cette échéance. Les deux calendriers gardent la hauteur de six semaines, même pour un mois plus court, pour ne pas sauter d'un mois à l'autre (#275), et les flèches ← et → changent de mois (#276, raccourci annoncé aux lecteurs d'écran, sans effet pendant la saisie).
 
 Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais **signalés** (#165), sur le parent comme sur l'enfant : échéance d'une sous-tâche après celle de son parent, projet différent de celui du parent, parent terminé avec une sous-tâche en cours. Le détail d'une tâche les liste dans un encadré « À corriger », avec un lien vers l'autre tâche ; les listes marquent une tâche incohérente d'une icône d'avertissement.
 
