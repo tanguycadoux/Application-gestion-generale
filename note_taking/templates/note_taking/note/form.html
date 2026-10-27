@@ -1,9 +1,9 @@
-{% load static vendor %}
+{% load static ui vendor %}
 
 <form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} class="flex min-h-0 flex-1 flex-col gap-3">
     {% csrf_token %}
     {% if form.non_field_errors %}<div>{{ form.non_field_errors }}</div>{% endif %}
-    <div class="flex items-baseline gap-3">
+    <div class="flex items-baseline gap-3" data-editor-toolbar>
         <label for="date">Date :</label>
         <div class="min-w-0">
             <input type="date" name="date" id="date" required value="{{ form.date.value|date:'Y-m-d' }}"{% if form.date.errors %} aria-invalid="true"{% endif %}>
@@ -15,6 +15,9 @@
     {# Le texte occupe la place restante et défile dans sa zone ; editor.js le remplace par CodeMirror. #}
     <textarea name="body" id="body" class="min-h-48 w-full flex-1 resize-none font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
 </form>
+
+{# Bouton du plan de la note (#314) : cloné par editor.js, absent sans JavaScript. #}
+<template id="outline-toggle">{% button "Plan de la note" icon="toc" variant="ghost" icon_only=True type="button" %}</template>
 
 {# Éditeur (#89) : CodeMirror embarqué remplace le <textarea> ; sans lui, le <textarea> reste. #}
 {% codemirror_importmap %}

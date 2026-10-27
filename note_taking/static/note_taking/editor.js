@@ -14,6 +14,7 @@ import {
 import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { Strikethrough, TaskList, parser } from "@lezer/markdown";
+import { createOutline } from "./outline.js";
 
 // Sans @codemirror/lang-markdown, qui fait charger l'analyseur HTML : seul l'analyseur
 // Markdown est embarqué. Les cases `- [ ]` et le barré `~~x~~` sont ceux de Pandoc.
@@ -83,6 +84,7 @@ function mountEditor(textarea) {
     };
     if (invalid) attributes["aria-invalid"] = "true";
 
+    let outline;
     const view = new EditorView({
         state: EditorState.create({
             doc: textarea.value,
@@ -99,6 +101,7 @@ function mountEditor(textarea) {
                 theme,
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) textarea.value = update.state.doc.toString();
+                    outline?.update(update);
                 }),
             ],
         }),
@@ -109,7 +112,6 @@ function mountEditor(textarea) {
     const frame = document.createElement("div");
     frame.className = [
         "flex",
-        "min-h-48",
         "min-w-0",
         "flex-1",
         "flex-col",
@@ -123,7 +125,20 @@ function mountEditor(textarea) {
         "focus-within:outline-blue-700",
     ].join(" ");
     frame.append(view.dom);
-    textarea.after(frame);
+
+    // L'éditeur et, à côté, le plan de la note (#314) ; le bouton qui l'affiche est
+    // cloné du gabarit dans l'en-tête du formulaire.
+    const workspace = document.createElement("div");
+    workspace.className = "flex min-h-48 min-w-0 flex-1 gap-3";
+    const toolbar = textarea.form.querySelector("[data-editor-toolbar]");
+    const toggleTemplate = document.getElementById("outline-toggle");
+    if (toolbar && toggleTemplate) {
+        outline = createOutline(view, { toggleTemplate, toolbar });
+        workspace.append(frame, outline.element);
+    } else {
+        workspace.append(frame);
+    }
+    textarea.after(workspace);
     textarea.hidden = true;
     return view;
 }

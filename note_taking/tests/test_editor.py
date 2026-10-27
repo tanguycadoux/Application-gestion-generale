@@ -50,6 +50,21 @@ class NoteEditorPageTests(TestCase):
                     r'<script src="/static/note_taking/note_form\.js" defer>',
                 )
 
+    def test_bouton_du_plan_dans_un_template(self):
+        """Le bouton n'existe que si editor.js le clone : rien d'inerte sans JavaScript."""
+        for page, url in self.pages().items():
+            with self.subTest(page=page):
+                html = self.client.get(url).content.decode()
+                template = re.search(
+                    r'<template id="outline-toggle">(?P<button>.*?)</template>',
+                    html,
+                    re.DOTALL,
+                )
+                assert template is not None
+                self.assertIn('type="button"', template.group("button"))
+                self.assertIn('aria-label="Plan de la note"', template.group("button"))
+                self.assertIn("data-editor-toolbar", html)
+
     def test_pas_de_script_sur_les_autres_pages(self):
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 
@@ -77,13 +92,21 @@ class NoteEditorScriptsTests(TestCase):
     def read(self, name: str) -> str:
         return (STATIC_DIR / name).read_text(encoding="utf-8")
 
-    def test_modules_de_l_editeur_dans_la_liste_embarquee(self):
+    def test_modules_des_scripts_dans_la_liste_embarquee(self):
         names = {p.name for p in load_packages()}
 
-        self.assertLessEqual(imported_specifiers(self.read("editor.js")), names)
+        for script in ("editor.js", "outline.js"):
+            # Les imports relatifs sont nos propres fichiers.
+            modules = {
+                name
+                for name in imported_specifiers(self.read(script))
+                if not name.startswith(".")
+            }
+            with self.subTest(script=script):
+                self.assertLessEqual(modules, names)
 
     def test_scripts_sans_adresse_externe(self):
-        for name in ("editor.js", "note_form.js"):
+        for name in ("editor.js", "note_form.js", "outline.js"):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
 
