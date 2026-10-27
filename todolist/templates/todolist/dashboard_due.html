@@ -12,7 +12,7 @@
             {% for todo in tasks %}
                 <tr class="hover:bg-slate-50">
                     <td class="p-2 align-baseline">
-                        <a class="line-clamp-2 break-words text-blue-700 underline hover:text-blue-900" href="{% url 'todolist:todo_detail' todo.pk %}" title="{{ todo.title }}">{{ todo.title }}</a>
+                        <span class="line-clamp-2 break-words"><a href="{% url 'todolist:todo_detail' todo.pk %}" title="{{ todo.title }}">{{ todo.title }}</a></span>
                         {% if todo.project %}<span class="ml-1">{% project_badge todo.project %}</span>{% endif %}
                     </td>
                     <td class="w-28 whitespace-nowrap p-2 text-right align-baseline text-sm {{ todo|remaining_class }}">{{ todo|remaining_text }}</td>
