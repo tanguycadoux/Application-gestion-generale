@@ -88,6 +88,7 @@ def process_note_parts(
     note.follow_ups = tuple(
         response for response in responses if isinstance(response, NoteFollowUp)
     )
+    note.warnings = tuple(parsed_note.warnings)
     # Les sections qu'aucune note part ni tâche n'utilise plus sont oubliées (#295).
     forget_unused_sections()
 
