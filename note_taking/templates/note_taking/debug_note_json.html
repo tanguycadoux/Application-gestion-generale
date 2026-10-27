@@ -1,0 +1,17 @@
+{% extends "note_taking/base.html" %}
+{% load ui %}
+
+{% block title %}Analyse d'une note{% endblock title %}
+{% block title_suffix %} · Debug{% endblock title_suffix %}
+
+{% block content %}
+    {# Page de développement (#235) : seulement avec DEBUG = True. #}
+    <h1 class="mb-2">Analyse d'une note en JSON</h1>
+    <p class="mb-4 text-slate-600">Page de développement : le résultat de l'analyse d'une note par le parseur.</p>
+
+    <form method="get" class="flex items-center gap-2">
+        <label for="debug-date">Date de la note</label>
+        <input type="date" name="date" id="debug-date" required>
+        {% button "Voir l'analyse" icon="toc" %}
+    </form>
+{% endblock content %}

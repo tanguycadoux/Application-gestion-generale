@@ -37,6 +37,7 @@ todolist ──► note_taking ──► images ──► core
 
 - `core` ne dépend d'aucune app (#179). Ce qu'il affiche des autres apps, chacune le déclare dans son `AppConfig`, et `core/app_registry.py` le lit dans l'ordre d'`INSTALLED_APPS` :
   - `nav_section` : sa section du menu commun (`NavSection` : titre, rang, `NavItem` de nom d'URL, libellé et icône), lue par le processeur de contexte `core.context_processors.navigation` ;
+  - `debug_pages` : ses pages réservées au mode DEBUG (#235), réunies par `nav_sections()` dans une dernière section « Debug » du menu, **seulement si `settings.DEBUG`** ;
   - `dashboard_blocks` : ses blocs de l'accueil général (#233), des `DashboardBlock` (titre, rang, gabarit, fonction de contexte) que `core.views.index` rend dans l'ordre, sans savoir ce qu'ils montrent : « Note du jour » (`note_taking/dashboard.py`) et « Tâches à échéance proche » (`todolist/dashboard.py`) ;
   - `project_usages` : ce qui utilise un projet chez elle (chemin de comptage depuis `Project`, libellés), pour l'afficher dans la liste des projets et refuser la suppression d'un projet utilisé. On compte des notes, pas des note parts : c'est pourquoi le chemin est déclaré plutôt que déduit des relations du modèle.
 - `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
@@ -66,6 +67,15 @@ Un tableau de bord, un `<section>` nommé par bloc (`aria-labelledby`), sur deux
 - **Note du jour** : la date, puis « Ouvrir la note du jour » si elle existe, « Créer la note du jour » (formulaire prérempli à la date) sinon.
 - **Tâches à échéance proche** : les tâches en cours dont l'échéance est passée ou à moins de `SOON_DAYS` jours (le seuil du signal `soon`), les plus en retard d'abord, **dix au plus** puis « et N autres » : un retard accumulé n'envahit pas l'accueil. Chaque ligne : titre (deux lignes au plus, titre complet en infobulle), pastille du projet, temps restant coloré comme dans la liste. Les tâches écartées sont exclues (`Todo.objects`).
 - Pas de « dernières notes » ni d'accès aux projets : le menu commun suffit (choix de l'utilisateur).
+
+## Pages de développement (#235, #156)
+
+Une section « Debug » du menu, dernière, **visible seulement avec `DEBUG = True`** : elle réunit les `debug_pages` des `AppConfig`.
+
+- **Les adresses n'existent pas sans `DEBUG`** : elles sont ajoutées à `urlpatterns` sous `if settings.DEBUG:` (`core/urls.py`, `note_taking/urls.py`) ; leurs vues refusent aussi (404) hors `DEBUG`, au cas où elles seraient branchées autrement. Elles vivent sous `/debug/`.
+- **Galerie des alertes** (`/debug/alerts/`, #156) : les quatre types de toast et un message long, sans disparition (option `duration: null` de `Alert.toast`, qui supprime aussi la barre de progression), et la popover de confirmation, rouverte tant qu'on la ferme, plus des boutons pour les réafficher. Pour juger le rendu sans déclencher de vrais messages.
+- **Analyse JSON d'une note** (`/debug/notes/<AAAA-MM-JJ>/json/`, `note_taking:note_json`) : retirée de la page de la note ; une page de choix de la date (`/debug/notes/json/`) y mène.
+- **Tester** : `core/tests/debug_urls.py` fournit `DebugUrlsTestCase`, qui active `DEBUG` le temps de la classe et recharge les modules d'adresses (le lanceur de tests force `DEBUG = False`, donc les adresses de debug n'y existent pas) ; `core/tests/test_debug.py` vérifie l'absence (404, `NoReverseMatch`, pas de section dans le menu) et la présence.
 
 ## Éléments communs de `core`
 

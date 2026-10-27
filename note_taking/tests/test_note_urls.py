@@ -29,7 +29,7 @@ class NoteUrlTests(TestCase):
         self.assertEqual(response.context["note"], self.note)
 
     def test_actions_par_date(self):
-        for action in ("json", "export", "edit"):
+        for action in ("export", "edit"):
             with self.subTest(action=action):
                 response = self.client.get(f"/notes/2025-11-24/{action}/")
                 self.assertEqual(response.status_code, 200)
@@ -51,7 +51,7 @@ class NoteUrlTests(TestCase):
         self.assertEqual(response["Location"], "/notes/2025-11-24/")
 
     def test_id_redirige_aussi_les_actions(self):
-        for action in ("json", "export", "edit", "delete"):
+        for action in ("export", "edit", "delete"):
             with self.subTest(action=action):
                 response = self.client.get(f"/notes/{self.note.pk}/{action}/")
                 self.assertEqual(response.status_code, 308)

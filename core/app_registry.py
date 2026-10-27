@@ -2,6 +2,8 @@
 
 - `nav_section` : sa section du menu commun (#232) ;
 - `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
+- `debug_pages` : ses pages réservées au mode DEBUG, réunies dans la section
+  « Debug » du menu (#235) ;
 - `project_usages` : ce qui, chez elle, utilise un projet (pour l'afficher et
   refuser la suppression d'un projet utilisé) ;
 - `section_usages` : ce qui, chez elle, utilise un niveau de chemin (compteurs de
@@ -16,6 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from django.apps import apps
+from django.conf import settings
 from django.db.models import Q
 
 
@@ -100,11 +103,26 @@ class SectionRenamer:
     rename: Callable[..., list[str]]
 
 
+DEBUG_SECTION_ORDER = 90
+
+
 def nav_sections() -> list[NavSection]:
-    sections = (
-        getattr(config, "nav_section", None) for config in apps.get_app_configs()
-    )
-    return sorted((s for s in sections if s), key=lambda section: section.order)
+    """Les sections du menu, rangées par `order`. Avec `DEBUG = True` seulement, une
+    dernière section « Debug » réunit les `debug_pages` des apps (#235)."""
+    sections = [
+        section
+        for config in apps.get_app_configs()
+        if (section := getattr(config, "nav_section", None))
+    ]
+    if settings.DEBUG:
+        pages = tuple(
+            page
+            for config in apps.get_app_configs()
+            for page in getattr(config, "debug_pages", ())
+        )
+        if pages:
+            sections.append(NavSection("Debug", DEBUG_SECTION_ORDER, pages))
+    return sorted(sections, key=lambda section: section.order)
 
 
 def dashboard_blocks() -> list[DashboardBlock]:

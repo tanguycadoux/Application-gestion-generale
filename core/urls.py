@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path
 
 from . import converters, views  # noqa: F401  (le convertisseur `date`)
@@ -30,3 +31,7 @@ urlpatterns = [
     ),
     path("paths/suggestions/", views.section_suggestions, name="section_suggestions"),
 ]
+
+# Pages de développement (#235) : sans `DEBUG`, l'adresse n'existe pas.
+if settings.DEBUG:
+    urlpatterns += [path("debug/alerts/", views.alerts_gallery, name="alerts_gallery")]

@@ -62,9 +62,7 @@ class NotePageTests(TestCase):
     def test_plus_de_cadre_du_fichier_source_ni_de_liens_markdown_json(self):
         self.assertNotIn("note_update_source_file", self.html)
         self.assertNotIn("Voir la note au format", self.html)
-        self.assertNotIn(
-            reverse("note_taking:note_json", args=[self.note.date]), self.html
-        )
+        self.assertNotIn("/json/", self.html)
 
     def test_actions_conservees(self):
         for name in ("export_note", "edit_note", "delete_note"):
