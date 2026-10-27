@@ -18,7 +18,6 @@ urlpatterns = [
     path("notes/new/", views.new_note, name="new_note"),
     path("notes/today/", views.note_today, name="note_today"),
     path("notes/<date:note_date>/", views.NoteDetail.as_view(), name="note_detail"),
-    path("notes/<date:note_date>/md/", views.note_md, name="note_md"),
     path("notes/<date:note_date>/export/", views.export_note, name="export_note"),
     path("notes/<date:note_date>/edit/", views.edit_note, name="edit_note"),
     path("notes/<date:note_date>/delete/", views.delete_note, name="delete_note"),

@@ -56,7 +56,7 @@ class ExternalImageRenderingTests(TestCase):
     def test_note_complete_lien_au_lieu_de_l_image(self):
         note = Note.objects.create(date="2025-11-24", body=f"![Logo]({URL})")
 
-        response = self.client.get(reverse("note_taking:note_md", args=[note.date]))
+        response = self.client.get(reverse("note_taking:note_detail", args=[note.date]))
 
         self.assertContains(response, f'<a href="{URL}">Logo</a>', html=True)
         self.assertNotContains(response, f'src="{URL}"')

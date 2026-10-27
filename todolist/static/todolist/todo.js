@@ -59,7 +59,7 @@ document.addEventListener("change", async (event) => {
         // La case revient à son état d'avant, et un toast le signale.
         checkbox.checked = !checkbox.checked;
         checkbox.disabled = false;
-        Alert.toast("La tâche n'a pas pu être mise à jour.", { type: "error" });
+        Toast.show("La tâche n'a pas pu être mise à jour.", "error");
         return;
     }
     if (checkbox.closest("table[data-live-rows]")) {

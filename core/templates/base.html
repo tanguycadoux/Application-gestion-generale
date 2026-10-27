@@ -10,14 +10,8 @@
     <link rel="icon" href="{% static 'core/favicon.svg' %}" type="image/svg+xml">
 
     {% load ui %}
-    {% button_variants_json %}
-    {# Icônes des toasts, clonées par alert_system.js (#218). #}
-    <template id="alert-icon-info">{% icon "info" %}</template>
-    <template id="alert-icon-check_circle">{% icon "check_circle" %}</template>
-    <template id="alert-icon-warning">{% icon "warning" %}</template>
-    <template id="alert-icon-error">{% icon "error" %}</template>
     <script src="{% static 'core/alert_system.js' %}"></script>
-    <script src="{% static 'core/confirm.js' %}" defer></script>
+    <script src="{% static 'core/month_calendar.js' %}" defer></script>
     <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
     
     {# Titre d'onglet « Page · Section » (#130) : la section vient du gabarit de base de l'app. #}
@@ -61,10 +55,15 @@
         {% block content %}{% endblock content %}
     </main>
 
-    <script>
+    {# Toasts (#293) : rendus ici par le serveur, visibles sans JavaScript ; toasts.js ajoute la fermeture et la disparition des succès. #}
+    <div id="toasts" class="pointer-events-none fixed right-4 bottom-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
         {% for message in messages %}
-            Alert.toast("{{ message|escapejs }}", { type: "{{ message.level_tag|escapejs }}" });
+            {% message_toast message %}
         {% endfor %}
-    </script>
+    </div>
+    {# Modèles des toasts créés par un script (Toast.show) : succès et erreur. #}
+    <template id="toast-template-success">{% toast_template "success" %}</template>
+    <template id="toast-template-error">{% toast_template "error" %}</template>
+    <script src="{% static 'core/toasts.js' %}" defer></script>
 </body>
 </html>

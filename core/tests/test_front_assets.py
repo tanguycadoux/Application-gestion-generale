@@ -57,7 +57,7 @@ class FrontAssetsTests(TestCase):
 
         self.assertIn('@import "tailwindcss" theme(static);', css)
         self.assertIn("@layer base {", css)
-        self.assertIn(".alert__toast-progress {", css)
+        self.assertIn(".alert__popover {", css)
         self.assertEqual(settings.TAILWIND_CLI_SRC_CSS, "assets/css/source.css")
 
 

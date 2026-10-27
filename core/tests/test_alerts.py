@@ -1,33 +1,17 @@
-"""Tests des alertes : toasts des messages Django et popover de confirmation.
+"""Tests de la popover de colonne (`createPopoverBase`, `alert_system.js`) et des
+règles CSS propres aux alertes. Les toasts sont dans `test_toasts.py` (#293).
 
 Le projet n'a pas de lanceur de tests JavaScript : les tests du script le lisent.
 """
 
-import json
-import re
 from pathlib import Path
-from typing import Any
 
-from django.contrib import messages
-from django.contrib.messages.storage.fallback import FallbackStorage
-from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.staticfiles import finders
-from django.template.loader import render_to_string
-from django.test import RequestFactory, SimpleTestCase, TestCase
-from django.urls import reverse
-
-from core.templatetags.ui import BUTTON_VARIANTS
+from django.test import SimpleTestCase
 
 from .stylesheets import components_layer, read_source_css
 
 SHAPE = "rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
-
-TOAST_TYPES = {
-    "info": ("info", "border-l-blue-700", "text-blue-800", "bg-blue-500"),
-    "success": ("check_circle", "border-l-green-700", "text-green-800", "bg-green-500"),
-    "warning": ("warning", "border-l-amber-500", "text-amber-800", "bg-amber-400"),
-    "error": ("error", "border-l-red-700", "text-red-800", "bg-red-500"),
-}
 
 
 def read_static(name: str) -> str:
@@ -36,115 +20,48 @@ def read_static(name: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-class ToastLevelTests(TestCase):
-    """Le niveau du message Django est transmis au toast (#120)."""
-
-    def render_with_message(self, level: int, text: str) -> str:
-        # Any : le stockage des messages est un attribut privé, absent du type.
-        request: Any = RequestFactory().get("/")
-        request.session = SessionStore()
-        request._messages = FallbackStorage(request)
-        messages.add_message(request, level, text)
-        return render_to_string("base.html", request=request)
-
-    def test_type_du_toast_selon_le_niveau(self):
-        levels = {
-            messages.INFO: "info",
-            messages.SUCCESS: "success",
-            messages.WARNING: "warning",
-            messages.ERROR: "error",
-        }
-        for level, toast_type in levels.items():
-            with self.subTest(toast_type=toast_type):
-                html = self.render_with_message(level, "Message")
-
-                self.assertIn(
-                    f'Alert.toast("Message", {{ type: "{toast_type}" }});', html
-                )
-
-    def test_avertissement_d_un_import_sans_fichier(self):
-        response = self.client.post(reverse("note_taking:import_files"), follow=True)
-
-        self.assertContains(response, '{ type: "warning" }')
-
-
-class AlertTextTests(SimpleTestCase):
-    """Les textes s'affichent tels quels, sans être lus comme du HTML (#142)."""
-
+class PopoverScriptTests(SimpleTestCase):
     def setUp(self):
         self.script = read_static("core/alert_system.js")
 
-    def test_pas_d_insertion_en_html(self):
+    def test_textes_places_en_texte_sans_html(self):
+        """Les textes s'affichent tels quels, sans être lus comme du HTML (#142)."""
+        self.assertIn("textContent", self.script)
         self.assertNotIn("innerHTML", self.script)
         self.assertNotIn("insertAdjacentHTML", self.script)
 
-    def test_textes_places_en_texte(self):
-        self.assertIn("textContent", self.script)
-
-    def test_pas_de_texte_dans_un_gabarit_de_chaine(self):
-        """Message, titre et libellés ne passent pas par une chaîne `${…}` en HTML."""
-        interpolations = [i.strip() for i in re.findall(r"\$\{([^}]*)\}", self.script)]
-
-        for name in ("message", "title", "ok_label", "cancel_label"):
-            with self.subTest(name=name):
-                self.assertNotIn(name, interpolations)
-
-
-class AlertStyleTests(TestCase):
-    """Toasts et popover cohérents avec l'interface (#154)."""
-
-    def setUp(self):
-        self.script = read_static("core/alert_system.js")
-
-    def test_classes_des_boutons_transmises_aux_scripts(self):
-        html = self.client.get("/").content.decode()
-
-        match = re.search(
-            r'<script id="button-variants" type="application/json">(.*?)</script>',
-            html,
-        )
-        assert match is not None
-        self.assertEqual(json.loads(match.group(1)), BUTTON_VARIANTS)
-        self.assertLess(
-            html.index('id="button-variants"'), html.index("core/alert_system.js")
-        )
-
-    def test_forme_commune(self):
-        """Une seule définition, utilisée par le toast et par la popover."""
+    def test_forme_de_la_popover(self):
         self.assertIn(f'const ALERT_SHAPE = "{SHAPE}";', self.script)
-        self.assertGreaterEqual(self.script.count("${ALERT_SHAPE}"), 2)
+        self.assertIn("${ALERT_SHAPE}", self.script)
 
-    def test_toasts_par_type(self):
-        for toast_type, classes in TOAST_TYPES.items():
-            with self.subTest(toast_type=toast_type):
-                for value in classes:
-                    self.assertIn(f'"{value}"', self.script)
-        self.assertIn("border-l-4", self.script)
-
-    def test_boutons_de_la_popover_selon_les_variantes(self):
-        self.assertIn('getElementById("button-variants")', self.script)
-        self.assertLess(
-            self.script.index("variants.ghost"), self.script.index("variants.danger")
-        )
+    def test_plus_de_toast_ni_de_confirmation_en_javascript(self):
+        self.assertNotIn("toast", self.script.lower())
+        self.assertNotIn("confirmAt", self.script)
 
 
 class AlertStylesheetTests(SimpleTestCase):
-    """Les règles propres des alertes ne gardent que les animations (#154), dont la
-    barre de progression ; elles sont dans la source de la feuille Tailwind (#217).
-    """
+    """Les règles propres des alertes ne gardent que les animations (#154) ; elles
+    sont dans la source de la feuille Tailwind (#217)."""
 
     def test_regles_dans_le_layer_components(self):
         """Hors layer, ces règles l'emporteraient sur toute classe Tailwind."""
         css = components_layer(read_source_css())
 
-        self.assertIn(".alert__toast-progress {", css)
+        self.assertIn(".alert__popover {", css)
+        self.assertIn(".confirm-popover:popover-open {", css)
 
     def test_regles_reduites_aux_animations(self):
         css = components_layer(read_source_css())
 
         self.assertNotRegex(css, r"\b(?:color|background|border|box-shadow)\s*:")
-        self.assertIn(".alert__toast-progress {", css)
-        self.assertIn("@keyframes alert-toast-progress", css)
+        self.assertIn("@keyframes fadeIn", css)
+
+    def test_plus_de_regle_de_toast(self):
+        """Le toast est du HTML rendu par le serveur, en classes Tailwind (#293)."""
+        css = read_source_css()
+
+        self.assertNotIn("alert__toast", css)
+        self.assertNotIn("alert-toast-progress", css)
 
     def test_popover_native_ancree_a_son_bouton(self):
         """Sous son bouton par l'ancrage CSS ; sans lui, le navigateur la centre."""
@@ -152,9 +69,3 @@ class AlertStylesheetTests(SimpleTestCase):
 
         self.assertIn("@supports (position-area: bottom)", css)
         self.assertIn("position-area: bottom span-left", css)
-
-    def test_script_ne_donne_que_la_duree_de_la_barre(self):
-        script = read_static("core/alert_system.js")
-
-        self.assertIn("style.animationDuration", script)
-        self.assertNotIn("offsetWidth", script)
