@@ -15,7 +15,7 @@
     {# Le texte occupe la place restante et défile dans sa zone ; editor.js le remplace par CodeMirror. #}
     <textarea name="body" id="body" class="min-h-48 w-full flex-1 resize-none font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
     {# Aide de l'éditeur, affichée par editor.js : sans JavaScript, ces raccourcis n'existent pas. #}
-    <p id="editor-help" hidden class="text-sm text-slate-600">Ctrl+Espace : suggestions (projets après <kbd>#</kbd>, niveaux après <kbd>##</kbd>, images après <kbd>![</kbd>) · Tab : compléter · Ctrl+F : rechercher · Ctrl+S : enregistrer</p>
+    <p id="editor-help" hidden class="text-sm text-slate-600">Ctrl+Espace : suggestions (projets après <kbd>#</kbd>, niveaux après <kbd>##</kbd>, images après <kbd>![</kbd>) · Tab : compléter · Ctrl+] et Ctrl+[ : indenter · Ctrl+F : rechercher · Ctrl+S : enregistrer</p>
 </form>
 
 {# Bouton du plan de la note (#314) : cloné par editor.js, absent sans JavaScript. #}

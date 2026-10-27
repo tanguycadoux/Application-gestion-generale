@@ -124,6 +124,7 @@ class NoteEditorScriptsTests(TestCase):
             "suggestions.js",
             "capture.js",
             "images_capture.js",
+            "lists.js",
         ):
             # Les imports relatifs sont nos propres fichiers.
             modules = {
@@ -142,6 +143,7 @@ class NoteEditorScriptsTests(TestCase):
             "suggestions.js",
             "capture.js",
             "images_capture.js",
+            "lists.js",
         ):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
