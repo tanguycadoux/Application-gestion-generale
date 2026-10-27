@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load ui static %}
+
+{% block title %}Galerie des alertes{% endblock title %}
+{% block title_suffix %} · Debug{% endblock title_suffix %}
+
+{% block content %}
+    {# Page de développement (#156, #235) : seulement avec DEBUG = True. #}
+    <h1 class="mb-2">Galerie des alertes</h1>
+    <p class="mb-4 text-slate-600">Page de développement : les alertes de l'interface, sans disparition, pour juger leur rendu sans déclencher de vrais messages.</p>
+
+    <section aria-labelledby="gallery-toasts" class="mb-6">
+        <h2 id="gallery-toasts" class="mb-2">Toasts</h2>
+        <p class="mb-3">Les quatre types et un message long s'affichent en haut à droite et restent.</p>
+        <span id="gallery-toasts-again">{% button "Réafficher les toasts" icon="info" variant="ghost" type="button" %}</span>
+    </section>
+
+    <section aria-labelledby="gallery-popover" class="mb-6">
+        <h2 id="gallery-popover" class="mb-2">Confirmation</h2>
+        <p class="mb-3">Une popover de confirmation reste ouverte à côté du bouton ; « Annuler » et « Supprimer » la ferment, le bouton la rouvre.</p>
+        <span id="gallery-confirm">{% button "Rouvrir la confirmation" icon="delete" variant="ghost-danger" type="button" %}</span>
+    </section>
+
+    <script src="{% static 'core/alerts_gallery.js' %}" defer></script>
+{% endblock content %}

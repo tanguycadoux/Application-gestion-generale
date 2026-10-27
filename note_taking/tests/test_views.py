@@ -10,6 +10,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core.models import Section
+from core.tests.debug_urls import DebugUrlsTestCase
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 
@@ -197,7 +198,7 @@ class NoteFormViewTests(ViewTestCase):
         self.assertEqual(self.levels(response), ["error"])
 
 
-class NoteJsonViewTests(ViewTestCase):
+class NoteJsonViewTests(DebugUrlsTestCase):
     def test_analyse_au_format_json(self):
         note = Note.objects.create(date="2025-11-24", body=HEADER + "# P\n### A\nx")
 

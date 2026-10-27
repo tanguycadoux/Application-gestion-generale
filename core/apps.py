@@ -9,3 +9,4 @@ class CoreConfig(AppConfig):
     nav_section = NavSection(
         "Projets", 30, (NavItem("core:projects", "Liste des projets", "folder"),)
     )
+    debug_pages = (NavItem("core:alerts_gallery", "Galerie des alertes", "bug_report"),)

@@ -33,7 +33,6 @@
     <div class="mb-4">
         <span>Voir la note au format :</span>
         <a target="_blank" href="{% url 'note_taking:note_md' note.date %}">Markdown</a>
-        <a target="_blank" href="{% url 'note_taking:note_json' note.date %}">JSON</a>
     </div>
 
     {% for note_part in object.parts.all %}

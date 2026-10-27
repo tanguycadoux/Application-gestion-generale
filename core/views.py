@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -30,6 +31,16 @@ def index(request):
         for block in dashboard_blocks()
     ]
     return render(request, "core/index.html", {"blocks": blocks})
+
+
+def alerts_gallery(request):
+    """Galerie des alertes (#156) : toasts sans disparition et confirmation
+    ouverte, pour juger leur rendu sans déclencher de vrais messages. Réservée au
+    développement : l'adresse n'est déclarée qu'avec `DEBUG`, et la vue refuse
+    aussi hors `DEBUG`, au cas où elle serait branchée autrement."""
+    if not settings.DEBUG:
+        raise Http404
+    return render(request, "core/debug/alerts_gallery.html")
 
 
 def with_usage(projects):

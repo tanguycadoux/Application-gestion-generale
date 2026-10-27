@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path
 
 from core import converters  # noqa: F401  (le convertisseur `date`)
@@ -18,7 +19,6 @@ urlpatterns = [
     path("notes/today/", views.note_today, name="note_today"),
     path("notes/<date:note_date>/", views.NoteDetail.as_view(), name="note_detail"),
     path("notes/<date:note_date>/md/", views.note_md, name="note_md"),
-    path("notes/<date:note_date>/json/", views.note_json, name="note_json"),
     path("notes/<date:note_date>/export/", views.export_note, name="export_note"),
     path("notes/<date:note_date>/edit/", views.edit_note, name="edit_note"),
     path("notes/<date:note_date>/delete/", views.delete_note, name="delete_note"),
@@ -37,3 +37,10 @@ urlpatterns = [
     path("images/<int:pk>/", views.ImageDetail.as_view(), name="image_detail"),
     path("images/<int:pk>/delete/", views.delete_image, name="delete_image"),
 ]
+
+# Pages de développement (#235) : sans `DEBUG`, l'adresse n'existe pas.
+if settings.DEBUG:
+    urlpatterns += [
+        path("debug/notes/json/", views.debug_note_json, name="debug_note_json"),
+        path("debug/notes/<date:note_date>/json/", views.note_json, name="note_json"),
+    ]

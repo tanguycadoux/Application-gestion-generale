@@ -57,10 +57,11 @@ window.Alert = (function () {
       type = "info",
       has_title = true,
       title = "",
-      duration = 5
+      duration = 5 // en secondes ; null : le toast reste, sans barre de progression (#156)
     } = options;
     const style = TOAST_TYPES[type] ?? TOAST_TYPES.info;
-    const duration_ms = duration * 1000;
+    const persistent = duration === null;
+    const duration_ms = persistent ? 0 : duration * 1000;
 
     const text = [];
     if (has_title) {
@@ -71,13 +72,18 @@ window.Alert = (function () {
     const icon = alertIcon(style.icon, style.text);
 
     // Barre animée par alert_system.css : le script ne donne que la durée.
-    const progressBar = alertElement("div", `alert__toast-progress absolute bottom-0 left-0 h-1 ${style.bar}`);
-    progressBar.style.animationDuration = `${duration_ms}ms`;
+    const body = alertElement("div", "flex items-start gap-2", null, [icon, alertElement("div", "min-w-0", null, text)]);
+    const parts = [body];
+    if (!persistent) {
+      const progressBar = alertElement("div", `alert__toast-progress absolute bottom-0 left-0 h-1 ${style.bar}`);
+      progressBar.style.animationDuration = `${duration_ms}ms`;
+      parts.push(progressBar);
+    }
     const toast = alertElement(
       "div",
       `alert__toast relative overflow-hidden ${ALERT_SHAPE} border-l-4 ${style.border}`,
       null,
-      [alertElement("div", "flex items-start gap-2", null, [icon, alertElement("div", "min-w-0", null, text)]), progressBar]
+      parts
     );
     toast.setAttribute("role", type === "error" ? "alert" : "status");
     toastContainer.appendChild(toast);
@@ -86,6 +92,9 @@ window.Alert = (function () {
       toast.classList.add("show");
     });
 
+    if (persistent) {
+      return;
+    }
     setTimeout(() => {
       toast.classList.remove("show");
       setTimeout(() => toast.remove(), 300);

@@ -27,6 +27,8 @@ class NoteTakingConfig(AppConfig):
     project_usages = (ProjectUsage("note_parts__note", "note", "notes"),)
     section_usages = (SectionUsage("note_parts", "note part", "note parts"),)
 
+    debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
+
     def ready(self):
         from . import dashboard, renaming
 
