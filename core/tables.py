@@ -144,6 +144,23 @@ class Choice:
     project: Any = None
 
 
+def choices_of(
+    raw: Sequence[Choice | tuple[str, str]]
+    | Callable[[], Sequence[Choice | tuple[str, str]]],
+) -> list[Choice]:
+    """Les choix d'un filtre, donnés ou calculés à l'affichage."""
+    items = raw() if callable(raw) else raw
+    return [c if isinstance(c, Choice) else Choice(*c) for c in items]
+
+
+def values_of(data: Mapping[str, Any], param: str) -> list[str]:
+    """Les valeurs d'un paramètre, répété ou non : `?project=A&project=B`."""
+    if hasattr(data, "getlist"):
+        return list(data.getlist(param))
+    value = data.get(param, [])
+    return [value] if isinstance(value, str) else list(value)
+
+
 class ChoiceFilter(Filter):
     """Un choix parmi quelques-uns, donnés ou calculés à l'affichage.
 
@@ -167,8 +184,7 @@ class ChoiceFilter(Filter):
         self.default = default
 
     def choices(self) -> list[Choice]:
-        raw = self._choices() if callable(self._choices) else self._choices
-        return [c if isinstance(c, Choice) else Choice(*c) for c in raw]
+        return choices_of(self._choices)
 
     def read(self, data, errors):
         value = data.get(self.params[0], "")
@@ -178,6 +194,50 @@ class ChoiceFilter(Filter):
 
     def describe(self, value):
         return next(c.label for c in self.choices() if c.value == value)
+
+
+class MultiChoiceFilter(Filter):
+    """Plusieurs choix à cocher, réunis par « ou » (projets, plus tard chemins, tags).
+
+    Le paramètre est répété dans l'URL (`?project=A&project=B`) ; aucun choix coché
+    n'est pas un filtre. La valeur lue est le tuple des choix cochés, dans l'ordre
+    des choix, sans doublon ni valeur inconnue. `apply(cible, valeurs)` garde ce qui
+    répond à l'un d'eux. Le panneau propose une recherche dans la liste (`noun` :
+    « projets » pour le résumé, `singular` : « projet » pour « aucun projet »).
+    """
+
+    kind = "multichoice"
+
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        choices: Sequence[Choice | tuple[str, str]]
+        | Callable[[], Sequence[Choice | tuple[str, str]]],
+        apply: Callable[[Any, Any], Any],
+        noun: str = "valeurs",
+        singular: str = "valeur",
+    ):
+        super().__init__(key, label, apply)
+        self._choices = choices
+        self.noun = noun
+        self.singular = singular
+
+    def choices(self) -> list[Choice]:
+        return choices_of(self._choices)
+
+    def read(self, data, errors):
+        asked = set(values_of(data, self.params[0]))
+        values = tuple(c.value for c in self.choices() if c.value in asked)
+        return values or None
+
+    def selected_choices(self, value: Sequence[str]) -> list[Choice]:
+        return [c for c in self.choices() if c.value in value]
+
+    def describe(self, value):
+        if len(value) == 1:
+            return self.selected_choices(value)[0].label
+        return f"{len(value)} {self.noun}"
 
 
 class DateRangeFilter(Filter):
@@ -265,6 +325,18 @@ def url_without(request: HttpRequest, params: Iterable[str]) -> str:
     return f"?{query.urlencode()}" if query else request.path
 
 
+def url_without_value(request: HttpRequest, param: str, value: str) -> str:
+    """L'URL courante sans une des valeurs d'un paramètre répété."""
+    query = request.GET.copy()
+    remaining = [v for v in query.getlist(param) if v != value]
+    if remaining:
+        query.setlist(param, remaining)
+    else:
+        query.pop(param, None)
+    query.pop(PAGE_PARAM, None)
+    return f"?{query.urlencode()}" if query else request.path
+
+
 def filter_panel(
     request: HttpRequest,
     filters: Filters | None,
@@ -303,6 +375,10 @@ def filter_panel(
             ) > MAX_RADIO_CHOICES and not any(c.project for c in field_data["choices"])
             field_data["selected"] = raw or column_filter.default or ""
             field_data["has_default"] = column_filter.default is not None
+        elif isinstance(column_filter, MultiChoiceFilter):
+            field_data["choices"] = column_filter.choices()
+            field_data["selected"] = list(values.get(column_filter.key, ()))
+            field_data["singular"] = column_filter.singular
         fields.append(field_data)
     return {
         "id": f"filters-{column}",
@@ -355,14 +431,34 @@ def summary_context(
     """Le contexte de `{% filter_summary %}` : chaque filtre actif, retirable d'un clic."""
     if not filters or active is None:
         return {"active": [], "errors": []}
-    items = [
-        {
-            "text": f"{f.label} : {f.describe(active.values[f.key])}",
-            "remove_url": url_without(request, f.params),
-        }
-        for f in filters.all
-        if f.key in active.values
-    ]
+    items: list[dict[str, Any]] = []
+    for f in filters.all:
+        if f.key not in active.values:
+            continue
+        value = active.values[f.key]
+        label = f"{f.label} :"
+        if isinstance(f, MultiChoiceFilter):
+            # Une pastille retirable par valeur cochée, avec celle du projet.
+            for choice in f.selected_choices(value):
+                items.append(
+                    {
+                        "label": label,
+                        "text": f"{label} {choice.label}",
+                        "project": choice.project,
+                        "remove_url": url_without_value(
+                            request, f.params[0], choice.value
+                        ),
+                    }
+                )
+        else:
+            items.append(
+                {
+                    "label": label,
+                    "text": f"{label} {f.describe(value)}",
+                    "project": None,
+                    "remove_url": url_without(request, f.params),
+                }
+            )
     return {
         "active": items,
         "errors": active.errors,

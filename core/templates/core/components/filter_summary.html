@@ -13,7 +13,7 @@ saisie. Rendu par {% filter_summary %} ; rien sans filtre ni erreur.
                 {% for item in active %}
                     <li>
                         <a href="{{ item.remove_url }}" class="inline-flex items-center gap-1 rounded-full bg-slate-200 py-0.5 pr-1.5 pl-2.5 text-slate-800 hover:bg-slate-300">
-                            {{ item.text }}
+                            {% if item.project %}{{ item.label }} {% project_badge item.project %}{% else %}{{ item.text }}{% endif %}
                             {% icon "close" class="size-4" %}
                             <span class="sr-only">(retirer ce filtre)</span>
                         </a>
