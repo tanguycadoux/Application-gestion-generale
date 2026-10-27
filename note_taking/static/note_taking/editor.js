@@ -84,6 +84,12 @@ function mountEditor(textarea) {
         autocapitalize: "sentences",
     };
     if (invalid) attributes["aria-invalid"] = "true";
+    // Raccourcis de l'éditeur (suggestions, recherche) : affichés, et lus avec le champ.
+    const help = document.getElementById("editor-help");
+    if (help) {
+        help.hidden = false;
+        attributes["aria-describedby"] = help.id;
+    }
 
     // Adresses des listes de suggestions (#90), sur le formulaire.
     const { projectsUrl, sectionsUrl, imagesUrl } = textarea.form.dataset;

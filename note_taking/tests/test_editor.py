@@ -62,8 +62,16 @@ class NoteEditorPageTests(TestCase):
                 )
                 assert template is not None
                 self.assertIn('type="button"', template.group("button"))
-                self.assertIn('aria-label="Plan de la note"', template.group("button"))
+                # Un texte visible, pas une icône seule.
+                self.assertIn("Plan</button>", template.group("button"))
+                self.assertNotIn("aria-label", template.group("button"))
                 self.assertIn("data-editor-toolbar", html)
+
+    def test_aide_de_l_editeur_cachee_sans_javascript(self):
+        for page, url in self.pages().items():
+            with self.subTest(page=page):
+                html = self.client.get(url).content.decode()
+                self.assertRegex(html, r'<p id="editor-help" hidden [^>]*>Ctrl\+Espace')
 
     def test_adresses_des_listes_de_suggestions_sur_le_formulaire(self):
         for page, url in self.pages().items():

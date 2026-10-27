@@ -229,7 +229,7 @@ L'éditeur est **CodeMirror 6**, embarqué dans `static/vendor/codemirror/` (auc
 - **Suggestions dans le texte** (#91, #92) : `suggestions.js` (module `@codemirror/autocomplete`, ajouté à `packages.json`) interroge ces trois listes pendant la frappe, par les adresses portées par le formulaire (`data-projects-url`, `data-sections-url`, `data-images-url`).
   - `# ` propose les projets ; `## ` à `###### ` propose les niveaux sous le projet et les titres déjà écrits au-dessus (`pathAbove`, d'après les titres de l'analyseur, donc jamais dans un bloc de code) ; rien si un niveau manque plus haut ou si aucun projet n'est écrit.
   - `![` propose les images, avec leur vignette, et insère `![](images/nom)` avec le curseur entre les crochets pour la légende ; `![légende](images/ba` complète la référence.
-  - Le serveur filtre (casse et accents ignorés) ; **rien n'est choisi tant qu'on n'a pas pris les flèches** (`selectOnOpen: false`) : Entrée passe à la ligne et un nom nouveau se tape tel quel, il est créé à l'enregistrement. Échap ferme la liste, Ctrl+Espace l'ouvre.
+  - Le serveur filtre (casse et accents ignorés) ; **rien n'est choisi tant qu'on n'a pas pris les flèches** (`selectOnOpen: false`) : Entrée passe à la ligne et un nom nouveau se tape tel quel, il est créé à l'enregistrement. Échap ferme la liste, Ctrl+Espace l'ouvre, **Tab complète** (la suggestion choisie, ou la première si on n'a pas pris les flèches ; sans liste ouverte il garde son rôle). Une ligne d'aide sous l'éditeur (`#editor-help`, cachée sans JavaScript, reliée au champ par `aria-describedby`) rappelle ces raccourcis.
   - Les vignettes sont les fichiers eux-mêmes, chargés à la demande (`loading="lazy"`) ; des miniatures calculées relèvent de M14 (images).
 
 ### Analyse des notes

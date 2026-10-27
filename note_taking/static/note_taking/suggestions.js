@@ -4,8 +4,15 @@
 //   `![`        -> les images, avec leur vignette (insère `![](images/nom)`).
 // Les listes viennent des vues JSON de #90 (adresses sur le formulaire) ; rien n'est
 // créé ici : un nom nouveau se tape tel quel et se crée à l'enregistrement.
-import { autocompletion } from "@codemirror/autocomplete";
-import { EditorSelection, EditorState } from "@codemirror/state";
+import {
+    acceptCompletion,
+    autocompletion,
+    completionStatus,
+    moveCompletionSelection,
+    selectedCompletion,
+} from "@codemirror/autocomplete";
+import { EditorSelection, EditorState, Prec } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
 import { readHeadings } from "./outline.js";
 
 const IMAGE_TRIGGER = /!\[([^\]\n]*)$/;
@@ -139,15 +146,26 @@ function thumbnail(completion) {
     return img;
 }
 
+// Tab complète, comme dans VS Code : la suggestion choisie, ou la première si on n'a pas
+// pris les flèches. Sans liste ouverte, Tab garde son rôle (passer au champ suivant).
+function acceptWithTab(view) {
+    if (completionStatus(view.state) !== "active") return false;
+    if (!selectedCompletion(view.state)) moveCompletionSelection(true)(view);
+    return acceptCompletion(view);
+}
+
 /** Extensions de CodeMirror ; `urls` : adresses des trois listes (#90). */
 export function suggestions(urls) {
     return [
         EditorState.phrases.of(phrases),
+        Prec.highest(keymap.of([{ key: "Tab", run: acceptWithTab }])),
         autocompletion({
             override: [titleSource(urls), imageSource(urls)],
             // Rien n'est choisi tant qu'on n'a pas pris les flèches : Entrée écrit un
             // nom nouveau en passant à la ligne, sans accepter une suggestion.
             selectOnOpen: false,
+            // Tab juste après l'ouverture de la liste doit déjà compléter.
+            interactionDelay: 0,
             icons: false,
             addToOptions: [{ render: thumbnail, position: 10 }],
         }),
