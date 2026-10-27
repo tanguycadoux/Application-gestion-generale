@@ -1,4 +1,7 @@
-"""Tests des sujets et tags partagés entre notes et TODO (#20)."""
+"""Tests des chemins et tags partagés entre notes et TODO (#20, #295).
+
+Le même nom de niveau sous deux projets est deux sections : voir
+`test_sections.py`."""
 
 from django.test import TestCase
 from django.urls import reverse
@@ -14,22 +17,12 @@ def process(date: str, raw: str) -> Note:
     return note
 
 
-class SharedSubjectTagTests(TestCase):
-    def test_sujet_partage_entre_notes_d_un_meme_projet(self):
+class SharedSectionTagTests(TestCase):
+    def test_niveau_partage_entre_notes_d_un_meme_projet(self):
         first = process("2025-11-24", "# P\n## Thermique\nx")
         second = process("2025-11-25", "# P\n## Thermique\ny")
 
         self.assertEqual(first.parts.get().section.pk, second.parts.get().section.pk)
-
-    def test_meme_sujet_sous_deux_projets_deux_sections(self):
-        """Un sujet appartient à un projet (#295) : le même nom sous un autre projet
-        est une autre section."""
-        first = process("2025-11-24", "# P\n## Thermique\nx")
-        second = process("2025-11-25", "# Q\n## Thermique\ny")
-
-        sections = [first.parts.get().section, second.parts.get().section]
-        self.assertNotEqual(sections[0].pk, sections[1].pk)
-        self.assertEqual({section.name for section in sections}, {"Thermique"})
 
     def test_note_part_et_todo_partagent_les_tags(self):
         note = process(

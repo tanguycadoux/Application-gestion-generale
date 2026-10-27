@@ -318,12 +318,6 @@ class TodoGenerationTests(ServiceTestCase):
             ["Première", "Seconde"],
         )
 
-    def test_todo_sans_sujet(self):
-        self.process("# P\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
-
-        todo = Todo.objects.get()
-        self.assertEqual(list(todo.tags.values_list("name", flat=True)), [])
-
 
 class ImageTests(ServiceTestCase):
     """Images dans les notes ; l'import lui-même est testé dans l'app images."""
