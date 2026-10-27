@@ -20,6 +20,11 @@ urlpatterns = [
         name="section_rename",
     ),
     path(
+        "projets/<int:pk>/chemins/<int:section_pk>/supprimer/",
+        views.delete_section,
+        name="section_delete",
+    ),
+    path(
         "projets/<int:pk>/supprimer/",
         views.delete_project,
         name="project_delete",

@@ -95,6 +95,28 @@ def project_paths(request, pk):
     )
 
 
+@require_POST
+def delete_section(request, pk, section_pk):
+    """Supprime un niveau inutilisé, avec ses descendants (#299) ; un niveau que des
+    notes ou des tâches utilisent, lui ou un descendant, est refusé : il se renomme."""
+    project = get_object_or_404(Project, pk=pk)
+    section = get_object_or_404(Section, pk=section_pk, project=project)
+    row = next(row for row in section_tree(project) if row.section.pk == section.pk)
+    if row.total:
+        messages.error(
+            request,
+            f"Le niveau « {section.name} » est utilisé par {row.usage} : "
+            "suppression impossible.",
+        )
+    else:
+        section.delete()
+        below = {0: "", 1: ", avec son sous-niveau"}.get(
+            row.descendants, f", avec ses {row.descendants} sous-niveaux"
+        )
+        messages.success(request, f"Le niveau « {section.name} » est supprimé{below}.")
+    return redirect("core:project_paths", pk=pk)
+
+
 def rename_section(request, pk, section_pk):
     """Renommer un niveau de chemin, en trois temps (#299) : le nouveau nom, le bilan
     des titres à réécrire où l'on décoche ce qu'on garde, puis l'écriture.

@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from core import html_validator
 from core.models import Project, Section, Tag
+from core.sections import section_for
 from images.models import Image
 from note_taking.models import Note
 from note_taking.services import process_note_parts
@@ -100,6 +101,8 @@ class HtmlValidationTests(TestCase):
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
         self.note = Note.objects.create(date=TODAY, body=NOTE_BODY)
         process_note_parts(self.note)
+        # Niveau inutilisé avec un sous-niveau : bouton de suppression actif (#299).
+        section_for(project, ["Inutilisé", "Sous-niveau"])
         self.parent = Todo.objects.create(
             title="Parent",
             project=project,
