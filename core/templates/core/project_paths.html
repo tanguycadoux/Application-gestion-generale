@@ -11,7 +11,7 @@
         {% button "Retour aux projets" icon="arrow_back" href=url variant="ghost" %}
     </header>
 
-    <p class="mb-4 text-slate-600">Les niveaux viennent des titres des notes (<code>##</code> à <code>######</code>) et des chemins saisis pour les tâches. Chacun compte ce qui l'utilise, descendants compris. Renommer un niveau réécrit ses titres dans les notes, après un bilan.</p>
+    <p class="mb-4 text-slate-600">Les niveaux viennent des titres des notes (<code>##</code> à <code>######</code>) et des chemins saisis pour les tâches. Chacun compte ce qui l'utilise, descendants compris. Renommer un niveau réécrit ses titres dans les notes, après un bilan ; seul un niveau inutilisé se supprime.</p>
 
     {% if rows %}
         <ul class="divide-y divide-slate-200">
@@ -19,10 +19,20 @@
                 <li class="flex items-center gap-2 py-1 {{ row.depth|indent_class }}">
                     <span class="min-w-0 flex-1">
                         {{ row.section.name }}
-                        <span class="text-sm text-slate-600">· {% if row.usage %}{{ row.usage }}{% else %}inutilisé{% endif %}</span>
+                        <span id="{{ row.usage_id }}" class="text-sm text-slate-600">· {% if row.usage %}{{ row.usage }}{% else %}inutilisé{% endif %}</span>
                     </span>
                     {% url 'core:section_rename' project.pk row.section.pk as url %}
                     {% button "Renommer le niveau « "|add:row.section.name|add:" »" icon="edit" href=url variant="ghost" icon_only=True %}
+
+                    {# Un niveau utilisé se renomme, il ne se supprime pas : le bouton est désactivé, relié à ce qui l'utilise. #}
+                    <form method="post" action="{% url 'core:section_delete' project.pk row.section.pk %}" data-confirm="Supprimer définitivement le niveau « {{ row.section.name }} »{% if row.descendants == 1 %} et son sous-niveau{% elif row.descendants %} et ses {{ row.descendants }} sous-niveaux{% endif %} ?">
+                        {% csrf_token %}
+                        {% if row.total %}
+                            {% button "Supprimer le niveau « "|add:row.section.name|add:" »" icon="delete" variant="ghost-danger" icon_only=True disabled=True describedby=row.usage_id %}
+                        {% else %}
+                            {% button "Supprimer le niveau « "|add:row.section.name|add:" »" icon="delete" variant="ghost-danger" icon_only=True %}
+                        {% endif %}
+                    </form>
                 </li>
             {% endfor %}
         </ul>

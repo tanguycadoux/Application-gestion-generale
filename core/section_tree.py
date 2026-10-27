@@ -23,6 +23,12 @@ class TreeRow:
     # descendants.
     usage: str
     total: int
+    # Nombre de niveaux en dessous, à tous les niveaux.
+    descendants: int = 0
+
+    @property
+    def usage_id(self) -> str:
+        return f"niveau-{self.section.pk}-usage"
 
 
 def section_tree(project: Project) -> list[TreeRow]:
@@ -53,12 +59,14 @@ def section_tree(project: Project) -> list[TreeRow]:
         qui utilise le niveau et ses descendants, par usage."""
         row = TreeRow(section, depth, "", 0)
         rows.append(row)
+        index = len(rows)
         totals = [getattr(section, f"usage_{index}") for index in range(len(usages))]
         for child in children.get(section.pk, []):
             totals = [
                 total + more
                 for total, more in zip(totals, walk(child, depth + 1), strict=True)
             ]
+        row.descendants = len(rows) - index
         row.total = sum(totals)
         row.usage = " et ".join(
             usage.text(count)

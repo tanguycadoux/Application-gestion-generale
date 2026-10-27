@@ -213,6 +213,8 @@ La page **Chemins** d'un projet (`/projets/<id>/chemins/`, bouton sur la page Pr
 
 **Renommer un niveau** réécrit ses titres dans les notes, en trois temps : le nouveau nom, puis un **bilan** qui liste chaque titre à réécrire (la note, la ligne, la suite des titres) avec une case cochée que l'on peut décocher, puis l'écriture, qui se fait en une seule fois. Un titre est repéré par la **suite des titres au-dessus de lui**, projet compris, et non par son niveau : `### Réunion` sans `##` au-dessus est le même niveau que `## Réunion`. Un titre décoché garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes. Si tous les titres sont renommés, le niveau l'est **en place** : ses sous-niveaux et les tâches saisies à la main qui le portent le suivent. Les tâches issues des notes gardent leur fiche (avancement, échéance, parent, état) et suivent leur nouveau chemin. Le nom est refusé s'il est vide, identique, ou déjà pris sous le même parent (la fusion de deux niveaux n'est pas encore possible) ; un simple changement de casse est permis. Si une note a changé entre le bilan et la confirmation, rien n'est écrit.
 
+**Supprimer un niveau** n'est possible que s'il est **inutilisé, descendants compris** : le bouton est désactivé, relié à ce qui l'utilise, sinon. La suppression emporte ses sous-niveaux et passe par la confirmation (popover) qui le dit. Un niveau utilisé se renomme. Une tâche écartée ne retient pas le niveau : elle le perd (sa fiche garde son chemin écrit).
+
 ### Tags supplémentaires
 
 Il est possible d'ajouter plus de tags en ajoutant un bloc avec la classe `metadata` :
