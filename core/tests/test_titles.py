@@ -19,7 +19,7 @@ TITLE_REGEX = re.compile(r"<title>(?P<title>.*?)</title>", re.DOTALL)
 TAG_REGEX = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.DOTALL)
 
 
-LABEL_ATTR_REGEX = re.compile(r'(?:aria-label|title|data-confirm)="(?P<value>[^"]*)"')
+LABEL_ATTR_REGEX = re.compile(r'(?:aria-label|title)="(?P<value>[^"]*)"')
 
 
 def visible_text(html: str) -> str:
@@ -47,9 +47,6 @@ class PageTitlesTests(TestCase):
             reverse("note_taking:notes_list"): "Liste des notes · Notes",
             reverse("note_taking:note_detail", args=[note]): (
                 "Note du 24 novembre 2025 · Notes"
-            ),
-            reverse("note_taking:note_md", args=[note]): (
-                "Note du 24 novembre 2025 en Markdown · Notes"
             ),
             reverse("note_taking:new_note"): "Nouvelle note · Notes",
             reverse("note_taking:edit_note", args=[note]): (

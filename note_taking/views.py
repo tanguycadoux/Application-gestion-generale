@@ -54,6 +54,11 @@ class NoteDetail(DetailView):
     slug_field = "date"
     slug_url_kwarg = "note_date"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["content"] = render_note_body(self.object.body)
+        return context
+
 
 class NoteList(ListView):
     model = Note
@@ -149,7 +154,7 @@ def delete_image(request, pk):
 
 # Action d'une ancienne adresse par id -> nom de l'adresse par date.
 ID_ACTIONS = {
-    "md": "note_md",
+    "md": "note_detail",
     "json": "note_json",
     "export": "export_note",
     "edit": "edit_note",
@@ -170,22 +175,6 @@ def note_by_id(request, pk, action=""):
     response = HttpResponse(status=308)
     response["Location"] = reverse(f"note_taking:{name}", args=[note.date])
     return response
-
-
-def note_md(request, note_date):
-    note = get_object_or_404(Note, date=note_date)
-
-    if note.body:
-        html_content = render_note_body(note.body)
-    else:
-        html_content = "<p>Aucun contenu disponible.</p>"
-
-    context = {
-        "date": note.date,
-        "content": html_content,
-    }
-
-    return render(request, "note_taking/note_md.html", context)
 
 
 @require_POST
@@ -360,7 +349,7 @@ def edit_note(request, note_date):
 
 @require_POST
 def delete_note(request, note_date):
-    """Supprime une note ; la confirmation se fait par popover (data-confirm)."""
+    """Supprime une note ; la confirmation se fait par popover native (`confirm_button`, #292)."""
     note = get_object_or_404(Note, date=note_date)
     name = note_name(note)
     note.delete()
