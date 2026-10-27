@@ -1,5 +1,6 @@
+{% load static vendor %}
 
-<form id="note-form" method="post" action="{{ form_action }}" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
+<form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="col-span-2">{{ form.non_field_errors }}</div>{% endif %}
     <label for="date">Date :</label>
@@ -11,3 +12,8 @@
     <label for="body" class="sr-only">Contenu de la note</label>
     <textarea name="body" id="body" class="col-span-2 h-96 w-full font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
 </form>
+
+{# Éditeur (#89) : CodeMirror embarqué remplace le <textarea> ; sans lui, le <textarea> reste. #}
+{% codemirror_importmap %}
+<script src="{% static 'note_taking/note_form.js' %}" defer></script>
+<script type="module" src="{% static 'note_taking/editor.js' %}"></script>

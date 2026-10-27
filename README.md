@@ -48,6 +48,7 @@ HTML, CSS et JavaScript natifs, sans Node. Seule étape de build : la feuille Ta
 | [Material Symbols Rounded](https://fonts.google.com/icons) | icônes (Material 3, variante arrondie, licence Apache 2.0) | fichiers SVG dans `static/icons/`, recopiés dans les pages par `{% icon "nom" %}` (#218) ; une icône s'ajoute avec `python manage.py add_icon <nom>` ; icône d'onglet `core/static/core/favicon.svg` |
 | [htmx](https://htmx.org/) | mises à jour partielles de pages (recherche de notes, navigation des calendriers) | version 1.9.11, embarquée dans `static/vendor/htmx/` (licence, provenance et empreinte dans son README), chargée une fois dans `core/templates/base.html` ; attributs écrits `data-hx-…`, la forme valide en HTML (#259) |
 | [KaTeX](https://katex.org/) | affichage des formules LaTeX des notes (#99) | version 0.18.11, embarquée dans `static/vendor/katex/` (licence, provenance et empreintes dans son README, polices `woff2` seulement), chargée par `note_taking/templates/note_taking/base.html` avec `note_taking/math.js`, qui rend les formules après chaque échange htmx |
+| [CodeMirror 6](https://codemirror.net/) | éditeur des notes : coloration du Markdown, historique, recherche (Ctrl+F) ; le `<textarea>` reste le champ envoyé (#89) | 13 modules ES embarqués dans `static/vendor/codemirror/` (licences, versions et empreintes dans son README, liste dans `packages.json`), résolus par une import map (`{% codemirror_importmap %}`) et chargés par `note_taking/editor.js` sur les pages de création et de modification d'une note ; téléchargés par `python manage.py vendor_codemirror` |
 
 Tailwind détecte les classes dans les fichiers du dépôt (gabarits, code Python, scripts), hors fichiers ignorés par git : une classe n'est générée que si elle est écrite quelque part en entier.
 
@@ -409,7 +410,7 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M13 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
+| M13 · Éditeur de notes assisté | éditeur CodeMirror (coloration, recherche, Ctrl+S, avertissement avant de quitter), insertion des titres de projet et de chemin et des images depuis des listes, collage de captures d'écran |
 | M14 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
 | M15 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |
 | M16 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
