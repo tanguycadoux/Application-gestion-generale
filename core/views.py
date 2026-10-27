@@ -14,6 +14,7 @@ from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
 from .section_tree import section_tree
 from .sections import check_new_name, levels
+from .suggestions import elsewhere_suggestions as find_elsewhere
 from .suggestions import project_suggestions as find_projects
 from .suggestions import section_suggestions as find_sections
 
@@ -188,11 +189,20 @@ def project_suggestions(request):
 
 @require_GET
 def section_suggestions(request):
-    """Les niveaux sous un chemin d'un projet, pour l'éditeur (#90) : `?projet=`,
-    `?chemin=` (« Réunion/Préparation », vide pour les premiers niveaux), `?q=`."""
+    """Les niveaux à proposer sous un titre, pour l'éditeur (#90, #91).
+
+    `?projet=`, `?chemin=` (« Réunion/Préparation », vide pour les premiers niveaux)
+    et `?q=`. `results` : les niveaux sous ce chemin ; `elsewhere` : les noms de
+    niveau des autres endroits (tous projets, tous rangs), seulement avec une saisie.
+    """
+    query = request.GET.get("q", "")
     sections = find_sections(
-        request.GET.get("projet", ""),
-        request.GET.get("chemin", ""),
-        request.GET.get("q", ""),
+        request.GET.get("projet", ""), request.GET.get("chemin", ""), query
     )
-    return JsonResponse({"results": [{"name": s.name} for s in sections]})
+    elsewhere = find_elsewhere(query, [section.name for section in sections])
+    return JsonResponse(
+        {
+            "results": [{"name": s.name} for s in sections],
+            "elsewhere": [{"name": name, "where": where} for name, where in elsewhere],
+        }
+    )

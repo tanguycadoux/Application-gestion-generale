@@ -116,3 +116,87 @@ class SectionSuggestionsTests(TestCase):
         response = self.client.post(reverse("core:section_suggestions"))
 
         self.assertEqual(response.status_code, 405)
+
+
+class ElsewhereSuggestionsTests(TestCase):
+    """Les noms de niveau d'ailleurs : tous les projets, tous les niveaux (#91)."""
+
+    def setUp(self):
+        self.asterics = Project.objects.create(name="ASTERICS", color="teal")
+        self.pds = Project.objects.create(name="PDS1", color="rose")
+        section_for(self.asterics, ["Réunion", "Préparation"])
+        section_for(self.asterics, ["Analyse"])
+        section_for(self.pds, ["Autre", "Bilan"])
+        section_for(self.pds, ["Réunion"])
+
+    def get(self, **params) -> dict:
+        response = self.client.get(reverse("core:section_suggestions"), params)
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def elsewhere(self, **params) -> dict[str, str]:
+        return {item["name"]: item["where"] for item in self.get(**params)["elsewhere"]}
+
+    def test_rien_sans_saisie(self):
+        """Sans lettre tapée, la liste d'ailleurs noierait celle du niveau."""
+        self.assertEqual(self.get(projet="ASTERICS")["elsewhere"], [])
+
+    def test_niveau_d_un_autre_projet_avec_son_chemin(self):
+        self.assertEqual(
+            self.elsewhere(projet="ASTERICS", q="autre"), {"Autre": "PDS1 › Autre"}
+        )
+
+    def test_tous_les_niveaux_pas_seulement_ceux_du_meme_rang(self):
+        """« Bilan » est au 2e niveau sous PDS1 : proposé sous un 1er niveau."""
+        self.assertEqual(
+            self.elsewhere(projet="ASTERICS", q="bilan"),
+            {"Bilan": "PDS1 › Autre › Bilan"},
+        )
+
+    def test_niveaux_du_meme_projet_hors_du_chemin_courant(self):
+        self.assertEqual(
+            self.elsewhere(projet="ASTERICS", chemin="Analyse", q="prép"),
+            {"Préparation": "ASTERICS › Réunion › Préparation"},
+        )
+
+    def test_casse_et_accents_ignores(self):
+        self.assertIn("Préparation", self.elsewhere(projet="PDS1", q="PREPARATION"))
+
+    def test_nom_deja_propose_au_niveau_n_est_pas_repete(self):
+        data = self.get(projet="ASTERICS", q="réu")
+
+        self.assertEqual([item["name"] for item in data["results"]], ["Réunion"])
+        self.assertEqual(data["elsewhere"], [])
+
+    def test_meme_nom_a_plusieurs_endroits_une_seule_entree(self):
+        where = self.elsewhere(projet="Inconnu", q="réunion")
+
+        self.assertEqual(where, {"Réunion": "ASTERICS › Réunion (+1)"})
+
+    def test_projet_ou_chemin_inconnu_propose_quand_meme_les_noms_d_ailleurs(self):
+        """Un projet qu'on vient de taper n'existe pas encore : rien au niveau, mais
+        les noms existants restent utiles."""
+        for params in (
+            {"projet": "Nouveau"},
+            {"projet": "ASTERICS", "chemin": "Inconnu"},
+            {},
+        ):
+            with self.subTest(params=params):
+                data = self.get(q="analyse", **params)
+                self.assertEqual(data["results"], [])
+                self.assertEqual(
+                    {item["name"] for item in data["elsewhere"]}, {"Analyse"}
+                )
+
+    def test_limite(self):
+        for number in range(60):
+            section_for(self.pds, [f"Niveau {number:02d}"])
+
+        self.assertEqual(len(self.get(projet="ASTERICS", q="niveau")["elsewhere"]), 50)
+
+    def test_rien_n_est_cree(self):
+        before = Section.objects.count()
+
+        self.get(projet="Nouveau", chemin="A/B", q="x")
+
+        self.assertEqual(Section.objects.count(), before)

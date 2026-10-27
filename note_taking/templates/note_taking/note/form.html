@@ -1,6 +1,6 @@
 {% load static ui vendor %}
 
-<form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} class="flex min-h-0 flex-1 flex-col gap-3">
+<form id="note-form" method="post" action="{{ form_action }}"{% if form.errors %} data-unsaved{% endif %} data-projects-url="{% url 'core:project_suggestions' %}" data-sections-url="{% url 'core:section_suggestions' %}" data-images-url="{% url 'note_taking:image_suggestions' %}" class="flex min-h-0 flex-1 flex-col gap-3">
     {% csrf_token %}
     {% if form.non_field_errors %}<div>{{ form.non_field_errors }}</div>{% endif %}
     <div class="flex items-baseline gap-3" data-editor-toolbar>
@@ -14,10 +14,12 @@
     <label for="body" class="sr-only">Contenu de la note</label>
     {# Le texte occupe la place restante et défile dans sa zone ; editor.js le remplace par CodeMirror. #}
     <textarea name="body" id="body" class="min-h-48 w-full flex-1 resize-none font-mono"{% if form.body.errors %} aria-invalid="true"{% endif %}>{{ form.body.value|default:'' }}</textarea>
+    {# Aide de l'éditeur, affichée par editor.js : sans JavaScript, ces raccourcis n'existent pas. #}
+    <p id="editor-help" hidden class="text-sm text-slate-600">Ctrl+Espace : suggestions (projets après <kbd>#</kbd>, niveaux après <kbd>##</kbd>, images après <kbd>![</kbd>) · Tab : compléter · Ctrl+F : rechercher · Ctrl+S : enregistrer</p>
 </form>
 
 {# Bouton du plan de la note (#314) : cloné par editor.js, absent sans JavaScript. #}
-<template id="outline-toggle">{% button "Plan de la note" icon="toc" variant="ghost" icon_only=True type="button" %}</template>
+<template id="outline-toggle">{% button "Plan" icon="toc" variant="ghost" type="button" %}</template>
 
 {# Éditeur (#89) : CodeMirror embarqué remplace le <textarea> ; sans lui, le <textarea> reste. #}
 {% codemirror_importmap %}
