@@ -15,6 +15,7 @@ import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { Strikethrough, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
+import { listKeymap } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
 
@@ -140,7 +141,8 @@ function mountEditor(textarea) {
                 syntaxHighlighting(highlighting),
                 EditorView.lineWrapping,
                 search({ top: true }),
-                keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+                // Entrée continue les listes (lists.js) avant de passer à la ligne.
+                keymap.of([...listKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap]),
                 EditorState.phrases.of(phrases),
                 EditorView.contentAttributes.of(attributes),
                 EditorView.domEventHandlers({
