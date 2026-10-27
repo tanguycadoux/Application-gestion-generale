@@ -48,6 +48,42 @@ class MonthGridTests(SimpleTestCase):
         self.assertIsNone(parse_month_param("n-importe"))
 
 
+class ReservedHeightTests(TestCase):
+    """Un mois occupe toujours la place de six semaines (#275)."""
+
+    def test_semaines_de_reserve(self):
+        from core.month_calendar import month_grid
+
+        today = date(2026, 10, 1)
+        for (year, month), weeks, spare in (
+            ((2027, 2), 4, 2),
+            ((2026, 10), 5, 1),
+            ((2026, 11), 6, 0),
+        ):
+            with self.subTest(month=month, year=year):
+                calendar = month_grid(year, month, today)
+
+                self.assertEqual(len(calendar.weeks), weeks)
+                self.assertEqual(len(calendar.spare_weeks), spare)
+
+    def test_toujours_six_lignes_dans_les_deux_calendriers(self):
+        for url in (reverse("note_taking:index"), reverse("todolist:index")):
+            for month, spare in (("2027-02", 2), ("2026-10", 1), ("2026-11", 0)):
+                with self.subTest(url=url, month=month):
+                    html = self.client.get(url, {"month": month}).content.decode()
+                    body = html.split("<tbody>")[1].split("</tbody>")[0]
+
+                    self.assertEqual(body.count("<tr"), 6)
+                    self.assertEqual(body.count("data-spare-week"), spare)
+
+    def test_semaine_de_reserve_cachee_aux_technologies_d_assistance(self):
+        html = self.client.get(
+            reverse("note_taking:index"), {"month": "2027-02"}
+        ).content.decode()
+
+        self.assertIn('<tr aria-hidden="true" data-spare-week>', html)
+
+
 class SharedComponentTests(TestCase):
     def test_les_deux_calendriers_utilisent_le_composant(self):
         for url in (reverse("note_taking:index"), reverse("todolist:index")):

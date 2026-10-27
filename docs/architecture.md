@@ -58,7 +58,7 @@ todolist ──► note_taking ──► images ──► core
 | `tags.py` | `forget_unused_tags`, appelée par `reprocess_notes` |
 | `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
 | `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
-| `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
+| `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) ; le tableau a toujours six lignes : sous un mois de quatre ou cinq semaines, des lignes vides cachées (`spare_weeks`, `aria-hidden`) gardent la hauteur, donc le calendrier ne saute pas d'un mois à l'autre et le bas de la page reste libre (#275) |
 | `forms.py` | formulaires des projets, et rendu en grille de `{{ form }}` (`GridFormRenderer`, réglage `FORM_RENDERER`, #132) |
 | `icons.py`, `management/commands/add_icon.py` | icônes Material Symbols en SVG (`static/icons/`), et leur téléchargement (#218) |
 | `codemirror.py`, `management/commands/vendor_codemirror.py`, `templatetags/vendor.py` | CodeMirror embarqué : liste des modules, vérification des empreintes, import map (#89) |
