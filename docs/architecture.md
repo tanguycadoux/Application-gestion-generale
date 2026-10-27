@@ -37,6 +37,7 @@ todolist ──► note_taking ──► images ──► core
 
 - `core` ne dépend d'aucune app (#179). Ce qu'il affiche des autres apps, chacune le déclare dans son `AppConfig`, et `core/app_registry.py` le lit dans l'ordre d'`INSTALLED_APPS` :
   - `nav_section` : sa section du menu commun (`NavSection` : titre, rang, `NavItem` de nom d'URL, libellé et icône), lue par le processeur de contexte `core.context_processors.navigation` ;
+  - `dashboard_blocks` : ses blocs de l'accueil général (#233), des `DashboardBlock` (titre, rang, gabarit, fonction de contexte) que `core.views.index` rend dans l'ordre, sans savoir ce qu'ils montrent : « Note du jour » (`note_taking/dashboard.py`) et « Tâches à échéance proche » (`todolist/dashboard.py`) ;
   - `project_usages` : ce qui utilise un projet chez elle (chemin de comptage depuis `Project`, libellés), pour l'afficher dans la liste des projets et refuser la suppression d'un projet utilisé. On compte des notes, pas des note parts : c'est pourquoi le chemin est déclaré plutôt que déduit des relations du modèle.
 - `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
 - `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche. Pour proposer une suite à l'enregistrement (#239), un receveur renvoie un `NoteFollowUp` (libellé et adresse, construite par l'app qui l'écoute) ; `process_note_parts` les range dans `note.follow_ups`, et la note redirige vers la première ou les cite dans le compte rendu d'import, sans connaître l'app qui les propose.
@@ -57,6 +58,14 @@ Un seul menu pour toute l'application, dans `core/templates/base.html` : « Accu
 - **Replié en icônes** : le bouton du bas pose `data-collapsed` sur `<nav>` (`nav.js`) ; les libellés et les titres de section se masquent par des variantes `group-data-collapsed/nav:` de Tailwind, sans règle CSS propre. Chaque lien garde son libellé en `aria-label` et en infobulle (`title`). Le bouton, `hidden` dans le HTML, ne s'affiche que si le script s'exécute (`aria-expanded`, libellé « Replier / Déplier le menu »). Le script est chargé sans `defer`, juste après le menu, pour poser l'état avant le premier affichage.
 - **État retenu** dans `localStorage` (`main-nav-collapsed`), dans un `try/catch` : sans stockage, le menu fonctionne et repart déplié.
 - Pas de version mobile (choix de l'utilisateur).
+
+## Accueil général (#233)
+
+Un tableau de bord, un `<section>` nommé par bloc (`aria-labelledby`), sur deux colonnes à partir de `lg`. Les blocs viennent des apps (voir « Apps et dépendances ») : `core` appelle la fonction de contexte de chacun et rend son gabarit, comme `home_link` le faisait pour l'ancien menu d'accueil.
+
+- **Note du jour** : la date, puis « Ouvrir la note du jour » si elle existe, « Créer la note du jour » (formulaire prérempli à la date) sinon.
+- **Tâches à échéance proche** : les tâches en cours dont l'échéance est passée ou à moins de `SOON_DAYS` jours (le seuil du signal `soon`), les plus en retard d'abord, **dix au plus** puis « et N autres » : un retard accumulé n'envahit pas l'accueil. Chaque ligne : titre (deux lignes au plus, titre complet en infobulle), pastille du projet, temps restant coloré comme dans la liste. Les tâches écartées sont exclues (`Todo.objects`).
+- Pas de « dernières notes » ni d'accès aux projets : le menu commun suffit (choix de l'utilisateur).
 
 ## Éléments communs de `core`
 

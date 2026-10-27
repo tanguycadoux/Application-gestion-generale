@@ -1,7 +1,13 @@
 from django.apps import AppConfig
 from django.db.models import Q
 
-from core.app_registry import NavItem, NavSection, ProjectUsage, SectionUsage
+from core.app_registry import (
+    DashboardBlock,
+    NavItem,
+    NavSection,
+    ProjectUsage,
+    SectionUsage,
+)
 
 
 class TodolistConfig(AppConfig):
@@ -28,4 +34,13 @@ class TodolistConfig(AppConfig):
     )
 
     def ready(self):
-        from . import receivers  # noqa: F401
+        from . import dashboard, receivers  # noqa: F401
+
+        self.dashboard_blocks = (
+            DashboardBlock(
+                "Tâches à échéance proche",
+                20,
+                "todolist/dashboard_due.html",
+                dashboard.due_tasks,
+            ),
+        )

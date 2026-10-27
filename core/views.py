@@ -4,11 +4,12 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
-from .app_registry import project_usages, section_renamers
+from .app_registry import dashboard_blocks, project_usages, section_renamers
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
@@ -20,7 +21,15 @@ from .suggestions import section_suggestions as find_sections
 
 
 def index(request):
-    return render(request, "core/index.html")
+    """Accueil général : les blocs que chaque app déclare (#233)."""
+    blocks = [
+        {
+            "title": block.title,
+            "html": render_to_string(block.template, block.context(), request),
+        }
+        for block in dashboard_blocks()
+    ]
+    return render(request, "core/index.html", {"blocks": blocks})
 
 
 def with_usage(projects):

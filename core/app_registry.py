@@ -1,6 +1,7 @@
 """Ce que chaque app déclare à core dans son AppConfig, sans que core la connaisse.
 
 - `nav_section` : sa section du menu commun (#232) ;
+- `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
 - `project_usages` : ce qui, chez elle, utilise un projet (pour l'afficher et
   refuser la suppression d'un projet utilisé) ;
 - `section_usages` : ce qui, chez elle, utilise un niveau de chemin (compteurs de
@@ -35,6 +36,18 @@ class NavSection:
     label: str
     order: int
     items: tuple[NavItem, ...]
+
+
+@dataclass(frozen=True)
+class DashboardBlock:
+    """Un bloc de l'accueil général : un titre, un rang, un gabarit et la fonction
+    qui lui donne son contexte. Le gabarit est rendu par `core`, qui ne sait rien
+    de ce qu'il affiche."""
+
+    title: str
+    order: int
+    template: str
+    context: Callable[[], dict]
 
 
 @dataclass(frozen=True)
@@ -92,6 +105,15 @@ def nav_sections() -> list[NavSection]:
         getattr(config, "nav_section", None) for config in apps.get_app_configs()
     )
     return sorted((s for s in sections if s), key=lambda section: section.order)
+
+
+def dashboard_blocks() -> list[DashboardBlock]:
+    blocks = (
+        block
+        for config in apps.get_app_configs()
+        for block in getattr(config, "dashboard_blocks", ())
+    )
+    return sorted(blocks, key=lambda block: block.order)
 
 
 def project_usages() -> list[ProjectUsage]:
