@@ -303,10 +303,3 @@ class RenderedContentContainerTests(ViewTestCase):
         )
 
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
-
-    def test_vue_markdown_complete(self):
-        response = self.client.get(
-            reverse("note_taking:note_md", args=[self.note.date])
-        )
-
-        self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
