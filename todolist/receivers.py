@@ -3,13 +3,20 @@
 from django.dispatch import receiver
 from django.urls import reverse
 
-from note_taking.signals import NoteFollowUp, note_parts_processed
+from note_taking.signals import (
+    NoteFollowUp,
+    note_headings_renamed,
+    note_parts_processed,
+)
 
+from .models import Todo
 from .services import (
     create_todos_from_note_part,
     mark_gone_lines,
+    move_tasks,
     note_lines,
     note_todos_to_review,
+    renamed_identities,
 )
 
 
@@ -28,3 +35,14 @@ def create_todos_from_note_parts(
         return None
     label = "1 tâche à revoir" if count == 1 else f"{count} tâches à revoir"
     return NoteFollowUp(label, reverse("todolist:note_review", args=[str(note.date)]))
+
+
+@receiver(note_headings_renamed)
+def follow_renamed_headings(sender, note, old_body, new_body, **kwargs) -> None:
+    """Les tâches issues d'une note suivent ses titres réécrits : leur chemin de
+    ligne change, pas leur fiche (#299). Une note sans tâche n'a rien à suivre."""
+    if not Todo.all_objects.filter(
+        created_from_note=True, note_part_date=note.date
+    ).exists():
+        return
+    move_tasks(note.date, renamed_identities(note.date, old_body, new_body))

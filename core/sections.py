@@ -91,6 +91,36 @@ def subtree(section: Section) -> list[Section]:
     return found
 
 
+def sibling_named(section: Section, name: str) -> Section | None:
+    """Le niveau de même parent et de même nom (casse ignorée), `section` exceptée."""
+    for sibling in Section.objects.filter(
+        project=section.project, parent=section.parent
+    ).exclude(pk=section.pk):
+        if sibling.name.casefold() == " ".join(name.split()).casefold():
+            return sibling
+    return None
+
+
+def check_new_name(section: Section, raw: str) -> tuple[str, str]:
+    """(nom nettoyé, erreur) pour renommer ce niveau ; l'erreur est vide si le nom
+    convient. Un simple changement de casse est permis ; un nom déjà pris sous le
+    même parent est refusé (la fusion est un autre sujet)."""
+    name = " ".join(raw.split())
+    longest = Section._meta.get_field("name").max_length or 200
+    if not name:
+        return name, "Écrivez le nouveau nom."
+    if len(name) > longest:
+        return name, f"Un niveau ne dépasse pas {longest} caractères."
+    if name == section.name:
+        return name, "C'est déjà son nom."
+    if sibling_named(section, name):
+        return name, (
+            f"Un niveau « {name} » existe déjà à cet endroit : la fusion de deux "
+            "niveaux n'est pas encore possible."
+        )
+    return name, ""
+
+
 def parent_map() -> dict[int, int | None]:
     """Le parent de chaque section : une requête pour tout l'arbre."""
     return dict(Section.objects.values_list("pk", "parent_id"))

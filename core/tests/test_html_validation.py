@@ -137,10 +137,17 @@ class HtmlValidationTests(TestCase):
 
     def pages(self) -> dict[str, str]:
         parent, note = self.parent.pk, self.note.pk
+        project = Project.objects.get(name="ASTERICS")
+        section = Section.objects.get(project=project, name="Réunion")
+        rename = reverse("core:section_rename", args=[project.pk, section.pk])
         return {
             "accueil": reverse("core:index"),
             "projets": reverse("core:projects"),
             "projet_nouveau": reverse("core:project_create"),
+            "chemins": reverse("core:project_paths", args=[project.pk]),
+            "chemin_renommer": rename,
+            "chemin_bilan": f"{rename}?nom=Rencontre",
+            "chemin_nom_refuse": f"{rename}?nom=Réunion",
             "notes_accueil": reverse("note_taking:index"),
             "notes_liste": reverse("note_taking:notes_list"),
             "note": reverse("note_taking:note_detail", args=[note]),

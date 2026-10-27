@@ -1,0 +1,62 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}Renommer « {{ section.name }} »{% endblock title %}
+
+{% block content %}
+    {% url 'core:project_paths' project.pk as back_url %}
+
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">Renommer « {{ section.name }} »</h1>
+        {% button "Retour aux chemins" icon="arrow_back" href=back_url variant="ghost" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">{% project_badge project %} · {% for level in chain %}{{ level }}{% if not forloop.last %} › {% endif %}{% endfor %}</p>
+
+    <form method="get" action="{% url 'core:section_rename' project.pk section.pk %}" class="mb-4 flex flex-wrap items-center gap-2">
+        <label for="new-name" class="font-medium">Nouveau nom</label>
+        <input type="text" name="nom" id="new-name" value="{{ new_name|default:section.name }}" required maxlength="200" class="w-80 max-w-full"{% if error %} aria-invalid="true" aria-describedby="new-name-error"{% endif %}>
+        {% button "Voir le bilan" icon="search" variant="ghost" %}
+    </form>
+    {% if error %}<p id="new-name-error" class="mb-4 text-red-800" role="alert">{{ error }}</p>{% endif %}
+
+    {% if new_name and not error %}
+        <form method="post" action="{% url 'core:section_rename' project.pk section.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="nom" value="{{ new_name }}">
+
+            <section aria-labelledby="review-title" class="mb-4">
+                <h2 id="review-title" class="mb-2">Bilan : « {{ section.name }} » devient « {{ new_name }} »</h2>
+
+                {% if occurrences %}
+                    <fieldset>
+                        <legend class="mb-2 text-slate-600">{{ occurrences|length }} titre{{ occurrences|length|pluralize }} à réécrire dans les notes. Décocher un titre lui garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes.</legend>
+                        <ul class="divide-y divide-slate-200">
+                            {% for occurrence in occurrences %}
+                                <li class="py-2">
+                                    <label class="flex items-start gap-2">
+                                        <input type="checkbox" name="titres" value="{{ occurrence.key }}" checked class="mt-1">
+                                        <span>
+                                            <span class="font-medium">{{ occurrence.where }}</span>
+                                            <span class="block text-sm text-slate-600">{{ occurrence.chain }}</span>
+                                        </span>
+                                    </label>
+                                    <a href="{{ occurrence.url }}" class="ml-6 text-sm">Voir la note</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </fieldset>
+                {% else %}
+                    <p>Aucun titre des notes n'a ce nom : seul le niveau est renommé, avec les tâches qui le portent.</p>
+                {% endif %}
+            </section>
+
+            <p class="mb-4 text-slate-600">Les tâches issues de ces titres gardent leur fiche (avancement, échéance, parent) et suivent leur nouveau chemin. Rien n'est écrit tant que vous ne confirmez pas.</p>
+
+            <div class="flex gap-2">
+                {% button "Renommer" icon="edit" variant="primary" %}
+                {% button "Annuler" icon="close" href=back_url variant="ghost" %}
+            </div>
+        </form>
+    {% endif %}
+{% endblock content %}
