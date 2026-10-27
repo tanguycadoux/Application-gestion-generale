@@ -19,7 +19,7 @@
 
     <form method="get" action="{% url 'todolist:todo_list' %}" class="mb-4 flex flex-wrap items-center gap-2">
         <label for="filter-path" class="font-medium">Chemin</label>
-        <select name="chemin" id="filter-path" class="w-80 max-w-full">
+        <select name="path" id="filter-path" class="w-80 max-w-full">
             <option value="">Tous les chemins</option>
             {% for pk, label in path_choices %}
                 <option value="{{ pk }}"{% if section and section.pk == pk %} selected{% endif %}>{{ label }}</option>
@@ -71,7 +71,7 @@
                             </th>
                             <td class="p-2">
                                 {% if row.note %}
-                                    <a href="{% url 'note_taking:note_detail' row.note.pk %}">Note du {% date_time row.note.date "moyen" %}</a>
+                                    <a href="{% url 'note_taking:note_detail' row.note.date %}">Note du {% date_time row.note.date "moyen" %}</a>
                                 {% elif row.task.created_from_note %}
                                     {% date_time row.task.note_part_date "moyen" %}
                                 {% else %}

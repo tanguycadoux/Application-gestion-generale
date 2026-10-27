@@ -1,34 +1,32 @@
 from django.urls import path
 
-from . import views
+from . import converters, views  # noqa: F401  (le convertisseur `date`)
 
 app_name = "core"
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("projets/", views.projects, name="projects"),
-    path("projets/suggestions/", views.project_suggestions, name="project_suggestions"),
-    path("chemins/suggestions/", views.section_suggestions, name="section_suggestions"),
-    path("projets/nouveau/", views.ProjectCreateView.as_view(), name="project_create"),
+    path("projects/", views.projects, name="projects"),
+    path("projects/new/", views.ProjectCreateView.as_view(), name="project_create"),
     path(
-        "projets/<int:pk>/modifier/",
+        "projects/suggestions/", views.project_suggestions, name="project_suggestions"
+    ),
+    path(
+        "projects/<int:pk>/edit/",
         views.ProjectEditView.as_view(),
         name="project_edit",
     ),
-    path("projets/<int:pk>/chemins/", views.project_paths, name="project_paths"),
+    path("projects/<int:pk>/delete/", views.delete_project, name="project_delete"),
+    path("projects/<int:pk>/paths/", views.project_paths, name="project_paths"),
     path(
-        "projets/<int:pk>/chemins/<int:section_pk>/renommer/",
+        "projects/<int:pk>/paths/<int:section_pk>/rename/",
         views.rename_section,
         name="section_rename",
     ),
     path(
-        "projets/<int:pk>/chemins/<int:section_pk>/supprimer/",
+        "projects/<int:pk>/paths/<int:section_pk>/delete/",
         views.delete_section,
         name="section_delete",
     ),
-    path(
-        "projets/<int:pk>/supprimer/",
-        views.delete_project,
-        name="project_delete",
-    ),
+    path("paths/suggestions/", views.section_suggestions, name="section_suggestions"),
 ]

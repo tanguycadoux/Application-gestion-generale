@@ -628,7 +628,7 @@ class NoteMarkdownViewTests(TestCase):
     def test_rendu_du_contenu_complet(self):
         note = Note.objects.create(date="2025-11-24", body="# P\n\n| a |\n|---|\n| 1 |")
 
-        response = self.client.get(reverse("note_taking:note_md", args=[note.pk]))
+        response = self.client.get(reverse("note_taking:note_md", args=[note.date]))
 
         self.assertContains(response, "<h2>P</h2>", html=True)
         self.assertContains(response, "<td>1</td>", html=True)
@@ -636,7 +636,7 @@ class NoteMarkdownViewTests(TestCase):
 
     def get(self, body: str):
         note = Note.objects.create(date="2025-11-24", body=body)
-        return self.client.get(reverse("note_taking:note_md", args=[note.pk]))
+        return self.client.get(reverse("note_taking:note_md", args=[note.date]))
 
     def test_image_resolue_par_nom_de_fichier(self):
         image = Image.objects.create(name="banc.png", file="note_images/banc.png")
@@ -674,11 +674,11 @@ class NoteMarkdownViewTests(TestCase):
     def test_note_sans_contenu(self):
         note = Note.objects.create(date="2025-11-24", body="")
 
-        response = self.client.get(reverse("note_taking:note_md", args=[note.pk]))
+        response = self.client.get(reverse("note_taking:note_md", args=[note.date]))
 
         self.assertContains(response, "Aucun contenu disponible.")
 
     def test_note_inexistante(self):
-        response = self.client.get(reverse("note_taking:note_md", args=[999]))
+        response = self.client.get(reverse("note_taking:note_md", args=["2000-01-01"]))
 
         self.assertEqual(response.status_code, 404)

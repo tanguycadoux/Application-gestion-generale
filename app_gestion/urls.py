@@ -7,8 +7,8 @@ from django.urls import URLPattern, URLResolver, include, path
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("", include("core.urls")),
-    path("note_taking/", include("note_taking.urls")),
-    path("todolist/", include("todolist.urls")),
+    path("", include("note_taking.urls")),
+    path("tasks/", include("todolist.urls")),
     path("admin/", admin.site.urls),
 ]
 

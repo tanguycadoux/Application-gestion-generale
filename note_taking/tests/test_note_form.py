@@ -25,7 +25,7 @@ class NoteFormLabelsTests(TestCase):
         return {
             "nouvelle note": self.client.get(reverse("note_taking:new_note")),
             "édition": self.client.get(
-                reverse("note_taking:edit_note", args=[note.pk])
+                reverse("note_taking:edit_note", args=[note.date])
             ),
         }
 

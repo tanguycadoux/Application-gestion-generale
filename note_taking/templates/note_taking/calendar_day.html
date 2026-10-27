@@ -1,7 +1,7 @@
 {% load ui %}
 {# Case d'un jour du calendrier des notes (#88), dans le composant partagé (#167). #}
 {% if day.note %}
-    <a class="{% calendar_cell_classes day %}" href="{% url 'note_taking:note_detail' day.note.pk %}"{% if day.is_today %} aria-current="date"{% endif %}>
+    <a class="{% calendar_cell_classes day %}" href="{% url 'note_taking:note_detail' day.note.date %}"{% if day.is_today %} aria-current="date"{% endif %}>
         <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time>
         {% if day.projects %}
             {% tag_list day.projects %}

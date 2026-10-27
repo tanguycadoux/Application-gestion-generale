@@ -104,7 +104,7 @@ class DatesInPagesTests(TestCase):
 
     def test_titre_d_une_note(self):
         html = self.client.get(
-            reverse("note_taking:note_detail", args=[self.note.pk])
+            reverse("note_taking:note_detail", args=[self.note.date])
         ).content.decode()
 
         self.assertInHTML(f"<h1 class='flex-1'>Note du {self.LONG}</h1>", html)
@@ -112,7 +112,7 @@ class DatesInPagesTests(TestCase):
 
     def test_vue_markdown(self):
         html = self.client.get(
-            reverse("note_taking:note_md", args=[self.note.pk])
+            reverse("note_taking:note_md", args=[self.note.date])
         ).content.decode()
 
         self.assertIn(

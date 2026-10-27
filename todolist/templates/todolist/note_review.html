@@ -95,7 +95,7 @@
 
         <p class="flex gap-2">
             {% button "Enregistrer les tâches" icon="save" %}
-            {% url 'note_taking:note_detail' note.pk as note_url %}
+            {% url 'note_taking:note_detail' note.date as note_url %}
             {% button "Plus tard, retour à la note" icon="arrow_back" href=note_url variant="ghost" %}
         </p>
     </form>

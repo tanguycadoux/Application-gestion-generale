@@ -131,7 +131,7 @@ def rename_section(request, pk, section_pk):
     project = get_object_or_404(Project, pk=pk)
     section = get_object_or_404(Section, pk=section_pk, project=project)
     source = request.POST if request.method == "POST" else request.GET
-    raw_name = source.get("nom", "")
+    raw_name = source.get("name", "")
     new_name, error = check_new_name(section, raw_name) if raw_name else ("", "")
     context = {
         "project": project,
@@ -154,7 +154,7 @@ def rename_section(request, pk, section_pk):
         context.update(new_name=new_name, occurrences=occurrences)
         return render(request, "core/section_rename.html", context)
 
-    chosen = request.POST.getlist("titres")
+    chosen = request.POST.getlist("headings")
     try:
         with transaction.atomic():
             if {occurrence.key for occurrence in occurrences} <= set(chosen):
@@ -169,7 +169,7 @@ def rename_section(request, pk, section_pk):
     except AppError as e:
         messages.error(request, str(e))
         return redirect(
-            f"{reverse('core:section_rename', args=[pk, section_pk])}?nom={new_name}"
+            f"{reverse('core:section_rename', args=[pk, section_pk])}?name={new_name}"
         )
     messages.success(
         request,
@@ -191,13 +191,13 @@ def project_suggestions(request):
 def section_suggestions(request):
     """Les niveaux à proposer sous un titre, pour l'éditeur (#90, #91).
 
-    `?projet=`, `?chemin=` (« Réunion/Préparation », vide pour les premiers niveaux)
+    `?project=`, `?path=` (« Réunion/Préparation », vide pour les premiers niveaux)
     et `?q=`. `results` : les niveaux sous ce chemin ; `elsewhere` : les noms de
     niveau des autres endroits (tous projets, tous rangs), seulement avec une saisie.
     """
     query = request.GET.get("q", "")
     sections = find_sections(
-        request.GET.get("projet", ""), request.GET.get("chemin", ""), query
+        request.GET.get("project", ""), request.GET.get("path", ""), query
     )
     elsewhere = find_elsewhere(query, [section.name for section in sections])
     return JsonResponse(

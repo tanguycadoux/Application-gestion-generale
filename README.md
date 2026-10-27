@@ -56,7 +56,7 @@ Règle de style : tout le style est en classes Tailwind (#79), dans les gabarits
 
 Couleurs (#128) : uniquement celles de Tailwind, une famille par rôle : `slate` pour les gris, `blue` pour la couleur principale, `red` pour le danger et les erreurs, `amber` pour les avertissements, `green` pour les succès, plus `white` et `black`. Pas de couleur en dur, ni en classe arbitraire (`bg-[oklch(…)]`), ni dans les feuilles CSS propres, qui utilisent les variables de Tailwind (`var(--color-slate-200)`). Ces variables existent toutes grâce à `@import "tailwindcss" theme(static)` dans `assets/css/source.css`. Seules exceptions : les couleurs des callouts reprises de Quarto (`note_taking/static/note_taking/style.css`), et les ombres et voiles noirs transparents. `core/tests/test_colors.py` vérifie la règle.
 
-Couleurs des projets (#162) : chaque projet a une famille parmi `orange`, `yellow`, `lime`, `emerald`, `teal`, `cyan`, `sky`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, c'est-à-dire hors gris et hors familles qui ont un rôle, pour qu'un projet ne se confonde pas avec un état. Elles sont réservées aux projets : seule la pastille (`{% project_badge %}`, `core/templatetags/ui.py`) les emploie. Un projet créé sans couleur, par l'import d'une note ou d'une tâche, reçoit la famille la moins utilisée. La page « Projets » (`/projets/`, liée depuis l'accueil général) permet de créer un projet, d'en modifier la couleur et la description, et de le supprimer s'il n'est utilisé par aucune note ni tâche.
+Couleurs des projets (#162) : chaque projet a une famille parmi `orange`, `yellow`, `lime`, `emerald`, `teal`, `cyan`, `sky`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, c'est-à-dire hors gris et hors familles qui ont un rôle, pour qu'un projet ne se confonde pas avec un état. Elles sont réservées aux projets : seule la pastille (`{% project_badge %}`, `core/templatetags/ui.py`) les emploie. Un projet créé sans couleur, par l'import d'une note ou d'une tâche, reçoit la famille la moins utilisée. La page « Projets » (`/projects/`, liée depuis l'accueil général) permet de créer un projet, d'en modifier la couleur et la description, et de le supprimer s'il n'est utilisé par aucune note ni tâche.
 
 Liens (#127) : un style de base pour tout lien sans classe (`a:not([class])`, bloc `@layer base` de `assets/css/source.css`), y compris dans le contenu des notes : `blue-700` souligné, plus foncé avec un soulignement épaissi au survol, contour visible au focus clavier. Un lien de texte s'écrit donc sans classe ; un lien qui a sa propre apparence (bouton, menu, case du calendrier) porte ses classes et n'est pas concerné.
 
@@ -165,7 +165,7 @@ Les notes sont organisées par jour : une note correspond à une date (unique) e
 
 Une note peut être :
 
-- créée et modifiée directement dans l'application (`/note_taking/note/new/`, puis `/note_taking/note/<id>/edit/`),
+- créée et modifiée directement dans l'application (`/notes/new/`, puis `/notes/<AAAA-MM-JJ>/edit/`),
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
 - mise à jour depuis un fichier source, depuis sa vue détail.
 
@@ -210,7 +210,7 @@ Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`:::
 
 ### Chemins d'un projet : arbre et renommage
 
-La page **Chemins** d'un projet (`/projets/<id>/chemins/`, bouton sur la page Projets, #299) montre l'arbre de ses niveaux, indenté, avec ce qui utilise chacun : note parts et tâches, **descendants compris**.
+La page **Chemins** d'un projet (`/projects/<id>/paths/`, bouton sur la page Projets, #299) montre l'arbre de ses niveaux, indenté, avec ce qui utilise chacun : note parts et tâches, **descendants compris**.
 
 **Renommer un niveau** réécrit ses titres dans les notes, en trois temps : le nouveau nom, puis un **bilan** qui liste chaque titre à réécrire (la note, la ligne, la suite des titres) avec une case cochée que l'on peut décocher, puis l'écriture, qui se fait en une seule fois. Un titre est repéré par la **suite des titres au-dessus de lui**, projet compris, et non par son niveau : `### Réunion` sans `##` au-dessus est le même niveau que `## Réunion`. Un titre décoché garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes. Si tous les titres sont renommés, le niveau l'est **en place** : ses sous-niveaux et les tâches saisies à la main qui le portent le suivent. Les tâches issues des notes gardent leur fiche (avancement, échéance, parent, état) et suivent leur nouveau chemin. Le nom est refusé s'il est vide, identique, ou déjà pris sous le même parent (la fusion de deux niveaux n'est pas encore possible) ; un simple changement de casse est permis. Si une note a changé entre le bilan et la confirmation, rien n'est écrit.
 
@@ -332,7 +332,7 @@ Une tâche issue d'une note s'**écarte** au lieu de se supprimer : elle n'est p
 
 ### Images
 
-Les images sont importées séparément (bouton d'import, liste sur `/note_taking/images/`) et stockées dans `media/note_images/`. Dans une note, une image est référencée par son nom de fichier :
+Les images sont importées séparément (bouton d'import, liste sur `/images/`) et stockées dans `media/note_images/`. Dans une note, une image est référencée par son nom de fichier :
 
 ```
 ![Légende](chemin/vers/image.png)
@@ -348,9 +348,9 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 
 ### Fonctionnalités
 
-- liste des notes, triable par colonne (`/note_taking/notes/`),
-- vue détail d'une note, rendu markdown complet (`/note_taking/note/<id>/md/`) et résultat de l'analyse en JSON (`/note_taking/note/<id>/json/`),
-- recherche des note parts par projet(s) et chemin(s) (`/note_taking/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
+- liste des notes, triable par colonne (`/notes/list/`),
+- vue détail d'une note, rendu markdown complet (`/notes/<AAAA-MM-JJ>/md/`) et résultat de l'analyse en JSON (`/notes/<AAAA-MM-JJ>/json/`),
+- recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
 - suppression d'une note.
 
 ## Gestion des tâches
@@ -373,7 +373,7 @@ L'accueil des tâches est un calendrier du mois (#167), sur le même composant q
 
 Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais **signalés** (#165), sur le parent comme sur l'enfant : échéance d'une sous-tâche après celle de son parent, projet différent de celui du parent, parent terminé avec une sous-tâche en cours. Le détail d'une tâche les liste dans un encadré « À corriger », avec un lien vers l'autre tâche ; les listes marquent une tâche incohérente d'une icône d'avertissement.
 
-La liste (`/todolist/todos`) est un tableau arborescent (#166) : chaque tâche racine forme un groupe, ouvert par la pastille de son projet, avec ses sous-tâches indentées sous leur parent direct. Une ligne porte la case à cocher, le nom (lien vers le détail, avec la mention « à valider » d'un parent et l'icône d'incohérence), l'avancement en barre (`<progress>`, bleue en cours, verte à 100 %, #182), le temps restant (« aujourd'hui », « dans 3 j », « 2 j de retard », en semaines puis en mois au-delà de 30 et 90 jours ; rouge en retard, ambre sous 3 jours) et l'échéance. Les frères sont triés par échéance, sans échéance à la fin, et les racines par l'échéance la plus proche des tâches non terminées de leur arbre. Les arbres dont la racine est terminée sont dans une section repliée. Le détail d'un parent reprend le même tableau pour ses sous-tâches (`todolist/task_table.html`, arbre construit par `todolist/tree.py`). La case d'une tâche sans sous-tâche la passe à 100 %, et la décocher lui rend l'avancement qu'elle avait avant d'être terminée, 0 % si elle a été créée terminée (#237) ; celle d'une tâche qui a des sous-tâches la valide ou non. Dans la liste, la ligne cochée et celles de ses ancêtres sont mises à jour sur place, sans recharger la page : la position et la section « Terminées » restent telles quelles, et un arbre dont la racine vient d'être terminée ne change de section qu'à la visite suivante. Dans le détail, dont l'en-tête et la frise changent aussi, la page est rechargée. Si l'enregistrement échoue, la case revient à son état et un toast le signale (#189). Le signal de l'échéance (terminée, en retard, proche sous 3 jours, normale) est une seule règle du modèle, `Todo.due_signal`, commune à la barre, au temps restant, au calendrier et à la frise.
+La liste (`/tasks/list/`) est un tableau arborescent (#166) : chaque tâche racine forme un groupe, ouvert par la pastille de son projet, avec ses sous-tâches indentées sous leur parent direct. Une ligne porte la case à cocher, le nom (lien vers le détail, avec la mention « à valider » d'un parent et l'icône d'incohérence), l'avancement en barre (`<progress>`, bleue en cours, verte à 100 %, #182), le temps restant (« aujourd'hui », « dans 3 j », « 2 j de retard », en semaines puis en mois au-delà de 30 et 90 jours ; rouge en retard, ambre sous 3 jours) et l'échéance. Les frères sont triés par échéance, sans échéance à la fin, et les racines par l'échéance la plus proche des tâches non terminées de leur arbre. Les arbres dont la racine est terminée sont dans une section repliée. Le détail d'un parent reprend le même tableau pour ses sous-tâches (`todolist/task_table.html`, arbre construit par `todolist/tree.py`). La case d'une tâche sans sous-tâche la passe à 100 %, et la décocher lui rend l'avancement qu'elle avait avant d'être terminée, 0 % si elle a été créée terminée (#237) ; celle d'une tâche qui a des sous-tâches la valide ou non. Dans la liste, la ligne cochée et celles de ses ancêtres sont mises à jour sur place, sans recharger la page : la position et la section « Terminées » restent telles quelles, et un arbre dont la racine vient d'être terminée ne change de section qu'à la visite suivante. Dans le détail, dont l'en-tête et la frise changent aussi, la page est rechargée. Si l'enregistrement échoue, la case revient à son état et un toast le signale (#189). Le signal de l'échéance (terminée, en retard, proche sous 3 jours, normale) est une seule règle du modèle, `Todo.due_signal`, commune à la barre, au temps restant, au calendrier et à la frise.
 
 Le **chemin** d'une tâche (#298) se saisit en texte dans les formulaires : « Réunion/Préparation », avec « / » entre les niveaux et « // » pour une barre oblique dans un titre (« Rapport RT17//A »). Les chemins existants sont proposés à la frappe, par une liste native du navigateur, sans JavaScript (avec le projet qui les porte) ; un chemin inconnu est créé sous le projet choisi à l'enregistrement, pas avant. La page d'une tâche l'affiche en « Réunion › Préparation ». Le bilan d'une note le propose aussi.
 

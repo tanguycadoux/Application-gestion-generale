@@ -2,7 +2,7 @@
 {% comment %}
 Calendrier mensuel partagé (#167), à inclure avec :
 - calendar : core.month_calendar.MonthCalendar ;
-- index_url : page du calendrier (lien « Aujourd'hui », base de ?mois=) ;
+- index_url : page du calendrier (lien « Aujourd'hui », base de ?month=) ;
 - caption : début du titre du tableau pour les lecteurs d'écran, suivi du mois
   (« Notes de » donne « Notes de octobre 2026 ») ;
 - day_template : gabarit de l'app qui rend le contenu d'une case (variable `day`).
@@ -12,9 +12,9 @@ Calendrier mensuel partagé (#167), à inclure avec :
         <h2 id="calendar-title" class="flex-1">{{ calendar.month|date:"F Y"|capfirst }}</h2>
         <nav aria-label="Mois" class="flex items-center gap-1" data-hx-boost="true" data-hx-target="#calendar" data-hx-select="#calendar" data-hx-swap="outerHTML">
             {% with previous=calendar.previous|date:"Y-m" next=calendar.next|date:"Y-m" %}
-                {% button "Mois précédent" icon="chevron_left" href="?mois="|add:previous variant="ghost" icon_only=True %}
+                {% button "Mois précédent" icon="chevron_left" href="?month="|add:previous variant="ghost" icon_only=True %}
                 {% button "Aujourd'hui" icon="today" href=index_url variant="ghost" %}
-                {% button "Mois suivant" icon="chevron_right" href="?mois="|add:next variant="ghost" icon_only=True %}
+                {% button "Mois suivant" icon="chevron_right" href="?month="|add:next variant="ghost" icon_only=True %}
             {% endwith %}
         </nav>
     </header>

@@ -103,7 +103,7 @@ class ActionMessagesTests(TestCase):
         self.assertEqual(
             self.post(
                 "note_taking:edit_note",
-                note.pk,
+                note.date,
                 data={"date": "2025-11-24", "body": "# P\ny"},
             ),
             ["La note du 24 novembre 2025 est modifiée."],
@@ -127,7 +127,7 @@ class ActionMessagesTests(TestCase):
         self.assertEqual(
             self.post(
                 "note_taking:update_source_file",
-                note.pk,
+                note.date,
                 data={"note_update_source_file": file},
             ),
             ["La note du 24 novembre 2025 est modifiée."],
@@ -137,7 +137,7 @@ class ActionMessagesTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
 
         self.assertEqual(
-            self.post("note_taking:delete_note", note.pk),
+            self.post("note_taking:delete_note", note.date),
             ["La note du 24 novembre 2025 est supprimée."],
         )
 

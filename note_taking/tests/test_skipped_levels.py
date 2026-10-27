@@ -161,7 +161,7 @@ class SkippedLevelMessagesTests(TestCase):
         note = Note.objects.create(date="2025-11-24", body="# A\nx")
 
         response = self.client.post(
-            reverse("note_taking:edit_note", args=[note.pk]),
+            reverse("note_taking:edit_note", args=[note.date]),
             {"date": "2025-11-24", "body": "# A\n### B\nx"},
         )
 
@@ -176,7 +176,7 @@ class SkippedLevelMessagesTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("note_taking:update_source_file", args=[note.pk]),
+            reverse("note_taking:update_source_file", args=[note.date]),
             {"note_update_source_file": file},
         )
 

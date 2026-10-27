@@ -19,7 +19,7 @@ class NoteTodayTests(TestCase):
         response = self.client.get(reverse("note_taking:note_today"))
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[note.pk])
+            response, reverse("note_taking:note_detail", args=[note.date])
         )
 
     def test_propose_de_la_creer_sinon(self):
@@ -77,5 +77,5 @@ class NewNoteDatePrefillTests(TestCase):
         response = self.get("?date=2026-03-02")
 
         self.assertRedirects(
-            response, reverse("note_taking:note_detail", args=[note.pk])
+            response, reverse("note_taking:note_detail", args=[note.date])
         )

@@ -4,7 +4,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
-from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
@@ -40,8 +40,8 @@ from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
 
 def index(request):
-    """Accueil : calendrier des tâches du mois demandé (?mois=AAAA-MM), #167."""
-    today, year, month = requested_month(request.GET.get("mois", ""))
+    """Accueil : calendrier des tâches du mois demandé (?month=AAAA-MM), #167."""
+    today, year, month = requested_month(request.GET.get("month", ""))
     return render(
         request,
         "todolist/index.html",
@@ -58,7 +58,7 @@ def parse_date_param(value: str):
 
 
 def selected_section(value: str) -> Section | None:
-    """La section du paramètre `?chemin=`, ou None s'il manque ou n'existe pas."""
+    """La section du paramètre `?path=`, ou None s'il manque ou n'existe pas."""
     try:
         pk = int(value)
     except ValueError:
@@ -70,10 +70,10 @@ def todo_list(request):
     """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
     les arbres dont la racine est terminée dans une section repliée.
 
-    `?chemin=<id>` ne garde que les tâches de ce niveau et de ses descendants,
+    `?path=<id>` ne garde que les tâches de ce niveau et de ses descendants,
     chacune sous ses parents atténués (#298).
     """
-    section = selected_section(request.GET.get("chemin", ""))
+    section = selected_section(request.GET.get("path", ""))
     groups = task_groups(with_descendants({section.pk}) if section else None)
     rows = dismissed_rows()
     for row in rows:
@@ -243,7 +243,7 @@ def toggle_todo(request, pk):
     return JsonResponse({"status": "ok", "toggled_ids": toggled_ids, "rows": rows})
 
 
-def note_review(request, note_date: str):
+def note_review(request, note_date: date):
     """Bilan des tâches à revoir d'une note (#239, #240), puis retour à la note.
 
     - Tâches dont la ligne est dans la note (nouvelles, ou laissées « plus
@@ -253,15 +253,13 @@ def note_review(request, note_date: str):
 
     Enregistrer les rend revues ; sans tâche à revoir, retour direct à la note.
     """
-    day = parse_date_param(note_date)
-    if day is None:
-        raise Http404("Date invalide.")
+    day = note_date
     note = get_object_or_404(Note, date=day)
     todos = list(
         note_todos_to_review(day).select_related("project", "section").order_by("pk")
     )
     if not todos:
-        return redirect("note_taking:note_detail", pk=note.pk)
+        return redirect("note_taking:note_detail", note_date=note.date)
 
     lines = note_lines(note.parts.prefetch_related("tags"))
     new_ids = [t.pk for t in todos if (t.note_path, t.note_part_text) in lines]
@@ -295,7 +293,7 @@ def note_review(request, note_date: str):
             request,
             f"Les tâches de la note du {date_text(day, 'moyen')} sont enregistrées.",
         )
-        return redirect("note_taking:note_detail", pk=note.pk)
+        return redirect("note_taking:note_detail", note_date=note.date)
     return render(
         request,
         "todolist/note_review.html",

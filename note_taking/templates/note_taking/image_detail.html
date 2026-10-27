@@ -38,7 +38,7 @@
                 <ul class="list-disc pl-6">
                     {% for note in notes %}
                         <li>
-                            <a href="{% url 'note_taking:note_detail' note.pk %}">
+                            <a href="{% url 'note_taking:note_detail' note.date %}">
                                 Note du {% date_time note.date "long" %}
                             </a>
                         </li>

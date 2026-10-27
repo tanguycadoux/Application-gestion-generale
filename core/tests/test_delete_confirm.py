@@ -43,11 +43,11 @@ class DeleteFormTestCase(TestCase):
 class NoteDeleteTests(DeleteFormTestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        self.url = reverse("note_taking:delete_note", args=[self.note.pk])
+        self.url = reverse("note_taking:delete_note", args=[self.note.date])
 
     def test_formulaire_de_suppression_avec_confirmation(self):
         html = self.client.get(
-            reverse("note_taking:note_detail", args=[self.note.pk])
+            reverse("note_taking:note_detail", args=[self.note.date])
         ).content.decode()
 
         self.assert_delete_form(

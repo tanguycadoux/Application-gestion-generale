@@ -127,5 +127,5 @@ class TaskDetailTests(TestCase):
             definitions(html)["Note d'origine"], "Note du lundi 24 novembre 2025"
         )
         self.assertIn(
-            f'href="{reverse("note_taking:note_detail", args=[note.pk])}"', html
+            f'href="{reverse("note_taking:note_detail", args=[note.date])}"', html
         )

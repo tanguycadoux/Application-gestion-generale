@@ -269,22 +269,22 @@ class ListFilterTests(PathTestCase):
 
     def test_un_niveau_inclut_ses_descendants(self):
         self.assertEqual(
-            sorted(self.titles(chemin=self.reunion.pk)),
+            sorted(self.titles(path=self.reunion.pk)),
             ["Dans la préparation", "Racine réunion"],
         )
 
     def test_un_sous_niveau_n_inclut_pas_son_parent(self):
-        self.assertEqual(self.titles(chemin=self.prep.pk), ["Dans la préparation"])
+        self.assertEqual(self.titles(path=self.prep.pk), ["Dans la préparation"])
 
     def test_chemin_inconnu_ou_invalide_ignore(self):
-        self.assertEqual(len(self.titles(chemin=99999)), 4)
-        self.assertEqual(len(self.titles(chemin="abc")), 4)
+        self.assertEqual(len(self.titles(path=99999)), 4)
+        self.assertEqual(len(self.titles(path="abc")), 4)
 
     def test_parents_gardes_pour_le_contexte_et_attenues(self):
         Todo.objects.filter(pk=self.b.pk).update(parent=self.c)
 
         response = self.client.get(
-            reverse("todolist:todo_list"), {"chemin": self.prep.pk}
+            reverse("todolist:todo_list"), {"path": self.prep.pk}
         )
         html = response.content.decode()
 
@@ -298,11 +298,11 @@ class ListFilterTests(PathTestCase):
 
     def test_formulaire_de_filtre(self):
         response = self.client.get(
-            reverse("todolist:todo_list"), {"chemin": self.prep.pk}
+            reverse("todolist:todo_list"), {"path": self.prep.pk}
         )
         html = response.content.decode()
 
-        self.assertIn('<select name="chemin"', html)
+        self.assertIn('<select name="path"', html)
         self.assertRegex(
             html,
             rf'<option value="{self.prep.pk}" selected[^>]*>P › Réunion › Préparation</option>',
@@ -313,11 +313,11 @@ class ListFilterTests(PathTestCase):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
         self.assertNotIn("Retirer le filtre", html)
-        self.assertIn('<select name="chemin"', html)
+        self.assertIn('<select name="path"', html)
 
     def test_aucune_tache_pour_ce_niveau(self):
         empty = section_for(self.project, ["Vide"])
 
-        response = self.client.get(reverse("todolist:todo_list"), {"chemin": empty.pk})
+        response = self.client.get(reverse("todolist:todo_list"), {"path": empty.pk})
 
         self.assertContains(response, "Aucune tâche en cours.")
