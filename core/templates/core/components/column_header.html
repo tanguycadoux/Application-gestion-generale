@@ -26,7 +26,7 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                 <form method="get" class="space-y-3">
                     {% for name, value in filter.kept %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
                     {# Seuls les champs défilent : les boutons restent visibles sous une longue liste. #}
-                    <div class="max-h-[min(28rem,70vh)] space-y-3 overflow-y-auto">
+                    <div class="space-y-3">
                     {% for field in filter.fields %}
                         {% if field.kind == "text" %}
                             <div>
@@ -46,21 +46,25 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                                 </div>
                             </fieldset>
                         {% elif field.kind == "multichoice" %}
-                            {# Plusieurs choix à cocher ; la recherche (core/table_filters.js) n'apparaît qu'avec JavaScript, sans elle toutes les cases restent visibles. #}
+                            {# Plusieurs choix à cocher, dans un <details> natif (replié, sauf si un choix est coché) : ni barre de défilement, ni JavaScript pour l'ouvrir. La recherche (core/table_filters.js) reste hors du <details> et n'apparaît qu'avec JavaScript ; sans elle, toutes les cases sont accessibles en ouvrant la liste. #}
                             <fieldset class="space-y-2" data-choice-filter>
                                 <legend class="mb-1 font-medium">{{ field.label }}</legend>
-                                <div hidden data-choice-search-box>
+                                {# p-1 : le contour de focus du champ déborde de 4 px, il doit rester visible. #}
+                                <div hidden data-choice-search-box class="p-1">
                                     <label for="{{ field.id }}-search" class="sr-only">Chercher un {{ field.singular }}</label>
                                     <input type="search" id="{{ field.id }}-search" placeholder="Chercher un {{ field.singular }}" autocomplete="off"{% if field.autofocus %} autofocus{% endif %} class="w-full">
                                 </div>
-                                <div class="max-h-40 space-y-1 overflow-y-auto">
-                                    {% for choice in field.choices %}
-                                        <label class="flex items-center gap-2" data-choice-item>
-                                            <input type="checkbox" name="{{ field.params.0 }}" value="{{ choice.value }}"{% if choice.value in field.selected %} checked{% endif %}>
-                                            {% if choice.project %}{% project_badge choice.project %}{% else %}{{ choice.label }}{% endif %}
-                                        </label>
-                                    {% endfor %}
-                                </div>
+                                <details data-choice-details{% if field.selected %} open{% endif %}>
+                                    <summary class="cursor-pointer select-none font-normal">{{ field.noun|capfirst }} (<span data-choice-count>{{ field.selected|length }}</span> sur {{ field.choices|length }})</summary>
+                                    <div class="space-y-1 pt-2">
+                                        {% for choice in field.choices %}
+                                            <label class="flex items-center gap-2" data-choice-item>
+                                                <input type="checkbox" name="{{ field.params.0 }}" value="{{ choice.value }}"{% if choice.value in field.selected %} checked{% endif %}>
+                                                {% if choice.project %}{% project_badge choice.project %}{% else %}{{ choice.label }}{% endif %}
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </details>
                                 <p hidden data-choice-empty class="text-slate-600">Aucun {{ field.singular }} ne correspond.</p>
                             </fieldset>
                         {% elif field.kind == "choice" %}

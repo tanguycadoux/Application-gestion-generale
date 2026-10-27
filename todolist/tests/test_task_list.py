@@ -83,7 +83,10 @@ class StateFilterTests(TaskListTestCase):
     def test_plus_de_sections_repliables(self):
         html = self.get().content.decode()
 
-        self.assertNotIn("<details", html)
+        # Les anciennes sections repliables « Terminées » et « Écartées » (#294) ont disparu :
+        # seul reste le <details> des projets du panneau de filtres.
+        self.assertNotIn("<details>", html)
+        self.assertNotIn("Terminées (", html)
 
     def test_terminees(self):
         response = self.get(state="done")
@@ -282,6 +285,23 @@ class MultiProjectTests(TaskListTestCase):
         super().setUp()
         self.gamma = Project.objects.create(name="GAMMA", color="sky")
         Todo.objects.create(title="Tâche gamma", project=self.gamma)
+
+    def test_zone_des_projets_repliable_sans_defilement(self):
+        html = self.get().content.decode()
+        panel = html[html.index('id="filters-title"') :].split("</form>")[0]
+
+        self.assertRegex(
+            panel,
+            r"<summary[^>]*>\s*Projets \(<span data-choice-count>0</span> sur 3\)",
+        )
+        self.assertRegex(panel, r"<details data-choice-details>")
+        self.assertNotIn("overflow-y-auto", panel)
+        self.assertNotIn("max-h-", panel)
+
+    def test_zone_des_projets_ouverte_quand_un_projet_est_coche(self):
+        html = self.get(project="GAMMA").content.decode()
+
+        self.assertRegex(html, r"<details data-choice-details open>")
 
     def test_union_des_projets_coches(self):
         response = self.get(project=["ALPHA", "GAMMA"])

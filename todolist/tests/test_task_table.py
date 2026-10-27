@@ -142,7 +142,7 @@ class TaskListPageTests(TestCase):
         html = self.html()
 
         self.assertNotIn(">Finie<", html)
-        self.assertNotIn("<details", html)
+        self.assertNotIn("<details>", html)
 
     def test_meme_tableau_dans_le_detail_d_un_parent(self):
         html = self.client.get(
