@@ -411,8 +411,8 @@ Milestones terminés :
 | Milestone | Contenu |
 |---|---|
 | M13 · Éditeur de notes assisté | éditeur CodeMirror (coloration, recherche, Ctrl+S, avertissement avant de quitter, plan de la note, continuation des listes), insertion des titres de projet et de chemin et des images depuis des listes, collage et dépôt de captures d'écran |
-| M14 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
-| M15 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |
-| M16 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
-| M17 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
+| M14 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |
+| M15 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
+| M16 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
+| M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
 | M18 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet, questions sur les notes, correction orthographique, tâches suggérées |
