@@ -158,3 +158,37 @@ class IdentityTests(CheckboxTestCase):
             {Todo.NoteState.REVIEWED},
         )
         self.assertEqual(Todo.objects.count(), 2)
+
+
+class FancyListTests(CheckboxTestCase):
+    """Les cases des listes de lettres, de chiffres romains, `#.` et `(@)` (#325)."""
+
+    def test_case_dans_une_liste_de_lettres(self):
+        self.save_note("# P\na. [ ] A\nb. [x] B\nc. [ ] C")
+
+        self.assertEqual(self.titles(), ["A", "C"])
+
+    def test_sous_taches_dans_une_sous_liste_de_chiffres_romains(self):
+        self.save_note("# P\n1. [ ] A\n   i. [ ] B\n   ii. [ ] C")
+
+        self.assertEqual(self.tree(), {"A": None, "B": "A", "C": "A"})
+
+    def test_parentheses_exemples_et_numerotation_automatique(self):
+        self.save_note("# P\n(a) [ ] A\n(b) [ ] B\n\n(@) [ ] C\n\n#. [ ] D")
+
+        self.assertEqual(self.titles(), ["A", "B", "C", "D"])
+
+    def test_titre_sans_le_marqueur_ni_la_case(self):
+        self.save_note("# P\nii) [ ] Relire")
+
+        self.assertEqual(self.titles(), ["Relire"])
+
+    def test_initiale_n_est_pas_un_element_de_liste(self):
+        self.save_note("# P\nA. [ ] pas une tâche")
+
+        self.assertEqual(self.titles(), [])
+
+    def test_sans_case_hors_branche_todo_pas_de_tache(self):
+        self.save_note("# P\na. Une idée")
+
+        self.assertEqual(self.titles(), [])

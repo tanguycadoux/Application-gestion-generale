@@ -21,11 +21,8 @@ from note_taking.services import replace_image_paths
 
 from .models import TODO_TEXT_MAX_LENGTH, Todo, update_ancestors_progress
 
-# Marqueur de liste en tête de ligne, avec sa case éventuelle : « - », « * [x] »,
-# « 1. », « 2) [ ] »… Seul, sans texte, il donne une ligne vide.
-LIST_MARKER_REGEX = re.compile(r"^(?:[-*+]|\d+[.)])(?:\s+\[[ xX]\])?(?:\s+|$)")
-# La case d'un élément de liste, vide (« [ ] ») ou cochée (« [x] »).
-BOX_REGEX = re.compile(r"^(?:[-*+]|\d+[.)])\s+\[(?P<state>[ xX])\](?:\s+|$)")
+# La case en tête du texte d'un élément de liste, vide (« [ ] ») ou cochée (« [x] »).
+BOX_REGEX = re.compile(r"^\[(?P<state>[ xX])\](?:\s+|$)")
 
 
 @dataclass
@@ -85,10 +82,16 @@ def create_todo_from_dict(
 def todo_text(line: str) -> str:
     """Texte d'une ligne de tâche, sans marqueur de liste ni case (#222).
 
-    Marqueurs Markdown : `-`, `*`, `+`, `1.`, `1)`, suivis d'une case `[ ]`
-    éventuelle. Le texte est borné à la longueur des champs.
+    Marqueurs de liste de Pandoc (`-`, `1.`, `a)`, `(ii)`, `#.`… : `qmd/lists.py`),
+    suivis d'une case `[ ]` éventuelle. Le texte est borné à la longueur des champs.
     """
-    text = LIST_MARKER_REGEX.sub("", line.strip(), count=1)
+    text = line.strip()
+    item = LIST_ITEM_REGEX.match(text)
+    if item:
+        text = text[item.end() :]
+        box = BOX_REGEX.match(text)
+        if box:
+            text = text[box.end() :]
     return text.strip()[:TODO_TEXT_MAX_LENGTH]
 
 
@@ -138,7 +141,7 @@ def lines_of(heading_path: str, content: str, flagged: bool) -> list[TodoLine]:
                 items = []
             continue
 
-        box = BOX_REGEX.match(stripped)
+        box = BOX_REGEX.match(raw_line[item.end() :])
         is_task = (box.group("state") == " ") if box else flagged
         line = None
         if is_task:
