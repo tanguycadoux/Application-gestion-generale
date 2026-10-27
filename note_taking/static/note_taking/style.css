@@ -16,6 +16,14 @@
 .rendered-content ul ul    { list-style-type: circle; }
 .rendered-content ul ul ul { list-style-type: square; }
 .rendered-content ol       { list-style-type: decimal; }
+/* Listes de lettres et de chiffres romains de Pandoc (#325). Le HTML garde l'attribut `type`
+   comme Pandoc, mais la règle ci-dessus l'emporte sur lui : une classe porte l'affichage
+   (un sélecteur sur `type` ne distinguerait pas « a » de « A », la valeur étant comparée
+   sans tenir compte de la casse en HTML). */
+.rendered-content ol.list-lower-alpha { list-style-type: lower-alpha; }
+.rendered-content ol.list-upper-alpha { list-style-type: upper-alpha; }
+.rendered-content ol.list-lower-roman { list-style-type: lower-roman; }
+.rendered-content ol.list-upper-roman { list-style-type: upper-roman; }
 
 /* Cases à cocher (#231) : la case remplace la puce, comme dans Quarto. */
 .rendered-content ul.task-list { list-style-type: none; }
