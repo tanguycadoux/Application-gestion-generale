@@ -38,7 +38,7 @@ class TreeRow:
             below = " et son sous-niveau"
         elif self.descendants:
             below = f" et ses {self.descendants} sous-niveaux"
-        return f"Supprimer définitivement le niveau « {self.section.name} »{below} ?"
+        return f"Supprimer définitivement le niveau{below} ?"
 
 
 def section_tree(project: Project) -> list[TreeRow]:
