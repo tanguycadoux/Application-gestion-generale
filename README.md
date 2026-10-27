@@ -410,7 +410,7 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M13 · Éditeur de notes assisté | éditeur CodeMirror (coloration, recherche, Ctrl+S, avertissement avant de quitter), insertion des titres de projet et de chemin et des images depuis des listes, collage de captures d'écran |
+| M13 · Éditeur de notes assisté | éditeur CodeMirror (coloration, recherche, Ctrl+S, avertissement avant de quitter, plan de la note), insertion des titres de projet et de chemin et des images depuis des listes, collage de captures d'écran |
 | M14 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
 | M15 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |
 | M16 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
