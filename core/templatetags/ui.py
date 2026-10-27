@@ -60,6 +60,16 @@ BUTTON_VARIANTS = {
 }
 
 
+# Classes écrites en entier, pour que Tailwind les trouve.
+INDENT_CLASSES = ["pl-0", "pl-6", "pl-12", "pl-18", "pl-24", "pl-30", "pl-36"]
+
+
+@register.filter
+def indent_class(depth: int) -> str:
+    """Indentation d'un niveau de l'arbre des chemins, borné à la profondeur max."""
+    return INDENT_CLASSES[min(depth, len(INDENT_CLASSES) - 1)]
+
+
 @register.simple_tag
 def button_variants_json() -> str:
     """Classes des variantes de bouton pour les scripts qui créent des boutons

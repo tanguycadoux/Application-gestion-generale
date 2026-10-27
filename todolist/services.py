@@ -3,11 +3,21 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 
+from django.db.models import CharField, Value
+from django.db.models.functions import Cast, Concat
+
 from core.models import Project, Tag
 from core.sections import levels, section_for
+from note_taking.exceptions import NoteRenameError
 from note_taking.models import Note, NotePart
 from note_taking.qmd.lists import CODE_INDENT, LIST_ITEM_REGEX, text_column
-from note_taking.qmd.parser import CODE_FENCE, HEADING_SEPARATOR, TODO_TAG
+from note_taking.qmd.parser import (
+    CODE_FENCE,
+    HEADING_SEPARATOR,
+    TODO_TAG,
+    parse_note,
+)
+from note_taking.services import replace_image_paths
 
 from .models import TODO_TEXT_MAX_LENGTH, Todo, update_ancestors_progress
 
@@ -142,8 +152,69 @@ def lines_of(heading_path: str, content: str, flagged: bool) -> list[TodoLine]:
     return lines
 
 
+def body_lines(note_date: date, body: str) -> list[list[TodoLine]]:
+    """Les lignes de tâches de chaque note part d'un texte de note, dans l'ordre :
+    ce que l'analyse en tirerait, sans toucher à la base (images exceptées)."""
+    return [
+        lines_of(
+            HEADING_SEPARATOR.join(part.headings),
+            replace_image_paths("\n".join(part.lines))[0],
+            TODO_TAG in part.tags,
+        )
+        for part in parse_note(str(note_date), body).parts
+    ]
+
+
+def renamed_identities(
+    note_date: date, old_body: str, new_body: str
+) -> list[tuple[TodoLine, TodoLine]]:
+    """Les lignes de tâches dont le chemin change quand des titres sont réécrits,
+    avant et après (#299).
+
+    Seuls des titres changent : les note parts et leurs lignes se retrouvent une à
+    une, dans le même ordre. Si le renommage en fusionnait ou en séparait, elles ne
+    se retrouvent plus et la note est refusée.
+    """
+    old, new = body_lines(note_date, old_body), body_lines(note_date, new_body)
+    if len(old) != len(new) or any(
+        len(a) != len(b) for a, b in zip(old, new, strict=True)
+    ):
+        raise NoteRenameError(
+            f"Note du {note_date} : le renommage fusionnerait ou séparerait des "
+            "parties de la note. Décocher son titre dans le bilan, ou lui garder son "
+            "ancien nom."
+        )
+    return [
+        (before, after)
+        for part_before, part_after in zip(old, new, strict=True)
+        for before, after in zip(part_before, part_after, strict=True)
+        if (before.path, before.text) != (after.path, after.text)
+    ]
+
+
 def is_todo_part(note_part: NotePart) -> bool:
     return any(tag.name == TODO_TAG for tag in note_part.tags.all())
+
+
+def move_tasks(note_date: date, moves: list[tuple[TodoLine, TodoLine]]) -> None:
+    """Range les tâches déjà créées sous leur nouveau chemin : même fiche, seul le
+    chemin de leur ligne change. En deux temps, pour qu'un chemin déjà pris par une
+    tâche qui part aussi ne fasse pas échouer la contrainte d'unicité."""
+    found = []
+    for before, after in moves:
+        todos = Todo.all_objects.filter(
+            created_from_note=True,
+            note_part_date=note_date,
+            note_path=before.path,
+            note_part_text=before.text,
+        )
+        found.append((list(todos.values_list("pk", flat=True)), after.path))
+    for pks, _ in found:
+        Todo.all_objects.filter(pk__in=pks).update(
+            note_path=Concat(Value("\x1f"), Cast("pk", CharField()))
+        )
+    for pks, path in found:
+        Todo.all_objects.filter(pk__in=pks).update(note_path=path)
 
 
 def note_lines(note_parts: Iterable[NotePart]) -> set[tuple[str, str]]:

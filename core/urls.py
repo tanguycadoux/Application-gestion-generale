@@ -13,6 +13,12 @@ urlpatterns = [
         views.ProjectEditView.as_view(),
         name="project_edit",
     ),
+    path("projets/<int:pk>/chemins/", views.project_paths, name="project_paths"),
+    path(
+        "projets/<int:pk>/chemins/<int:section_pk>/renommer/",
+        views.rename_section,
+        name="section_rename",
+    ),
     path(
         "projets/<int:pk>/supprimer/",
         views.delete_project,

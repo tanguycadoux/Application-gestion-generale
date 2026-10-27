@@ -1,0 +1,32 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}Chemins de « {{ project.name }} »{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">Chemins de {% project_badge project %}</h1>
+
+        {% url 'core:projects' as url %}
+        {% button "Retour aux projets" icon="arrow_back" href=url variant="ghost" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">Les niveaux viennent des titres des notes (<code>##</code> à <code>######</code>) et des chemins saisis pour les tâches. Chacun compte ce qui l'utilise, descendants compris. Renommer un niveau réécrit ses titres dans les notes, après un bilan.</p>
+
+    {% if rows %}
+        <ul class="divide-y divide-slate-200">
+            {% for row in rows %}
+                <li class="flex items-center gap-2 py-1 {{ row.depth|indent_class }}">
+                    <span class="min-w-0 flex-1">
+                        {{ row.section.name }}
+                        <span class="text-sm text-slate-600">· {% if row.usage %}{{ row.usage }}{% else %}inutilisé{% endif %}</span>
+                    </span>
+                    {% url 'core:section_rename' project.pk row.section.pk as url %}
+                    {% button "Renommer le niveau « "|add:row.section.name|add:" »" icon="edit" href=url variant="ghost" icon_only=True %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucun niveau : ils apparaissent avec les titres des notes et les chemins des tâches.</p>
+    {% endif %}
+{% endblock content %}
