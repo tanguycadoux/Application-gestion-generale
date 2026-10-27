@@ -5,7 +5,7 @@
 
 {% block content %}
     <header class="mb-4 flex items-start gap-2">
-        <h1 class="flex-1">Chemins de {% project_badge project %}</h1>
+        <h1 class="flex-1">Chemins de {{ project.name }}</h1>
 
         {% url 'core:projects' as url %}
         {% button "Retour aux projets" icon="arrow_back" href=url variant="ghost" %}

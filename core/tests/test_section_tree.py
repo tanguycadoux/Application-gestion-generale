@@ -107,7 +107,7 @@ class TreePageTests(TreeTestCase):
 
         response = self.client.get(self.url())
 
-        self.assertContains(response, "Chemins de")
+        self.assertContains(response, '<h1 class="flex-1">Chemins de P</h1>', html=True)
         self.assertContains(response, "Réunion")
         self.assertContains(response, "2 note parts")
         self.assertContains(response, "Suite")
