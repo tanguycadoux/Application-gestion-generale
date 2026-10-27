@@ -134,20 +134,13 @@ class TaskFromNoteTests(TestCase):
         process_note_parts(note)
         return Todo.objects.get()
 
-    def test_sujet_de_la_note_part(self):
-        todo = self.process(
-            "# P\n## Réunion\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
-        )
-
-        self.assertEqual(todo.section.name, "Réunion")
-        self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
-
     def test_description_vide(self):
         todo = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         self.assertEqual(todo.description, "")
 
-    def test_sans_sujet(self):
+    def test_sans_chemin(self):
         todo = self.process("# P\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         self.assertIsNone(todo.section)
+        self.assertEqual(list(todo.tags.values_list("name", flat=True)), [])

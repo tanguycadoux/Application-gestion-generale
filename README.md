@@ -400,12 +400,13 @@ Milestones terminés :
 | M9 · Interface des tâches | page Projets et couleur par projet, modèle des tâches (sujet, avancement, validation d'un parent), incohérences signalées, tableau arborescent avec barre d'avancement, calendrier partagé avec les notes, frise de type Gantt |
 | M10 · Qualité du code | dépendances entre apps sans cycle ; front sans ressource externe (Tailwind compilé, htmx et icônes SVG en local, tests sans réseau) ; HTML des notes filtré ; listes en un nombre fixe de requêtes ; case des tâches sans rechargement ; messages et accessibilité cohérents ; validation HTML du W3C en local ; coverage, djlint et Dependabot ; correctifs de la revue (analyse atomique, images invalides ou externes, titres de tâches) ; documentation d'architecture à jour |
 | M11 · Rendu fidèle à Quarto | rendu Markdown aligné sur Pandoc, celui de Quarto, et vérifié sur les notes réelles : sous-listes à 2 espaces, cases à cocher, légendes de tableau, exposants, indices et barré, formules LaTeX affichées par KaTeX embarqué |
+| M12 · Tâches issues des notes | sous-listes en sous-tâches, pas d'échéance par défaut, page bilan des tâches créées, tâches supprimées qui ne reviennent pas, avancement rendu au décochage |
+| M12.5 · Chemins hiérarchiques | un seul titre officiel (`#` = projet), les autres titres forment un chemin sous le projet ; tâches en cases `- [ ]` et clé `todo` du bloc `{.metadata}` ; chemin d'une tâche saisi en texte, avec filtre de la liste ; page Chemins d'un projet : arbre, renommage avec bilan, suppression d'un niveau inutilisé ; avertissement d'un titre qui saute un niveau |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M12 · Tâches issues des notes | sous-listes en sous-tâches, pas d'échéance par défaut, page bilan des tâches créées, tâches supprimées qui ne reviennent pas, avancement rendu au décochage |
 | M13 · Éditeur de notes assisté | insertion des titres de projet et de sujet et des images depuis des listes, collage de captures d'écran |
 | M14 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
 | M15 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |

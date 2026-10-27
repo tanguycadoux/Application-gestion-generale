@@ -234,13 +234,6 @@ class TodoKeyTests(SimpleTestCase):
             [("P", [], [], ["x"])],
         )
 
-    def test_titre_todo_est_un_niveau_comme_un_autre(self):
-        """L'ancien marqueur : plus de tag `TODO`, plus de tâches."""
-        self.assertEqual(
-            parts("# P\n## S\n### TODO\n- a"),
-            [("P", ["S", "TODO"], [], ["- a"])],
-        )
-
     def test_cle_inconnue_n_herite_pas_de_tags_perimes(self):
         """Un bloc sans `tags` ne reprend pas ceux d'un bloc d'avant."""
         raw = (
