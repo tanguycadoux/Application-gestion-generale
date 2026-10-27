@@ -1,9 +1,15 @@
 {% extends "note_taking/base.html" %}
+{% load static %}
 
 {% block title %}Liste des images{% endblock title %}
 
 {% block content %}
     <h1>Liste des images importées</h1>
+
+    {# Coller ou déposer une image l'importe (#196) : images_capture.js, sans lui rien ne change. #}
+    <div id="image-capture" data-capture-url="{% url 'note_taking:image_capture' %}" data-csrf="{{ csrf_token }}">
+        <p class="my-2 text-sm text-slate-600">Collez (Ctrl+V) ou déposez une image sur cette page pour l'importer.</p>
+    </div>
 
     {# role="list" : list-none retire la sémantique de liste dans certains navigateurs. #}
     <ul role="list" class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
@@ -22,4 +28,5 @@
             </li>
         {% endfor %}
     </ul>
+    <script type="module" src="{% static 'note_taking/images_capture.js' %}"></script>
 {% endblock content %}
