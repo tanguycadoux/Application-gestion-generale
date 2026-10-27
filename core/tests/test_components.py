@@ -27,9 +27,11 @@ class NavLinkTests(SimpleTestCase):
         self.assertHTMLEqual(
             html,
             '<a class="flex items-center gap-2 rounded-2xl py-2 pr-3 pl-2'
-            f' hover:bg-white" href="{reverse("todolist:index")}">'
+            f' hover:bg-white" href="{reverse("todolist:index")}"'
+            ' title="Accueil" aria-label="Accueil">'
             f"{icon_svg('home')}"
-            '<span class="font-medium">Accueil</span>'
+            '<span class="font-medium whitespace-nowrap'
+            ' group-data-collapsed/nav:hidden">Accueil</span>'
             "</a>",
         )
 

@@ -1,13 +1,20 @@
 from django.apps import AppConfig
 from django.db.models import Q
 
-from core.app_registry import HomeLink, ProjectUsage, SectionUsage
+from core.app_registry import NavItem, NavSection, ProjectUsage, SectionUsage
 
 
 class TodolistConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "todolist"
-    home_link = HomeLink("todolist:index", "Tâches", "checklist")
+    nav_section = NavSection(
+        "Tâches",
+        20,
+        (
+            NavItem("todolist:index", "Calendrier", "calendar_month"),
+            NavItem("todolist:todo_list", "Liste des tâches", "checklist"),
+        ),
+    )
     project_usages = (
         ProjectUsage(
             "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")

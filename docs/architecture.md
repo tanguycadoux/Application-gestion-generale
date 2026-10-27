@@ -36,7 +36,7 @@ todolist ──► note_taking ──► images ──► core
 ```
 
 - `core` ne dépend d'aucune app (#179). Ce qu'il affiche des autres apps, chacune le déclare dans son `AppConfig`, et `core/app_registry.py` le lit dans l'ordre d'`INSTALLED_APPS` :
-  - `home_link` : son entrée dans le menu de l'accueil général ;
+  - `nav_section` : sa section du menu commun (`NavSection` : titre, rang, `NavItem` de nom d'URL, libellé et icône), lue par le processeur de contexte `core.context_processors.navigation` ;
   - `project_usages` : ce qui utilise un projet chez elle (chemin de comptage depuis `Project`, libellés), pour l'afficher dans la liste des projets et refuser la suppression d'un projet utilisé. On compte des notes, pas des note parts : c'est pourquoi le chemin est déclaré plutôt que déduit des relations du modèle.
 - `images` ne connaît pas les notes : c'est `note_taking` qui référence les images. L'app reste ainsi utilisable par un futur éditeur d'images.
 - `note_taking` ne connaît pas les tâches (#179). Après le recalcul des note parts d'une note, elle émet le signal `note_parts_processed` (`note_taking/signals.py`), dans la même transaction ; `todolist` l'écoute (`todolist/receivers.py`) et crée les tâches. `todolist` dépend donc de `note_taking` : le signal, `NotePart`, et `Note` pour le lien vers la note d'origine d'une tâche. Pour proposer une suite à l'enregistrement (#239), un receveur renvoie un `NoteFollowUp` (libellé et adresse, construite par l'app qui l'écoute) ; `process_note_parts` les range dans `note.follow_ups`, et la note redirige vers la première ou les cite dans le compte rendu d'import, sans connaître l'app qui les propose.
@@ -49,6 +49,15 @@ todolist ──► note_taking ──► images ──► core
 - **Une note s'adresse par sa date**, au format ISO (`/notes/2026-07-21/`), seule adresse qui fait foi, actions comprises (`edit`, `delete`, `export`, `md`, `json`, `source`). Le convertisseur `date` (`core/converters.py`) refuse une date impossible : 404. L'adresse par id (`/notes/<id>/`, `/notes/<id>/edit/`, et les anciennes `/note_taking/note/<id>/…`) redirige vers elle par une redirection permanente qui garde la méthode (308). Changer la date d'une note change son adresse : l'enregistrement redirige vers la nouvelle, et l'ancienne mène à « introuvable ».
 - Les adresses se construisent par `{% url %}` / `reverse`, jamais à la main ; une note se passe par sa date (`args=[note.date]`).
 
+## Menu commun (#232)
+
+Un seul menu pour toute l'application, dans `core/templates/base.html` : « Accueil », puis une section par app (Notes, Tâches, Projets), rangées par le `order` de leur `NavSection`, déclarée dans l'`AppConfig` (voir « Apps et dépendances »). La page courante est marquée par `nav_link` (`aria-current="page"`). Aucun gabarit d'app ne déclare de menu : ajouter une page se fait dans l'`AppConfig`.
+
+- **Largeur fixe** (`w-60`), donc la page ne se décale plus d'une app à l'autre.
+- **Replié en icônes** : le bouton du bas pose `data-collapsed` sur `<nav>` (`nav.js`) ; les libellés et les titres de section se masquent par des variantes `group-data-collapsed/nav:` de Tailwind, sans règle CSS propre. Chaque lien garde son libellé en `aria-label` et en infobulle (`title`). Le bouton, `hidden` dans le HTML, ne s'affiche que si le script s'exécute (`aria-expanded`, libellé « Replier / Déplier le menu »). Le script est chargé sans `defer`, juste après le menu, pour poser l'état avant le premier affichage.
+- **État retenu** dans `localStorage` (`main-nav-collapsed`), dans un `try/catch` : sans stockage, le menu fonctionne et repart déplié.
+- Pas de version mobile (choix de l'utilisateur).
+
 ## Éléments communs de `core`
 
 | Module | Rôle |
@@ -56,7 +65,8 @@ todolist ──► note_taking ──► images ──► core
 | `models.py` | `Project` (nom unique, couleur, description), `Section` (niveau d'un chemin sous un projet, #295), `Tag`, partagés par les notes et les tâches |
 | `sections.py` | chemins : saisie (`split_path`, `join_path`), création et reprise d'un chemin (`section_for`), ancêtres, sous-arbre et libellés (`with_ancestors`, `with_descendants`, `path_labels`), oubli des sections inutilisées (`forget_unused_sections`) |
 | `tags.py` | `forget_unused_tags`, appelée par `reprocess_notes` |
-| `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : entrée du menu d'accueil, utilisations d'un projet (voir « Apps et dépendances ») |
+| `app_registry.py` | ce que chaque app déclare dans son `AppConfig` : section du menu, utilisations d'un projet (voir « Apps et dépendances ») |
+| `context_processors.py`, `static/core/nav.js` | menu commun (#232) : les sections des apps, et le repli en icônes |
 | `templatetags/ui.py` | composants d'interface (`button`, `nav_link`, `tag_list`, `project_badge`, `icon`…), dates (`date_time`, `date_text`, formats `DATE_FORMATS`), couleurs des projets |
 | `month_calendar.py`, `components/month_calendar.html` | grille d'un calendrier mensuel, partagée par les notes et les tâches : chaque app fournit son type de case et son gabarit (#167) |
 | `forms.py` | formulaires des projets, et rendu en grille de `{{ form }}` (`GridFormRenderer`, réglage `FORM_RENDERER`, #132) |
