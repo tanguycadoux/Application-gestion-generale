@@ -12,14 +12,19 @@ const TASK_BOX = /^\[[ xX]\](?:[ \t]+|$)/;
 // les listes d'une citation ne sont pas continuées).
 const KEEP_DEFAULT = new Set(["FencedCode", "CodeBlock", "Blockquote"]);
 
-/** La ligne est-elle un élément de liste pour l'analyseur (et pas du code, une citation) ? */
-function isListItem(state, markerPos) {
+/**
+ * La ligne est-elle un élément de liste pour l'analyseur (et pas du code, une citation) ?
+ * `repair` : accepte aussi un élément devenu un bloc de code par un retrait trop grand
+ * (4 espaces de plus que le texte de son parent), que Maj+Tab doit pouvoir remettre.
+ */
+function isListItem(state, markerPos, repair = false) {
     let node = syntaxTree(state).resolveInner(markerPos, 1);
+    const names = [];
+    for (let up = node; up; up = up.parent) names.push(up.name);
+    if (repair && names.includes("CodeBlock") && !names.includes("FencedCode") && !names.includes("Blockquote"))
+        return true;
     if (node.name !== "ListMark") return false;
-    for (; node; node = node.parent) {
-        if (KEEP_DEFAULT.has(node.name)) return false;
-    }
-    return true;
+    return !names.some((name) => KEEP_DEFAULT.has(name));
 }
 
 /**
@@ -67,9 +72,9 @@ export function continueList(view) {
 }
 
 /** (retrait, largeur du marqueur et de ses espaces) d'une ligne d'élément, sinon `null`. */
-function itemOf(state, line) {
+function itemOf(state, line, repair = false) {
     const match = ITEM_LINE.exec(line.text);
-    if (!match || !isListItem(state, line.from + match[1].length)) return null;
+    if (!match || !isListItem(state, line.from + match[1].length, repair)) return null;
     return { indent: match[1].length, width: match[0].length - match[1].length };
 }
 
@@ -79,28 +84,45 @@ function itemOf(state, line) {
  * (2 espaces sous `- `, 3 sous `1. `, 4 sous `10. `). Le retrait par défaut de CodeMirror
  * (2 espaces) donnerait une sous-liste numérotée que Pandoc ne reconnaît pas. `false` si la
  * sélection ne touche aucun élément : le comportement ordinaire s'applique.
+ *
+ * - **Indenter** : un élément s'imbrique sous l'élément précédent **du même niveau** ; sans
+ *   lui (premier élément, ou déjà imbriqué sous son parent), il n'y a rien à faire : un retrait
+ *   de plus en ferait un bloc de code.
+ * - **Désindenter** : l'élément passe au niveau de son parent ; un élément trop enfoncé (déjà
+ *   un bloc de code) est ramené à la colonne du texte de son parent.
  */
 export function shiftItems(view, direction) {
     const { state } = view;
     const range = state.selection.main;
     const first = state.doc.lineAt(range.from);
     const last = state.doc.lineAt(range.to);
-    const target = itemOf(state, first);
+    // Un élément trop enfoncé (devenu bloc de code) ne se répare que sous un parent : sans
+    // lui, c'est du vrai code indenté, qu'on ne transforme pas en liste.
+    const valid = itemOf(state, first);
+    const target = valid ?? (direction < 0 ? itemOf(state, first, true) : null);
     if (!target) return false;
 
-    let amount = 2;
+    let sibling = null;
+    let parent = null;
     for (let n = first.number - 1; n >= 1; n--) {
         const above = itemOf(state, state.doc.line(n));
-        if (!above) continue;
-        if (direction > 0 && above.indent === target.indent) {
-            amount = above.width;
-            break;
-        }
-        if (direction < 0 && above.indent < target.indent) {
-            amount = target.indent - above.indent;
-            break;
-        }
-        if (above.indent < target.indent && direction > 0) break;
+        if (!above || above.indent > target.indent) continue;
+        if (above.indent === target.indent) sibling = above;
+        else parent = above;
+        break;
+    }
+
+    if (!valid && !parent) return false;
+
+    let amount;
+    if (direction > 0) {
+        if (!sibling) return true;
+        amount = sibling.width;
+    } else if (parent) {
+        const child = parent.indent + parent.width;
+        amount = target.indent - (target.indent > child ? child : parent.indent);
+    } else {
+        amount = Math.min(2, target.indent);
     }
 
     const changes = [];
