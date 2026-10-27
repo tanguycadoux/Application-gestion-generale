@@ -38,12 +38,15 @@ class RestoreTestCase(TestCase):
 
 
 class DismissedListTests(RestoreTestCase):
-    def test_section_des_ecartees(self):
+    def test_tableau_des_ecartees(self):
         remove_task(self.task("A"))
 
-        response = self.client.get(reverse("todolist:todo_list"))
+        response = self.client.get(
+            reverse("todolist:todo_list"), {"state": "dismissed"}
+        )
 
-        self.assertContains(response, "Écartées (1)")
+        self.assertContains(response, "Écartées")
+        self.assertContains(response, "(1)")
         self.assertEqual(
             [row.task.title for row in response.context["dismissed_rows"]], ["A"]
         )
@@ -51,7 +54,9 @@ class DismissedListTests(RestoreTestCase):
     def test_confirmation_annonce_les_sous_taches(self):
         remove_task(self.task("A"))
 
-        response = self.client.get(reverse("todolist:todo_list"))
+        response = self.client.get(
+            reverse("todolist:todo_list"), {"state": "dismissed"}
+        )
 
         self.assertContains(response, "Rétablir la tâche et ses 2 sous-tâches ?")
 
@@ -61,7 +66,9 @@ class DismissedListTests(RestoreTestCase):
         remove_task(self.task("A"))
         pk = self.task("A").pk
 
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(
+            reverse("todolist:todo_list"), {"state": "dismissed"}
+        ).content.decode()
 
         self.assertIn(f'popovertarget="restore-{pk}"', html)
         popover = re.search(
@@ -103,7 +110,9 @@ class MixedTreeTests(RestoreTestCase):
         Todo.objects.filter(title="D").update(parent=self.manual)
         remove_task(self.task("M"))
 
-        response = self.client.get(reverse("todolist:todo_list"))
+        response = self.client.get(
+            reverse("todolist:todo_list"), {"state": "dismissed"}
+        )
 
         self.assertContains(response, "Saisie à la main")
         self.restore("M")

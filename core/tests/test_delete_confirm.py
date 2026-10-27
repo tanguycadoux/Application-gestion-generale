@@ -182,7 +182,9 @@ class LongNameTests(TestCase):
             project=self.project, title=self.TITLE, note_state=Todo.NoteState.DISMISSED
         )
 
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(
+            reverse("todolist:todo_list"), {"state": "dismissed"}
+        ).content.decode()
 
         popover = re.search(
             r'<div id="restore-\d+" popover class="([^"]*)">(.*?)</div>',

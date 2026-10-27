@@ -138,11 +138,11 @@ class TaskListPageTests(TestCase):
         self.assertIn("dans 2 j", row_html)
         self.assertIn(f'datetime="{days(2).isoformat()}"', row_html)
 
-    def test_terminees_dans_une_section_repliee(self):
+    def test_terminees_ne_sont_plus_dans_la_liste_en_cours(self):
         html = self.html()
 
-        self.assertRegex(html, r"<details>\s*<summary[^>]*>.*Terminées \(1\)")
-        self.assertLess(html.index("<details>"), html.index(">Finie<"))
+        self.assertNotIn(">Finie<", html)
+        self.assertNotIn("<details", html)
 
     def test_meme_tableau_dans_le_detail_d_un_parent(self):
         html = self.client.get(
@@ -169,8 +169,9 @@ class ProgressBarTests(TestCase):
         return self.client.get(reverse("todolist:todo_list")).content.decode()
 
     def test_colonne_avancement(self):
-        self.assertIn(
-            '<th scope="col" class="w-24 p-2 font-medium">Avancement</th>', self.html()
+        self.assertRegex(
+            self.html(),
+            r'<th scope="col" class="w-24 p-2 font-medium">\s*<div[^>]*>\s*<a [^>]*>\s*Avancement',
         )
 
     def test_barre_de_chaque_tache(self):

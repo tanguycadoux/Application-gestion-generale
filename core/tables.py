@@ -13,12 +13,22 @@ Le tri et les filtres s'appliquent à une liste d'objets de la page elle-même :
 (tableau arborescent), et chaque filtre porte la fonction qui sait le filtrer.
 """
 
+import unicodedata
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
 from django.http import HttpRequest
+
+
+def fold(text: str) -> str:
+    """Le texte sans casse ni accents, pour comparer « Été » et « ete ».
+
+    En Python : le `LOWER` de SQLite ne replie que l'ASCII.
+    """
+    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
 @dataclass(frozen=True)
@@ -77,10 +87,17 @@ class Sorting:
         )
         return queryset.order_by(first, *(tie.asc() for tie in self.ties), "pk")
 
-    def sort_items(self, items: Iterable[Any], sort: Sort, tie: Callable | None = None):
-        """Trie une liste Python par la clé de la colonne. Les valeurs absentes
-        (`None`) restent à la fin dans les deux sens ; `tie` départage les égalités."""
-        key = self.columns[sort.column].key
+    def sort_items(
+        self,
+        items: Iterable[Any],
+        sort: Sort,
+        tie: Callable | None = None,
+        key: Callable | None = None,
+    ):
+        """Trie une liste Python par la clé de la colonne (ou `key`, pour des éléments
+        d'une autre forme que ceux de la colonne). Les valeurs absentes (`None`)
+        restent à la fin dans les deux sens ; `tie` départage les égalités."""
+        key = key or self.columns[sort.column].key
         assert key is not None, f"La colonne {sort.column} n'a pas de clé de tri."
         items = list(items)
         if tie is not None:

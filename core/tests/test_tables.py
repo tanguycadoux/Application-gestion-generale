@@ -17,6 +17,7 @@ from core.tables import (
     Sorting,
     TextFilter,
     filter_panel,
+    fold,
     header_context,
     summary_context,
 )
@@ -90,6 +91,27 @@ class SortingTests(SimpleTestCase):
 
         self.assertEqual([i["name"] for i in up], ["a", "z", "m"])
         self.assertEqual([i["name"] for i in down], ["m", "a", "z"])
+
+
+class FoldTests(SimpleTestCase):
+    def test_sans_casse_ni_accents(self):
+        self.assertEqual(fold("Été À Préparer"), "ete a preparer")
+        self.assertEqual(fold("STRASSE"), fold("Straße"))
+
+    def test_un_texte_sans_accent_est_inchange(self):
+        self.assertEqual(fold("abc 123"), "abc 123")
+
+
+class SortItemsKeyTests(SimpleTestCase):
+    def test_cle_donnee_pour_des_elements_d_une_autre_forme(self):
+        sorting = Sorting({"n": Column(key=lambda item: item["n"])}, default=Sort("n"))
+        groups = [{"root": {"n": 3}}, {"root": {"n": 1}}, {"root": {"n": None}}]
+
+        ordered = sorting.sort_items(
+            groups, Sort("n", True), key=lambda g: g["root"]["n"]
+        )
+
+        self.assertEqual([g["root"]["n"] for g in ordered], [3, 1, None])
 
 
 class MultiChoiceFilterTests(SimpleTestCase):
