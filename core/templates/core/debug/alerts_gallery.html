@@ -9,6 +9,8 @@
     <h1 class="mb-2">Galerie des alertes</h1>
     <p class="mb-4 text-slate-600">Page de développement : les alertes de l'interface, sans disparition, pour juger leur rendu sans déclencher de vrais messages.</p>
 
+    <p id="gallery-warning" role="status" hidden class="mb-4 rounded-xl border border-amber-500 bg-amber-50 p-3 text-amber-800">Les toasts ont disparu aussitôt : le navigateur garde sans doute une ancienne version de <code>alert_system.js</code> (elle lit <code>duration: null</code> comme 0 s). Recharger sans le cache (Ctrl+F5).</p>
+
     <section aria-labelledby="gallery-toasts" class="mb-6">
         <h2 id="gallery-toasts" class="mb-2">Toasts</h2>
         <p class="mb-3">Les quatre types et un message long s'affichent en haut à droite et restent.</p>

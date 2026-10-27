@@ -54,6 +54,11 @@ class WithDebugTests(DebugUrlsTestCase):
         self.assertContains(response, "Galerie des alertes")
         self.assertContains(response, "/static/core/alerts_gallery.js")
 
+    def test_avertissement_de_cache_present_et_cache(self):
+        response = self.client.get(reverse("core:alerts_gallery"))
+
+        self.assertContains(response, '<p id="gallery-warning" role="status" hidden')
+
     def test_section_debug_en_dernier_dans_le_menu(self):
         html = self.client.get("/").content.decode()
 
