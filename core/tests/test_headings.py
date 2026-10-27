@@ -49,7 +49,6 @@ class HeadingHierarchyTests(TestCase):
             reverse("note_taking:index"),
             reverse("note_taking:notes_list"),
             reverse("note_taking:note_detail", args=[self.note.date]),
-            reverse("note_taking:note_md", args=[self.note.date]),
             reverse("note_taking:new_note"),
             reverse("note_taking:edit_note", args=[self.note.date]),
             reverse("note_taking:notes_search"),

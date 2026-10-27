@@ -19,38 +19,9 @@
         {% endwith %}{% endwith %}
     </header>
 
-    <div class="border border-red-500 p-1">
-        <form method="post" action="{% url 'note_taking:update_source_file' object.date %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <p class="flex items-baseline gap-2">
-                <label for="note_update_source_file">Modifier le fichier source de la note</label>
-                <input type="file" name="note_update_source_file" id="note_update_source_file" accept=".qmd">
-            </p>
-            {% button "Importer" icon="upload" %}
-        </form>
-    </div>
-
-    <div class="mb-4">
-        <span>Voir la note au format :</span>
-        <a target="_blank" href="{% url 'note_taking:note_md' note.date %}">Markdown</a>
-        <a target="_blank" href="{% url 'note_taking:note_json' note.date %}">JSON</a>
-    </div>
-
-    {% for note_part in object.parts.all %}
-        <article class="border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
-            <header>
-               <h2 class="font-medium">
-                    {{ note_part.project }}
-                    {% if note_part.section %}
-                        <span> / {{ note_part.section }}</span>
-                    {% endif %}
-                </h2>
-                {% tag_list note_part.tags.all %}
-            </header>
-
-            <div class="rendered-content">
-                {{ note_part.rendered_content|safe }}
-            </div>
-        </article>
-    {% endfor %}
+    {% if content %}
+        <div class="rendered-content">{{ content|safe }}</div>
+    {% else %}
+        <p class="text-slate-600">Cette note est vide.</p>
+    {% endif %}
 {% endblock content %}
