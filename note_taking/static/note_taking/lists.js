@@ -75,7 +75,29 @@ export function continueList(view) {
 function itemOf(state, line, repair = false) {
     const match = ITEM_LINE.exec(line.text);
     if (!match || !isListItem(state, line.from + match[1].length, repair)) return null;
-    return { indent: match[1].length, width: match[0].length - match[1].length };
+    return {
+        indent: match[1].length,
+        width: match[0].length - match[1].length,
+        // Numéro et nombre de chiffres d'un marqueur `3.` ; `null` pour une puce.
+        number: match[3] === undefined ? null : Number(match[3]),
+        digits: match[3] === undefined ? 0 : match[3].length,
+    };
+}
+
+/**
+ * Numéro à donner au premier élément déplacé au retrait `indent` : 1 s'il ouvre une liste
+ * (Pandoc commence une liste numérotée au numéro du premier élément, un `2.` imbriqué
+ * ferait donc partir la sous-liste à 2), sinon le suivant de l'élément précédent du niveau.
+ * `null` si l'élément précédent est une puce : on ne touche à rien.
+ */
+function startNumber(state, lineNumber, indent) {
+    for (let n = lineNumber - 1; n >= 1; n--) {
+        const above = itemOf(state, state.doc.line(n));
+        if (!above || above.indent > indent) continue;
+        if (above.indent < indent) return 1;
+        return above.number === null ? null : above.number + 1;
+    }
+    return 1;
 }
 
 /**
@@ -107,9 +129,14 @@ export function shiftItems(view, direction) {
     for (let n = first.number - 1; n >= 1; n--) {
         const above = itemOf(state, state.doc.line(n));
         if (!above || above.indent > target.indent) continue;
-        if (above.indent === target.indent) sibling = above;
-        else parent = above;
-        break;
+        if (above.indent < target.indent) {
+            parent = above;
+            break;
+        }
+        // Indenter : on s'imbrique sous le frère juste au-dessus. Désindenter : les frères
+        // ne comptent pas, on cherche le parent au-delà.
+        sibling ??= above;
+        if (direction > 0) break;
     }
 
     if (!valid && !parent) return false;
@@ -125,6 +152,11 @@ export function shiftItems(view, direction) {
         amount = Math.min(2, target.indent);
     }
 
+    // Les éléments numérotés du niveau déplacé sont renumérotés à partir de leur nouvelle
+    // place ; ceux des sous-niveaux gardent leurs numéros (relatifs à leur propre liste).
+    const moved = direction > 0 ? amount : -Math.min(amount, target.indent);
+    let number = startNumber(state, first.number, target.indent + moved);
+
     const changes = [];
     for (let n = first.number; n <= last.number; n++) {
         const line = state.doc.line(n);
@@ -135,6 +167,14 @@ export function shiftItems(view, direction) {
             const spaces = line.text.length - line.text.trimStart().length;
             const remove = Math.min(amount, spaces);
             if (remove) changes.push({ from: line.from, to: line.from + remove });
+        }
+        const item = itemOf(state, line, direction < 0);
+        if (item && item.indent === target.indent && item.number !== null && number !== null) {
+            if (item.number !== number) {
+                const from = line.from + item.indent;
+                changes.push({ from, to: from + item.digits, insert: String(number) });
+            }
+            number += 1;
         }
     }
     if (!changes.length) return true;
