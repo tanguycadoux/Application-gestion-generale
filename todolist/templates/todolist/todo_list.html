@@ -17,47 +17,35 @@
         {% button "Créer une tâche" icon="add" href=url %}
     </header>
 
-    <form method="get" action="{% url 'todolist:todo_list' %}" class="mb-4 flex flex-wrap items-center gap-2">
-        <label for="filter-path" class="font-medium">Chemin</label>
-        <select name="path" id="filter-path" class="w-80 max-w-full">
-            <option value="">Tous les chemins</option>
-            {% for pk, label in path_choices %}
-                <option value="{{ pk }}"{% if section and section.pk == pk %} selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        {% button "Filtrer" icon="filter_list" variant="ghost" %}
-        {% if section %}
-            {% url 'todolist:todo_list' as url %}
-            {% button "Retirer le filtre" icon="close" href=url variant="ghost" %}
-        {% endif %}
-    </form>
+    {% filter_summary %}
 
-    <section aria-labelledby="pending-title" class="mb-6">
-        <h2 id="pending-title" class="mb-2">En cours</h2>
-        {% if pending_groups %}
-            {% include "todolist/task_table.html" with groups=pending_groups show_project=True live=True %}
-        {% else %}
-            <p>Aucune tâche en cours.</p>
-        {% endif %}
-    </section>
+    <h2 id="tasks-title" class="mb-2">{{ state_label }} <span class="text-base font-normal text-slate-600">({{ count }})</span></h2>
 
-    <details>
-        <summary class="mb-2 cursor-pointer"><h2 class="inline">Terminées ({{ done_groups|length }})</h2></summary>
-        {% if done_groups %}
-            {% include "todolist/task_table.html" with groups=done_groups show_project=True live=True %}
-        {% else %}
-            <p>Aucune tâche terminée.</p>
-        {% endif %}
-    </details>
+    {% if state != "dismissed" %}
+        <section aria-labelledby="tasks-title" class="mb-6">
+            {# Le tableau reste affiché même vide : son en-tête porte les filtres. #}
+            {% include "todolist/task_table.html" with show_project=True live=True %}
+            {% if not groups %}
+                <p class="mt-2">
+                    {% if narrowed %}Aucune tâche ne répond aux filtres.
+                    {% elif state == "done" %}Aucune tâche terminée.
+                    {% elif state == "all" %}Aucune tâche.
+                    {% else %}Aucune tâche en cours.{% endif %}
+                </p>
+            {% endif %}
+            {% if dismissed_count %}
+                <p class="mt-4 text-slate-600"><a href="?state=dismissed">{{ dismissed_count }} tâche{{ dismissed_count|pluralize }} écartée{{ dismissed_count|pluralize }}</a></p>
+            {% endif %}
+        </section>
+    {% endif %}
 
-    {% if dismissed_rows %}
-        <details class="mt-6">
-            <summary class="mb-2 cursor-pointer"><h2 class="inline">Écartées ({{ dismissed_rows|length }})</h2></summary>
+    {% if state == "dismissed" %}
+        <section aria-labelledby="tasks-title">
             <p class="mb-2 text-slate-600">Tâches retirées dont l'arbre contient une tâche issue d'une note : leur note ne les recrée pas. Rétablir une tâche rétablit aussi ses sous-tâches écartées.</p>
             <table class="w-full border-collapse text-left">
                 <thead>
                     <tr class="text-sm text-slate-600">
-                        <th scope="col" class="p-2 font-medium">Tâche</th>
+                        {% column_header "Tâche" "title" classes="p-2 font-medium" %}
                         <th scope="col" class="p-2 font-medium">Note</th>
                         <th scope="col" class="p-2 font-medium"><span class="sr-only">Rétablir</span></th>
                     </tr>
@@ -96,6 +84,9 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </details>
+            {% if not dismissed_rows %}
+                <p class="mt-2">{% if narrowed %}Aucune tâche écartée ne répond aux filtres.{% else %}Aucune tâche écartée.{% endif %}</p>
+            {% endif %}
+        </section>
     {% endif %}
 {% endblock content %}

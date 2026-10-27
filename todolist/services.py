@@ -314,6 +314,13 @@ class DismissedRow:
     confirm: str = ""
 
 
+def top_dismissed():
+    """Les tâches écartées dont le parent ne l'est pas : celles que la liste montre."""
+    return Todo.all_objects.filter(note_state=Todo.NoteState.DISMISSED).exclude(
+        parent__note_state=Todo.NoteState.DISMISSED
+    )
+
+
 def dismissed_rows() -> list[DismissedRow]:
     dismissed = Todo.all_objects.filter(
         note_state=Todo.NoteState.DISMISSED

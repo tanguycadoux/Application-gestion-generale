@@ -16,12 +16,11 @@ from django.views.generic import (
     UpdateView,
 )
 
-from core.models import Section
 from core.month_calendar import requested_month
-from core.sections import path_labels, with_descendants
 from core.templatetags.ui import date_text
 from note_taking.models import Note
 
+from . import task_table, tree
 from .forms import GoneLineFormSet, NoteReviewFormSet, TodoForm
 from .gantt import gantt_chart
 from .models import Todo
@@ -34,6 +33,7 @@ from .services import (
     remove_task,
     replace_task,
     restore_task,
+    top_dismissed,
 )
 from .task_calendar import task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups, task_rows
@@ -57,43 +57,55 @@ def parse_date_param(value: str):
         return None
 
 
-def selected_section(value: str) -> Section | None:
-    """La section du paramètre `?path=`, ou None s'il manque ou n'existe pas."""
-    try:
-        pk = int(value)
-    except ValueError:
-        return None
-    return Section.objects.filter(pk=pk).first()
-
-
 def todo_list(request):
-    """Tableau des tâches (#166) : un groupe par tâche racine, en cours d'abord,
-    les arbres dont la racine est terminée dans une section repliée.
+    """Tableau arborescent des tâches (#166) : un groupe par tâche racine.
 
-    `?path=<id>` ne garde que les tâches de ce niveau et de ses descendants,
-    chacune sous ses parents atténués (#298).
+    Tri (`?sort=due|title|progress`, `-` pour décroissant) et filtres dans l'URL
+    (#178, `task_table.py`) : `?state=` (en cours par défaut, `done`, `all`,
+    `dismissed`), `?title=`, `?project=`, `?path=<id>` (niveau et descendants,
+    #298). Ce qui répond aux filtres reste affiché sous ses parents atténués.
+    Les écartées (#290) ont leur tableau, avec les mêmes filtres.
     """
-    section = selected_section(request.GET.get("path", ""))
-    groups = task_groups(with_descendants({section.pk}) if section else None)
-    rows = dismissed_rows()
-    for row in rows:
-        # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
-        row.confirm = (
-            f"Rétablir la tâche « {row.task.title} »{with_subtasks(row.subtasks)} ?"
+    filters = task_table.task_filters()
+    active = filters.read(request.GET)
+    state = active.values.get("state", task_table.OPEN)
+    narrowed = any(key != "state" for key in active.values)
+    context = {
+        "filters": filters,
+        "active_filters": active,
+        "state": state,
+        "state_label": task_table.STATE_LABELS[state],
+        "narrowed": narrowed,
+        "dismissed_count": top_dismissed().count(),
+    }
+    if state == task_table.DISMISSED:
+        rows = dismissed_rows()
+        if narrowed:
+            kept = {t.pk for t in filters.apply([r.task for r in rows], active)}
+            rows = [row for row in rows if row.task.pk in kept]
+        for row in rows:
+            # Les sous-tâches écartées sont rétablies avec elle : la confirmation le dit.
+            row.confirm = (
+                f"Rétablir la tâche « {row.task.title} »{with_subtasks(row.subtasks)} ?"
+            )
+        context.update({"dismissed_rows": rows, "count": len(rows)})
+    else:
+        sort = tree.SORTING.read(request.GET.get("sort"))
+        tasks = tree.load_tasks()
+        matching = None
+        if narrowed:
+            matching = {t.pk for t in filters.apply(tasks, active)}
+        done = {task_table.OPEN: False, task_table.DONE: True}.get(state)
+        groups = task_groups(tasks, sort, matching, done)
+        context.update(
+            {
+                "sorting": tree.SORTING,
+                "sort": sort,
+                "groups": groups,
+                "count": sum(1 for g in groups for row in g.rows if not row.muted),
+            }
         )
-    return render(
-        request,
-        "todolist/todo_list.html",
-        {
-            "pending_groups": [g for g in groups if not g.root.done],
-            "done_groups": [g for g in groups if g.root.done],
-            "dismissed_rows": rows,
-            "section": section,
-            "path_choices": sorted(
-                path_labels().items(), key=lambda item: item[1].casefold()
-            ),
-        },
-    )
+    return render(request, "todolist/todo_list.html", context)
 
 
 @require_POST

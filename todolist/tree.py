@@ -1,16 +1,30 @@
 """Arbre des tâches pour le tableau de la liste et du détail (#166).
 
 Une racine et ses descendants forment un groupe ; chaque tâche est une ligne
-avec son niveau, placée sous son parent direct. Les frères sont triés par
-échéance (sans échéance à la fin), les racines par l'échéance la plus proche
-des tâches non terminées de leur arbre.
+avec son niveau, placée sous son parent direct. Le tri (`?sort=`, #178) s'applique
+aux frères à chaque niveau, sans jamais sortir une tâche de sous son parent, et aux
+racines : par défaut l'échéance (sans échéance à la fin), les racines par l'échéance
+la plus proche des tâches non terminées de leur arbre.
 """
 
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
 
+from core.tables import Column, Sort, Sorting, fold
+
 from .models import Todo
+
+# Colonnes triables du tableau. Une tâche sans valeur (échéance) reste à la fin dans
+# les deux sens ; les égalités se départagent par titre puis par identifiant.
+SORTING = Sorting(
+    {
+        "title": Column(key=lambda task: fold(task.title)),
+        "progress": Column(key=lambda task: task.progress),
+        "due": Column(key=lambda task: task.due_date),
+    },
+    default=Sort("due"),
+)
 
 
 @dataclass
@@ -28,22 +42,33 @@ class TaskGroup:
     rows: list[TaskRow] = field(default_factory=list)
 
 
-def due_key(task: Todo) -> tuple:
-    return (task.due_date is None, task.due_date or date.max, task.title.lower())
+def tie(task: Todo) -> tuple:
+    return (fold(task.title), task.pk)
 
 
-def children_map() -> dict[int | None, list[Todo]]:
-    """Toutes les tâches, rangées par parent, en une seule requête.
+def load_tasks() -> list[Todo]:
+    """Toutes les tâches (hors écartées), avec leur projet, en une requête."""
+    return list(Todo.objects.select_related("project"))
+
+
+def children_map(
+    sort: Sort | None = None, tasks: list[Todo] | None = None
+) -> dict[int | None, list[Todo]]:
+    """Toutes les tâches, rangées par parent et triées, en une seule requête.
 
     Chaque tâche reçoit aussi son parent et ses enfants déjà chargés (`tree`),
-    pour que ses incohérences se calculent sans requête de plus (#188).
+    pour que ses incohérences se calculent sans requête de plus (#188). `tasks`
+    évite de les relire quand l'appelant les a déjà.
     """
+    sort = sort or SORTING.default
     children: dict[int | None, list[Todo]] = defaultdict(list)
-    tasks_by_id = {task.pk: task for task in Todo.objects.select_related("project")}
+    tasks_by_id = {
+        task.pk: task for task in (tasks if tasks is not None else load_tasks())
+    }
     for task in tasks_by_id.values():
         children[task.parent_id].append(task)
-    for tasks in children.values():
-        tasks.sort(key=due_key)
+    for parent_id, siblings in children.items():
+        children[parent_id] = SORTING.sort_items(siblings, sort, tie)
     for task in tasks_by_id.values():
         parent = tasks_by_id[task.parent_id] if task.parent_id else None
         task.tree = (parent, children.get(task.pk, []))
@@ -63,14 +88,12 @@ def subtree_rows(
     return rows
 
 
-def restrict_to_sections(
-    children: dict[int | None, list[Todo]], section_ids: set[int]
-) -> tuple[dict[int | None, list[Todo]], set[int]]:
-    """Ne garde que les tâches de ces sections et leurs parents, pour qu'une tâche
-    reste sous son parent dans l'arbre (#298). Renvoie l'arbre restreint et les
-    tâches qui répondent au filtre."""
+def restrict_to(
+    children: dict[int | None, list[Todo]], matching: set[int]
+) -> dict[int | None, list[Todo]]:
+    """Ne garde que les tâches qui répondent aux filtres et leurs parents, pour
+    qu'une tâche reste sous son parent dans l'arbre (#298, #178)."""
     tasks = [task for tasks in children.values() for task in tasks]
-    matching = {task.pk for task in tasks if task.section_id in section_ids}
     keep = set(matching)
     by_id = {task.pk: task for task in tasks}
     for pk in matching:
@@ -81,7 +104,7 @@ def restrict_to_sections(
     restricted: dict[int | None, list[Todo]] = defaultdict(list)
     for parent_id, siblings in children.items():
         restricted[parent_id] = [task for task in siblings if task.pk in keep]
-    return restricted, matching
+    return restricted
 
 
 def earliest_pending_due(rows: list[TaskRow]) -> date | None:
@@ -91,25 +114,41 @@ def earliest_pending_due(rows: list[TaskRow]) -> date | None:
     return min(dues) if dues else rows[0].task.due_date
 
 
-def task_groups(section_ids: set[int] | None = None) -> list[TaskGroup]:
-    """Un groupe par tâche racine, racines triées par échéance la plus proche.
+def group_key(sort: Sort):
+    """La clé d'un groupe : celle de sa racine, sauf l'échéance, qui est la plus
+    proche des tâches non terminées de son arbre."""
+    if sort.column == "due":
+        return lambda group: earliest_pending_due(group.rows)
+    key = SORTING.columns[sort.column].key
+    assert key is not None
+    return lambda group: key(group.root)
 
-    Avec `section_ids`, seules les tâches de ces sections (et leurs parents, pour
-    le contexte, atténués) sont gardées.
+
+def task_groups(
+    tasks: list[Todo] | None = None,
+    sort: Sort | None = None,
+    matching: set[int] | None = None,
+    done: bool | None = None,
+) -> list[TaskGroup]:
+    """Un groupe par tâche racine, triés selon `sort` (l'échéance par défaut).
+
+    - `matching` : seules ces tâches (et leurs parents, pour le contexte,
+      atténués) sont gardées ;
+    - `done` : seulement les arbres dont la racine est terminée (`True`) ou non
+      (`False`), tous si `None`.
     """
-    children = children_map()
-    matching = None
-    if section_ids is not None:
-        children, matching = restrict_to_sections(children, section_ids)
-    groups = []
-    for root in children.get(None, []):
-        groups.append(TaskGroup(root, subtree_rows(root, children, 0, matching)))
-
-    def group_key(group: TaskGroup) -> tuple:
-        due = earliest_pending_due(group.rows)
-        return (due is None, due or date.max, group.root.title.lower())
-
-    return sorted(groups, key=group_key)
+    sort = sort or SORTING.default
+    children = children_map(sort, tasks)
+    if matching is not None:
+        children = restrict_to(children, matching)
+    groups = [
+        TaskGroup(root, subtree_rows(root, children, 0, matching))
+        for root in children.get(None, [])
+        if done is None or root.done == done
+    ]
+    return SORTING.sort_items(
+        groups, sort, tie=lambda g: tie(g.root), key=group_key(sort)
+    )
 
 
 def task_rows(ids: list[int]) -> dict[int, TaskRow]:

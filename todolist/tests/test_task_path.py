@@ -296,28 +296,28 @@ class ListFilterTests(PathTestCase):
         child = html[html.index(f'data-task-id="{self.b.pk}"') :].split("</tr>")[0]
         self.assertNotIn("text-slate-500", child)
 
-    def test_formulaire_de_filtre(self):
+    def test_filtre_dans_le_panneau_de_la_colonne_tache(self):
         response = self.client.get(
             reverse("todolist:todo_list"), {"path": self.prep.pk}
         )
         html = response.content.decode()
 
-        self.assertIn('<select name="path"', html)
+        # Le chemin est un filtre de l'en-tête « Tâche » (#178), choisi parmi les chemins.
         self.assertRegex(
             html,
-            rf'<option value="{self.prep.pk}" selected[^>]*>P › Réunion › Préparation</option>',
+            rf'<input type="radio" name="path" value="{self.prep.pk}" checked>\s*P › Réunion › Préparation',
         )
-        self.assertIn("Retirer le filtre", html)
+        self.assertIn("Chemin : P › Réunion › Préparation", html)
 
-    def test_pas_de_lien_de_retrait_sans_filtre(self):
+    def test_pas_de_chip_sans_filtre(self):
         html = self.client.get(reverse("todolist:todo_list")).content.decode()
 
-        self.assertNotIn("Retirer le filtre", html)
-        self.assertIn('<select name="path"', html)
+        self.assertNotIn("Filtres actifs", html)
+        self.assertIn('name="path"', html)
 
     def test_aucune_tache_pour_ce_niveau(self):
         empty = section_for(self.project, ["Vide"])
 
         response = self.client.get(reverse("todolist:todo_list"), {"path": empty.pk})
 
-        self.assertContains(response, "Aucune tâche en cours.")
+        self.assertContains(response, "Aucune tâche ne répond aux filtres.")

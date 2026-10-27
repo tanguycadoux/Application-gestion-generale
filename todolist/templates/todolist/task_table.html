@@ -10,10 +10,10 @@ Tableau arborescent des tâches (#166), partagé par la liste et le détail d'un
     <thead>
         <tr class="text-sm text-slate-600">
             <th scope="col" class="w-8 p-2"><span class="sr-only">Terminée</span></th>
-            <th scope="col" class="p-2 font-medium">Tâche</th>
-            <th scope="col" class="w-24 p-2 font-medium">Avancement</th>
+            {% column_header "Tâche" "title" classes="p-2 font-medium" %}
+            {% column_header "Avancement" "progress" classes="w-24 p-2 font-medium" %}
             <th scope="col" class="p-2 font-medium">Restant</th>
-            <th scope="col" class="p-2 font-medium">Échéance</th>
+            {% column_header "Échéance" "due" classes="p-2 font-medium" %}
         </tr>
     </thead>
     {% for group in groups %}
