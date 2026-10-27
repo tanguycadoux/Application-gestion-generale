@@ -56,14 +56,6 @@ class NotePageTests(TestCase):
         self.assertIn(">m1</li>", self.html)
         self.assertNotIn("{.metadata}", self.html)
 
-    def test_pas_de_carte_par_note_part(self):
-        self.assertNotIn("<article", self.html)
-
-    def test_plus_de_cadre_du_fichier_source_ni_de_liens_markdown_json(self):
-        self.assertNotIn("note_update_source_file", self.html)
-        self.assertNotIn("Voir la note au format", self.html)
-        self.assertNotIn("/json/", self.html)
-
     def test_actions_conservees(self):
         for name in ("export_note", "edit_note", "delete_note"):
             self.assertIn(

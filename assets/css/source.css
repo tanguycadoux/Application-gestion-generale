@@ -60,14 +60,9 @@
 }
 
 @layer components {
-    /* Animations de la popover de colonne (#154) ; son apparence est en classes
-       Tailwind, dans core/static/core/alert_system.js. Dans le layer components,
-       les classes Tailwind (layer utilities) peuvent surcharger ces règles. */
-
-    /* Apparition de la popover */
-    .alert__popover {
-        animation: fadeIn .1s ease-out;
-    }
+    /* Animations des popovers natives (#154, #292, #178) ; leur apparence est en
+       classes Tailwind. Dans le layer components, les classes Tailwind (layer
+       utilities) peuvent surcharger ces règles. */
 
     /* Popover native de confirmation (#292) : sous son bouton, alignée sur son
        bord droit, par l'ancre implicite de popovertarget ; retournée au-dessus
