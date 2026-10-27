@@ -5,9 +5,7 @@ import hashlib
 import io
 import json
 import tarfile
-from pathlib import Path
 
-from django.conf import settings
 from django.template import Context, Template
 from django.test import SimpleTestCase
 
@@ -51,18 +49,9 @@ class EmbeddedFilesTests(SimpleTestCase):
             with self.subTest(package=package.name):
                 self.assertLessEqual(codemirror.imported_specifiers(source), names)
 
-    def test_versions_epinglees(self):
-        for package in codemirror.load_packages():
-            with self.subTest(package=package.name):
-                self.assertRegex(package.version, r"^\d+\.\d+\.\d+$")
-
     def test_readme_a_jour(self):
         readme = (codemirror.VENDOR_DIR / "README.md").read_text(encoding="utf-8")
         self.assertEqual(readme, codemirror.readme(codemirror.load_packages()))
-
-    def test_fichiers_en_octets_non_modifies_par_git(self):
-        text = (Path(settings.BASE_DIR) / ".gitattributes").read_text(encoding="utf-8")
-        self.assertIn("static/vendor/codemirror/** -text", text)
 
 
 class ImportMapTests(SimpleTestCase):

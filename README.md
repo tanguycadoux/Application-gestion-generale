@@ -405,12 +405,12 @@ Milestones terminés :
 | M11 · Rendu fidèle à Quarto | rendu Markdown aligné sur Pandoc, celui de Quarto, et vérifié sur les notes réelles : sous-listes à 2 espaces, cases à cocher, légendes de tableau, exposants, indices et barré, formules LaTeX affichées par KaTeX embarqué |
 | M12 · Tâches issues des notes | sous-listes en sous-tâches, pas d'échéance par défaut, page bilan des tâches créées, tâches supprimées qui ne reviennent pas, avancement rendu au décochage |
 | M12.5 · Chemins hiérarchiques | un seul titre officiel (`#` = projet), les autres titres forment un chemin sous le projet ; tâches en cases `- [ ]` et clé `todo` du bloc `{.metadata}` ; chemin d'une tâche saisi en texte, avec filtre de la liste ; page Chemins d'un projet : arbre, renommage avec bilan, suppression d'un niveau inutilisé ; avertissement d'un titre qui saute un niveau |
+| M13 · Éditeur de notes assisté | éditeur CodeMirror embarqué (coloration du Markdown, recherche, Ctrl+S, avertissement avant de quitter, plan de la note), suggestions de projets, de chemins et d'images pendant la frappe, collage et dépôt de captures d'écran, continuation et indentation des listes (Entrée, Tab, Maj+Tab), listes de Pandoc (lettres, chiffres romains, `#.`, `(@)`) rendues comme Quarto, titres `## TODO` convertis en cases |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M13 · Éditeur de notes assisté | éditeur CodeMirror (coloration, recherche, Ctrl+S, avertissement avant de quitter, plan de la note, continuation des listes), insertion des titres de projet et de chemin et des images depuis des listes, collage et dépôt de captures d'écran |
 | M14 · Navigation et affichage des notes | menu commun repliable, accueil en tableau de bord, note affichée telle qu'écrite, section de debug, URL en anglais et par date, calendrier de hauteur constante et navigable au clavier, numéros des tableaux et figures |
 | M15 · Recherche plein texte | recherche dans le corps des notes, syntaxe `project:`, `tag:`, `"phrase exacte"`, tolérance aux fautes, résultats groupés par note, palette Ctrl+K, recherches enregistrées, texte des images |
 | M16 · Projets et liens entre notes | fiche projet, renommage d'un projet, liens entre notes compatibles Quarto, bilan de la semaine |
