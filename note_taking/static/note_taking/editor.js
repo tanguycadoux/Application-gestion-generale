@@ -2,8 +2,8 @@
 // Les modules sont ceux de static/vendor/codemirror/, résolus par l'import map de la
 // page (aucun CDN). Le <textarea> reste dans la page, caché : c'est lui que le
 // formulaire envoie, et il reste l'éditeur si ce script ne se charge pas.
-import { EditorState } from "@codemirror/state";
-import { EditorView, drawSelection, keymap } from "@codemirror/view";
+import { EditorSelection, EditorState } from "@codemirror/state";
+import { EditorView, drawSelection, dropCursor, keymap } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import {
     HighlightStyle,
@@ -14,6 +14,7 @@ import {
 import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { Strikethrough, TaskList, parser } from "@lezer/markdown";
+import { imageFiles, uploadCapture } from "./capture.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
 
@@ -51,6 +52,8 @@ const theme = EditorView.theme({
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.5" },
     ".cm-content": { padding: "0.25rem 0.5rem" },
+    // Où une image déposée s'insérera : un trait bleu bien visible.
+    ".cm-dropCursor": { borderLeft: "2px solid var(--color-blue-700)" },
 });
 
 // Textes du panneau de recherche (Ctrl+F), en anglais par défaut.
@@ -74,6 +77,33 @@ const phrases = {
     "replaced match on line $": "occurrence remplacée à la ligne $",
     "Control character": "Caractère de contrôle",
 };
+
+// Images collées ou déposées (#196) : importées, puis `![](images/nom)` à la position du
+// curseur (la légende se complète ensuite). Le texte collé n'est pas concerné.
+async function insertCaptures(view, files, form) {
+    const url = form.dataset.captureUrl;
+    const csrf = form.elements.csrfmiddlewaretoken?.value ?? "";
+    let separator = "";
+    for (const file of files) {
+        try {
+            const image = await uploadCapture(url, file, csrf);
+            const text = `${separator}![](${image.reference})`;
+            const { from, to } = view.state.selection.main;
+            view.dispatch({
+                changes: { from, to, insert: text },
+                // Après l'image : une autre capture, ou la suite du texte, vient à la suite.
+                selection: EditorSelection.cursor(from + text.length),
+                scrollIntoView: true,
+                userEvent: "input.paste",
+            });
+            separator = "\n\n";
+            window.Alert?.toast(`L'image « ${image.name} » est importée.`, { type: "success" });
+        } catch (error) {
+            window.Alert?.toast(error.message, { type: "error" });
+        }
+    }
+    view.focus();
+}
 
 function mountEditor(textarea) {
     const label = document.querySelector(`label[for="${textarea.id}"]`);
@@ -103,6 +133,8 @@ function mountEditor(textarea) {
             extensions: [
                 history(),
                 drawSelection(),
+                // Trait vertical à l'endroit où une image (ou du texte) déposée s'insérera.
+                dropCursor(),
                 markdown.extension,
                 suggest,
                 syntaxHighlighting(highlighting),
@@ -111,6 +143,25 @@ function mountEditor(textarea) {
                 keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
                 EditorState.phrases.of(phrases),
                 EditorView.contentAttributes.of(attributes),
+                EditorView.domEventHandlers({
+                    paste(event, editorView) {
+                        const files = imageFiles(event.clipboardData);
+                        if (!files.length || !textarea.form.dataset.captureUrl) return false;
+                        event.preventDefault();
+                        insertCaptures(editorView, files, textarea.form);
+                        return true;
+                    },
+                    drop(event, editorView) {
+                        const files = imageFiles(event.dataTransfer);
+                        if (!files.length || !textarea.form.dataset.captureUrl) return false;
+                        event.preventDefault();
+                        // Le curseur se place où l'image est déposée.
+                        const position = editorView.posAtCoords({ x: event.clientX, y: event.clientY });
+                        if (position !== null) editorView.dispatch({ selection: { anchor: position } });
+                        insertCaptures(editorView, files, textarea.form);
+                        return true;
+                    },
+                }),
                 theme,
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) textarea.value = update.state.doc.toString();
