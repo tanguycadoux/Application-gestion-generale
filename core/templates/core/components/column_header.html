@@ -66,6 +66,12 @@ entonnoir qui ouvre la popover native des filtres de la colonne. Rendu par
                                 </details>
                                 <p hidden data-choice-empty class="text-slate-600">Aucun {{ field.singular }} ne correspond.</p>
                             </fieldset>
+                        {% elif field.kind == "pathtree" %}
+                            {# Projets et chemins (#302) : l'arbre commun, en cases ; projet (niveau 1) et niveaux sont deux paramètres répétés. #}
+                            <fieldset class="space-y-1">
+                                <legend class="mb-1 font-medium">{{ field.label }}</legend>
+                                {% path_tree field.nodes mode="checkbox" param=field.params.1 project_param=field.params.0 label=field.label %}
+                            </fieldset>
                         {% elif field.kind == "choice" %}
                             {% if field.many %}
                                 <div>

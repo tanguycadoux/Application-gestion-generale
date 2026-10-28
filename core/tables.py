@@ -257,6 +257,67 @@ class MultiChoiceFilter(Filter):
         return f"{len(value)} {self.noun}"
 
 
+class PathTreeFilter(Filter):
+    """Projets et chemins à cocher dans un arbre (#302), réunis par « ou ».
+
+    Deux paramètres répétés : `project` (la clé de chaque projet coché) et `path`
+    (l'identifiant de chaque niveau coché). La valeur lue est le couple
+    (clés des projets, identifiants des niveaux), sans valeur inconnue du tableau.
+    `tree(projets, niveaux)` rend les nœuds de `core.path_tree.path_tree` avec ces
+    choix cochés : l'appelant y met ses compteurs, `core` ne connaît aucune app.
+    `apply(cible, valeur)` garde ce qui répond à l'un d'eux.
+    """
+
+    kind = "pathtree"
+
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        tree: Callable[[Sequence[Any], Sequence[int]], list[Any]],
+        apply: Callable[[Any, Any], Any],
+        project_param: str = "project",
+        path_param: str = "path",
+        project_label: str = "Projet",
+        path_label: str = "Chemin",
+    ):
+        super().__init__(key, label, apply, (project_param, path_param))
+        self._tree = tree
+        self.project_label = project_label
+        self.path_label = path_label
+
+    def nodes(self, projects: Sequence[Any] = (), paths: Sequence[int] = ()):
+        return self._tree(projects, paths)
+
+    def read(self, data, errors):
+        project_param, path_param = self.params
+        asked_projects = values_of(data, project_param)
+        asked_paths = [int(v) for v in values_of(data, path_param) if v.isdigit()]
+        # Les nœuds choisis existent : une valeur inconnue de la base n'en donne aucun.
+        nodes = self.nodes(asked_projects, asked_paths)
+        projects = tuple(n.project_key for n in nodes if n.is_project and n.selected)
+        paths = tuple(n.pk for n in nodes if n.selectable and n.selected)
+        return (projects, paths) if projects or paths else None
+
+    def selected(self, value) -> list[tuple[str, str, str, Any]]:
+        """Chaque choix coché : (paramètre, valeur dans l'adresse, libellé, projet)."""
+        projects, paths = value
+        project_param, path_param = self.params
+        nodes = self.nodes(projects, paths)
+        return [
+            (project_param, str(n.project_key), n.name, n.project)
+            for n in nodes
+            if n.is_project and n.selected
+        ] + [
+            (path_param, str(n.pk), n.label, None)
+            for n in nodes
+            if n.selectable and n.selected
+        ]
+
+    def describe(self, value):
+        return ", ".join(label for _, _, label, _ in self.selected(value))
+
+
 class DateRangeFilter(Filter):
     """Des dates `AAAA-MM-JJ` : depuis, jusqu'à, ou entre les deux."""
 
@@ -392,6 +453,9 @@ def filter_panel(
             ) > MAX_RADIO_CHOICES and not any(c.project for c in field_data["choices"])
             field_data["selected"] = raw or column_filter.default or ""
             field_data["has_default"] = column_filter.default is not None
+        elif isinstance(column_filter, PathTreeFilter):
+            projects, paths = values.get(column_filter.key, ((), ()))
+            field_data["nodes"] = column_filter.nodes(projects, paths)
         elif isinstance(column_filter, MultiChoiceFilter):
             field_data["choices"] = column_filter.choices()
             field_data["selected"] = list(values.get(column_filter.key, ()))
@@ -474,6 +538,19 @@ def summary_context(
                         "remove_url": url_without_value(
                             request, f.params[0], choice.value
                         ),
+                    }
+                )
+        elif isinstance(f, PathTreeFilter):
+            for param, chosen, text, project in f.selected(value):
+                choice_label = (
+                    f.project_label if param == f.params[0] else f.path_label
+                ) + " :"
+                items.append(
+                    {
+                        "label": choice_label,
+                        "text": f"{choice_label} {text}",
+                        "project": project,
+                        "remove_url": url_without_value(request, param, chosen),
                     }
                 )
         else:

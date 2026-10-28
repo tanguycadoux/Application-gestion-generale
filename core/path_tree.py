@@ -11,8 +11,10 @@ Modèle : `tag_tree` de research-paper-relationship-graph.
 """
 
 from collections import defaultdict
-from collections.abc import Collection, Mapping
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass, field
+from operator import attrgetter
+from typing import Any
 
 from .models import Project, Section
 from .sections import LABEL_SEPARATOR
@@ -31,6 +33,10 @@ class PathNode:
     # Ce qui utilise ce niveau et ses descendants.
     count: int = 0
     selected: bool = False
+    # Valeur de la case d'un projet : son identifiant, ou ce que `project_key` donne.
+    project_key: Any = None
+    # Le projet d'un nœud de projet, pour sa pastille.
+    project: Project | None = None
     # Ouvert d'office : un de ses descendants est choisi.
     open: bool = False
     children: list[PathNode] = field(default_factory=list)
@@ -63,7 +69,8 @@ def path_tree(
     project: Project | None = None,
     only_counted: bool = False,
     project_counts: Mapping[int, int] | None = None,
-    selected_projects: Collection[int] = (),
+    selected_projects: Collection[Any] = (),
+    project_key: Callable[[Project], Any] = attrgetter("pk"),
 ) -> list[PathNode]:
     """Les nœuds à plat, parents d'abord, frères triés par nom sans casse.
 
@@ -77,14 +84,16 @@ def path_tree(
     - `project_counts` : par identifiant de projet, ce qui l'utilise (niveaux ou
       non). Avec lui, un projet sans niveau est aussi un nœud, et son compteur ne
       se déduit plus des niveaux ;
-    - `selected_projects` : identifiants des projets choisis (cases de projets).
+    - `selected_projects` : projets choisis (cases de projets), par leur clé ;
+    - `project_key` : la clé d'un projet dans l'adresse, son identifiant par défaut
+      (son nom pour la liste des tâches).
 
     Une requête, deux avec `project_counts`.
     """
     sections = Section.objects.select_related("project")
     if project is not None:
         sections = sections.filter(project=project)
-    chosen_projects = set(selected_projects)
+    chosen_projects = {str(key) for key in selected_projects}
     children: dict[tuple[int, int | None], list[Section]] = defaultdict(list)
     projects: dict[int, Project] = {}
     for section in sections:
@@ -128,7 +137,9 @@ def path_tree(
                 owner.name,
                 owner.name,
                 0,
-                selected=owner.pk in chosen_projects,
+                selected=str(project_key(owner)) in chosen_projects,
+                project_key=project_key(owner),
+                project=owner,
             )
             for section in sorted_by_name(children[(owner.pk, None)]):
                 built = build(section, [owner.name], 1)

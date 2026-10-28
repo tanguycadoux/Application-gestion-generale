@@ -305,7 +305,8 @@ class ListFilterTests(PathTestCase):
         # Le chemin est un filtre de l'en-tête « Tâche » (#178), choisi parmi les chemins.
         self.assertRegex(
             html,
-            rf'<input type="radio" name="path" value="{self.prep.pk}" checked>\s*P › Réunion › Préparation',
+            rf'<input type="checkbox" id="path-{self.prep.pk}" name="path" '
+            rf'value="{self.prep.pk}" checked>\s*<label[^>]*>Préparation</label>',
         )
         self.assertIn("Chemin : P › Réunion › Préparation", html)
 
