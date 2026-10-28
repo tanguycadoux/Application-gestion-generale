@@ -244,11 +244,11 @@ def toast_template(level_tag: str) -> dict:
 def kbd(keys: str) -> SafeString:
     """Un raccourci clavier (`←`, `Ctrl+K`) en `<kbd>` discret (#276).
 
-    La police à chasse fixe est celle du reset de Tailwind. Réutilisé par la
-    palette de commandes (#202).
+    En police à chasse fixe (`font-mono`), comme l'indice de la barre de recherche
+    (#355).
     """
     return format_html(
-        '<kbd class="rounded border border-slate-300 bg-white px-1 text-xs'
+        '<kbd class="rounded border border-slate-300 bg-white px-1 font-mono text-xs'
         ' text-slate-600">{}</kbd>',
         keys,
     )
