@@ -17,7 +17,7 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from django.utils.safestring import SafeString
 
 from core.models import Project, Section, Tag
@@ -259,3 +259,14 @@ def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults
         group = groups.setdefault(part.note_id, NoteResults(part.note))
         group.hits.append(Hit(part, extracts.get(part.pk), anchors[title]))
     return list(groups.values())
+
+
+def section_counts() -> dict[int, int]:
+    """Par clé de niveau, le nombre de note parts qui l'utilisent elles-mêmes, pour
+    l'arbre des chemins (`core.path_tree`, qui ajoute les descendants) (#302)."""
+    rows = (
+        NotePart.objects.filter(section__isnull=False)
+        .values("section")
+        .annotate(total=Count("pk"))
+    )
+    return {row["section"]: row["total"] for row in rows}
