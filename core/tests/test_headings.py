@@ -75,7 +75,7 @@ class HeadingHierarchyTests(TestCase):
     def test_hierarchie_des_resultats_de_recherche(self):
         url = reverse("note_taking:notes_search")
         page = self.client.get(url).content.decode()
-        results = self.client.post(
+        results = self.client.get(
             url, {"subjects": [str(self.section.pk)]}, HTTP_HX_REQUEST="true"
         ).content.decode()
         self.assertIn("<h", results)

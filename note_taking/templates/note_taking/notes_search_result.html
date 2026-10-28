@@ -1,5 +1,13 @@
 {% load ui %}
-{% if results %}
+{% for error in query.errors %}
+    <p class="mb-2 text-amber-800" role="alert">{{ error }}</p>
+{% endfor %}
+
+{% if results is None %}
+    {# Pas encore de recherche : l'aide de syntaxe, ouverte. #}
+    {% include "note_taking/search_help.html" with open=True %}
+{% elif results %}
+    <p class="mb-4 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }}.</p>
     {% for part in results %}
         <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
             <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
@@ -15,6 +23,8 @@
             </div>
         </article>
     {% endfor %}
+    {% include "note_taking/search_help.html" with open=False %}
 {% else %}
     <p>Aucun résultat.</p>
+    {% include "note_taking/search_help.html" with open=False %}
 {% endif %}

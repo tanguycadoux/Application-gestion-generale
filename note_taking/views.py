@@ -14,7 +14,6 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
-from core.sections import with_descendants
 from core.suggestions import rank_by_name
 from core.templatetags.ui import date_text
 from images.exceptions import ImageError
@@ -29,7 +28,8 @@ from .note_calendar import requested_month_calendar
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
-from .search_index import search_parts
+from .search import search_note_parts
+from .search_query import SearchQuery, parse_query
 from .services import (
     process_note_parts,
     update_note_from_source_file,
@@ -202,56 +202,37 @@ def note_json(request, note_date):
     return JsonResponse(parse_note(str(note.date), note.body).as_dict())
 
 
+@require_GET
 def notes_search(request):
-    form = NoteSearchForm(request.POST or None)
+    """Recherche dans les notes (#199) : tout est dans l'adresse (`?q=…`), donc une
+    recherche se partage, se garde en favori et survit au bouton retour.
+
+    `results` vaut `None` tant qu'il n'y a rien à chercher (la page montre l'aide de
+    syntaxe), et une liste, éventuellement vide, après une recherche.
+    """
+    form = NoteSearchForm(request.GET or None)
     results = None
+    query = SearchQuery()
 
-    if request.method == "POST" and form.is_valid():
-        projects = form.cleaned_data["projects"]
-        subjects = form.cleaned_data["subjects"]
-        text = form.cleaned_data["q"]
-
-        results_qs = (
-            NotePart.objects.select_related("note", "section")
-            .prefetch_related("tags")
-            .order_by("-note__date")
+    if form.is_bound and form.is_valid():
+        query = parse_query(form.cleaned_data["q"])
+        results = search_note_parts(
+            query,
+            [project.pk for project in form.cleaned_data["projects"]],
+            [int(pk) for pk in form.cleaned_data["subjects"]],
         )
 
-        if projects:
-            results_qs = results_qs.filter(project__in=projects)
-
-        if subjects:
-            sections = with_descendants({int(pk) for pk in subjects})
-            results_qs = results_qs.filter(section_id__in=sections)
-
-        results = list(results_qs)
-
-        if text.strip():
-            # Le texte est en plus des filtres ; le plus pertinent vient en premier.
-            rank = {pk: i for i, pk in enumerate(search_parts(text))}
-            results = sorted(
-                (part for part in results if part.pk in rank),
-                key=lambda part: rank[part.pk],
-            )
-
+    context = {"form": form, "results": results, "query": query}
     if request.htmx:
-        html = render_to_string(
-            "note_taking/notes_search_result.html", {"results": results}
+        return HttpResponse(
+            render_to_string("note_taking/notes_search_result.html", context, request)
         )
-        return HttpResponse(html)
-
-    return render(
-        request,
-        "note_taking/notes_search.html",
-        {
-            "form": form,
-            "results": results,
-        },
-    )
+    return render(request, "note_taking/notes_search.html", context)
 
 
+@require_GET
 def get_subjects(request):
-    form = NoteSearchForm(projects=request.POST.getlist("projects"))
+    form = NoteSearchForm(projects=request.GET.getlist("projects"))
 
     html = render_to_string("note_taking/subjects_block.html", {"form": form})
     return HttpResponse(html)

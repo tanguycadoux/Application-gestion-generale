@@ -41,6 +41,11 @@ def indexed_text(content: str) -> str:
     return IMAGE_REFERENCE_REGEX.sub("", "\n".join(lines))
 
 
+def quote(text: str) -> str:
+    """Un mot ou une phrase de FTS5 entre guillemets : aucun opérateur interprété."""
+    return '"' + text.replace('"', '""') + '"'
+
+
 def match_expression(text: str) -> str | None:
     """Requête FTS5 d'un texte libre : chaque mot est une phrase entre guillemets.
 
@@ -51,20 +56,23 @@ def match_expression(text: str) -> str | None:
     words = text.split()
     if not words:
         return None
-    return " ".join('"' + word.replace('"', '""') + '"' for word in words)
+    return " ".join(quote(word) for word in words)
 
 
-def search_parts(text: str) -> list[int]:
-    """Clés des note parts qui contiennent tous les mots, la plus pertinente d'abord."""
-    expression = match_expression(text)
-    if expression is None:
-        return []
+def match_parts(expression: str) -> list[int]:
+    """Clés des note parts qui répondent à une requête FTS5, la plus pertinente d'abord."""
     with connection.cursor() as cursor:
         cursor.execute(
             f"SELECT rowid FROM {TABLE} WHERE {TABLE} MATCH %s ORDER BY rank",
             [expression],
         )
         return [row[0] for row in cursor.fetchall()]
+
+
+def search_parts(text: str) -> list[int]:
+    """Clés des note parts qui contiennent tous les mots, la plus pertinente d'abord."""
+    expression = match_expression(text)
+    return [] if expression is None else match_parts(expression)
 
 
 def index_part(part: NotePart) -> None:
