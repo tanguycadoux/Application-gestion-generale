@@ -43,7 +43,7 @@ class NotesSearchTests(SearchTestCase):
     url = reverse("note_taking:notes_search")
 
     def search(self, headers=None, **data):
-        return self.client.post(self.url, data, headers=headers or {})
+        return self.client.get(self.url, data, headers=headers or {})
 
     def contents(self, response) -> list[str]:
         """Contenus des parts affichées, dans l'ordre de la page."""
@@ -145,10 +145,78 @@ class NotesSearchTests(SearchTestCase):
 
         self.assertEqual(response.context["results"][0], court)
 
-    def test_texte_vide_ne_filtre_pas(self):
+    def test_texte_vide_seul_ne_cherche_rien(self):
         response = self.search(q="  ")
 
-        self.assertEqual(len(response.context["results"]), 5)
+        self.assertIsNone(response.context["results"])
+
+    def test_texte_vide_avec_un_filtre(self):
+        response = self.search(q="  ", projects=[self.alpha.pk])
+
+        self.assertEqual(len(response.context["results"]), 3)
+
+    def test_avant_toute_recherche_l_aide_s_affiche(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Aide sur la syntaxe de recherche")
+        self.assertContains(
+            response,
+            '<details class="mt-4 rounded-xl border border-slate-300 p-3" open>',
+        )
+        self.assertNotContains(response, "Aucun résultat")
+
+    def test_recherche_vide_montre_l_aide_pas_les_resultats(self):
+        response = self.search(q="")
+
+        self.assertIsNone(response.context["results"])
+        self.assertNotContains(response, "Aucun résultat")
+
+    def test_aucun_resultat_apres_une_recherche(self):
+        response = self.search(q="introuvable")
+
+        self.assertContains(response, "Aucun résultat.")
+        self.assertEqual(response.context["results"], [])
+
+    def test_aide_repliee_apres_une_recherche(self):
+        response = self.search(q="a2")
+
+        self.assertContains(response, "Aide sur la syntaxe de recherche")
+        self.assertNotContains(response, 'p-3" open>')
+
+    def test_la_recherche_est_dans_l_adresse(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'method="get"')
+        self.assertNotContains(response, "csrfmiddlewaretoken")
+        self.assertEqual(self.client.post(self.url, {"q": "a1"}).status_code, 405)
+
+    def test_la_zone_garde_la_requete(self):
+        response = self.search(q='projet:Alpha "a2"')
+
+        self.assertContains(response, "projet:Alpha")
+
+    def test_syntaxe_dans_la_zone(self):
+        response = self.search(q="projet:beta -b2")
+
+        self.assertEqual(self.contents(response), ["b1"])
+
+    def test_requete_mal_formee_signalee(self):
+        response = self.search(q="a1 date:demain")
+
+        self.assertContains(response, "date:demain")
+        self.assertContains(response, 'role="alert"')
+        self.assertEqual(response.status_code, 200)
+
+    def test_guillemet_non_ferme_signale(self):
+        response = self.search(q='"a1')
+
+        self.assertContains(response, "Guillemet non fermé")
+        self.assertEqual(self.contents(response), ["a1"])
+
+    def test_syntaxe_et_cases_se_cumulent(self):
+        response = self.search(q="tag:inconnu", projects=[self.alpha.pk])
+
+        self.assertEqual(self.contents(response), [])
 
     def test_requete_htmx_renvoie_les_resultats_seuls(self):
         response = self.search(
@@ -176,12 +244,12 @@ class SubjectChoicesTests(SearchTestCase):
         ]
 
     def test_chemins_tous_projets_tries_sans_vide(self):
-        response = self.client.post(self.url)
+        response = self.client.get(self.url)
 
         self.assertEqual(self.choices(response), self.ALL)
 
     def test_chemins_filtres_par_projet(self):
-        response = self.client.post(self.url, {"projects": [self.beta.pk]})
+        response = self.client.get(self.url, {"projects": [self.beta.pk]})
 
         self.assertEqual(self.choices(response), ["Beta › thermique"])
 
@@ -204,7 +272,7 @@ class SubjectChoicesTests(SearchTestCase):
             content="a4",
         )
 
-        response = self.client.post(self.url, {"projects": [self.alpha.pk]})
+        response = self.client.get(self.url, {"projects": [self.alpha.pk]})
 
         self.assertIn("Alpha › Rapports", self.choices(response))
         self.assertIn("Alpha › Rapports › Annuel", self.choices(response))

@@ -233,7 +233,7 @@ class RenderedPartsDisplayTests(ViewTestCase):
         self.assertRenderedAsIs(response)
 
     def test_resultats_de_recherche(self):
-        response = self.client.post(
+        response = self.client.get(
             reverse("note_taking:notes_search"),
             {"subjects": [str(Section.objects.get(name="S").pk)]},
         )
@@ -264,7 +264,7 @@ class RenderedContentContainerTests(ViewTestCase):
         self.assertRegex(response.content.decode(), self.CONTAINER_REGEX)
 
     def test_resultats_de_recherche(self):
-        response = self.client.post(
+        response = self.client.get(
             reverse("note_taking:notes_search"),
             {"subjects": [str(Section.objects.get(name="S").pk)]},
         )

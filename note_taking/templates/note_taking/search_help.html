@@ -1,0 +1,28 @@
+{# Aide de la syntaxe de recherche (#199). `open` : ouverte tant qu'on n'a pas cherché. #}
+<details class="mt-4 rounded-xl border border-slate-300 p-3"{% if open %} open{% endif %}>
+    <summary class="cursor-pointer select-none font-medium">Aide sur la syntaxe de recherche</summary>
+    <p class="mt-2 text-sm text-slate-600">Tous les mots sont requis ; casse et accents sont ignorés.</p>
+    <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+        <dt><code>banc thermique</code></dt>
+        <dd>les deux mots, dans le texte ou les titres</dd>
+        <dt><code>"résistance thermique"</code></dt>
+        <dd>la phrase exacte</dd>
+        <dt><code>therm*</code></dt>
+        <dd>les mots qui commencent par « therm »</dd>
+        <dt><code>-brouillon</code></dt>
+        <dd>sans ce mot (<code>-"cette phrase"</code> marche aussi)</dd>
+        <dt><code>projet:Alpha</code></dt>
+        <dd>dans ce projet ; entre guillemets s'il a des espaces : <code>projet:"Mon projet"</code></dd>
+        <dt><code>chemin:Réunion/Préparation</code></dt>
+        <dd>sous ce chemin (niveaux séparés par « / »), niveaux dessous compris</dd>
+        <dt><code>tag:urgent</code></dt>
+        <dd>avec ce tag ; plusieurs <code>tag:</code> sont tous exigés</dd>
+        <dt><code>-tag:fini</code>, <code>-projet:Perso</code></dt>
+        <dd>sans ce tag, hors de ce projet (aussi <code>-chemin:</code>)</dd>
+        <dt><code>date:2026-10</code></dt>
+        <dd>les notes d'un mois ; aussi <code>date:2026</code> ou <code>date:2026-10-15</code></dd>
+        <dt><code>date:2026-09..2026-10</code></dt>
+        <dd>une plage, bornes comprises ; <code>date:2026-09-15..</code> et <code>date:..2026</code> laissent une borne ouverte</dd>
+    </dl>
+    <p class="mt-2 text-sm text-slate-600">Plusieurs <code>projet:</code> ou <code>chemin:</code> se cumulent (l'un ou l'autre).</p>
+</details>

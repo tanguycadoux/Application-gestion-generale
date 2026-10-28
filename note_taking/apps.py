@@ -20,9 +20,11 @@ class NoteTakingConfig(AppConfig):
             NavItem("note_taking:index", "Calendrier", "calendar_month"),
             NavItem("note_taking:note_today", "Note du jour", "today"),
             NavItem("note_taking:notes_list", "Les notes", "docs"),
-            NavItem("note_taking:notes_search", "Recherche de notes", "search"),
             NavItem("note_taking:images_list", "Les images", "image"),
         ),
+    )
+    search_page = NavItem(
+        "note_taking:notes_search", "Rechercher dans les notes", "search"
     )
     project_usages = (ProjectUsage("note_parts__note", "note", "notes"),)
     section_usages = (SectionUsage("note_parts", "note part", "note parts"),)
