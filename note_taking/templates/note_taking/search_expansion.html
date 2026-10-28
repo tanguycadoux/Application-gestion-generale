@@ -1,0 +1,8 @@
+{# Mots élargis aux mots proches de l'index (#200), avec de quoi annuler. #}
+{% if query.expansions %}
+    <p class="mb-2 text-sm text-slate-700" role="status">
+        Recherche élargie :
+        {% for written, found in query.expansions %}<span><em>{{ written }}</em> → <strong>{{ found }}</strong></span>{% if not forloop.last %}, {% endif %}{% endfor %}.
+        <a href="{% url 'note_taking:notes_search' %}?{{ request.GET.urlencode }}&amp;exact=1">Chercher exactement ce qui est écrit</a>
+    </p>
+{% endif %}

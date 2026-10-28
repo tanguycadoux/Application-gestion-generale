@@ -135,6 +135,13 @@ class GroupingTests(TestCase):
 
         self.assertIn("<mark>banc</mark>", hit.snippet)
 
+    def test_resultat_elargi_a_son_extrait(self):
+        self.part(self.new, "la thermique du banc")
+
+        hit = self.groups("thermiqe")[0].hits[0]
+
+        self.assertIn("<mark>thermique</mark>", hit.snippet)
+
     def test_exclusion_seule_sans_extrait(self):
         self.part(self.new, "le banc est prêt")
         self.part(self.new, "autre")
