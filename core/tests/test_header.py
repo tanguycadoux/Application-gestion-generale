@@ -52,18 +52,16 @@ class HeaderTests(TestCase):
         self.assertNotIn("Accueil", nav)
         self.assertNotIn('href="/"', nav)
 
-    def test_accueil_marque_sur_la_page_d_accueil(self):
-        header = re.search(r"<header .*?</header>", self.page(), re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-
-        self.assertIn('aria-current="page"', link)
-
-    def test_accueil_non_marque_ailleurs(self):
-        html = self.page("note_taking:index")
-
-        header = re.search(r"<header .*?</header>", html, re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-        self.assertNotIn("aria-current", link)
+    def test_nom_se_comporte_comme_un_logo_sans_fond_ni_etat_actif(self):
+        """Identique sur l'accueil et ailleurs : pas de fond, pas de `aria-current`."""
+        links = set()
+        for name in ("core:index", "note_taking:index"):
+            header = re.search(r"<header .*?</header>", self.page(name), re.S).group()
+            link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
+            self.assertNotIn("aria-current", link)
+            self.assertNotRegex(link, r"bg-")
+            links.add(link)
+        self.assertEqual(len(links), 1)
 
     def test_recherche_au_centre_emplacement_a_droite(self):
         header = re.search(r"<header .*?</header>", self.page(), re.S).group()
