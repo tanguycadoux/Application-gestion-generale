@@ -353,7 +353,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 
 - liste des notes (`/notes/list/`), triable par date et filtrable par date ou par un ou plusieurs projets, cochés dans une liste repliable où l'on peut chercher (#178) : tri et filtres sont dans l'adresse (`?sort=-date&project=ASTERICS&project=PDS1&date_from=2025-11-01`) et s'ouvrent depuis les en-têtes de colonne, sans JavaScript ;
 - page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
-- recherche des note parts par projet(s) et chemin(s) (`/notes/search/`), les chemins proposés étant filtrés selon les projets cochés ; choisir un niveau cherche aussi ses descendants,
+- recherche des note parts (`/notes/search/?q=…`, l'adresse se partage) dans une seule zone de texte : `banc thermique` (tous les mots, casse et accents ignorés), `"phrase exacte"`, `therm*`, `-brouillon`, `projet:Alpha`, `chemin:Réunion/Préparation` (niveaux dessous compris), `tag:urgent`, `-tag:fini`, `date:2026-10` ou `date:2026-09..2026-10` ; une aide de syntaxe est sur la page. Les cases de projets et de chemins s'ajoutent à la zone de texte,
 - suppression d'une note.
 
 ## Gestion des tâches

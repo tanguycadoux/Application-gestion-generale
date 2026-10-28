@@ -1,20 +1,21 @@
 {% extends "note_taking/base.html" %}
 
-{% block title %}Recherche de notes{% endblock title %}
+{% block title %}{% if form.q.value %}{{ form.q.value }} · {% endif %}Recherche de notes{% endblock title %}
 
 {% block content %}
 <h1 class="mb-4">Rechercher parmi les notes</h1>
 
 <div class="grid grid-cols-[1fr_3fr] gap-4">
-    <div>
+    <search>
+        {# GET : la recherche est dans l'adresse. htmx ne remplace que les résultats et la met à jour. #}
         <form
-        method="post"
-        data-hx-post="{% url 'note_taking:notes_search' %}"
+        method="get"
+        action="{% url 'note_taking:notes_search' %}"
+        data-hx-get="{% url 'note_taking:notes_search' %}"
         data-hx-target="#results"
+        data-hx-push-url="true"
         data-hx-trigger="input delay:300ms, change delay:200ms"
         >
-            {% csrf_token %}
-
             <p class="mb-4">
                 <label for="{{ form.q.id_for_label }}" class="block mb-1 font-medium">{{ form.q.label }}</label>
                 {{ form.q }}
@@ -26,14 +27,18 @@
                     {{ form.projects }}
                 </div>
             </details>
-    
+
             <div id="subjects-block">
                 {% include "note_taking/subjects_block.html" %}
             </div>
-        </form>
-    </div>
 
-    <div id="results" class="overflow-hidden">
+            <p class="mt-4">
+                <button type="submit" class="rounded-md bg-slate-700 px-3 py-1 text-white">Rechercher</button>
+            </p>
+        </form>
+    </search>
+
+    <div id="results" class="overflow-hidden" aria-live="polite">
         {% include "note_taking/notes_search_result.html" %}
     </div>
 </div>

@@ -118,7 +118,7 @@ class DatesInPagesTests(TestCase):
         )
 
     def test_resultats_de_recherche(self):
-        html = self.client.post(
+        html = self.client.get(
             reverse("note_taking:notes_search"), {"projects": [self.project.pk]}
         ).content.decode()
 
