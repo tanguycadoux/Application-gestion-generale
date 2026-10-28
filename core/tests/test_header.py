@@ -60,6 +60,7 @@ class HeaderTests(TestCase):
             link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
             self.assertNotIn("aria-current", link)
             self.assertNotRegex(link, r"bg-")
+            self.assertNotIn("hover:", link)
             links.add(link)
         self.assertEqual(len(links), 1)
 
