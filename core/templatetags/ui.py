@@ -407,3 +407,47 @@ def filter_summary(context) -> dict:
     return summary_context(
         context["request"], context.get("filters"), context.get("active_filters")
     )
+
+
+PATH_TREE_MODES = ("link", "checkbox")
+
+
+@register.inclusion_tag("core/components/path_tree.html", takes_context=True)
+def path_tree(
+    context, nodes, mode: str = "link", param: str = "path", label: str = "Chemins"
+) -> dict:
+    """Arbre des chemins (#302) : `{% path_tree nodes mode="checkbox" param="path" %}`.
+
+    `nodes` vient de `core.path_tree.path_tree`. Les niveaux se replient par un
+    `<details>` natif, ouvert d'office quand un descendant est choisi : tout marche
+    sans JavaScript.
+
+    - `mode="link"` : chaque niveau est un lien vers la page courante avec
+      `?param=<clé>`, le reste de la requête gardé et `page` retiré. Le niveau choisi
+      est marqué (`aria-current`) et son lien retire le filtre ;
+    - `mode="checkbox"` : une case `name=param`, à placer dans un formulaire ;
+    - `label` : nom accessible de l'arbre.
+
+    Un projet n'est jamais un lien ni une case.
+    """
+    if mode not in PATH_TREE_MODES:
+        raise ValueError(f"Mode d'arbre des chemins inconnu : {mode}")
+    request = context["request"]
+    if mode == "link":
+        query = request.GET.copy()
+        query.pop(param, None)
+        query.pop("page", None)
+        for node in nodes:
+            if node.selectable:
+                shown = query.copy()
+                if not node.selected:
+                    shown[param] = str(node.pk)
+                node.href = (
+                    f"{request.path}?{shown.urlencode()}" if shown else request.path
+                )
+    return {
+        "roots": [node for node in nodes if node.depth == 0],
+        "mode": mode,
+        "param": param,
+        "label": label,
+    }
