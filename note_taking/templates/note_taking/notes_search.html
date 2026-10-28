@@ -24,6 +24,11 @@
                 <label for="{{ form.q.id_for_label }}" class="block mb-1 font-medium">{{ form.q.label }}</label>
                 {{ form.q }}
             </p>
+            {# La vue et le regroupement choisis (#356) survivent à une nouvelle recherche. #}
+            {% if view == "document" %}
+                <input type="hidden" name="view" value="document">
+                <input type="hidden" name="group" value="{{ group }}">
+            {% endif %}
 
             <fieldset class="mb-4">
                 <legend class="mb-1 font-medium">{{ form.projects.label }}</legend>

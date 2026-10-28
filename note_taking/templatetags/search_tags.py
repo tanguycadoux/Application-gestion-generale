@@ -39,3 +39,15 @@ def saved_searches(context, current_q=None) -> dict:
         "create_url": reverse("note_taking:saved_search_create"),
         "csrf_token": context.get("csrf_token", ""),
     }
+
+
+@register.simple_tag(takes_context=True)
+def result_option_url(context, **options) -> str:
+    """L'adresse de la page en cours avec `view` ou `group` changés (#356), le reste de
+    la requête gardé (texte, projets, chemins) et `page` retiré."""
+    request = context["request"]
+    query = request.GET.copy()
+    query.pop("page", None)
+    for name, value in options.items():
+        query[name] = value
+    return f"{request.path}?{query.urlencode()}"

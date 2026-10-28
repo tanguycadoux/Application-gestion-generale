@@ -1,5 +1,5 @@
 {% include "note_taking/search_expansion.html" %}
-{% load ui %}
+{% load ui search_tags %}
 {% for error in query.errors %}
     <p class="mb-2 text-amber-800" role="alert">{{ error }}</p>
 {% endfor %}
@@ -8,34 +8,70 @@
     {# Pas encore de recherche : l'aide de syntaxe, ouverte. #}
     {% include "note_taking/search_help.html" with open=True %}
 {% elif results %}
-    <p class="mb-4 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }} dans {{ groups|length }} note{{ groups|length|pluralize }}.</p>
-    {% for group in groups %}
-        <article class="mb-6">
-            <h2 class="mb-2 text-lg font-medium"><a href="{% url 'note_taking:note_detail' group.note.date %}">Note du {% date_time group.note.date "long" %}</a></h2>
-            {% for hit in group.hits %}
-                <section class="mb-3 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
-                    <header class="grid grid-cols-[1fr_auto] gap-4 items-center mb-2">
-                        <h3 class="text-base font-medium">
-                            {% if hit.part.heading_path %}
-                                <a href="{% url 'note_taking:note_detail' group.note.date %}{% if hit.anchor %}#{{ hit.anchor }}{% endif %}">{{ hit.part.heading_path }}</a>
-                            {% else %}
-                                <a href="{% url 'note_taking:note_detail' group.note.date %}">Début de la note</a>
-                            {% endif %}
-                        </h3>
-                        {% tag_list hit.part.tags.all %}
-                    </header>
+    <p class="mb-2 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
 
-                    {% if hit.snippet %}
-                        <p class="text-sm [&_mark]:rounded-sm [&_mark]:bg-amber-200">{{ hit.snippet }}</p>
-                    {% else %}
-                        <div class="rendered-content">
-                            {{ hit.part.rendered_content|safe }}
-                        </div>
-                    {% endif %}
-                </section>
-            {% endfor %}
-        </article>
-    {% endfor %}
+    {# Présentation (#356) : des liens, sans JavaScript, qui gardent le reste de l'adresse. #}
+    <nav aria-label="Présentation des résultats" class="mb-4 flex flex-wrap gap-x-8 gap-y-1 text-sm">
+        <ul class="flex gap-3">
+            <li class="text-slate-600">Affichage :</li>
+            <li><a href="{% result_option_url view="extraits" %}"{% if view == "extraits" %} aria-current="true" class="font-semibold"{% endif %}>Extraits</a></li>
+            <li><a href="{% result_option_url view="document" %}"{% if view == "document" %} aria-current="true" class="font-semibold"{% endif %}>Document</a></li>
+        </ul>
+        {% if view == "document" %}
+            <ul class="flex gap-3">
+                <li class="text-slate-600">Regroupement :</li>
+                <li><a href="{% result_option_url group="date" %}"{% if group == "date" %} aria-current="true" class="font-semibold"{% endif %}>Par date</a></li>
+                <li><a href="{% result_option_url group="path" %}"{% if group == "path" %} aria-current="true" class="font-semibold"{% endif %}>Par chemin</a></li>
+            </ul>
+        {% endif %}
+    </nav>
+
+    {% if document %}
+        {# Les note parts assemblées, rendues comme une note : h2 = un groupe. #}
+        <div class="rendered-content">
+            {{ document }}
+        </div>
+    {% else %}
+        {% for group in groups %}
+            <article class="mb-6">
+                <h2 class="mb-2 text-lg font-medium"><a href="{% url 'note_taking:note_detail' group.note.date %}">Note du {% date_time group.note.date "long" %}</a></h2>
+                {% for hit in group.hits %}
+                    <section class="mb-3 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
+                        <header class="grid grid-cols-[1fr_auto] gap-4 items-center mb-2">
+                            <div>
+                                {% if hit.ancestors %}
+                                    {# Le chemin ascendant : chaque niveau mène à sa section dans la note. #}
+                                    <nav aria-label="Chemin du résultat" class="text-sm text-slate-600">
+                                        <ol class="flex flex-wrap">
+                                            {% for crumb in hit.ancestors %}
+                                                <li><a href="{% url 'note_taking:note_detail' group.note.date %}{% if crumb.anchor %}#{{ crumb.anchor }}{% endif %}">{{ crumb.title }}</a><span aria-hidden="true" class="px-1">›</span></li>
+                                            {% endfor %}
+                                        </ol>
+                                    </nav>
+                                {% endif %}
+                                <h3 class="text-base font-medium">
+                                    {% if hit.last %}
+                                        <a href="{% url 'note_taking:note_detail' group.note.date %}{% if hit.anchor %}#{{ hit.anchor }}{% endif %}">{{ hit.last.title }}</a>
+                                    {% else %}
+                                        <a href="{% url 'note_taking:note_detail' group.note.date %}">Début de la note</a>
+                                    {% endif %}
+                                </h3>
+                            </div>
+                            {% tag_list hit.part.tags.all %}
+                        </header>
+
+                        {% if hit.snippet %}
+                            <p class="text-sm [&_mark]:rounded-sm [&_mark]:bg-amber-200">{{ hit.snippet }}</p>
+                        {% else %}
+                            <div class="rendered-content">
+                                {{ hit.part.rendered_content|safe }}
+                            </div>
+                        {% endif %}
+                    </section>
+                {% endfor %}
+            </article>
+        {% endfor %}
+    {% endif %}
     {% include "note_taking/search_help.html" with open=False %}
 {% else %}
     <p>Aucun résultat.</p>
