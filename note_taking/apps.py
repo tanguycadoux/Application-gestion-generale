@@ -30,7 +30,7 @@ class NoteTakingConfig(AppConfig):
     debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
 
     def ready(self):
-        from . import dashboard, renaming
+        from . import dashboard, renaming, search_index  # noqa: F401 (récepteurs)
 
         self.dashboard_blocks = (
             DashboardBlock(

@@ -29,6 +29,7 @@ from .note_calendar import requested_month_calendar
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
+from .search_index import search_parts
 from .services import (
     process_note_parts,
     update_note_from_source_file,
@@ -208,6 +209,7 @@ def notes_search(request):
     if request.method == "POST" and form.is_valid():
         projects = form.cleaned_data["projects"]
         subjects = form.cleaned_data["subjects"]
+        text = form.cleaned_data["q"]
 
         results_qs = (
             NotePart.objects.select_related("note", "section")
@@ -223,6 +225,14 @@ def notes_search(request):
             results_qs = results_qs.filter(section_id__in=sections)
 
         results = list(results_qs)
+
+        if text.strip():
+            # Le texte est en plus des filtres ; le plus pertinent vient en premier.
+            rank = {pk: i for i, pk in enumerate(search_parts(text))}
+            results = sorted(
+                (part for part in results if part.pk in rank),
+                key=lambda part: rank[part.pk],
+            )
 
     if request.htmx:
         html = render_to_string(

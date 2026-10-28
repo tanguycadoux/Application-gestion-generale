@@ -4,13 +4,14 @@ from django.db import transaction
 from core.tags import forget_unused_tags
 from note_taking.exceptions import NoteError
 from note_taking.models import Note
+from note_taking.search_index import rebuild_index
 from note_taking.services import process_note_parts
 
 
 class Command(BaseCommand):
     help = (
-        "Recalcule les note parts de toutes les notes, puis supprime les tags "
-        "que plus rien n'utilise. Les tâches existantes ne sont ni recréées ni "
+        "Recalcule les note parts de toutes les notes, reconstruit l'index de "
+        "recherche, puis supprime les tags que plus rien n'utilise. Les tâches existantes ne sont ni recréées ni "
         "modifiées."
     )
 
@@ -39,6 +40,8 @@ class Command(BaseCommand):
 
             # Après un recalcul, les tags d'avant l'analyse actuelle ne servent plus.
             forgotten = forget_unused_tags()
+            # L'index de recherche repart des note parts, orphelines comprises (#198).
+            rebuild_index()
 
             if dry_run:
                 transaction.set_rollback(True)
