@@ -28,7 +28,7 @@ from .note_calendar import requested_month_calendar
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
-from .search import group_by_note, search_note_parts
+from .search import document_html, group_by_note, result_options, search_note_parts
 from .search_query import SearchQuery, parse_query
 from .services import (
     process_note_parts,
@@ -223,8 +223,18 @@ def notes_search(request):
             expand=not request.GET.get("exact"),
         )
 
-    groups = group_by_note(query, results) if results else []
-    context = {"form": form, "results": results, "groups": groups, "query": query}
+    view, group = result_options(request.GET)
+    as_document = bool(results) and view == "document"
+    context = {
+        "form": form,
+        "results": results,
+        "groups": group_by_note(query, results) if results and not as_document else [],
+        "query": query,
+        "note_count": len({part.note_id for part in results or []}),
+        "view": view,
+        "group": group,
+        "document": document_html(results, group) if as_document else None,
+    }
     if request.htmx:
         return HttpResponse(
             render_to_string("note_taking/notes_search_result.html", context, request)

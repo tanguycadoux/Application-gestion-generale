@@ -14,19 +14,22 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
   proches de l'index (`expand_query`), les résultats exacts passant avant les élargis.
 """
 
-from collections.abc import Iterable
+import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
 from django.db.models import QuerySet
-from django.utils.safestring import SafeString
+from django.urls import reverse
+from django.utils.safestring import SafeString, mark_safe
 
 from core.models import Project, Section, Tag
 from core.sections import split_path, with_descendants
 from core.tables import fold
+from core.templatetags.ui import date_text
 
 from .models import Note, NotePart
-from .qmd.parser import HEADING_SEPARATOR
-from .rendering import heading_anchor
+from .rendering import heading_anchor, render_note_part
+from .search_document import GROUPS, DocPart, assemble, split_titles
 from .search_index import (
     match_parts,
     quote,
@@ -220,14 +223,52 @@ def section_ids_at(paths: list[str]) -> set[int]:
     return with_descendants({pk for pk, _, _ in rows if chain(pk) in wanted})
 
 
+# Présentation des résultats (#356) : les extraits (une carte par note part), ou le
+# document (les note parts assemblées en Markdown, regroupées par date ou par chemin).
+VIEWS = ("extraits", "document")
+DEFAULT_VIEW = "extraits"
+DEFAULT_GROUP = "date"
+# `{#id}` ou `{.classe}` en fin de titre : une écriture, pas un texte à lire.
+TITLE_ATTRIBUTES_REGEX = re.compile(r"\s*\{[^}]*\}\s*$")
+
+
+def result_options(params: Mapping[str, str]) -> tuple[str, str]:
+    """La vue et le regroupement demandés (`?view=`, `?group=`) ; une valeur inconnue
+    est remplacée par la valeur par défaut."""
+    view = params.get("view", DEFAULT_VIEW)
+    group = params.get("group", DEFAULT_GROUP)
+    return (
+        view if view in VIEWS else DEFAULT_VIEW,
+        group if group in GROUPS else DEFAULT_GROUP,
+    )
+
+
+@dataclass
+class Crumb:
+    """Un niveau du chemin d'un résultat : son titre à lire, et son ancre dans la note."""
+
+    title: str
+    anchor: str | None
+
+
 @dataclass
 class Hit:
-    """Une note part trouvée : son extrait surligné (s'il y a du texte à chercher)
-    et l'ancre de sa section dans la page de la note."""
+    """Une note part trouvée : son extrait surligné (s'il y a du texte à chercher),
+    l'ancre de sa section dans la page de la note, et son chemin ascendant (#356)."""
 
     part: NotePart
     snippet: SafeString | None
     anchor: str | None
+    crumbs: list[Crumb] = field(default_factory=list)
+
+    @property
+    def ancestors(self) -> list[Crumb]:
+        """Les niveaux au-dessus du dernier, du projet vers le plus profond."""
+        return self.crumbs[:-1]
+
+    @property
+    def last(self) -> Crumb | None:
+        return self.crumbs[-1] if self.crumbs else None
 
 
 @dataclass
@@ -253,9 +294,40 @@ def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults
     anchors: dict[str, str | None] = {}
     groups: dict[int, NoteResults] = {}
     for part in parts:
-        title = part.heading_path.split(HEADING_SEPARATOR)[-1]
-        if title not in anchors:
-            anchors[title] = heading_anchor(title)
+        crumbs = []
+        for title in split_titles(part.heading_path):
+            if title not in anchors:
+                anchors[title] = heading_anchor(title)
+            crumbs.append(Crumb(TITLE_ATTRIBUTES_REGEX.sub("", title), anchors[title]))
+        anchor = crumbs[-1].anchor if crumbs else None
         group = groups.setdefault(part.note_id, NoteResults(part.note))
-        group.hits.append(Hit(part, extracts.get(part.pk), anchors[title]))
+        group.hits.append(Hit(part, extracts.get(part.pk), anchor, crumbs))
     return list(groups.values())
+
+
+def document_html(parts: list[NotePart], group: str) -> SafeString:
+    """Les note parts assemblées en un document, rendu comme une note (#356).
+
+    Les numéros des tableaux et figures se calculent sur le texte assemblé. Dans une
+    note, les note parts restent dans l'ordre où elles sont écrites.
+    """
+    anchors: dict[str, str | None] = {}
+    pieces = []
+    for part in sorted(parts, key=lambda part: part.pk):
+        titles = split_titles(part.heading_path)
+        last = titles[-1] if titles else ""
+        if last not in anchors:
+            anchors[last] = heading_anchor(last)
+        note_url = reverse("note_taking:note_detail", args=[part.note.date])
+        pieces.append(
+            DocPart(
+                date=part.note.date,
+                date_label=date_text(part.note.date, "long"),
+                note_url=note_url,
+                part_url=note_url + (f"#{anchors[last]}" if anchors[last] else ""),
+                titles=titles,
+                content=part.content,
+                project=part.project.name,
+            )
+        )
+    return mark_safe(render_note_part(assemble(pieces, group)))
