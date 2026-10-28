@@ -110,7 +110,8 @@ class KeyboardShortcutTests(TestCase):
             with self.subTest(url_name=url_name):
                 html = self.get(url_name)
 
-                self.assertEqual(html.count("<kbd"), 2)
+                # Dans la page, pas dans le menu : sa barre de recherche a son « Ctrl K ».
+                self.assertEqual(html.partition("<main")[2].count("<kbd"), 2)
                 self.assertIn(">←</kbd>", html)
                 self.assertIn(">→</kbd>", html)
 
