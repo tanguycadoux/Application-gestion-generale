@@ -10,6 +10,11 @@ from .qmd.files import split_front_matter
 
 
 class NoteSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label="Texte",
+        widget=forms.TextInput(attrs={"type": "search", "placeholder": "Rechercher…"}),
+    )
     projects = forms.ModelMultipleChoiceField(
         queryset=Project.objects.all().order_by("name"),
         widget=forms.CheckboxSelectMultiple(

@@ -11,10 +11,15 @@
         method="post"
         data-hx-post="{% url 'note_taking:notes_search' %}"
         data-hx-target="#results"
-        data-hx-trigger="change delay:200ms"
+        data-hx-trigger="input delay:300ms, change delay:200ms"
         >
             {% csrf_token %}
-    
+
+            <p class="mb-4">
+                <label for="{{ form.q.id_for_label }}" class="block mb-1 font-medium">{{ form.q.label }}</label>
+                {{ form.q }}
+            </p>
+
             <details class="mb-4" open>
                 <summary class="select-none bg-slate-200 p-1 cursor-pointer">Projets</summary>
                 <div class="pl-1 border-l-[2px] border-slate-200">

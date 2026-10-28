@@ -99,6 +99,57 @@ class NotesSearchTests(SearchTestCase):
         self.assertEqual(sorted(self.contents(response)[:2]), ["a2", "a3"])
         self.assertEqual(self.contents(response)[2], "a1")
 
+    def test_texte_libre(self):
+        response = self.search(q="a2")
+
+        self.assertEqual(self.contents(response), ["a2"])
+
+    def test_texte_libre_sans_casse_ni_accents(self):
+        NotePart.objects.create(
+            note=Note.objects.get(date="2025-11-24"),
+            project=self.alpha,
+            content="Résistance thermique",
+        )
+
+        response = self.search(q="RESISTANCE")
+
+        self.assertContains(response, "Résistance thermique")
+
+    def test_texte_libre_et_projet(self):
+        """Le texte s'ajoute aux filtres : tous doivent être satisfaits."""
+        NotePart.objects.create(
+            note=Note.objects.get(date="2025-11-24"),
+            project=self.beta,
+            content="a2 chez Beta",
+        )
+
+        response = self.search(q="a2", projects=[self.beta.pk])
+
+        self.assertEqual(self.contents(response), [])
+        self.assertContains(response, "a2 chez Beta")
+        self.assertNotContains(response, "<p>a2</p>")
+
+    def test_texte_libre_sans_resultat(self):
+        response = self.search(q="introuvable")
+
+        self.assertEqual(response.context["results"], [])
+
+    def test_texte_libre_trie_par_pertinence(self):
+        note = Note.objects.get(date="2025-11-23")
+        NotePart.objects.create(
+            note=note, project=self.alpha, content="banc " + "autre " * 30
+        )
+        court = NotePart.objects.create(note=note, project=self.alpha, content="banc")
+
+        response = self.search(q="banc")
+
+        self.assertEqual(response.context["results"][0], court)
+
+    def test_texte_vide_ne_filtre_pas(self):
+        response = self.search(q="  ")
+
+        self.assertEqual(len(response.context["results"]), 5)
+
     def test_requete_htmx_renvoie_les_resultats_seuls(self):
         response = self.search(
             headers={"HX-Request": "true"}, subjects=[str(self.s_mesures.pk)]
