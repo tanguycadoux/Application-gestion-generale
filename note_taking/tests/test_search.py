@@ -341,7 +341,7 @@ class PathTreeTests(SearchTestCase):
             f' name="projects" value="{self.alpha.pk}"',
             html,
         )
-        self.assertNotIn("<legend class=\"mb-1 font-medium\">Projets</legend>", html)
+        self.assertNotIn('<legend class="mb-1 font-medium">Projets</legend>', html)
 
     def test_projet_choisi_est_coche(self):
         html = self.client.get(self.url, {"projects": [self.alpha.pk]}).content.decode()

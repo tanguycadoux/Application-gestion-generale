@@ -32,8 +32,8 @@ from .rendering import render_note_body
 from .search import (
     document_html,
     group_by_note,
-    result_options,
     project_counts,
+    result_options,
     search_note_parts,
     section_counts,
 )

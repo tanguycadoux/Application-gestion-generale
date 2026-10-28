@@ -297,7 +297,9 @@ class PathTreeProjectCheckboxTests(TestCase):
 
     def render(self, nodes, **options) -> str:
         args = " ".join(f'{key}="{value}"' for key, value in options.items())
-        template = Template("{% load ui %}{% path_tree nodes mode='checkbox' " + args + " %}")
+        template = Template(
+            "{% load ui %}{% path_tree nodes mode='checkbox' " + args + " %}"
+        )
         return template.render(RequestContext(self.request, {"nodes": nodes}))
 
     def test_projet_en_case_avec_project_param(self):
