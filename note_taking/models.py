@@ -102,3 +102,23 @@ class NotePartImageLink(models.Model):
 
     def __str__(self):
         return f"{self.note_part} → {self.image}"
+
+
+class SavedSearch(models.Model):
+    """Une requête de recherche gardée sous un nom (#203).
+
+    On garde le texte de la zone de recherche (`q`), rien d'autre : les cases de
+    projets et de chemins ne sont pas dans la requête.
+    """
+
+    name = models.CharField("nom", max_length=100, unique=True)
+    q = models.TextField("requête")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "recherche enregistrée"
+        verbose_name_plural = "recherches enregistrées"
+
+    def __str__(self):
+        return self.name

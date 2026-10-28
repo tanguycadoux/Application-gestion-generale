@@ -1,0 +1,44 @@
+{% load ui static %}
+{# Recherches enregistrées (#203) : `{% saved_searches form.q.value %}` dans la page de recherche. #}
+<section aria-labelledby="saved-searches-title" class="mt-6">
+    <h2 id="saved-searches-title" class="mb-2 text-base font-semibold">Recherches enregistrées</h2>
+
+    {% if items %}
+        <ul class="mb-3 space-y-1">
+            {% for item in items %}
+                <li>
+                    <div class="flex items-center gap-1">
+                        <a href="{{ item.url }}"{% if item.current %} aria-current="true" class="min-w-0 flex-1 break-words font-semibold"{% else %} class="min-w-0 flex-1 break-words"{% endif %}>{{ item.search.name }}</a>
+                        {% confirm_button "Supprimer la recherche" id=item.delete_id icon="delete" icon_only=True message="Supprimer cette recherche ?" action=item.delete_action %}
+                    </div>
+                    <details class="text-sm">
+                        <summary class="cursor-pointer select-none text-slate-600">Renommer</summary>
+                        <form method="post" action="{{ item.rename_action }}" class="mt-1 flex items-center gap-2">
+                            {% csrf_token %}
+                            <label for="rename-saved-search-{{ item.search.pk }}" class="sr-only">Nouveau nom de la recherche {{ item.search.name }}</label>
+                            <input type="text" id="rename-saved-search-{{ item.search.pk }}" name="name" value="{{ item.search.name }}" maxlength="{{ name_max_length }}" required>
+                            {% button "Renommer" icon="edit" icon_only=True variant="ghost" %}
+                        </form>
+                    </details>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="mb-3 text-sm text-slate-600">Aucune recherche enregistrée.</p>
+    {% endif %}
+
+    {% if q %}
+        <form method="post" action="{{ create_url }}" data-saved-search-form>
+            {% csrf_token %}
+            <input type="hidden" name="q" value="{{ q }}">
+            <label for="saved-search-name" class="mb-1 block text-sm font-medium">Enregistrer cette recherche sous le nom</label>
+            <div class="flex items-center gap-2">
+                <input type="text" id="saved-search-name" name="name" value="{{ default_name }}" maxlength="{{ name_max_length }}" required>
+                {% button "Enregistrer" icon="save" icon_only=True %}
+            </div>
+        </form>
+    {% else %}
+        <p class="text-sm text-slate-600">Lancer une recherche pour pouvoir l'enregistrer.</p>
+    {% endif %}
+    <script src="{% static 'note_taking/saved_searches.js' %}" defer></script>
+</section>

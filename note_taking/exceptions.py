@@ -29,3 +29,7 @@ class NoteRenameError(NoteError):
 
 class InvalidArchiveError(NoteError):
     """Fichier qui n'est pas une archive zip de notes lisible."""
+
+
+class SavedSearchError(NoteError):
+    """Recherche enregistrée refusée : nom vide, trop long ou déjà pris, requête vide."""
