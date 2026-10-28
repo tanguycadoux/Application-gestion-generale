@@ -1,0 +1,13 @@
+{% if node.selectable %}
+    {% if mode == "checkbox" %}
+        <input type="checkbox" id="{{ node.key }}" name="{{ param }}" value="{{ node.pk }}"{% if node.selected %} checked{% endif %}>
+        <label for="{{ node.key }}" title="{{ node.label }}">{{ node.name }}</label>
+    {% elif node.selected %}
+        <a href="{{ node.href }}" title="{{ node.label }}" aria-current="true" class="rounded bg-blue-100 px-1 font-semibold text-slate-900 hover:bg-blue-50">{{ node.name }}</a>
+    {% else %}
+        <a href="{{ node.href }}" title="{{ node.label }}" class="rounded px-1 hover:bg-slate-200">{{ node.name }}</a>
+    {% endif %}
+{% else %}
+    <span class="font-semibold">{{ node.name }}</span>
+{% endif %}
+{% if node.count %}<span class="text-slate-600">({{ node.count }})</span>{% endif %}

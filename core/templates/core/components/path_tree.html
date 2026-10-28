@@ -1,0 +1,11 @@
+{% comment %}
+Arbre des chemins (#302), rendu par {% path_tree %} : listes imbriquées, un
+<details> natif par niveau qui a des sous-niveaux. Récursif : path_tree_node.html.
+{% endcomment %}
+{% if roots %}
+    <ul class="text-sm" aria-label="{{ label }}">
+        {% for node in roots %}
+            {% include "core/components/path_tree_node.html" %}
+        {% endfor %}
+    </ul>
+{% endif %}
