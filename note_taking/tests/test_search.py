@@ -86,12 +86,20 @@ class NotesSearchTests(SearchTestCase):
 
         self.assertEqual(self.contents(response), ["a3"])
 
-    def test_filtre_par_projet_et_sujet(self):
+    def test_projet_et_chemin_d_un_autre_projet_sont_unis(self):
+        """Tout ce qui est coché est réuni par « ou », comme dans les tâches (#302)."""
+        response = self.search(
+            projects=[self.beta.pk], subjects=[str(self.s_alpha_thermique.pk)]
+        )
+
+        self.assertEqual(sorted(self.contents(response)), ["a1", "b1", "b2"])
+
+    def test_projet_et_chemin_du_meme_projet(self):
         response = self.search(
             projects=[self.beta.pk], subjects=[str(self.s_beta_thermique.pk)]
         )
 
-        self.assertEqual(self.contents(response), ["b1"])
+        self.assertEqual(sorted(self.contents(response)), ["b1", "b2"])
 
     def test_tri_par_date_decroissante(self):
         response = self.search(projects=[self.alpha.pk])
