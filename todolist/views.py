@@ -66,9 +66,9 @@ def todo_list(request):
     #298). Ce qui répond aux filtres reste affiché sous ses parents atténués.
     Les écartées (#290) ont leur tableau, avec les mêmes filtres.
     """
-    filters = task_table.task_filters()
+    state = task_table.read_state(request.GET)
+    filters = task_table.task_filters(state)
     active = filters.read(request.GET)
-    state = active.values.get("state", task_table.OPEN)
     narrowed = any(key != "state" for key in active.values)
     context = {
         "filters": filters,

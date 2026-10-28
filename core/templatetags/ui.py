@@ -439,8 +439,8 @@ def path_tree(
     """
     if mode not in PATH_TREE_MODES:
         raise ValueError(f"Mode d'arbre des chemins inconnu : {mode}")
-    request = context["request"]
     if mode == "link":
+        request = context["request"]
         query = request.GET.copy()
         query.pop(param, None)
         query.pop("page", None)

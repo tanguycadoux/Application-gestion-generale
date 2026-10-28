@@ -4,8 +4,10 @@ from datetime import date
 
 from django.contrib.staticfiles import finders
 from django.http import QueryDict
-from django.test import RequestFactory, SimpleTestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase
 
+from core.models import Project, Section
+from core.path_tree import path_tree
 from core.tables import (
     Choice,
     ChoiceFilter,
@@ -13,6 +15,7 @@ from core.tables import (
     DateRangeFilter,
     Filters,
     MultiChoiceFilter,
+    PathTreeFilter,
     Sort,
     Sorting,
     TextFilter,
@@ -560,3 +563,39 @@ class ChoiceSearchScriptTests(SimpleTestCase):
 
     def test_le_champ_n_est_montre_qu_avec_le_script(self):
         self.assertIn("box.hidden = false", self.script())
+
+
+class PathTreeFilterTests(TestCase):
+    """Le filtre « projets et chemins » (#302) : deux paramètres, un arbre."""
+
+    def setUp(self):
+        self.alpha = Project.objects.create(name="Alpha")
+        self.mesures = Section.objects.create(project=self.alpha, name="Mesures")
+        self.filter = PathTreeFilter(
+            "path",
+            "Projets et chemins",
+            lambda projects, paths: path_tree(
+                {},
+                paths,
+                selected_projects=projects,
+                project_key=lambda project: project.name,
+            ),
+            lambda target, value: target,
+        )
+
+    def test_lit_projets_et_chemins_sans_valeur_inconnue(self):
+        data = {
+            "project": ["Alpha", "Zeta"],
+            "path": [str(self.mesures.pk), "999", "x"],
+        }
+
+        self.assertEqual(self.filter.read(data, []), (("Alpha",), (self.mesures.pk,)))
+
+    def test_rien_de_coche_n_est_pas_un_filtre(self):
+        self.assertIsNone(self.filter.read({}, []))
+        self.assertIsNone(self.filter.read({"project": ["Zeta"]}, []))
+
+    def test_description_des_choix(self):
+        value = (("Alpha",), (self.mesures.pk,))
+
+        self.assertEqual(self.filter.describe(value), "Alpha, Alpha › Mesures")

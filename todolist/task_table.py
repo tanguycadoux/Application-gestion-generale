@@ -6,13 +6,14 @@ ses parents, atténués, pour garder l'arbre lisible (`tree.restrict_to`). Les q
 filtres sont dans le panneau de la colonne « Tâche ».
 """
 
-from core.models import Project
-from core.sections import path_labels, with_descendants
+from collections import Counter
+
+from core.path_tree import path_tree
+from core.sections import with_descendants
 from core.tables import (
-    Choice,
     ChoiceFilter,
     Filters,
-    MultiChoiceFilter,
+    PathTreeFilter,
     TextFilter,
     fold,
 )
@@ -41,40 +42,57 @@ def filter_title(tasks: list[Todo], text: str) -> list[Todo]:
     return [task for task in tasks if needle in fold(task.title)]
 
 
-def filter_projects(tasks: list[Todo], names: tuple[str, ...]) -> list[Todo]:
-    """Les tâches d'au moins un des projets cochés."""
-    return [task for task in tasks if task.project.name in names]
+def filter_tree(tasks: list[Todo], chosen: tuple[tuple[str, ...], tuple[int, ...]]):
+    """Les tâches d'un des projets cochés ou d'un des niveaux cochés, descendants
+    compris (#302, #298)."""
+    names, paths = chosen
+    ids = with_descendants(set(paths))
+    return [t for t in tasks if t.project.name in names or t.section_id in ids]
 
 
-def filter_path(tasks: list[Todo], section_id: str) -> list[Todo]:
-    """Les tâches du niveau et de ses descendants (#298)."""
-    ids = with_descendants({int(section_id)})
-    return [task for task in tasks if task.section_id in ids]
+def read_state(data) -> str:
+    """L'état demandé par `?state=` ; en cours si absent ou inconnu."""
+    state = data.get("state", OPEN)
+    return state if state in STATE_LABELS else OPEN
 
 
-def task_filters() -> Filters:
-    """Les filtres de la liste, avec leurs choix à jour (projets et chemins)."""
-    projects = Project.objects.filter(todos__isnull=False).distinct().order_by("name")
-    paths = sorted(path_labels().items(), key=lambda item: item[1].casefold())
+def counts_for(state: str) -> tuple[dict[int, int], dict[int, int]]:
+    """Par niveau et par projet, les tâches de l'état affiché : ce que le filtre
+    montrerait. Le compteur d'un niveau ne compte que ses propres tâches (le
+    composant y ajoute les descendants)."""
+    if state == DISMISSED:
+        tasks = Todo.all_objects.filter(note_state=Todo.NoteState.DISMISSED)
+    else:
+        tasks = Todo.objects.all()
+        if state in (OPEN, DONE):
+            tasks = tasks.filter(done=state == DONE)
+    rows = tasks.values_list("project_id", "section_id")
+    projects = Counter(project for project, _ in rows)
+    sections = Counter(section for _, section in rows if section is not None)
+    return dict(sections), dict(projects)
+
+
+def task_filters(state: str = OPEN) -> Filters:
+    """Les filtres de la liste, avec leurs choix à jour. L'arbre des projets et des
+    chemins ne propose que ce que l'état affiché contient."""
+
+    def tree(projects, paths):
+        sections, per_project = counts_for(state)
+        return path_tree(
+            sections,
+            paths,
+            only_counted=True,
+            project_counts=per_project,
+            selected_projects=projects,
+            project_key=lambda project: project.name,
+        )
+
     return Filters(
         {
             "title": [
                 ChoiceFilter("state", "État", STATES, keep_all, default=OPEN),
                 TextFilter("title", "Titre", filter_title),
-                MultiChoiceFilter(
-                    "project",
-                    "Projet",
-                    [Choice(p.name, p.name, p) for p in projects],
-                    filter_projects,
-                    noun="projets",
-                    singular="projet",
-                ),
-                ChoiceFilter(
-                    "path",
-                    "Chemin",
-                    [(str(pk), label) for pk, label in paths],
-                    filter_path,
-                ),
+                PathTreeFilter("path", "Projets et chemins", tree, filter_tree),
             ]
         }
     )
