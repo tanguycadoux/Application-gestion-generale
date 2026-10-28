@@ -12,7 +12,6 @@ urlpatterns = [
     path("notes/", views.index, name="index"),
     path("notes/list/", views.NoteList.as_view(), name="notes_list"),
     path("notes/search/", views.notes_search, name="notes_search"),
-    path("notes/search/paths/", views.get_subjects, name="get_subjects"),
     path(
         "notes/search/saved/",
         saved_search_views.create_saved_search,

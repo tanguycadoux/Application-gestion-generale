@@ -1,8 +1,6 @@
 from django import forms
-from django.urls import reverse_lazy
 
 from core.models import Project, Section
-from core.sections import path_labels, with_ancestors
 
 from .exceptions import NoteParseError
 from .models import Note
@@ -10,6 +8,12 @@ from .qmd.files import split_front_matter
 
 
 class NoteSearchForm(forms.Form):
+    """Les champs de la page de recherche, lus dans l'adresse (#199).
+
+    `subjects` vient des cases de l'arbre des chemins (#302) : le formulaire ne les
+    affiche pas, il valide les niveaux choisis.
+    """
+
     q = forms.CharField(
         required=False,
         label="Texte",
@@ -17,40 +21,15 @@ class NoteSearchForm(forms.Form):
     )
     projects = forms.ModelMultipleChoiceField(
         queryset=Project.objects.all().order_by("name"),
-        widget=forms.CheckboxSelectMultiple(
-            attrs={
-                "data-hx-get": reverse_lazy("note_taking:get_subjects"),
-                "data-hx-target": "#subjects-block",
-                "data-hx-trigger": "change",
-                "data-hx-include": "closest form",
-            }
-        ),
-        required=False,
-        label="Projet(s)",
-    )
-    subjects = forms.MultipleChoiceField(
-        choices=[],
         widget=forms.CheckboxSelectMultiple(),
         required=False,
-        label="Chemin(s)",
+        label="Projets",
     )
-
-    def __init__(self, *args, projects=None, **kwargs):
-        """`projects` : identifiants de projets limitant les sujets proposés."""
-        super().__init__(*args, **kwargs)
-
-        # Seuls les chemins utilisés par des note parts sont proposés, avec leurs
-        # parents : choisir un niveau cherche aussi ses descendants (#296).
-        used = Section.objects.filter(note_parts__isnull=False)
-        if projects:
-            used = used.filter(project_id__in=projects)
-        labels = path_labels()
-        pks = with_ancestors(used.values_list("pk", flat=True))
-
-        self.fields["subjects"].choices = sorted(
-            ((str(pk), labels[pk]) for pk in pks),
-            key=lambda choice: choice[1].casefold(),
-        )
+    subjects = forms.ModelMultipleChoiceField(
+        queryset=Section.objects.all(),
+        required=False,
+        label="Chemins",
+    )
 
 
 class NewNoteForm(forms.ModelForm):
