@@ -32,6 +32,7 @@ from .rendering import render_note_body
 from .search import (
     document_html,
     group_by_note,
+    project_counts,
     result_options,
     search_note_parts,
     section_counts,
@@ -222,13 +223,15 @@ def notes_search(request):
     results = None
     query = SearchQuery()
     sections: list[int] = []
+    projects: list[int] = []
 
     if form.is_bound and form.is_valid():
         query = parse_query(form.cleaned_data["q"])
         sections = [section.pk for section in form.cleaned_data["subjects"]]
+        projects = [project.pk for project in form.cleaned_data["projects"]]
         results = search_note_parts(
             query,
-            [project.pk for project in form.cleaned_data["projects"]],
+            projects,
             sections,
             expand=not request.GET.get("exact"),
         )
@@ -249,7 +252,13 @@ def notes_search(request):
         return HttpResponse(
             render_to_string("note_taking/notes_search_result.html", context, request)
         )
-    context["path_nodes"] = path_tree(section_counts(), sections, only_counted=True)
+    context["path_nodes"] = path_tree(
+        section_counts(),
+        sections,
+        only_counted=True,
+        project_counts=project_counts(),
+        selected_projects=projects,
+    )
     return render(request, "note_taking/notes_search.html", context)
 
 

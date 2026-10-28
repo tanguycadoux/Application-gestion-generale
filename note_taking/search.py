@@ -333,6 +333,13 @@ def document_html(parts: list[NotePart], group: str) -> SafeString:
     return mark_safe(render_note_part(assemble(pieces, group)))
 
 
+def project_counts() -> dict[int, int]:
+    """Par projet, le nombre de note parts qui l'utilisent, pour les cases de projets
+    de l'arbre des chemins (#360)."""
+    rows = NotePart.objects.values("project").annotate(total=Count("pk"))
+    return {row["project"]: row["total"] for row in rows}
+
+
 def section_counts() -> dict[int, int]:
     """Par clé de niveau, le nombre de note parts qui l'utilisent elles-mêmes, pour
     l'arbre des chemins (`core.path_tree`, qui ajoute les descendants) (#302)."""

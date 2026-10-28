@@ -37,13 +37,13 @@ class HeaderTests(TestCase):
         body = html[html.index("<body") :]
         self.assertLess(body.index('href="#contenu"'), body.index("<header"))
 
-    def test_accueil_a_gauche_dans_l_en_tete(self):
+    def test_nom_de_l_application_a_gauche_lien_vers_l_accueil(self):
         html = self.page("note_taking:index")
 
         header = re.search(r"<header .*?</header>", html, re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-        self.assertIn('title="Accueil"', link)
-        self.assertIn("Accueil", header)
+        link = re.search(r'<a [^>]*href="/"[^>]*>.*?</a>', header, re.S).group()
+        self.assertIn("Gestion générale", link)
+        self.assertNotIn("<svg", link)
         self.assertLess(header.index('href="/"'), header.index("<search"))
 
     def test_accueil_n_est_plus_dans_le_menu(self):
@@ -52,18 +52,17 @@ class HeaderTests(TestCase):
         self.assertNotIn("Accueil", nav)
         self.assertNotIn('href="/"', nav)
 
-    def test_accueil_marque_sur_la_page_d_accueil(self):
-        header = re.search(r"<header .*?</header>", self.page(), re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-
-        self.assertIn('aria-current="page"', link)
-
-    def test_accueil_non_marque_ailleurs(self):
-        html = self.page("note_taking:index")
-
-        header = re.search(r"<header .*?</header>", html, re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-        self.assertNotIn("aria-current", link)
+    def test_nom_se_comporte_comme_un_logo_sans_fond_ni_etat_actif(self):
+        """Identique sur l'accueil et ailleurs : pas de fond, pas de `aria-current`."""
+        links = set()
+        for name in ("core:index", "note_taking:index"):
+            header = re.search(r"<header .*?</header>", self.page(name), re.S).group()
+            link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
+            self.assertNotIn("aria-current", link)
+            self.assertNotRegex(link, r"bg-")
+            self.assertNotIn("hover:", link)
+            links.add(link)
+        self.assertEqual(len(links), 1)
 
     def test_recherche_au_centre_emplacement_a_droite(self):
         header = re.search(r"<header .*?</header>", self.page(), re.S).group()
