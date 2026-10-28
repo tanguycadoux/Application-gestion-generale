@@ -18,7 +18,7 @@ import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.urls import reverse
 from django.utils.safestring import SafeString, mark_safe
 
@@ -108,10 +108,14 @@ def search_note_parts(
         "note", "section", "project"
     ).prefetch_related("tags")
 
+    # Les projets et les niveaux cochés sont réunis par « ou », comme dans l'arbre
+    # des tâches : un projet et le chemin d'un autre projet donnent les deux.
+    chosen = Q()
     if project_ids:
-        parts = parts.filter(project__in=project_ids)
+        chosen |= Q(project__in=project_ids)
     if section_ids:
-        parts = parts.filter(section_id__in=with_descendants(set(section_ids)))
+        chosen |= Q(section_id__in=with_descendants(set(section_ids)))
+    parts = parts.filter(chosen)
     parts = filter_projects(parts, query)
     parts = filter_tags(parts, query)
     parts = filter_paths(parts, query)

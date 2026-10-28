@@ -142,11 +142,18 @@ class SearchServiceTests(TestCase):
         )
 
     def test_filtres_de_la_page_s_ajoutent_a_la_requete(self):
+        # Projets et niveaux cochés sont unis par « ou » ; le texte s'y ajoute.
         self.assertEqual(
-            self.search(
-                "thermique", projects=[self.alpha.pk], sections=[self.prepa.pk]
+            set(
+                self.search(
+                    "résistance", projects=[self.beta.pk], sections=[self.prepa.pk]
+                )
             ),
-            [self.p2],
+            {self.p2, self.p3},
+        )
+        self.assertEqual(
+            self.search("thermique", projects=[self.beta.pk]),
+            [],
         )
 
     def test_filtres_de_la_page_sans_texte(self):
