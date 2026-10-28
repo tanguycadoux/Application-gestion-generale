@@ -1,9 +1,9 @@
 {% load ui %}
 <li>
     {% if node.has_children %}
-        <details{% if node.open %} open{% endif %} class="group">
+        <details{% if node.open %} open{% endif %}>
             <summary class="flex cursor-pointer items-center gap-1 py-0.5 select-none">
-                {% icon "chevron_right" class="size-4 shrink-0 text-slate-500 group-open:rotate-90" %}
+                {% icon "chevron_right" class="size-4 shrink-0 text-slate-500 [details[open]>summary>&]:rotate-90" %}
                 {% include "core/components/path_tree_label.html" %}
             </summary>
             <ul class="ml-2 border-l border-slate-200 pl-3">

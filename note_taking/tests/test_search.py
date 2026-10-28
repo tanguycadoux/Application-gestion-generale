@@ -332,11 +332,23 @@ class PathTreeTests(SearchTestCase):
             with self.subTest(title=title):
                 self.assertNotRegex(html, rf"<summary[^>]*>\s*{title}\s*</summary>")
 
-    def test_projets_en_cases_dans_un_fieldset(self):
-        response = self.client.get(self.url)
+    def test_projets_en_cases_dans_l_arbre_un_seul_groupe(self):
+        html = self.client.get(self.url).content.decode()
 
-        self.assertContains(response, "<legend")
-        self.assertContains(response, f'name="projects" value="{self.alpha.pk}"')
+        self.assertEqual(html.count("<legend"), 1)
+        self.assertIn(
+            f'<input type="checkbox" id="path-project-{self.alpha.pk}"'
+            f' name="projects" value="{self.alpha.pk}"',
+            html,
+        )
+        self.assertNotIn("<legend class=\"mb-1 font-medium\">Projets</legend>", html)
+
+    def test_projet_choisi_est_coche(self):
+        html = self.client.get(self.url, {"projects": [self.alpha.pk]}).content.decode()
+
+        self.assertRegex(
+            html, rf'name="projects" value="{self.alpha.pk}"[^>]*\schecked'
+        )
 
     def test_adresse_des_chemins_par_projet_supprimee(self):
         with self.assertRaises(NoReverseMatch):

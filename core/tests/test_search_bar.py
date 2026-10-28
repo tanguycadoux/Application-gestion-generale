@@ -83,10 +83,14 @@ class SearchBarTests(TestCase):
         self.assertNotIn("data-search-input", header)
         self.assertNotIn("data-search-shortcut", html)
 
-    def test_la_page_de_recherche_n_est_plus_dans_le_menu(self):
-        urls = [item.url_name for section in nav_sections() for item in section.items]
+    def test_la_page_de_recherche_est_dans_le_menu(self):
+        """Pour aller vite filtrer par chemins : la barre de l'en-tête ne suffit pas (#360)."""
+        notes = next(s for s in nav_sections() if s.label == "Notes")
 
-        self.assertNotIn("note_taking:notes_search", urls)
+        self.assertIn(
+            ("note_taking:notes_search", "Recherche de notes"),
+            [(item.url_name, item.label) for item in notes.items],
+        )
 
     def test_script_du_raccourci_charge(self):
         self.assertIn(

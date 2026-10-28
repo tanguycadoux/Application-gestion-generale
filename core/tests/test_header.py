@@ -37,13 +37,13 @@ class HeaderTests(TestCase):
         body = html[html.index("<body") :]
         self.assertLess(body.index('href="#contenu"'), body.index("<header"))
 
-    def test_accueil_a_gauche_dans_l_en_tete(self):
+    def test_nom_de_l_application_a_gauche_lien_vers_l_accueil(self):
         html = self.page("note_taking:index")
 
         header = re.search(r"<header .*?</header>", html, re.S).group()
-        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
-        self.assertIn('title="Accueil"', link)
-        self.assertIn("Accueil", header)
+        link = re.search(r'<a [^>]*href="/"[^>]*>.*?</a>', header, re.S).group()
+        self.assertIn("Gestion générale", link)
+        self.assertNotIn("<svg", link)
         self.assertLess(header.index('href="/"'), header.index("<search"))
 
     def test_accueil_n_est_plus_dans_le_menu(self):

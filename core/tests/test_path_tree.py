@@ -55,6 +55,27 @@ class PathTreeTests(TestCase):
 
         self.assertNotIn("Gamma", names)
 
+    def test_projet_sans_niveau_propose_avec_les_compteurs_de_projets(self):
+        nodes = path_tree({}, project_counts={self.s["alpha"].pk: 4})
+
+        by_name = {n.name: n for n in nodes if n.depth == 0}
+        self.assertIn("Gamma", by_name)
+        self.assertEqual(by_name["Alpha"].count, 4)
+        self.assertEqual(by_name["Gamma"].count, 0)
+
+    def test_projets_non_utilises_ecartes_si_only_counted(self):
+        nodes = path_tree(
+            {},
+            only_counted=True,
+            project_counts={self.s["beta"].pk: 1},
+            selected_projects=[self.s["alpha"].pk],
+        )
+
+        tops = {n.name: n for n in nodes if n.depth == 0}
+        self.assertEqual(sorted(tops), ["Alpha", "beta"])
+        self.assertTrue(tops["Alpha"].selected)
+        self.assertFalse(tops["beta"].selected)
+
     def test_un_projet_n_est_pas_selectionnable(self):
         nodes = path_tree({})
 
@@ -265,3 +286,35 @@ class PathTreeIndependenceTests(SimpleTestCase):
 
         for app in ("note_taking", "todolist", "images"):
             self.assertNotIn(app, text)
+
+
+class PathTreeProjectCheckboxTests(TestCase):
+    """Les projets en cases et les chevrons imbriqués (#360)."""
+
+    def setUp(self):
+        self.s = make_sections()
+        self.request = RequestFactory().get("/recherche/")
+
+    def render(self, nodes, **options) -> str:
+        args = " ".join(f'{key}="{value}"' for key, value in options.items())
+        template = Template("{% load ui %}{% path_tree nodes mode='checkbox' " + args + " %}")
+        return template.render(RequestContext(self.request, {"nodes": nodes}))
+
+    def test_projet_en_case_avec_project_param(self):
+        html = self.render(path_tree({}), param="subjects", project_param="projects")
+
+        self.assertIn(
+            f'name="projects" value="{self.s["alpha"].pk}"',
+            html,
+        )
+
+    def test_projet_sans_project_param_reste_un_titre(self):
+        html = self.render(path_tree({}), param="subjects")
+
+        self.assertNotIn('name="projects"', html)
+
+    def test_chevron_regarde_son_propre_details(self):
+        html = self.render(path_tree({}), param="subjects")
+
+        self.assertNotIn("group-open", html)
+        self.assertIn("[details[open]>summary>&]:rotate-90", html)

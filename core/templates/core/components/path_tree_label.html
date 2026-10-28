@@ -7,6 +7,9 @@
     {% else %}
         <a href="{{ node.href }}" title="{{ node.label }}" class="rounded px-1 hover:bg-slate-200">{{ node.name }}</a>
     {% endif %}
+{% elif project_param %}
+    <input type="checkbox" id="{{ node.key }}" name="{{ project_param }}" value="{{ node.project_id }}"{% if node.selected %} checked{% endif %}>
+    <label for="{{ node.key }}" class="font-semibold">{{ node.name }}</label>
 {% else %}
     <span class="font-semibold">{{ node.name }}</span>
 {% endif %}

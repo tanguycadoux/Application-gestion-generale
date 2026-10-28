@@ -20,7 +20,7 @@ from .sections import LABEL_SEPARATOR
 
 @dataclass
 class PathNode:
-    """Un nœud de l'arbre : un projet (`pk` vide, jamais choisi) ou un niveau."""
+    """Un nœud de l'arbre : un projet (`pk` vide) ou un niveau."""
 
     pk: int | None
     project_id: int
@@ -42,6 +42,10 @@ class PathNode:
         return self.pk is not None
 
     @property
+    def is_project(self) -> bool:
+        return self.pk is None
+
+    @property
     def has_children(self) -> bool:
         return bool(self.children)
 
@@ -58,6 +62,8 @@ def path_tree(
     selected: Collection[int] = (),
     project: Project | None = None,
     only_counted: bool = False,
+    project_counts: Mapping[int, int] | None = None,
+    selected_projects: Collection[int] = (),
 ) -> list[PathNode]:
     """Les nœuds à plat, parents d'abord, frères triés par nom sans casse.
 
@@ -67,18 +73,25 @@ def path_tree(
     - `project` : seulement ses niveaux, sans nœud de projet au sommet ; sinon
       chaque projet qui a des niveaux est un nœud de profondeur 0 ;
     - `only_counted` : ne garde que les niveaux utilisés ou choisis, avec leurs
-      parents.
+      parents ;
+    - `project_counts` : par identifiant de projet, ce qui l'utilise (niveaux ou
+      non). Avec lui, un projet sans niveau est aussi un nœud, et son compteur ne
+      se déduit plus des niveaux ;
+    - `selected_projects` : identifiants des projets choisis (cases de projets).
 
-    Une requête.
+    Une requête, deux avec `project_counts`.
     """
     sections = Section.objects.select_related("project")
     if project is not None:
         sections = sections.filter(project=project)
+    chosen_projects = set(selected_projects)
     children: dict[tuple[int, int | None], list[Section]] = defaultdict(list)
     projects: dict[int, Project] = {}
     for section in sections:
         children[(section.project_id, section.parent_id)].append(section)
         projects[section.project_id] = section.project
+    if project_counts is not None and project is None:
+        projects.update(Project.objects.in_bulk())
     chosen = set(selected)
 
     def build(section: Section, labels: list[str], depth: int) -> PathNode | None:
@@ -109,14 +122,27 @@ def path_tree(
                 roots.append(built)
     else:
         for owner in sorted_by_name(projects.values()):
-            top = PathNode(None, owner.pk, owner.name, owner.name, 0)
+            top = PathNode(
+                None,
+                owner.pk,
+                owner.name,
+                owner.name,
+                0,
+                selected=owner.pk in chosen_projects,
+            )
             for section in sorted_by_name(children[(owner.pk, None)]):
                 built = build(section, [owner.name], 1)
                 if built is not None:
                     top.children.append(built)
                     top.count += built.count
                     top.open = top.open or built.selected or built.open
-            if top.children:
+            if project_counts is not None:
+                top.count = project_counts.get(owner.pk, 0)
+            keep = top.children or (
+                project_counts is not None
+                and (not only_counted or top.count or top.selected)
+            )
+            if keep:
                 roots.append(top)
 
     flat: list[PathNode] = []

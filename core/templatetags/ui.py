@@ -414,7 +414,12 @@ PATH_TREE_MODES = ("link", "checkbox")
 
 @register.inclusion_tag("core/components/path_tree.html", takes_context=True)
 def path_tree(
-    context, nodes, mode: str = "link", param: str = "path", label: str = "Chemins"
+    context,
+    nodes,
+    mode: str = "link",
+    param: str = "path",
+    label: str = "Chemins",
+    project_param: str = "",
 ) -> dict:
     """Arbre des chemins (#302) : `{% path_tree nodes mode="checkbox" param="path" %}`.
 
@@ -426,9 +431,11 @@ def path_tree(
       `?param=<clé>`, le reste de la requête gardé et `page` retiré. Le niveau choisi
       est marqué (`aria-current`) et son lien retire le filtre ;
     - `mode="checkbox"` : une case `name=param`, à placer dans un formulaire ;
-    - `label` : nom accessible de l'arbre.
+    - `label` : nom accessible de l'arbre ;
+    - `project_param` : en mode case, fait de chaque projet une case
+      `name=project_param` (valeur : son identifiant), à côté de ses niveaux.
 
-    Un projet n'est jamais un lien ni une case.
+    Sans `project_param`, un projet n'est ni un lien ni une case.
     """
     if mode not in PATH_TREE_MODES:
         raise ValueError(f"Mode d'arbre des chemins inconnu : {mode}")
@@ -450,4 +457,5 @@ def path_tree(
         "mode": mode,
         "param": param,
         "label": label,
+        "project_param": project_param if mode == "checkbox" else "",
     }
