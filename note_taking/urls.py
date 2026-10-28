@@ -3,7 +3,7 @@ from django.urls import path
 
 from core import converters  # noqa: F401  (le convertisseur `date`)
 
-from . import views
+from . import saved_search_views, views
 
 app_name = "note_taking"
 
@@ -13,6 +13,21 @@ urlpatterns = [
     path("notes/list/", views.NoteList.as_view(), name="notes_list"),
     path("notes/search/", views.notes_search, name="notes_search"),
     path("notes/search/paths/", views.get_subjects, name="get_subjects"),
+    path(
+        "notes/search/saved/",
+        saved_search_views.create_saved_search,
+        name="saved_search_create",
+    ),
+    path(
+        "notes/search/saved/<int:pk>/rename/",
+        saved_search_views.rename_saved_search,
+        name="saved_search_rename",
+    ),
+    path(
+        "notes/search/saved/<int:pk>/delete/",
+        saved_search_views.delete_saved_search,
+        name="saved_search_delete",
+    ),
     path("notes/export/", views.export_notes, name="export_notes"),
     path("notes/import/", views.import_files, name="import_files"),
     path("notes/new/", views.new_note, name="new_note"),
