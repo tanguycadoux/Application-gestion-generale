@@ -630,7 +630,7 @@ class NoteBodyPageTests(TestCase):
 
         response = self.client.get(reverse("note_taking:note_detail", args=[note.date]))
 
-        self.assertContains(response, "<h2>P</h2>", html=True)
+        self.assertContains(response, '<h2 id="p">P</h2>', html=True)
         self.assertContains(response, "<td>1</td>", html=True)
 
     def get(self, body: str):

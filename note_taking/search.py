@@ -13,15 +13,19 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 
 from django.db.models import QuerySet
+from django.utils.safestring import SafeString
 
 from core.models import Project, Section, Tag
 from core.sections import split_path, with_descendants
 from core.tables import fold
 
-from .models import NotePart
-from .search_index import match_parts, quote
+from .models import Note, NotePart
+from .qmd.parser import HEADING_SEPARATOR
+from .rendering import heading_anchor
+from .search_index import match_parts, quote, snippets
 from .search_query import SearchQuery, Term
 
 
@@ -134,3 +138,39 @@ def section_ids_at(paths: list[str]) -> set[int]:
     wanted = {tuple(fold(level) for level in split_path(path)) for path in paths}
     wanted.discard(())
     return with_descendants({pk for pk, _, _ in rows if chain(pk) in wanted})
+
+
+@dataclass
+class Hit:
+    """Une note part trouvée : son extrait surligné (s'il y a du texte à chercher)
+    et l'ancre de sa section dans la page de la note."""
+
+    part: NotePart
+    snippet: SafeString | None
+    anchor: str | None
+
+
+@dataclass
+class NoteResults:
+    note: Note
+    hits: list[Hit] = field(default_factory=list)
+
+
+def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults]:
+    """Les résultats par note, dans l'ordre de leur première note part (donc la note de
+    la note part la plus pertinente d'abord), avec extraits et ancres (#201)."""
+    wanted = [term for term in query.terms if not term.negated]
+    extracts = (
+        snippets(fts_expression(wanted, " "), [part.pk for part in parts])
+        if wanted
+        else {}
+    )
+    anchors: dict[str, str | None] = {}
+    groups: dict[int, NoteResults] = {}
+    for part in parts:
+        title = part.heading_path.split(HEADING_SEPARATOR)[-1]
+        if title not in anchors:
+            anchors[title] = heading_anchor(title)
+        group = groups.setdefault(part.note_id, NoteResults(part.note))
+        group.hits.append(Hit(part, extracts.get(part.pk), anchors[title]))
+    return list(groups.values())

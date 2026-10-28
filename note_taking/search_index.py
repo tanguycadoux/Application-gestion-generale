@@ -16,11 +16,16 @@ import re
 from django.db import connection
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils.html import escape
+from django.utils.safestring import SafeString, mark_safe
 
 from .models import NotePart
 from .qmd.parser import METADATA_BLOCK_START
 
 TABLE = "note_part_search"
+SNIPPET_START, SNIPPET_END = "\x02", "\x03"
+SNIPPET_WORDS = 24
+SNIPPET_BATCH = 500
 
 # `(image:12)` et les attributs `{width=50%}` qui le suivent ; la légende reste.
 IMAGE_REFERENCE_REGEX = re.compile(r"\(image:\d+\)(\{[^}]*\})?")
@@ -73,6 +78,28 @@ def search_parts(text: str) -> list[int]:
     """Clés des note parts qui contiennent tous les mots, la plus pertinente d'abord."""
     expression = match_expression(text)
     return [] if expression is None else match_parts(expression)
+
+
+def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
+    """Extrait de chaque note part, les termes trouvés entre `<mark>` (#201).
+
+    Le texte de l'extrait est échappé : seuls les `<mark>` sont du HTML. FTS5 pose
+    des caractères de contrôle autour des termes, remplacés après l'échappement.
+    """
+    found: dict[int, SafeString] = {}
+    with connection.cursor() as cursor:
+        for start in range(0, len(pks), SNIPPET_BATCH):
+            batch = pks[start : start + SNIPPET_BATCH]
+            marks = ", ".join(["%s"] * len(batch))
+            cursor.execute(
+                f"SELECT rowid, snippet({TABLE}, -1, %s, %s, '…', {SNIPPET_WORDS}) "
+                f"FROM {TABLE} WHERE {TABLE} MATCH %s AND rowid IN ({marks})",
+                [SNIPPET_START, SNIPPET_END, expression, *batch],
+            )
+            for rowid, text in cursor.fetchall():
+                html = escape(text).replace(SNIPPET_START, "<mark>")
+                found[rowid] = mark_safe(html.replace(SNIPPET_END, "</mark>"))
+    return found
 
 
 def index_part(part: NotePart) -> None:
