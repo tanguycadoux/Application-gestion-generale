@@ -41,5 +41,5 @@ class SharedSectionTagTests(TestCase):
 
         response = self.client.get(reverse("note_taking:notes_search"))
 
-        choices = [v for _, v in response.context["form"].fields["subjects"].choices]
-        self.assertEqual(choices, ["P › Nouveau sujet"])
+        labels = [n.label for n in response.context["path_nodes"] if n.selectable]
+        self.assertEqual(labels, ["P › Nouveau sujet"])

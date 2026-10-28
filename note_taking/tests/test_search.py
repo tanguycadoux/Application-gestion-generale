@@ -1,7 +1,7 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from core.models import Project, Section
 from note_taking.models import Note, NotePart
@@ -231,8 +231,10 @@ class NotesSearchTests(SearchTestCase):
         self.assertNotContains(response, "<html")
 
 
-class SubjectChoicesTests(SearchTestCase):
-    url = reverse("note_taking:get_subjects")
+class PathTreeTests(SearchTestCase):
+    """L'arbre des chemins remplace la liste de cases à cocher (#302)."""
+
+    url = reverse("note_taking:notes_search")
 
     ALL = [
         "Alpha › Mesures",
@@ -241,26 +243,21 @@ class SubjectChoicesTests(SearchTestCase):
         "Beta › thermique",
     ]
 
-    def choices(self, response) -> list[str]:
-        """Les chemins proposés, avec leur projet."""
-        return [
-            label for _, label in response.context["form"].fields["subjects"].choices
-        ]
+    def nodes(self, response):
+        return response.context["path_nodes"]
+
+    def labels(self, response) -> list[str]:
+        """Les chemins proposés (cases), avec leur projet."""
+        return [node.label for node in self.nodes(response) if node.selectable]
 
     def test_chemins_tous_projets_tries_sans_vide(self):
+        self.assertEqual(self.labels(self.client.get(self.url)), self.ALL)
+
+    def test_un_projet_est_un_titre_pas_une_case(self):
         response = self.client.get(self.url)
 
-        self.assertEqual(self.choices(response), self.ALL)
-
-    def test_chemins_filtres_par_projet(self):
-        response = self.client.get(self.url, {"projects": [self.beta.pk]})
-
-        self.assertEqual(self.choices(response), ["Beta › thermique"])
-
-    def test_formulaire_de_recherche_propose_tous_les_chemins(self):
-        response = self.client.get(reverse("note_taking:notes_search"))
-
-        self.assertEqual(self.choices(response), self.ALL)
+        projects = [n for n in self.nodes(response) if not n.selectable]
+        self.assertEqual([n.name for n in projects], ["Alpha", "Beta"])
 
     def test_parent_propose_meme_sans_note_part(self):
         """Un niveau dont seuls les descendants servent reste proposé : on peut
@@ -276,7 +273,71 @@ class SubjectChoicesTests(SearchTestCase):
             content="a4",
         )
 
-        response = self.client.get(self.url, {"projects": [self.alpha.pk]})
+        labels = self.labels(self.client.get(self.url))
 
-        self.assertIn("Alpha › Rapports", self.choices(response))
-        self.assertIn("Alpha › Rapports › Annuel", self.choices(response))
+        self.assertIn("Alpha › Rapports", labels)
+        self.assertIn("Alpha › Rapports › Annuel", labels)
+
+    def test_niveau_sans_note_part_absent(self):
+        Section.objects.create(project=self.alpha, name="Vide")
+
+        self.assertNotIn("Alpha › Vide", self.labels(self.client.get(self.url)))
+
+    def test_compteurs_descendants_compris(self):
+        counts = {
+            node.label: node.count
+            for node in self.nodes(self.client.get(self.url))
+            if node.selectable
+        }
+
+        self.assertEqual(counts["Alpha › Mesures"], 2)
+        self.assertEqual(counts["Alpha › Mesures › Détail"], 1)
+        self.assertEqual(counts["Alpha › thermique"], 1)
+
+    def test_cases_de_la_page(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(
+            response, f'name="subjects" value="{self.s_detail.pk}"', html=False
+        )
+        self.assertNotContains(response, "checked")
+
+    def test_niveau_choisi_est_coche_et_ses_parents_ouverts(self):
+        response = self.client.get(self.url, {"subjects": [self.s_detail.pk]})
+
+        self.assertContains(response, f'value="{self.s_detail.pk}" checked', html=False)
+        selected = [n for n in self.nodes(response) if n.selected]
+        self.assertEqual([n.label for n in selected], ["Alpha › Mesures › Détail"])
+        self.assertTrue(
+            next(n for n in self.nodes(response) if n.name == "Mesures").open
+        )
+
+    def test_filtre_par_niveau_marche_toujours(self):
+        response = self.client.get(self.url, {"subjects": [self.s_mesures.pk]})
+
+        self.assertEqual(
+            sorted(p.content for p in response.context["results"]), ["a2", "a3"]
+        )
+
+    def test_niveau_inconnu_ne_plante_pas(self):
+        response = self.client.get(self.url, {"subjects": ["999999"]})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["results"])
+
+    def test_plus_de_blocs_details_projets_et_chemins(self):
+        html = self.client.get(self.url).content.decode()
+
+        for title in ("Projets", "Chemins", "Sujets"):
+            with self.subTest(title=title):
+                self.assertNotRegex(html, rf"<summary[^>]*>\s*{title}\s*</summary>")
+
+    def test_projets_en_cases_dans_un_fieldset(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "<legend")
+        self.assertContains(response, f'name="projects" value="{self.alpha.pk}"')
+
+    def test_adresse_des_chemins_par_projet_supprimee(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("note_taking:get_subjects")
