@@ -113,8 +113,41 @@ class SearchServiceTests(TestCase):
             set(self.search('chemin:Réunion projet:"Béta Deux"')), {self.p3}
         )
 
+    def test_chemin_a_tout_niveau(self):
+        """« Préparation » est au niveau 2 d'Alpha : trouvé sans écrire « Réunion »."""
+        self.assertEqual(self.search("chemin:Préparation"), [self.p2])
+
+    def test_chemin_dans_tous_les_projets(self):
+        self.assertEqual(
+            set(self.search('chemin:"réunion" projet:"Béta Deux"')), {self.p3}
+        )
+        self.assertEqual(set(self.search("chemin:Réunion -projet:Alpha")), {self.p3})
+
+    def test_niveaux_ecrits_contigus_a_toute_profondeur(self):
+        a = Section.objects.create(project=self.alpha, name="A")
+        ab = Section.objects.create(project=self.alpha, parent=a, name="B")
+        abc = Section.objects.create(project=self.alpha, parent=ab, name="C")
+        c = Section.objects.create(project=self.beta, name="C")
+        ca = Section.objects.create(project=self.beta, parent=c, name="A")
+        cab = Section.objects.create(project=self.beta, parent=ca, name="B")
+        ac = Section.objects.create(project=self.alpha, parent=a, name="C")
+        acb = Section.objects.create(project=self.alpha, parent=ac, name="B")
+        parts = {
+            name: self.part(self.oct, section.project, f"texte {name}", section)
+            for name, section in {
+                "ab": ab,
+                "abc": abc,
+                "cab": cab,
+                "acb": acb,
+            }.items()
+        }
+
+        found = set(self.search("chemin:A/B"))
+
+        self.assertEqual(found, {parts["ab"], parts["abc"], parts["cab"]})
+
     def test_chemin_inconnu(self):
-        self.assertEqual(self.search("chemin:Préparation"), [])
+        self.assertEqual(self.search("chemin:Inconnu"), [])
 
     def test_exclure_un_chemin(self):
         self.assertEqual(set(self.search("-chemin:Réunion")), {self.p4})

@@ -3,7 +3,7 @@
     projet:Alpha tag:urgent chemin:Réunion/Préparation date:2026-09..2026-10
     "résistance thermique" therm* -brouillon -tag:fini
 
-- `projet:`, `tag:`, `chemin:` (niveaux séparés par « / », descendants compris) ;
+- `projet:`, `tag:`, `chemin:` (niveaux séparés par « / », à toute profondeur, descendants compris) ;
   guillemets pour une valeur à espaces : `projet:"Mon projet"`. Les noms
   d'opérateurs ignorent casse et accents. Un mot suivi de deux-points qui n'est pas
   un opérateur reste du texte (« Re:thinking »).
