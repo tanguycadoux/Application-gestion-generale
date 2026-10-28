@@ -1,3 +1,4 @@
+{% include "note_taking/search_expansion.html" %}
 {% load ui %}
 {% for error in query.errors %}
     <p class="mb-2 text-amber-800" role="alert">{{ error }}</p>
@@ -7,20 +8,32 @@
     {# Pas encore de recherche : l'aide de syntaxe, ouverte. #}
     {% include "note_taking/search_help.html" with open=True %}
 {% elif results %}
-    <p class="mb-4 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }}.</p>
-    {% for part in results %}
-        <article class="mb-4 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
-            <header class="grid grid-cols-[auto_1fr_auto] gap-4 items-center mb-2">
-                {% if part.section %}
-                    <h2 class="text-lg font-medium">{{ part.section }}</h2>
-                {% endif %}
-                {% tag_list part.tags.all %}
-                <p class="text-sm font-medium"><a href="{% url 'note_taking:note_detail' part.note.date %}">Note du {% date_time part.note.date "long" %}</a></p>
-            </header>
+    <p class="mb-4 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }} dans {{ groups|length }} note{{ groups|length|pluralize }}.</p>
+    {% for group in groups %}
+        <article class="mb-6">
+            <h2 class="mb-2 text-lg font-medium"><a href="{% url 'note_taking:note_detail' group.note.date %}">Note du {% date_time group.note.date "long" %}</a></h2>
+            {% for hit in group.hits %}
+                <section class="mb-3 border border-slate-400 pt-1 pb-1 pl-2 pr-2 rounded-xl">
+                    <header class="grid grid-cols-[1fr_auto] gap-4 items-center mb-2">
+                        <h3 class="text-base font-medium">
+                            {% if hit.part.heading_path %}
+                                <a href="{% url 'note_taking:note_detail' group.note.date %}{% if hit.anchor %}#{{ hit.anchor }}{% endif %}">{{ hit.part.heading_path }}</a>
+                            {% else %}
+                                <a href="{% url 'note_taking:note_detail' group.note.date %}">Début de la note</a>
+                            {% endif %}
+                        </h3>
+                        {% tag_list hit.part.tags.all %}
+                    </header>
 
-            <div class="rendered-content">
-                {{ part.rendered_content|safe }}
-            </div>
+                    {% if hit.snippet %}
+                        <p class="text-sm [&_mark]:rounded-sm [&_mark]:bg-amber-200">{{ hit.snippet }}</p>
+                    {% else %}
+                        <div class="rendered-content">
+                            {{ hit.part.rendered_content|safe }}
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
         </article>
     {% endfor %}
     {% include "note_taking/search_help.html" with open=False %}

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('note_taking', '0037_notepart_search_index'),
+        ('note_taking', '0038_notepart_search_vocabulary'),
     ]
 
     operations = [

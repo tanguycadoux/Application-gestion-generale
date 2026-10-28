@@ -16,11 +16,18 @@ import re
 from django.db import connection
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils.html import escape
+from django.utils.safestring import SafeString, mark_safe
+
+from core.tables import fold
 
 from .models import NotePart
 from .qmd.parser import METADATA_BLOCK_START
 
 TABLE = "note_part_search"
+SNIPPET_START, SNIPPET_END = "\x02", "\x03"
+SNIPPET_WORDS = 24
+SNIPPET_BATCH = 500
 
 # `(image:12)` et les attributs `{width=50%}` qui le suivent ; la légende reste.
 IMAGE_REFERENCE_REGEX = re.compile(r"\(image:\d+\)(\{[^}]*\})?")
@@ -75,6 +82,28 @@ def search_parts(text: str) -> list[int]:
     return [] if expression is None else match_parts(expression)
 
 
+def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
+    """Extrait de chaque note part, les termes trouvés entre `<mark>` (#201).
+
+    Le texte de l'extrait est échappé : seuls les `<mark>` sont du HTML. FTS5 pose
+    des caractères de contrôle autour des termes, remplacés après l'échappement.
+    """
+    found: dict[int, SafeString] = {}
+    with connection.cursor() as cursor:
+        for start in range(0, len(pks), SNIPPET_BATCH):
+            batch = pks[start : start + SNIPPET_BATCH]
+            marks = ", ".join(["%s"] * len(batch))
+            cursor.execute(
+                f"SELECT rowid, snippet({TABLE}, -1, %s, %s, '…', {SNIPPET_WORDS}) "
+                f"FROM {TABLE} WHERE {TABLE} MATCH %s AND rowid IN ({marks})",
+                [SNIPPET_START, SNIPPET_END, expression, *batch],
+            )
+            for rowid, text in cursor.fetchall():
+                html = escape(text).replace(SNIPPET_START, "<mark>")
+                found[rowid] = mark_safe(html.replace(SNIPPET_END, "</mark>"))
+    return found
+
+
 def index_part(part: NotePart) -> None:
     unindex_part(part.pk)
     with connection.cursor() as cursor:
@@ -109,3 +138,56 @@ def index_saved_part(sender, instance, raw=False, **kwargs):
 @receiver(post_delete, sender=NotePart)
 def unindex_deleted_part(sender, instance, **kwargs):
     unindex_part(instance.pk)
+
+
+# Mots de l'index (#200) : une vue FTS5 sur la table, une ligne par mot avec le
+# nombre de note parts (`doc`) qui le contiennent.
+VOCABULARY = "note_part_vocab"
+
+
+def edit_distance(a: str, b: str) -> int:
+    """Distance de Damerau-Levenshtein (insertion, suppression, substitution, et
+    échange de deux lettres voisines pour 1 : « thermqiue » est à 1 de « thermique »)."""
+    previous2: list[int] = []
+    previous = list(range(len(b) + 1))
+    for i, char_a in enumerate(a, start=1):
+        current = [i]
+        for j, char_b in enumerate(b, start=1):
+            cost = 0 if char_a == char_b else 1
+            best = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+            if i > 1 and j > 1 and char_a == b[j - 2] and a[i - 2] == char_b:
+                best = min(best, previous2[j - 2] + 1)
+            current.append(best)
+        previous2, previous = previous, current
+    return previous[-1]
+
+
+def term_documents(word: str) -> int:
+    """Nombre de note parts qui contiennent ce mot (déjà sans casse ni accents)."""
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT doc FROM {VOCABULARY} WHERE term = %s", [word])
+        row = cursor.fetchone()
+    return row[0] if row else 0
+
+
+def similar_terms(word: str, max_distance: int) -> list[tuple[str, int]]:
+    """Les mots de l'index à `max_distance` fautes au plus de `word`, sans lui-même.
+
+    Renvoie `(mot, nombre de note parts)`, le plus proche d'abord, puis le plus
+    fréquent. Casse et accents sont ignorés, comme dans l'index.
+    """
+    folded = fold(word)
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"SELECT term, doc FROM {VOCABULARY} WHERE length(term) BETWEEN %s AND %s",
+            [len(folded) - max_distance, len(folded) + max_distance],
+        )
+        candidates = cursor.fetchall()
+    found = []
+    for term, documents in candidates:
+        if term == folded:
+            continue
+        distance = edit_distance(folded, term)
+        if distance <= max_distance:
+            found.append((distance, -documents, term))
+    return [(term, -negative) for _, negative, term in sorted(found)]

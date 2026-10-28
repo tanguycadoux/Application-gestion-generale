@@ -48,8 +48,8 @@ class NotePageTests(TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_titres_du_texte_sous_le_titre_de_la_page(self):
-        self.assertInHTML("<h2>Beta</h2>", self.html)
-        self.assertInHTML("<h3>Suite</h3>", self.html)
+        self.assertInHTML('<h2 id="beta">Beta</h2>', self.html)
+        self.assertInHTML('<h3 id="suite">Suite</h3>', self.html)
         self.assertEqual(self.html.count("<h1"), 1)
 
     def test_tags_du_bloc_de_metadonnees_en_pastille(self):

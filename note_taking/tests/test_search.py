@@ -47,9 +47,10 @@ class NotesSearchTests(SearchTestCase):
 
     def contents(self, response) -> list[str]:
         """Contenus des parts affichées, dans l'ordre de la page."""
-        html = response.content.decode()
-        shown = [c for c in ("a1", "a2", "a3", "b1", "b2") if f"<p>{c}</p>" in html]
-        return sorted(shown, key=lambda c: html.index(f"<p>{c}</p>"))
+        known = ("a1", "a2", "a3", "b1", "b2")
+        return [
+            p.content for p in response.context["results"] or [] if p.content in known
+        ]
 
     def test_page_de_recherche(self):
         response = self.client.get(self.url)
@@ -113,7 +114,9 @@ class NotesSearchTests(SearchTestCase):
 
         response = self.search(q="RESISTANCE")
 
-        self.assertContains(response, "Résistance thermique")
+        self.assertEqual(
+            [p.content for p in response.context["results"]], ["Résistance thermique"]
+        )
 
     def test_texte_libre_et_projet(self):
         """Le texte s'ajoute aux filtres : tous doivent être satisfaits."""
@@ -126,8 +129,9 @@ class NotesSearchTests(SearchTestCase):
         response = self.search(q="a2", projects=[self.beta.pk])
 
         self.assertEqual(self.contents(response), [])
-        self.assertContains(response, "a2 chez Beta")
-        self.assertNotContains(response, "<p>a2</p>")
+        self.assertEqual(
+            [p.content for p in response.context["results"]], ["a2 chez Beta"]
+        )
 
     def test_texte_libre_sans_resultat(self):
         response = self.search(q="introuvable")

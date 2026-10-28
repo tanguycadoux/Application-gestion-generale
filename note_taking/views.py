@@ -28,7 +28,7 @@ from .note_calendar import requested_month_calendar
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
-from .search import search_note_parts
+from .search import group_by_note, search_note_parts
 from .search_query import SearchQuery, parse_query
 from .services import (
     process_note_parts,
@@ -58,7 +58,7 @@ class NoteDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["content"] = render_note_body(self.object.body)
+        context["content"] = render_note_body(self.object.body, heading_ids=True)
         return context
 
 
@@ -220,9 +220,11 @@ def notes_search(request):
             query,
             [project.pk for project in form.cleaned_data["projects"]],
             [int(pk) for pk in form.cleaned_data["subjects"]],
+            expand=not request.GET.get("exact"),
         )
 
-    context = {"form": form, "results": results, "query": query}
+    groups = group_by_note(query, results) if results else []
+    context = {"form": form, "results": results, "groups": groups, "query": query}
     if request.htmx:
         return HttpResponse(
             render_to_string("note_taking/notes_search_result.html", context, request)
