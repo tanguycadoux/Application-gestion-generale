@@ -174,7 +174,7 @@ class KbdTests(SimpleTestCase):
 
         self.assertHTMLEqual(
             html,
-            '<kbd class="rounded border border-slate-300 bg-white px-1 text-xs'
+            '<kbd class="rounded border border-slate-300 bg-white px-1 font-mono text-xs'
             ' text-slate-600">←</kbd>',
         )
 

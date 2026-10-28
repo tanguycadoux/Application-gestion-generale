@@ -17,7 +17,8 @@ from todolist.models import Todo
 
 
 def page_header(html: str) -> str:
-    match = re.search(r"<header.*?</header>", html, re.DOTALL)
+    # Celui de la page, dans <main> : pas l'en-tête général (#355).
+    match = re.search(r"<header.*?</header>", html[html.index("<main") :], re.DOTALL)
     assert match is not None
     return match.group()
 
