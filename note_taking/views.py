@@ -220,6 +220,7 @@ def notes_search(request):
             query,
             [project.pk for project in form.cleaned_data["projects"]],
             [int(pk) for pk in form.cleaned_data["subjects"]],
+            expand=not request.GET.get("exact"),
         )
 
     context = {"form": form, "results": results, "query": query}

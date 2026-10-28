@@ -54,6 +54,8 @@ class SearchQuery:
     date_from: date | None = None
     date_to: date | None = None
     errors: list[str] = field(default_factory=list)
+    # Mots élargis par la recherche (#200) : (écrit, trouvé), rempli par `search_note_parts`.
+    expansions: list[tuple[str, str]] = field(default_factory=list)
 
     def __bool__(self) -> bool:
         return bool(

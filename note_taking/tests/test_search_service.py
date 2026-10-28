@@ -60,7 +60,8 @@ class SearchServiceTests(TestCase):
 
     def test_prefixe(self):
         self.assertEqual(set(self.search("therm*")), {self.p1, self.p2})
-        self.assertEqual(self.search("thermiq"), [])
+        # Sans astérisque, pas de préfixe (et sans élargissement aux fautes, #200).
+        self.assertEqual(search_note_parts(parse_query("thermiq"), expand=False), [])
 
     def test_exclusion(self):
         self.assertEqual(self.search("thermique -brouillon"), [self.p2])
