@@ -408,3 +408,72 @@ class TaskSortTests(TaskListTestCase):
 
         self.assertLess(html.index(">Tôt<"), html.index(">Tard<"))
         self.assertLess(html.index(">Tard<"), html.index(">Sous-tâche de zèbre<"))
+
+
+class PathTreeFilterTests(TaskListTestCase):
+    """Projets et chemins dans un seul arbre à cases (#302)."""
+
+    def setUp(self):
+        super().setUp()
+        self.prep = section_for(self.alpha, ["Réunion", "Préparation"])
+        Todo.objects.filter(pk=self.ete.pk).update(section=self.prep)
+
+    def panel(self, **params) -> str:
+        html = self.get(**params).content.decode()
+        return html[html.index('id="filters-title"') :].split("</form>")[0]
+
+    def test_un_seul_groupe_projets_et_chemins_en_cases(self):
+        panel = self.panel()
+
+        self.assertEqual(panel.count("Projets et chemins</legend>"), 1)
+        self.assertIn(f'name="project" value="{self.alpha.name}"', panel)
+        self.assertIn(f'name="path" value="{self.reunion.pk}"', panel)
+        self.assertNotIn('type="radio" name="path"', panel)
+
+    def test_projets_et_chemins_coches_sont_unis(self):
+        response = self.get(project="BETA", path=self.prep.pk)
+
+        self.assertEqual(
+            self.titles(response),
+            ["Bilan", "Été à préparer", "Zèbre", "Sous-tâche de zèbre"],
+        )
+
+    def test_plusieurs_chemins_coches(self):
+        Todo.objects.filter(pk=self.bilan.pk).update(
+            section=section_for(self.beta, ["Suivi"])
+        )
+        suivi = section_for(self.beta, ["Suivi"])
+
+        response = self.get(path=[self.prep.pk, suivi.pk])
+
+        self.assertEqual(self.titles(response), ["Bilan", "Été à préparer"])
+
+    def test_compteurs_selon_l_etat_affiche(self):
+        en_cours = self.panel()
+        terminees = self.panel(state="done")
+
+        # ALPHA : 1 tâche en cours (la terminée et l'écartée ne comptent pas).
+        self.assertRegex(
+            en_cours, r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*>\(1\)"
+        )
+        self.assertRegex(
+            terminees, r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*>\(1\)"
+        )
+        self.assertNotIn("Réunion", terminees)
+
+    def test_arbre_des_ecartees_compte_les_ecartees(self):
+        panel = self.panel(state="dismissed")
+
+        self.assertIn('name="project" value="ALPHA"', panel)
+        self.assertNotIn('name="project" value="BETA"', panel)
+
+    def test_niveau_vide_dans_l_etat_reste_un_filtre_valide(self):
+        response = self.get(state="done", path=self.reunion.pk)
+
+        self.assertContains(response, "Aucune tâche ne répond aux filtres.")
+
+    def test_puces_retirables_une_par_choix(self):
+        html = self.get(project="BETA", path=self.prep.pk).content.decode()
+
+        self.assertIn("Chemin : ALPHA › Réunion › Préparation", html)
+        self.assertRegex(html, r"Projet :\s*<span class=\"inline-flex[^>]*>.*?BETA")
