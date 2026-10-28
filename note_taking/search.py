@@ -9,7 +9,8 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
   chemin), `tag:` répété est exigé en entier (une note part a plusieurs tags) ;
 - les noms se comparent sans casse ni accents (`core.tables.fold`), en Python : le
   `LOWER` de SQLite ne replie que l'ASCII ;
-- `chemin:` suit les niveaux (« Réunion/Préparation ») et inclut les descendants ;
+- `chemin:` suit les niveaux (« Réunion/Préparation ») à toute profondeur et dans tous
+  les projets, et inclut les descendants (#365) ;
 - les fautes de frappe (#200) : un mot libre sans résultat ou rare est élargi aux mots
   proches de l'index (`expand_query`), les résultats exacts passant avant les élargis.
 """
@@ -207,8 +208,10 @@ def tag_ids_named(names: list[str]) -> list[int]:
 def section_ids_at(paths: list[str]) -> set[int]:
     """Les niveaux dont le chemin (sous leur projet) s'écrit ainsi, et leurs descendants.
 
-    « Réunion/Préparation » désigne le niveau « Préparation » sous « Réunion », dans
-    n'importe quel projet ; `projet:` restreint à l'un d'eux.
+    « Réunion/Préparation » désigne le niveau « Préparation » directement sous
+    « Réunion », à n'importe quelle profondeur et dans n'importe quel projet ;
+    `projet:` restreint à l'un d'eux. Les niveaux écrits se suivent sans trou :
+    « A/B » trouve A/B, A/B/C et C/A/B, pas A/C/B.
     """
     rows = list(Section.objects.values_list("pk", "parent_id", "name"))
     parent = {pk: parent_id for pk, parent_id, _ in rows}
@@ -224,7 +227,15 @@ def section_ids_at(paths: list[str]) -> set[int]:
 
     wanted = {tuple(fold(level) for level in split_path(path)) for path in paths}
     wanted.discard(())
-    return with_descendants({pk for pk, _, _ in rows if chain(pk) in wanted})
+    # Un niveau convient si son chemin finit par les niveaux écrits : à n'importe
+    # quelle profondeur, dans n'importe quel projet ; les descendants s'ajoutent.
+    return with_descendants(
+        {
+            pk
+            for pk, _, _ in rows
+            if any(chain(pk)[-len(path) :] == path for path in wanted)
+        }
+    )
 
 
 # Présentation des résultats (#356) : les extraits (une carte par note part), ou le
