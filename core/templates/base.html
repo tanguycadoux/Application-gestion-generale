@@ -25,6 +25,20 @@
 
     {# Menu commun (#232) : les sections viennent des AppConfig (core.context_processors), replié en icônes par nav.js. #}
     <nav id="main-nav" aria-label="Menu principal" class="group/nav flex flex-col gap-4 overflow-x-hidden overflow-y-auto bg-slate-200 p-4 w-60 data-collapsed:w-18">
+        {# Barre de recherche (#202) : un formulaire GET vers la page déclarée par une app, donc sans JavaScript ; search.js ajoute Ctrl+K. Replié, une icône la remplace. La page de recherche, qui a sa propre barre, masque celle-ci. #}
+        {% block menu_search %}
+            {% if nav_search %}
+                <search class="group-data-collapsed/nav:hidden">
+                    <form action="{{ nav_search.url }}" method="get" class="relative">
+                        <label for="nav-search" class="sr-only">{{ nav_search.label }}</label>
+                        <input type="search" id="nav-search" name="q" placeholder="Rechercher…" aria-keyshortcuts="Control+K Meta+K" class="w-full pr-16" data-search-input>
+                        <kbd class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-300 bg-slate-50 px-1.5 font-sans text-xs text-slate-500" aria-hidden="true" data-search-shortcut>Ctrl K</kbd>
+                    </form>
+                </search>
+                <a href="{{ nav_search.url }}" title="{{ nav_search.label }}" aria-label="{{ nav_search.label }}" data-search-link class="hidden items-center gap-2 rounded-2xl py-2 pr-3 pl-2 hover:bg-white group-data-collapsed/nav:flex">{% icon "search" %}</a>
+            {% endif %}
+        {% endblock menu_search %}
+
         <ul>
             <li>{% nav_link "core:index" "Accueil" "home" %}</li>
         </ul>
@@ -50,6 +64,7 @@
     </nav>
     {# Sans defer : l'état du menu est posé avant le premier affichage, la page ne saute pas. #}
     <script src="{% static 'core/nav.js' %}"></script>
+    <script src="{% static 'core/search.js' %}" defer></script>
 
     <main id="contenu" class="p-4 h-full box-border overflow-auto">
         {% block content %}{% endblock content %}

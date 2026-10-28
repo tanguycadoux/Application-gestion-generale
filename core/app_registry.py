@@ -1,6 +1,8 @@
 """Ce que chaque app déclare à core dans son AppConfig, sans que core la connaisse.
 
 - `nav_section` : sa section du menu commun (#232) ;
+- `search_page` : sa page de recherche (un `NavItem`), vers laquelle mène la barre de
+  recherche du menu commun (#202) ;
 - `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
 - `debug_pages` : ses pages réservées au mode DEBUG, réunies dans la section
   « Debug » du menu (#235) ;
@@ -123,6 +125,14 @@ def nav_sections() -> list[NavSection]:
         if pages:
             sections.append(NavSection("Debug", DEBUG_SECTION_ORDER, pages))
     return sorted(sections, key=lambda section: section.order)
+
+
+def search_page() -> NavItem | None:
+    """La page de recherche déclarée par une app (la première), pour la barre du menu."""
+    for config in apps.get_app_configs():
+        if page := getattr(config, "search_page", None):
+            return page
+    return None
 
 
 def dashboard_blocks() -> list[DashboardBlock]:
