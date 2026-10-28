@@ -86,6 +86,8 @@ SAVE_BUTTON = (
 
 
 def page_header(html: str) -> str:
+    """L'en-tête de la page elle-même, dans `<main>` : pas l'en-tête général (#355)."""
+    html = html[html.index("<main") :]
     return html[html.index("<header") : html.index("</header>")]
 
 

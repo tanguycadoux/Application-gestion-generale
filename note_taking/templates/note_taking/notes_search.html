@@ -1,4 +1,5 @@
 {% extends "note_taking/base.html" %}
+{% load ui %}
 
 {% block title %}{% if form.q.value %}{{ form.q.value }} · {% endif %}Recherche de notes{% endblock title %}
 
@@ -23,17 +24,21 @@
                 <label for="{{ form.q.id_for_label }}" class="block mb-1 font-medium">{{ form.q.label }}</label>
                 {{ form.q }}
             </p>
+            {# La vue et le regroupement choisis (#356) survivent à une nouvelle recherche. #}
+            {% if view == "document" %}
+                <input type="hidden" name="view" value="document">
+                <input type="hidden" name="group" value="{{ group }}">
+            {% endif %}
 
-            <details class="mb-4" open>
-                <summary class="select-none bg-slate-200 p-1 cursor-pointer">Projets</summary>
-                <div class="pl-1 border-l-[2px] border-slate-200">
-                    {{ form.projects }}
-                </div>
-            </details>
+            <fieldset class="mb-4">
+                <legend class="mb-1 font-medium">{{ form.projects.label }}</legend>
+                {{ form.projects }}
+            </fieldset>
 
-            <div id="subjects-block">
-                {% include "note_taking/subjects_block.html" %}
-            </div>
+            <fieldset class="mb-4">
+                <legend class="mb-1 font-medium">{{ form.subjects.label }}</legend>
+                {% path_tree path_nodes mode="checkbox" param="subjects" label="Chemins" %}
+            </fieldset>
 
             <p class="mt-4">
                 <button type="submit" class="rounded-md bg-slate-700 px-3 py-1 text-white">Rechercher</button>

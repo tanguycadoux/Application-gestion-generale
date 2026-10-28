@@ -18,7 +18,7 @@ import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from django.urls import reverse
 from django.utils.safestring import SafeString, mark_safe
 
@@ -331,3 +331,14 @@ def document_html(parts: list[NotePart], group: str) -> SafeString:
             )
         )
     return mark_safe(render_note_part(assemble(pieces, group)))
+
+
+def section_counts() -> dict[int, int]:
+    """Par clé de niveau, le nombre de note parts qui l'utilisent elles-mêmes, pour
+    l'arbre des chemins (`core.path_tree`, qui ajoute les descendants) (#302)."""
+    rows = (
+        NotePart.objects.filter(section__isnull=False)
+        .values("section")
+        .annotate(total=Count("pk"))
+    )
+    return {row["section"]: row["total"] for row in rows}

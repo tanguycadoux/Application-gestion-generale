@@ -2,7 +2,8 @@
 
 from datetime import date
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
 
 from note_taking.search_document import DocPart, assemble, split_titles
 
@@ -163,3 +164,22 @@ class ByPathTests(SimpleTestCase):
     def test_regroupement_inconnu_refuse(self):
         with self.assertRaises(ValueError):
             assemble([part(15, ["Alpha"], "x")], "autre")
+
+
+class SearchFormKeepsViewTests(TestCase):
+    url = reverse("note_taking:notes_search")
+
+    def test_le_formulaire_garde_la_vue_document(self):
+        response = self.client.get(
+            self.url, {"q": "x", "view": "document", "group": "path"}
+        )
+
+        self.assertContains(
+            response, '<input type="hidden" name="view" value="document">'
+        )
+        self.assertContains(response, '<input type="hidden" name="group" value="path">')
+
+    def test_vue_extraits_sans_champ_cache(self):
+        response = self.client.get(self.url, {"q": "x"})
+
+        self.assertNotContains(response, 'name="view"')

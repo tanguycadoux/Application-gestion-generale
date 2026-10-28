@@ -14,6 +14,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
 from core.exceptions import AppError
+from core.path_tree import path_tree
 from core.suggestions import rank_by_name
 from core.templatetags.ui import date_text
 from images.exceptions import ImageError
@@ -28,7 +29,13 @@ from .note_calendar import requested_month_calendar
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
-from .search import document_html, group_by_note, result_options, search_note_parts
+from .search import (
+    document_html,
+    group_by_note,
+    result_options,
+    search_note_parts,
+    section_counts,
+)
 from .search_query import SearchQuery, parse_query
 from .services import (
     process_note_parts,
@@ -208,18 +215,21 @@ def notes_search(request):
     recherche se partage, se garde en favori et survit au bouton retour.
 
     `results` vaut `None` tant qu'il n'y a rien à chercher (la page montre l'aide de
-    syntaxe), et une liste, éventuellement vide, après une recherche.
+    syntaxe), et une liste, éventuellement vide, après une recherche. Les cases de
+    projets et l'arbre des chemins (#302) s'ajoutent à la requête.
     """
     form = NoteSearchForm(request.GET or None)
     results = None
     query = SearchQuery()
+    sections: list[int] = []
 
     if form.is_bound and form.is_valid():
         query = parse_query(form.cleaned_data["q"])
+        sections = [section.pk for section in form.cleaned_data["subjects"]]
         results = search_note_parts(
             query,
             [project.pk for project in form.cleaned_data["projects"]],
-            [int(pk) for pk in form.cleaned_data["subjects"]],
+            sections,
             expand=not request.GET.get("exact"),
         )
 
@@ -239,15 +249,8 @@ def notes_search(request):
         return HttpResponse(
             render_to_string("note_taking/notes_search_result.html", context, request)
         )
+    context["path_nodes"] = path_tree(section_counts(), sections, only_counted=True)
     return render(request, "note_taking/notes_search.html", context)
-
-
-@require_GET
-def get_subjects(request):
-    form = NoteSearchForm(projects=request.GET.getlist("projects"))
-
-    html = render_to_string("note_taking/subjects_block.html", {"form": form})
-    return HttpResponse(html)
 
 
 def note_name(note: Note) -> str:
