@@ -1,5 +1,8 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
+import re
+import unittest
+
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
@@ -206,6 +209,14 @@ class NotesSearchTests(SearchTestCase):
         response = self.search(q='projet:Alpha "a2"')
 
         self.assertContains(response, "projet:Alpha")
+
+    @unittest.expectedFailure
+    def test_la_zone_occupe_toute_sa_colonne(self):
+        """Une requête courante ne doit pas être tronquée (#370)."""
+        html = self.search(q='chemin:"réunion de chantier"').content.decode()
+
+        field = re.search(r'<input type="search" name="q"[^>]*>', html).group()
+        self.assertRegex(field, r'class="(?:[^"]*\s)?w-full[\s"]')
 
     def test_syntaxe_dans_la_zone(self):
         response = self.search(q="projet:beta -b2")
