@@ -280,7 +280,6 @@ class PluralSnippetTests(TestCase):
         self.assertIn("<mark>banc d&#x27;essai</mark>", snippet)
         self.assertIn("<mark>conductivité</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_adresse_recopiee_de_la_note_surlignee(self):
         # Trop de combinaisons d'écritures (`MAX_COMBINATIONS`), et « https » réduit
         # en « http » : le terme tel que tapé est surligné.
@@ -291,7 +290,6 @@ class PluralSnippetTests(TestCase):
 
         self.assertIn(f"<mark>{url}</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_nom_de_fichier_recopie_de_la_note_surligne(self):
         part = self.part("Voir rapport_final_essais_thermiques.pdf en annexe")
 
@@ -299,7 +297,6 @@ class PluralSnippetTests(TestCase):
 
         self.assertIn("<mark>rapport_final_essais_thermiques.pdf</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_exposant_et_indice_surlignes(self):
         # `fold` change « m² » en « m2 », que le texte tel qu'écrit n'a pas.
         surface = self.part("Surface utile 20 m² dans le local")
@@ -308,7 +305,6 @@ class PluralSnippetTests(TestCase):
         self.assertIn("<mark>m²</mark>", self.snippet("surface m²", surface))
         self.assertIn("<mark>CO₂</mark>", self.snippet("émissions CO₂", emissions))
 
-    @unittest.expectedFailure
     def test_un_terme_introuvable_tel_qu_ecrit_ne_retire_pas_l_extrait(self):
         # « annexes » n'est pas écrit, ni la forme réduite « http » : les autres
         # termes restent surlignés.

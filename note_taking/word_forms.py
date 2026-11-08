@@ -24,8 +24,8 @@ from core.tables import fold
 TOKEN_REGEX = re.compile(r"[^\W_]+")
 # Les mots de moins de 5 lettres restent tels quels : « mais » n'est pas « mai ».
 MIN_LENGTH = 5
-# Au-delà, un mot de plusieurs morceaux (« porte-fenêtres ») n'est surligné que sous
-# sa forme réduite : le nombre de combinaisons croît vite.
+# Au-delà, un mot de plusieurs morceaux (« porte-fenêtres ») n'est surligné que tel
+# que tapé ou sous sa forme réduite : le nombre de combinaisons croît vite.
 MAX_COMBINATIONS = 64
 
 
@@ -61,7 +61,8 @@ def written_forms(reduced: str) -> list[str]:
     espace : « calcul » donne « calcul », « calculs » et « calculx ».
 
     Elles servent au surlignage, qui cherche le mot tel qu'il est écrit dans la note.
-    Un texte de plusieurs mots donne chaque combinaison, jusqu'à `MAX_COMBINATIONS`.
+    Un texte de plusieurs mots donne chaque combinaison, jusqu'à `MAX_COMBINATIONS` ;
+    au-delà, le texte réduit seul (les extraits cherchent aussi le mot tel que tapé).
     """
     tokens = TOKEN_REGEX.findall(reduced)
     choices = [word_forms(token) or [token] for token in tokens]

@@ -166,8 +166,11 @@ def fts_expression(
     Une phrase et un préfixe sont cherchés dans le texte tel qu'écrit (`WRITTEN`), un
     mot à sa forme réduite dans `WORDS` (#372) ; un mot élargi (#200) devient
     `words : ("écrit" OR "proche" …)`. `written` cherche aussi les mots dans le texte
-    tel qu'écrit, sous chacune de leurs écritures (`written_forms`) : c'est la requête
-    des extraits, qui surlignent le mot tel qu'il est écrit dans la note.
+    tel qu'écrit, tels que tapés et sous chacune des écritures de leur forme réduite
+    (`written_forms`) : c'est la requête des extraits, qui surlignent le mot tel qu'il
+    est écrit dans la note. Le mot tapé y est toujours : FTS5 le replie comme le
+    texte, et il reste surligné quand ses écritures ne sont pas dans la note (« m² »,
+    que `fold` change en « m2 », ou une adresse aux combinaisons trop nombreuses).
     """
     alternatives = expansion.alternatives if expansion else {}
     pieces = []
@@ -182,8 +185,9 @@ def fts_expression(
         reduced = [reduce_text(term.text), *alternatives.get(term.text, [])]
         if written:
             column = WRITTEN
-            words = [form for word in reduced for form in written_forms(word)] or [
-                term.text
+            words = [
+                term.text,
+                *(form for word in reduced for form in written_forms(word)),
             ]
         else:
             column, words = WORDS, reduced
@@ -326,8 +330,10 @@ def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults
     alternatives: dict[str, list[str]] = {}
     for written, found in query.expansions:
         alternatives.setdefault(written, []).append(found)
-    # Les extraits cherchent les mots tels qu'écrits dans la note (#372).
-    expression = fts_expression(wanted, " AND ", Expansion(alternatives), written=True)
+    # Les extraits cherchent les mots tels qu'écrits dans la note (#372). Les note
+    # parts ont déjà tous les termes : `OR` garde l'extrait quand l'un d'eux n'est pas
+    # trouvé tel qu'écrit (une forme réduite que la note n'écrit pas).
+    expression = fts_expression(wanted, " OR ", Expansion(alternatives), written=True)
     extracts = snippets(expression, [part.pk for part in parts]) if wanted else {}
     anchors: dict[str, str | None] = {}
     groups: dict[int, NoteResults] = {}
