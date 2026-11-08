@@ -1,7 +1,6 @@
 """Recherches enregistrées (#203) : une requête gardée sous un nom."""
 
 import re
-import unittest
 
 from django.contrib.messages import get_messages
 from django.db import IntegrityError, transaction
@@ -260,7 +259,6 @@ class SavedSearchPageTests(TestCase):
         rename = reverse("note_taking:saved_search_rename", args=[saved.pk])
         self.assertContains(response, f'action="{rename}?q=banc"')
 
-    @unittest.expectedFailure
     def test_champs_du_nom_sur_toute_la_largeur(self):
         """Le nom, prérempli avec la requête, n'est pas tronqué (#370) : le champ
         prend la place laissée par le bouton, à l'enregistrement comme au renommage."""

@@ -1,7 +1,6 @@
 """En-tête général : accueil à gauche, recherche au centre (#355)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -99,14 +98,12 @@ class HeaderHeightTests(TestCase):
         assert match is not None
         return match.group()
 
-    @unittest.expectedFailure
     def test_hauteur_fixe_identique_sur_toutes_les_pages(self):
         tags = {self.header_tag(name) for name in (*PAGES, "note_taking:notes_search")}
 
         self.assertEqual(len(tags), 1)
         self.assertRegex(tags.pop(), r'class="(?:[^"]*\s)?h-\d+[\s"]')
 
-    @unittest.expectedFailure
     def test_le_nom_de_l_application_tient_sur_une_ligne(self):
         """Passé à la ligne (écran étroit), il dépasserait de la hauteur fixe."""
         html = self.client.get(reverse("core:index")).content.decode()

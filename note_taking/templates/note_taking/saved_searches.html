@@ -16,7 +16,7 @@
                         <form method="post" action="{{ item.rename_action }}" class="mt-1 flex items-center gap-2">
                             {% csrf_token %}
                             <label for="rename-saved-search-{{ item.search.pk }}" class="sr-only">Nouveau nom de la recherche {{ item.search.name }}</label>
-                            <input type="text" id="rename-saved-search-{{ item.search.pk }}" name="name" value="{{ item.search.name }}" maxlength="{{ name_max_length }}" required>
+                            <input type="text" id="rename-saved-search-{{ item.search.pk }}" name="name" value="{{ item.search.name }}" maxlength="{{ name_max_length }}" required class="min-w-0 flex-1">
                             {% button "Renommer" icon="edit" icon_only=True variant="ghost" %}
                         </form>
                     </details>
@@ -32,8 +32,9 @@
             {% csrf_token %}
             <input type="hidden" name="q" value="{{ q }}">
             <label for="saved-search-name" class="mb-1 block text-sm font-medium">Enregistrer cette recherche sous le nom</label>
+            {# Le champ prend toute la place laissée par le bouton : le nom prérempli n'est pas tronqué (#370). #}
             <div class="flex items-center gap-2">
-                <input type="text" id="saved-search-name" name="name" value="{{ default_name }}" maxlength="{{ name_max_length }}" required>
+                <input type="text" id="saved-search-name" name="name" value="{{ default_name }}" maxlength="{{ name_max_length }}" required class="min-w-0 flex-1">
                 {% button "Enregistrer" icon="save" icon_only=True %}
             </div>
         </form>
