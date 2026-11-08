@@ -1,25 +1,39 @@
 """Assemblage des résultats en un document Markdown (#356) : sans accès à la base."""
 
-import unittest
 from datetime import date
 
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from note_taking.search_document import DocPart, assemble, split_titles
+from note_taking.search_document import DocPart, Level, assemble, split_titles
 
 
-def part(day, titles, content, project="Alpha"):
+def level_part(day, levels, content):
+    """Une note part aux niveaux donnés, (identité, nom en base), du projet au plus
+    profond (#369)."""
     iso = date(2026, 10, day).isoformat()
     return DocPart(
         date=date(2026, 10, day),
         date_label=f"{day} octobre 2026",
         note_url=f"/notes/{iso}/",
         part_url=f"/notes/{iso}/#ancre",
-        titles=tuple(titles),
+        levels=tuple(Level(key, name) for key, name in levels),
         content=content,
-        project=project,
     )
+
+
+# Les identités des niveaux de `part` : une par suite de noms, du projet au niveau.
+KEYS: dict[tuple[str, ...], int] = {}
+
+
+def part(day, titles, content):
+    """Une note part aux niveaux nommés : deux mêmes suites de noms sont le même
+    niveau, deux suites différentes deux niveaux distincts."""
+    levels = [
+        (KEYS.setdefault(tuple(titles[: depth + 1]), len(KEYS) + 1), title)
+        for depth, title in enumerate(titles)
+    ]
+    return level_part(day, levels, content)
 
 
 class SplitTitlesTests(SimpleTestCase):
@@ -135,7 +149,7 @@ class ByPathTests(SimpleTestCase):
     def test_chemins_tries_sans_casse(self):
         text = assemble(
             [
-                part(15, ["beta"], "b", project="beta"),
+                part(15, ["beta"], "b"),
                 part(15, ["Alpha", "z"], "a1"),
                 part(15, ["Alpha", "Éa"], "a2"),
             ],
@@ -157,30 +171,9 @@ class ByPathTests(SimpleTestCase):
         self.assertEqual(text.count("### A"), 1)
         self.assertLess(text.index("direct"), text.index("#### B"))
 
-    def test_sans_titres_le_projet_sert_de_chemin(self):
-        text = assemble([part(15, [], "texte", project="Gamma")], "path")
-
-        self.assertTrue(text.startswith("## Gamma\n\n"))
-
     def test_regroupement_inconnu_refuse(self):
         with self.assertRaises(ValueError):
             assemble([part(15, ["Alpha"], "x")], "autre")
-
-
-def level_part(day, levels, content):
-    """Une note part aux niveaux donnés, (identité, nom en base), du projet au plus
-    profond (#369)."""
-    from note_taking.search_document import Level
-
-    iso = date(2026, 10, day).isoformat()
-    return DocPart(
-        date=date(2026, 10, day),
-        date_label=f"{day} octobre 2026",
-        note_url=f"/notes/{iso}/",
-        part_url=f"/notes/{iso}/#ancre",
-        levels=tuple(Level(key, name) for key, name in levels),
-        content=content,
-    )
 
 
 NORD = (1, "Chantier Nord")
@@ -194,7 +187,6 @@ PREPARATION_SANS_ACCENT = (21, "Preparation")
 class ByLevelTests(SimpleTestCase):
     """Un groupe par niveau (#369) : son identité, pas l'écriture de son nom."""
 
-    @unittest.expectedFailure
     def test_projets_de_meme_nom_sans_casse_jamais_entrelaces(self):
         text = assemble(
             [
@@ -210,7 +202,6 @@ class ByLevelTests(SimpleTestCase):
         self.assertLess(text.index("nord10"), text.index("## Chantier nord"))
         self.assertLess(text.index("nord15"), text.index("nord10"))
 
-    @unittest.expectedFailure
     def test_niveaux_de_meme_nom_sans_accents_jamais_entrelaces(self):
         text = assemble(
             [
@@ -235,7 +226,6 @@ class ByLevelTests(SimpleTestCase):
             "**[12 octobre 2026](/notes/2026-10-12/#ancre)**\n\nsans12\n",
         )
 
-    @unittest.expectedFailure
     def test_par_date_un_meme_niveau_qui_suit_n_est_pas_rouvert(self):
         text = assemble(
             [

@@ -2,7 +2,6 @@
 date ou par chemin, sélecteur de vue."""
 
 import re
-import unittest
 from datetime import date
 
 from django.test import TestCase
@@ -223,6 +222,15 @@ class DocumentByPathTests(PresentationTestCase):
 
         self.assertLess(html.index("banc de test"), html.index("un banc ancien"))
 
+    def test_note_part_du_projet_seul_sous_le_projet(self):
+        self.part(self.new, "banc seul", "Alpha")
+
+        html = self.get(view="document", group="path").content.decode()
+
+        self.assertEqual(html.count("<h2>Alpha</h2>"), 1)
+        self.assertLess(html.index("<h2>Alpha</h2>"), html.index("banc seul"))
+        self.assertLess(html.index("banc seul"), html.index("<h3>Réunion</h3>"))
+
     def test_regroupement_inconnu_retombe_sur_la_date(self):
         html = self.get(view="document", group="autre").content.decode()
 
@@ -316,7 +324,6 @@ class DocumentByLevelTests(TestCase):
         )
         return outline(response.content.decode())
 
-    @unittest.expectedFailure
     def test_par_chemin_un_groupe_par_niveau_sans_projet_rouvert(self):
         self.assertEqual(
             self.document("path"),
@@ -350,7 +357,6 @@ class DocumentByLevelTests(TestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_par_date_un_meme_niveau_n_est_pas_rouvert(self):
         self.assertEqual(
             self.document("date"),
