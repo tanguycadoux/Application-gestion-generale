@@ -9,7 +9,9 @@
         <header class="mb-4 flex items-start">
             <h1 class="flex-1">Nouvelle note</h1>
 
-            {% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" %}
+            {# « Enregistrer » reste dans l'éditeur (en arrière-plan avec note_form.js) ; « Terminer » mène à la note, ou au bilan des tâches (#389). #}
+            {% button "Enregistrer la note" icon="save" variant="ghost" icon_only=True form="note-form" name="stay" value="1" %}
+            {% button "Terminer l'édition" icon="check_circle" variant="ghost" icon_only=True form="note-form" %}
         </header>
 
         {% include "note_taking/note/form.html" with form_action=request.path %}

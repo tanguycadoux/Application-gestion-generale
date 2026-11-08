@@ -267,12 +267,13 @@ def note_name(note: Note) -> str:
     return f"La note du {date_text(note.date, 'moyen')}"
 
 
-def save_note_parts(request, note: Note, done: str) -> str:
+def save_note_parts(request, note: Note, done: str, *, stay: bool = False) -> str:
     """Recalcule les note parts d'une note enregistrée, et le dit (#192).
 
     Si l'analyse échoue, seul le message d'erreur s'affiche. Renvoie la page où
     aller ensuite : celle de la note, ou la suite proposée par une autre app,
-    comme le bilan des tâches créées (#239).
+    comme le bilan des tâches créées (#239). Avec `stay` (#389), l'éditeur de la
+    note : la suite proposée n'y mène pas, un avertissement la signale.
     """
     try:
         process_note_parts(note)
@@ -285,7 +286,36 @@ def save_note_parts(request, note: Note, done: str) -> str:
         messages.success(request, f"{note_name(note)} est {done}.")
         if note.warnings:
             messages.warning(request, warnings_message(note.warnings))
+    if stay:
+        for follow_up in note.follow_ups:
+            messages.warning(
+                request,
+                f"{follow_up.label} : le bilan s'ouvrira à la fin de l'édition.",
+            )
+        return reverse("note_taking:edit_note", args=[note.date])
     return next_page(note)
+
+
+def stays_in_editor(request) -> bool:
+    """Enregistrement par « Enregistrer la note » (ou Ctrl+S), qui reste dans
+    l'éditeur, plutôt que par « Terminer l'édition » (#389)."""
+    return request.POST.get("stay") == "1"
+
+
+def toasts_response(request, status: int = 200) -> HttpResponse:
+    """Réponse à un enregistrement en arrière-plan (#389) : les messages en
+    toasts, rendus par le serveur (#293), que note_form.js ajoute à la page."""
+    return render(request, "core/components/message_toasts.html", status=status)
+
+
+def form_errors_response(request, form) -> HttpResponse:
+    """Formulaire refusé lors d'un enregistrement en arrière-plan : chaque erreur
+    en toast, et un statut d'erreur pour que le script sache que rien n'est
+    enregistré."""
+    for errors in form.errors.values():
+        for error in errors:
+            messages.error(request, f"La note n'est pas enregistrée : {error}")
+    return toasts_response(request, status=422)
 
 
 def warnings_message(warnings: tuple[str, ...]) -> str:
@@ -311,7 +341,8 @@ def new_note(request):
         form = NewNoteForm(request.POST)
         if form.is_valid():
             note = form.save()
-            return redirect(save_note_parts(request, note, "créée"))
+            stay = stays_in_editor(request)
+            return redirect(save_note_parts(request, note, "créée", stay=stay))
     else:
         note_date = parse_date_param(request.GET.get("date", ""))
         existing = Note.objects.filter(date=note_date).first() if note_date else None
@@ -342,10 +373,21 @@ def edit_note(request, note_date):
     note = get_object_or_404(Note, date=note_date)
 
     if request.method == "POST":
+        stay = stays_in_editor(request)
+        in_place = stay and bool(request.htmx)
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
-            return redirect(save_note_parts(request, note, "modifiée"))
+            url = save_note_parts(request, note, "modifiée", stay=stay)
+            if in_place:
+                response = toasts_response(request)
+                if str(note.date) != str(note_date):
+                    # L'adresse de l'éditeur suit la date : note_form.js y va.
+                    response["HX-Redirect"] = url
+                return response
+            return redirect(url)
+        if in_place:
+            return form_errors_response(request, form)
     else:
         form = NewNoteForm(instance=note)
 
