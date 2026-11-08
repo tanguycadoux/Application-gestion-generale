@@ -49,10 +49,13 @@ class IndexedTextTests(TestCase):
 
 class MatchExpressionTests(TestCase):
     def test_chaque_mot_est_une_phrase_entre_guillemets(self):
-        self.assertEqual(match_expression("bonjour monde"), '"bonjour" "monde"')
+        # Dans la colonne des formes réduites (#372).
+        self.assertEqual(
+            match_expression("bonjour Mondes"), 'words : "bonjour" AND words : "monde"'
+        )
 
     def test_un_guillemet_est_doublé(self):
-        self.assertEqual(match_expression('a"b'), '"a""b"')
+        self.assertEqual(match_expression('a"b'), 'words : "a""b"')
 
     def test_texte_vide(self):
         self.assertIsNone(match_expression("   "))
@@ -60,7 +63,10 @@ class MatchExpressionTests(TestCase):
 
     def test_opérateurs_fts_neutralisés(self):
         # NEAR, OR, * et : ne sont pas interprétés par FTS5.
-        self.assertEqual(match_expression("a OR b:c"), '"a" "OR" "b:c"')
+        self.assertEqual(
+            match_expression("a OR b:c"),
+            'words : "a" AND words : "or" AND words : "b:c"',
+        )
 
 
 class IndexTests(TestCase):
