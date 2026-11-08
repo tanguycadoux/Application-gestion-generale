@@ -85,6 +85,8 @@ def button(
     popovertarget: str = "",
     popovertargetaction: str = "",
     keyshortcuts: str = "",
+    name: str = "",
+    value: str = "",
 ) -> dict:
     """Bouton de l'app : lien `<a>` si `href` est fourni, sinon `<button>`.
 
@@ -101,7 +103,10 @@ def button(
     - `popovertarget`, `popovertargetaction` : popover native que le bouton
       ouvre, ou ferme avec `"hide"` ; pas pour un lien ;
     - `keyshortcuts` : raccourci clavier que gère la page, annoncé aux technologies
-      d'assistance (`aria-keyshortcuts`, par exemple `"ArrowLeft"`, #276).
+      d'assistance (`aria-keyshortcuts`, par exemple `"ArrowLeft"`, #276) ;
+    - `name`, `value` : nom et valeur envoyés avec le formulaire quand ce bouton
+      l'envoie, pour distinguer deux boutons d'un même formulaire (#389) ; pas
+      pour un lien.
     """
     if variant not in BUTTON_VARIANTS:
         raise ValueError(f"Variante de bouton inconnue : {variant}")
@@ -111,6 +116,8 @@ def button(
         raise ValueError("Un lien n'envoie pas de formulaire : retirer href.")
     if popovertarget and href:
         raise ValueError("Un lien n'ouvre pas de popover : retirer href.")
+    if name and href:
+        raise ValueError("Un lien n'envoie pas de valeur : retirer href.")
 
     classes = BUTTON_VARIANTS[variant]
     if disabled:
@@ -131,6 +138,8 @@ def button(
         "popovertarget": popovertarget,
         "popovertargetaction": popovertargetaction,
         "keyshortcuts": keyshortcuts,
+        "name": name,
+        "value": value,
     }
 
 

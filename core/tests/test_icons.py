@@ -24,6 +24,7 @@ ACTION_ICONS = {
     "Enregistrer": "save",
     "Exporter": "download",
     "Importer": "upload",
+    "Terminer": "check_circle",
 }
 
 

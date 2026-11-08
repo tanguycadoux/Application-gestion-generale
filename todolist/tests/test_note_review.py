@@ -66,6 +66,36 @@ class RedirectAfterSaveTests(TestCase):
 
         self.assertRedirects(response, review_url("2025-11-24"))
 
+    def test_enregistrement_sur_place_ne_mene_pas_au_bilan(self):
+        """#389 : enregistrer sans quitter l'éditeur n'ouvre pas le bilan ; un
+        avertissement dit les tâches à revoir, et le bilan vient à la fin."""
+        note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
+        process_note_parts(note)
+
+        response = self.client.post(
+            reverse("note_taking:edit_note", args=[note.date]),
+            {"date": "2025-11-24", "body": BODY, "stay": "1"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("2 tâches à revoir", html)
+        self.assertIn("à la fin de l&#x27;édition", html)
+
+    def test_enregistrement_sans_javascript_revient_a_l_editeur(self):
+        note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
+        process_note_parts(note)
+
+        response = self.client.post(
+            reverse("note_taking:edit_note", args=[note.date]),
+            {"date": "2025-11-24", "body": BODY, "stay": "1"},
+        )
+
+        self.assertRedirects(
+            response, reverse("note_taking:edit_note", args=[note.date])
+        )
+
     def test_modification_sans_tache_a_revoir(self):
         note = Note.objects.create(date="2025-11-24", body=BODY)
         process_note_parts(note)
