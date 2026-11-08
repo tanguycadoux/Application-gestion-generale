@@ -17,7 +17,10 @@ class NoteSearchForm(forms.Form):
     q = forms.CharField(
         required=False,
         label="Texte",
-        widget=forms.TextInput(attrs={"type": "search", "placeholder": "Rechercher…"}),
+        # Toute la largeur de la colonne : une requête courante n'est pas tronquée (#370).
+        widget=forms.TextInput(
+            attrs={"type": "search", "placeholder": "Rechercher…", "class": "w-full"}
+        ),
     )
     projects = forms.ModelMultipleChoiceField(
         queryset=Project.objects.all().order_by("name"),
