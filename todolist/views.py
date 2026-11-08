@@ -4,11 +4,11 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -222,6 +222,16 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
                 f"La tâche « {title} »{with_subtasks(self.subtasks)} sont {removed}s."
             )
         return f"La tâche « {title} » est {removed}."
+
+
+@require_GET
+def parent_choices_view(request):
+    """Choix de la tâche parente rechargé par htmx quand le projet, le chemin ou
+    la case des terminées changent dans le formulaire d'une tâche (#390)."""
+    todo_id = request.GET.get("todo", "")
+    todo = Todo.objects.filter(pk=todo_id).first() if todo_id.isdigit() else None
+    form = TodoForm(instance=todo, parent_data=request.GET)
+    return HttpResponse(str(form["parent"]))
 
 
 @require_POST

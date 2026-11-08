@@ -74,12 +74,32 @@ def section_for(project: Project, names: Iterable[str]) -> Section | None:
 
 
 def _child(project: Project, parent: Section | None, name: str) -> Section:
+    return _known_child(project, parent, name) or Section.objects.create(
+        project=project, parent=parent, name=name
+    )
+
+
+def _known_child(project: Project, parent: Section | None, name: str) -> Section | None:
     siblings = Section.objects.filter(project=project, parent=parent)
     # Comparer en Python : le `LOWER` de SQLite ne replie que l'ASCII, pas « É ».
     for sibling in siblings:
         if sibling.name.casefold() == name.casefold():
             return sibling
-    return Section.objects.create(project=project, parent=parent, name=name)
+    return None
+
+
+def existing_section(project: Project, names: Iterable[str]) -> Section | None:
+    """La section de ce chemin sous le projet si elle existe, sans rien créer
+    (casse ignorée, comme `section_for`) ; None sans niveau ou si un niveau
+    manque."""
+    section = None
+    for name in names:
+        name = " ".join(name.split())
+        if name:
+            section = _known_child(project, section, name)
+            if section is None:
+                return None
+    return section
 
 
 def subtree(section: Section) -> list[Section]:
