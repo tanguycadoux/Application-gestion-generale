@@ -9,7 +9,8 @@
 {% block content %}
 <h1 class="mb-4">Rechercher parmi les notes</h1>
 
-<div class="grid grid-cols-[1fr_3fr] gap-4">
+{# Colonne de gauche d'au moins 16rem (#370) : la zone « Texte », en w-full, ne fait que s'élargir avec la page, jamais rétrécir sous sa largeur d'origine. #}
+<div class="grid grid-cols-[minmax(16rem,1fr)_3fr] gap-4">
     <search>
         {# GET : la recherche est dans l'adresse. htmx ne remplace que les résultats et la met à jour. #}
         <form

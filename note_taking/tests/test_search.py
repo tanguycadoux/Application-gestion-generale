@@ -1,5 +1,7 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
+import re
+
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
@@ -214,6 +216,22 @@ class NotesSearchTests(SearchTestCase):
         response = self.search(q='projet:Alpha "a2"')
 
         self.assertContains(response, "projet:Alpha")
+
+    def test_la_zone_occupe_toute_sa_colonne(self):
+        """Une requête courante ne doit pas être tronquée (#370)."""
+        html = self.search(q='chemin:"réunion de chantier"').content.decode()
+
+        field = re.search(r'<input type="search" name="q"[^>]*>', html).group()
+        self.assertRegex(field, r'class="(?:[^"]*\s)?w-full[\s"]')
+
+    def test_la_colonne_de_la_zone_a_une_largeur_minimale(self):
+        """Avec `w-full`, la zone ne donne plus de minimum à sa colonne : sans borne,
+        la colonne `1fr` tombe au quart de la page dans une fenêtre étroite et la
+        zone devient plus étroite qu'avant (#370)."""
+        html = self.client.get(self.url).content.decode()
+
+        grid = re.search(r'<div class="([^"]*)">\s*<search>', html).group(1).split()
+        self.assertIn("grid-cols-[minmax(16rem,1fr)_3fr]", grid)
 
     def test_syntaxe_dans_la_zone(self):
         response = self.search(q="projet:beta -b2")
