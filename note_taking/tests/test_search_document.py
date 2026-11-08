@@ -1,5 +1,6 @@
 """Assemblage des résultats en un document Markdown (#356) : sans accès à la base."""
 
+import unittest
 from datetime import date
 
 from django.test import SimpleTestCase, TestCase
@@ -164,6 +165,94 @@ class ByPathTests(SimpleTestCase):
     def test_regroupement_inconnu_refuse(self):
         with self.assertRaises(ValueError):
             assemble([part(15, ["Alpha"], "x")], "autre")
+
+
+def level_part(day, levels, content):
+    """Une note part aux niveaux donnés, (identité, nom en base), du projet au plus
+    profond (#369)."""
+    from note_taking.search_document import Level
+
+    iso = date(2026, 10, day).isoformat()
+    return DocPart(
+        date=date(2026, 10, day),
+        date_label=f"{day} octobre 2026",
+        note_url=f"/notes/{iso}/",
+        part_url=f"/notes/{iso}/#ancre",
+        levels=tuple(Level(key, name) for key, name in levels),
+        content=content,
+    )
+
+
+NORD = (1, "Chantier Nord")
+NORD_MINUSCULE = (2, "Chantier nord")
+REUNION = (10, "Réunion")
+REUNION_SANS_ACCENT = (11, "Reunion")
+PREPARATION = (20, "Préparation")
+PREPARATION_SANS_ACCENT = (21, "Preparation")
+
+
+class ByLevelTests(SimpleTestCase):
+    """Un groupe par niveau (#369) : son identité, pas l'écriture de son nom."""
+
+    @unittest.expectedFailure
+    def test_projets_de_meme_nom_sans_casse_jamais_entrelaces(self):
+        text = assemble(
+            [
+                level_part(15, [NORD], "nord15"),
+                level_part(12, [NORD_MINUSCULE], "minuscule12"),
+                level_part(10, [NORD], "nord10"),
+            ],
+            "path",
+        )
+
+        self.assertEqual(text.count("## Chantier Nord\n"), 1)
+        self.assertEqual(text.count("## Chantier nord\n"), 1)
+        self.assertLess(text.index("nord10"), text.index("## Chantier nord"))
+        self.assertLess(text.index("nord15"), text.index("nord10"))
+
+    @unittest.expectedFailure
+    def test_niveaux_de_meme_nom_sans_accents_jamais_entrelaces(self):
+        text = assemble(
+            [
+                level_part(15, [NORD, REUNION, PREPARATION], "avec15"),
+                level_part(
+                    12, [NORD, REUNION_SANS_ACCENT, PREPARATION_SANS_ACCENT], "sans12"
+                ),
+                level_part(10, [NORD, REUNION, PREPARATION], "avec10"),
+                level_part(5, [NORD, REUNION], "direct5"),
+            ],
+            "path",
+        )
+
+        self.assertEqual(
+            text,
+            "## Chantier Nord\n\n### Réunion\n\n"
+            "**[5 octobre 2026](/notes/2026-10-05/#ancre)**\n\ndirect5\n\n"
+            "#### Préparation\n\n"
+            "**[15 octobre 2026](/notes/2026-10-15/#ancre)**\n\navec15\n\n"
+            "**[10 octobre 2026](/notes/2026-10-10/#ancre)**\n\navec10\n\n"
+            "### Reunion\n\n#### Preparation\n\n"
+            "**[12 octobre 2026](/notes/2026-10-12/#ancre)**\n\nsans12\n",
+        )
+
+    @unittest.expectedFailure
+    def test_par_date_un_meme_niveau_qui_suit_n_est_pas_rouvert(self):
+        text = assemble(
+            [
+                level_part(15, [NORD_MINUSCULE, REUNION], "minuscule"),
+                level_part(15, [NORD, REUNION, PREPARATION], "un"),
+                level_part(15, [NORD, REUNION, PREPARATION], "deux"),
+            ],
+            "date",
+        )
+
+        self.assertEqual(
+            text,
+            "## [Note du 15 octobre 2026](/notes/2026-10-15/)\n\n"
+            "### Chantier nord\n\n#### Réunion\n\nminuscule\n\n"
+            "### Chantier Nord\n\n#### Réunion\n\n##### Préparation\n\n"
+            "un\n\ndeux\n",
+        )
 
 
 class SearchFormKeepsViewTests(TestCase):
