@@ -1,5 +1,7 @@
 """Recherches enregistrées (#203) : une requête gardée sous un nom."""
 
+import re
+
 from django.contrib.messages import get_messages
 from django.db import IntegrityError, transaction
 from django.test import TestCase
@@ -256,6 +258,21 @@ class SavedSearchPageTests(TestCase):
 
         rename = reverse("note_taking:saved_search_rename", args=[saved.pk])
         self.assertContains(response, f'action="{rename}?q=banc"')
+
+    def test_champs_du_nom_sur_toute_la_largeur(self):
+        """Le nom, prérempli avec la requête, n'est pas tronqué (#370) : le champ
+        prend la place laissée par le bouton, à l'enregistrement comme au renommage."""
+        saved = SavedSearch.objects.create(name="Alpha", q="banc")
+
+        html = self.client.get(SEARCH, {"q": 'chemin:"réunion"'}).content.decode()
+
+        for field_id in ("saved-search-name", f"rename-saved-search-{saved.pk}"):
+            with self.subTest(field=field_id):
+                field = re.search(rf'<input [^>]*id="{field_id}"[^>]*>', html).group()
+                self.assertIn('class="', field)
+                classes = re.search(r'class="([^"]*)"', field).group(1).split()
+                self.assertIn("flex-1", classes)
+                self.assertIn("min-w-0", classes)
 
     def test_les_noms_sont_echappes(self):
         SavedSearch.objects.create(name="<b>x</b>", q="<i>y</i>")

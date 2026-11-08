@@ -23,10 +23,10 @@
     {# Lien d'évitement (#191) : premier élément atteint au clavier, visible au focus. #}
     <a href="#contenu" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-white focus:p-2 focus:font-semibold focus:shadow-lg">Aller au contenu</a>
 
-    {# En-tête général (#355) : l'accueil à gauche, la recherche au centre, un emplacement à droite pour plus tard. Sur toute la largeur, au-dessus du menu et du contenu. #}
-    <header class="col-span-2 grid grid-cols-[1fr_minmax(0,36rem)_1fr] items-center gap-4 border-b border-slate-300 bg-white px-4 py-2">
+    {# En-tête général (#355) : l'accueil à gauche, la recherche au centre, un emplacement à droite pour plus tard. Sur toute la largeur, au-dessus du menu et du contenu. Hauteur fixe (#370) : la même avec ou sans la barre (vidée sur la page de recherche), le nom sur une seule ligne. #}
+    <header class="col-span-2 grid h-13 grid-cols-[1fr_minmax(0,36rem)_1fr] items-center gap-4 border-b border-slate-300 bg-white px-4">
         {% url 'core:index' as home_url %}
-        <a href="{{ home_url }}" title="Accueil" class="w-fit rounded-md px-1 text-lg font-semibold tracking-tight text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2">Gestion générale</a>
+        <a href="{{ home_url }}" title="Accueil" class="w-fit rounded-md px-1 text-lg font-semibold tracking-tight whitespace-nowrap text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2">Gestion générale</a>
 
         {# Barre de recherche (#202) : un formulaire GET vers la page déclarée par une app, donc sans JavaScript ; search.js ajoute Ctrl+K. La page de recherche, qui a sa propre zone, masque celle-ci. #}
         {% block menu_search %}
