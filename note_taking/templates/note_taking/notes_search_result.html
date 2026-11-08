@@ -8,7 +8,8 @@
     {# Pas encore de recherche : l'aide de syntaxe, ouverte. #}
     {% include "note_taking/search_help.html" with open=True %}
 {% elif results %}
-    <p class="mb-2 text-sm text-slate-600">{{ results|length }} résultat{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
+    {# Un résultat est un passage (une note part dans le code, #362). #}
+    <p class="mb-2 text-sm text-slate-600">{{ results|length }} passage{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
 
     {# Présentation (#356) : des liens, sans JavaScript, qui gardent le reste de l'adresse. #}
     <nav aria-label="Présentation des résultats" class="mb-4 flex flex-wrap gap-x-8 gap-y-1 text-sm">
@@ -27,7 +28,7 @@
     </nav>
 
     {% if document %}
-        {# Les note parts assemblées, rendues comme une note : h2 = un groupe. #}
+        {# Les passages assemblés, rendus comme une note : h2 = un groupe. #}
         <div class="rendered-content">
             {{ document }}
         </div>

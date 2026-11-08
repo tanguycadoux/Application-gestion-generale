@@ -179,13 +179,14 @@ class PathTreeComponentTests(TestCase):
 
     def tag(self, mode="link", selected=(), counts=None, path="/tasks/", **extra):
         nodes = path_tree(counts or {}, selected=selected)
-        arguments = "".join(f" {key}={key!r}" for key in extra)
+        arguments = "".join(f" {key}={key}" for key in extra)
         return render(
             "{% path_tree nodes mode=mode param=param" + arguments + " %}",
             path,
             nodes=nodes,
             mode=mode,
             param="path",
+            **extra,
         )
 
     def test_liste_imbriquee_semantique(self):
@@ -261,6 +262,24 @@ class PathTreeComponentTests(TestCase):
         html = self.tag(counts={})
 
         self.assertNotIn("(0)", html)
+
+    def test_compteur_nomme_au_survol_et_pour_les_lecteurs_d_ecran(self):
+        """#362 : avec `count_noun`, le nombre dit ce qu'il compte, accordé."""
+        html = self.tag(
+            counts={self.s["mesures"].pk: 2, self.s["detail"].pk: 1},
+            count_noun="passage",
+        )
+
+        self.assertIn('title="3 passages"', html)
+        self.assertIn('title="1 passage"', html)
+        self.assertIn('(3<span class="sr-only"> passages</span>)', html)
+        self.assertIn('(1<span class="sr-only"> passage</span>)', html)
+
+    def test_compteur_sans_nom_inchange(self):
+        html = self.tag(counts={self.s["detail"].pk: 3})
+
+        self.assertIn('<span class="text-slate-600">(3)</span>', html)
+        self.assertNotIn("sr-only", html)
 
     def test_nom_echappe(self):
         Section.objects.create(

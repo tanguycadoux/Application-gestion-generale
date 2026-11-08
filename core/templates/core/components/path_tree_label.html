@@ -14,4 +14,9 @@
 {% else %}
     <span class="font-semibold">{{ node.name }}</span>
 {% endif %}
-{% if node.count %}<span class="text-slate-600">({{ node.count }})</span>{% endif %}
+{% if node.count and count_noun %}
+    {# Le nombre seul à l'écran ; ce qu'il compte au survol et pour les lecteurs d'écran (#362). #}
+    <span class="text-slate-600" title="{{ node.count }} {{ count_noun }}{{ node.count|pluralize }}">({{ node.count }}<span class="sr-only"> {{ count_noun }}{{ node.count|pluralize }}</span>)</span>
+{% elif node.count %}
+    <span class="text-slate-600">({{ node.count }})</span>
+{% endif %}

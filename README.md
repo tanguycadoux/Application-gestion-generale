@@ -64,7 +64,7 @@ Formulaires (#132) : les champs ont un style de base (`@layer base` de `assets/c
 
 Dates (#129) : trois formats d'affichage, selon l'usage, définis dans `core/templatetags/ui.py` (`DATE_FORMATS`) : **long** « lundi 24 novembre 2025 » quand la date nomme une note (titres, liens « Note du … »), **moyen** « 24 novembre 2025 » dans un texte ou une fiche (échéance, dates d'une image, messages), **court** « lun. 24 nov. 2025 » dans les tableaux et les listes. Dans une page, `{% date_time valeur "long" %}` produit `<time datetime="2025-11-24">lundi 24 novembre 2025</time>` ; dans un attribut ou un message, le filtre `{{ valeur|date_text:"moyen" }}`. Le filtre `date` de Django ne sert plus qu'aux formats techniques (`Y-m-d`, `c`, `Y-m`) et au mois du calendrier (`F Y`).
 
-Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Section » (« Liste des notes · Notes », « Tâche « Relire » · Tâches ») ; une page définit `{% block title %}`, le gabarit de base de son application ajoute la section (`{% block title_suffix %}`), et l'accueil général s'appelle « Gestion générale ». L'accueil d'une app a pour titre d'onglet son titre de page, sans section : « Gestion des notes », « Gestion des tâches » (#191). Une date dans un titre d'onglet est au format moyen. Un élément de la liste de l'app des TODO est une **tâche** (« Créer une tâche », « sous-tâche ») ; le marqueur TODO écrit dans les notes garde son nom.
+Titres et vocabulaire (#130) : le titre d'onglet suit le modèle « Page · Section » (« Liste des notes · Notes », « Tâche « Relire » · Tâches ») ; une page définit `{% block title %}`, le gabarit de base de son application ajoute la section (`{% block title_suffix %}`), et l'accueil général s'appelle « Gestion générale ». L'accueil d'une app a pour titre d'onglet son titre de page, sans section : « Gestion des notes », « Gestion des tâches » (#191). Une date dans un titre d'onglet est au format moyen. Un élément de la liste de l'app des TODO est une **tâche** (« Créer une tâche », « sous-tâche ») ; le marqueur TODO écrit dans les notes garde son nom. Un morceau de note (voir « Structure générale ») est un **passage** (#362) : « 3 passages dans 2 notes » dans la recherche, « 5 passages et 2 tâches » sur la page Chemins. Le mot « note part », celui du code (`NotePart`), n'apparaît dans aucune page, aucun message ni aucune aide, hors pages de debug et admin de Django, outils de développement ; `core/tests/test_vocabulary.py` le vérifie.
 
 Messages de confirmation (#192) : chaque création, modification et suppression d'un projet, d'une note, d'une tâche ou d'une image affiche un toast de succès, de la même forme : l'objet nommé, au présent (« Le projet « ASTERICS » est créé. », « La tâche « Relire » est modifiée. », « La note du 24 novembre 2025 est supprimée. », « L'image « banc.png » est supprimée. »). Une note se nomme par sa date au format moyen. Si l'analyse d'une note échoue, seul le message d'erreur s'affiche. `core/tests/test_action_messages.py` vérifie chaque message.
 
@@ -173,7 +173,7 @@ Une note peut être :
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
 - remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
-À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
+À chaque enregistrement, le contenu est analysé et découpé en *passages* (voir ci-dessous), et les TODO éventuelles sont générées.
 
 Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
 
@@ -204,7 +204,7 @@ Une note est structurée de cette manière :
 
 Un seul niveau a un sens propre à l'application : `#` donne le **projet** (#287). Les titres suivants, `##` à `######`, forment le **chemin** sous le projet, sans limite de profondeur : ici « Réunion › Préparation › Ordre du jour ». Un texte hérite du projet et du chemin des titres au-dessus de lui. Un titre est un niveau, quel que soit son texte : une virgule ou une barre oblique n'y change rien (« Conception, approvisionnement et fabrication », « Rapport RT17/A »).
 
-Le contenu est découpé en *note parts* : chaque note part regroupe le texte partageant le même projet, le même chemin et les mêmes tags. Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, chemins et tags sont communs aux notes et aux TODO (app `core`). Un projet utilisé par une note ou une TODO ne peut pas être supprimé.
+Le contenu est découpé en *passages* : chaque passage regroupe le texte partageant le même projet, le même chemin et les mêmes tags (le modèle `NotePart` dans le code, #362). Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, chemins et tags sont communs aux notes et aux TODO (app `core`). Un projet utilisé par une note ou une TODO ne peut pas être supprimé.
 
 Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#295) : le même titre sous deux projets est deux sections, et deux titres qui ne diffèrent que par la casse sont le même niveau, écrit comme la première fois. Une section qu'aucune note ni tâche n'utilise plus est supprimée à l'enregistrement d'une note.
 
@@ -216,7 +216,7 @@ Les titres présents dans les blocs de code (` ``` `) et dans les callouts (`:::
 
 ### Chemins d'un projet : arbre et renommage
 
-La page **Chemins** d'un projet (`/projects/<id>/paths/`, bouton sur la page Projets, #299) montre l'arbre de ses niveaux, indenté, avec ce qui utilise chacun : note parts et tâches, **descendants compris**.
+La page **Chemins** d'un projet (`/projects/<id>/paths/`, bouton sur la page Projets, #299) montre l'arbre de ses niveaux, indenté, avec ce qui utilise chacun : passages et tâches (« 5 passages et 2 tâches »), **descendants compris**.
 
 **Renommer un niveau** réécrit ses titres dans les notes, en trois temps : le nouveau nom, puis un **bilan** qui liste chaque titre à réécrire (la note, la ligne, la suite des titres) avec une case cochée que l'on peut décocher, puis l'écriture, qui se fait en une seule fois. Un titre est repéré par la **suite des titres au-dessus de lui**, projet compris, et non par son niveau : `### Réunion` sans `##` au-dessus est le même niveau que `## Réunion`. Un titre décoché garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes. Si tous les titres sont renommés, le niveau l'est **en place** : ses sous-niveaux et les tâches saisies à la main qui le portent le suivent. Les tâches issues des notes gardent leur fiche (avancement, échéance, parent, état) et suivent leur nouveau chemin. Le nom est refusé s'il est vide, identique, ou déjà pris sous le même parent (la fusion de deux niveaux n'est pas encore possible) ; un simple changement de casse est permis. Si une note a changé entre le bilan et la confirmation, rien n'est écrit.
 
@@ -286,7 +286,7 @@ tags: [tag]
 #### S-S
 ```
 
-Ces tags restent transverses : on les retrouve quel que soit le projet. Après une évolution de l'analyse, `python manage.py reprocess_notes` recalcule les note parts de toutes les notes et supprime les tags que plus rien n'utilise.
+Ces tags restent transverses : on les retrouve quel que soit le projet. Après une évolution de l'analyse, `python manage.py reprocess_notes` recalcule les passages de toutes les notes et supprime les tags que plus rien n'utilise.
 
 ### Génération des TODO
 
@@ -319,13 +319,13 @@ todo: true
 - Deuxième tâche
 ```
 
-Le marqueur a la portée des tags du bloc : la branche où il est écrit, sous-niveaux compris. `todo: false` le retire pour une branche plus profonde. Il pose aussi le tag `TODO` sur les note parts de la branche, que la recherche retrouve. Un titre `TODO` n'a plus de sens propre : c'est un niveau du chemin comme un autre.
+Le marqueur a la portée des tags du bloc : la branche où il est écrit, sous-niveaux compris. `todo: false` le retire pour une branche plus profonde. Il pose aussi le tag `TODO` sur les passages de la branche, que la recherche retrouve. Un titre `TODO` n'a plus de sens propre : c'est un niveau du chemin comme un autre.
 
 Le titre de la tâche est le texte de la ligne, sans son marqueur de liste (`-`, `*`, `+`, `1.`, `1)`) ni sa case (`[ ]`). Une ligne vide, réduite à son marqueur, ou qui n'est pas un élément de liste (un paragraphe) est ignorée ; le titre est limité à 500 caractères. Les cases d'un bloc de code ne sont pas des tâches.
 
 Une ligne en sous-liste crée une sous-tâche de la tâche au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section, puis éléments parents, tâches ou non) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
 
-Chaque TODO est rattachée au projet et à la dernière section du chemin de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
+Chaque TODO est rattachée au projet et à la dernière section du chemin de son passage, n'a pas d'échéance et reçoit comme tags ceux du passage (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
 
 Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Dans l'éditeur, le bilan ne s'ouvre qu'avec « Terminer l'édition » ; « Enregistrer la note » signale seulement les tâches à revoir (#389). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
 
@@ -350,13 +350,13 @@ Une image désignée par une adresse externe (`![Légende](https://…)`) n'est 
 
 Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
 
-Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaque enregistrement de la note). Une image utilisée par une note ne peut pas être supprimée.
+Chaque passage est lié aux images qu'il utilise (liens recalculés à chaque enregistrement de la note). Une image utilisée par une note ne peut pas être supprimée.
 
 ### Fonctionnalités
 
 - liste des notes (`/notes/list/`), triable par date et filtrable par date ou par un ou plusieurs projets, cochés dans une liste repliable où l'on peut chercher (#178) : tri et filtres sont dans l'adresse (`?sort=-date&project=ASTERICS&project=PDS1&date_from=2025-11-01`) et s'ouvrent depuis les en-têtes de colonne, sans JavaScript ;
 - page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
-- recherche des note parts (`/notes/search/?q=…`, l'adresse se partage) dans une seule zone de texte : `banc thermique` (tous les mots, casse et accents ignorés), `"phrase exacte"`, `therm*`, `-brouillon`, `projet:Alpha`, `chemin:Réunion/Préparation` (niveaux dessous compris), `tag:urgent`, `-tag:fini`, `date:2026-10` ou `date:2026-09..2026-10` ; une aide de syntaxe est sur la page. Les résultats sont groupés par note, avec l'extrait où les mots trouvés sont surlignés et un lien vers la section et le chemin au-dessus de chaque résultat. Une vue « Document » (`?view=document`) assemble les résultats en un texte rendu comme une note, regroupé par date ou par chemin (`?group=date` ou `path`). Ses titres sont ceux des niveaux, sous leur nom en base : un niveau écrit de plusieurs façons dans les notes (« Réunion de Chantier », « Réunion  de chantier ») ne fait qu'un groupe, et deux projets qui ne diffèrent que par la casse (« Chantier Nord », « Chantier nord ») restent deux groupes, jamais mêlés (#369). Les cases de projets et l'arbre des chemins (avec le nombre de note parts par niveau) s'ajoutent à la zone de texte,
+- recherche des passages (`/notes/search/?q=…`, l'adresse se partage) dans une seule zone de texte : `banc thermique` (tous les mots, casse et accents ignorés), `"phrase exacte"`, `therm*`, `-brouillon`, `projet:Alpha`, `chemin:Réunion/Préparation` (niveaux dessous compris), `tag:urgent`, `-tag:fini`, `date:2026-10` ou `date:2026-09..2026-10` ; une aide de syntaxe est sur la page ; elle dit ce qu'est un passage, et que tous les mots sont cherchés dans le même passage. Le décompte dit « 3 passages dans 2 notes » (#362). Les résultats sont groupés par note, avec l'extrait où les mots trouvés sont surlignés et un lien vers la section et le chemin au-dessus de chaque résultat. Une vue « Document » (`?view=document`) assemble les résultats en un texte rendu comme une note, regroupé par date ou par chemin (`?group=date` ou `path`). Ses titres sont ceux des niveaux, sous leur nom en base : un niveau écrit de plusieurs façons dans les notes (« Réunion de Chantier », « Réunion  de chantier ») ne fait qu'un groupe, et deux projets qui ne diffèrent que par la casse (« Chantier Nord », « Chantier nord ») restent deux groupes, jamais mêlés (#369). Les cases de projets et l'arbre des chemins (avec le nombre de passages par niveau, « (12) », qu'une ligne sous le titre « Projets et chemins » explique et qui se lit « 12 passages » au survol et avec un lecteur d'écran) s'ajoutent à la zone de texte,
 - recherches enregistrées (#203) : une requête gardée sous un nom (nom unique, casse et accents ignorés), relancée d'un clic, renommée ou supprimée depuis la page de recherche ; seul le texte de la zone est gardé, pas les cases de projets et de chemins,
 - suppression d'une note.
 
@@ -365,7 +365,7 @@ Chaque note part est liée aux images qu'elle utilise (liens recalculés à chaq
 Les tâches peuvent être créées manuellement ou générées depuis les notes (lignes d'une section marquée du tag TODO). Une tâche possède :
 
 - un titre et une description,
-- un projet (obligatoire), un **chemin** facultatif sous ce projet et des tags ; une tâche issue d'une note reprend le projet, le chemin et les tags de sa note part à sa création,
+- un projet (obligatoire), un **chemin** facultatif sous ce projet et des tags ; une tâche issue d'une note reprend le projet, le chemin et les tags de son passage à sa création,
 - une priorité (basse, moyenne, haute),
 - une date d'échéance facultative,
 - un avancement de 0 à 100 %,

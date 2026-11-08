@@ -10,7 +10,7 @@ from note_taking.services import process_note_parts
 
 class Command(BaseCommand):
     help = (
-        "Recalcule les note parts de toutes les notes, reconstruit l'index de "
+        "Recalcule le découpage en passages de toutes les notes, reconstruit l'index de "
         "recherche, puis supprime les tags que plus rien n'utilise. Les tâches existantes ne sont ni recréées ni "
         "modifiées."
     )

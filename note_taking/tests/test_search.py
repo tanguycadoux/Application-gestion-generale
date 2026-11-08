@@ -179,6 +179,14 @@ class NotesSearchTests(SearchTestCase):
         )
         self.assertNotContains(response, "Aucun résultat")
 
+    def test_l_aide_dit_ce_qu_est_un_passage(self):
+        """#362 : les résultats sont des passages ; l'aide dit ce que c'est, et que
+        tous les mots sont cherchés dans le même."""
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Chaque résultat est un <strong>passage</strong>")
+        self.assertContains(response, "dans le même passage")
+
     def test_recherche_vide_montre_l_aide_pas_les_resultats(self):
         response = self.search(q="")
 
@@ -319,6 +327,35 @@ class PathTreeTests(SearchTestCase):
         self.assertEqual(counts["Alpha › Mesures"], 2)
         self.assertEqual(counts["Alpha › Mesures › Détail"], 1)
         self.assertEqual(counts["Alpha › thermique"], 1)
+
+    def test_compteurs_nommes_en_passages(self):
+        """#362 : le nombre affiché compte des passages, et le dit au survol et
+        aux lecteurs d'écran."""
+        html = self.client.get(self.url).content.decode()
+
+        self.assertIn('title="2 passages"', html)
+        self.assertIn('(2<span class="sr-only"> passages</span>)', html)
+        self.assertIn('title="1 passage"', html)
+
+    def test_unite_des_compteurs_ecrite_a_l_ecran(self):
+        """#362 : comme sur la page Chemins, le mot est visible sans survol ni
+        lecteur d'écran, une fois, sous le titre de l'arbre."""
+        response = self.client.get(self.url)
+
+        self.assertContains(
+            response,
+            '<p class="mb-1 text-sm text-slate-600">'
+            "Entre parenthèses : le nombre de passages, sous-niveaux compris.</p>",
+            html=True,
+        )
+
+    def test_unite_des_compteurs_avec_l_arbre_seulement(self):
+        """Sans niveau ni projet à proposer, pas d'arbre : pas de légende non plus."""
+        NotePart.objects.all().delete()
+        response = self.client.get(self.url)
+
+        self.assertNotContains(response, "Entre parenthèses")
+        self.assertNotContains(response, 'aria-label="Projets et chemins"')
 
     def test_cases_de_la_page(self):
         response = self.client.get(self.url)

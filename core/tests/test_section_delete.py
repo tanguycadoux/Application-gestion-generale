@@ -97,7 +97,7 @@ class SectionDeleteTests(SectionDeleteTestCase):
             [
                 (
                     "error",
-                    "Le niveau « A » est utilisé par 1 note part : "
+                    "Le niveau « A » est utilisé par 1 passage : "
                     "suppression impossible.",
                 )
             ],
