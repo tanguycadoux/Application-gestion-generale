@@ -2,7 +2,6 @@
 chemin, même projet, autres projets), en cours par défaut, sans la tâche ni ses
 descendantes, titres longs tronqués ; la liste suit le projet et le chemin."""
 
-import unittest
 from datetime import date
 from html.parser import HTMLParser
 
@@ -85,7 +84,6 @@ class ParentChoiceTestCase(TestCase):
 
 
 class GroupsTests(ParentChoiceTestCase):
-    @unittest.expectedFailure
     def test_meme_chemin_puis_meme_projet_puis_autres_projets(self):
         self.task("Ailleurs", project=self.q)
         self.task("Bilan annuel", section=self.bilan)
@@ -102,7 +100,6 @@ class GroupsTests(ParentChoiceTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_tache_sans_chemin_meme_chemin_est_la_racine_du_projet(self):
         todo = self.task("Sans chemin")
         self.task("Racine")
@@ -119,7 +116,6 @@ class GroupsTests(ParentChoiceTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_par_echeance_puis_titre_sans_echeance_a_la_fin(self):
         self.task("C", section=self.reunion)
         self.task("B", section=self.reunion, due_date=date(2026, 12, 1))
@@ -130,7 +126,6 @@ class GroupsTests(ParentChoiceTestCase):
 
         self.assertEqual(self.texts(options), ["A", "B", "C", "D"])
 
-    @unittest.expectedFailure
     def test_groupe_vide_absent(self):
         self.task("Ordre du jour", section=self.reunion)
 
@@ -144,7 +139,6 @@ class GroupsTests(ParentChoiceTestCase):
 
 
 class ExcludedTasksTests(ParentChoiceTestCase):
-    @unittest.expectedFailure
     def test_ni_la_tache_ni_ses_descendantes(self):
         child = self.task("Enfant", section=self.reunion, parent=self.todo)
         self.task("Petit-enfant", section=self.reunion, parent=child)
@@ -154,7 +148,6 @@ class ExcludedTasksTests(ParentChoiceTestCase):
 
         self.assertEqual(self.texts(options), ["Voisine"])
 
-    @unittest.expectedFailure
     def test_terminees_masquees_par_defaut(self):
         self.task("Finie", section=self.reunion, progress=100)
         self.task("En cours", section=self.reunion)
@@ -163,7 +156,6 @@ class ExcludedTasksTests(ParentChoiceTestCase):
 
         self.assertEqual(self.texts(options), ["En cours"])
 
-    @unittest.expectedFailure
     def test_parent_actuel_garde_meme_termine(self):
         parent = self.task("Parent fini", section=self.reunion)
         self.todo.parent = parent
@@ -175,7 +167,6 @@ class ExcludedTasksTests(ParentChoiceTestCase):
         self.assertEqual(self.texts(options), ["Parent fini"])
         self.assertTrue(options[0]["selected"])
 
-    @unittest.expectedFailure
     def test_tache_ecartee_absente(self):
         self.task(
             "Écartée",
@@ -188,7 +179,6 @@ class ExcludedTasksTests(ParentChoiceTestCase):
 
 
 class LabelsTests(ParentChoiceTestCase):
-    @unittest.expectedFailure
     def test_titre_long_tronque_titre_complet_en_infobulle(self):
         long_title = "Relire " + "très " * 40 + "longuement"
         self.task(long_title, section=self.reunion)
@@ -199,7 +189,6 @@ class LabelsTests(ParentChoiceTestCase):
         self.assertTrue(option["text"].endswith("…"))
         self.assertEqual(option["title"], long_title)
 
-    @unittest.expectedFailure
     def test_titre_court_sans_infobulle(self):
         self.task("Court", section=self.reunion)
 
@@ -215,7 +204,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
         url = reverse("todolist:parent_choices")
         return self.client.get(url, {"todo": self.todo.pk, **params})
 
-    @unittest.expectedFailure
     def test_suit_le_projet_et_le_chemin_saisis(self):
         self.task("Bilan annuel", section=self.bilan)
         self.task("Ailleurs", project=self.q)
@@ -231,7 +219,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_autre_projet_choisi(self):
         self.task("Ailleurs", project=self.q)
         self.task("Ordre du jour", section=self.reunion)
@@ -247,7 +234,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_case_des_terminees(self):
         self.task("Finie", section=self.reunion, progress=100)
 
@@ -259,7 +245,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
         self.assertEqual(hidden, [])
         self.assertEqual(self.texts(shown), ["Réunion › Finie"])
 
-    @unittest.expectedFailure
     def test_parent_choisi_reste_choisi(self):
         parent = self.task("Ordre du jour", section=self.reunion)
 
@@ -268,7 +253,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
         options = parent_options(response.content.decode())
         self.assertEqual([option["selected"] for option in options], [True])
 
-    @unittest.expectedFailure
     def test_nouvelle_tache_sans_projet(self):
         self.task("Ordre du jour", section=self.reunion)
         url = reverse("todolist:parent_choices")
@@ -281,7 +265,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
             ["P › Réunion › Ordre du jour", "P › Réunion › Tâche"],
         )
 
-    @unittest.expectedFailure
     def test_seulement_le_champ(self):
         html = self.get(project=self.p.pk).content.decode()
 
@@ -291,7 +274,6 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
 
 
 class FormTests(ParentChoiceTestCase):
-    @unittest.expectedFailure
     def test_champ_recharge_par_htmx(self):
         html = self.client.get(
             reverse("todolist:todo_edit", args=[self.todo.pk])
@@ -321,7 +303,6 @@ class FormTests(ParentChoiceTestCase):
         self.todo.refresh_from_db()
         self.assertEqual(self.todo.parent, other)
 
-    @unittest.expectedFailure
     def test_creation_d_une_sous_tache(self):
         """`?parent=` : le parent est choisi, son projet aussi."""
         parent = self.task("Ordre du jour", section=self.reunion)
@@ -333,7 +314,6 @@ class FormTests(ParentChoiceTestCase):
         selected = [o for o in parent_options(html) if o["selected"]]
         self.assertEqual(self.texts(selected), ["Réunion › Ordre du jour"])
 
-    @unittest.expectedFailure
     def test_formulaire_refuse_garde_la_case(self):
         response = self.client.post(
             reverse("todolist:todo_edit", args=[self.todo.pk]),
