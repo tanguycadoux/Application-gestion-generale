@@ -1,5 +1,7 @@
 """Résultats de recherche groupés par note, avec extraits surlignés (#201)."""
 
+import unittest
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -204,15 +206,18 @@ class SearchPageGroupingTests(TestCase):
 
         self.assertContains(response, f'href="{note_url}"')
 
-    def test_nombre_de_resultats(self):
+    @unittest.expectedFailure
+    def test_nombre_de_passages(self):
+        """#362 : on compte des passages, pas des « note parts »."""
         response = self.client.get(self.url, {"q": "banc"})
 
-        self.assertContains(response, "3 résultats dans 2 notes")
+        self.assertContains(response, "3 passages dans 2 notes.")
 
-    def test_un_seul_resultat(self):
+    @unittest.expectedFailure
+    def test_un_seul_passage(self):
         response = self.client.get(self.url, {"q": "mesure"})
 
-        self.assertContains(response, "1 résultat dans 1 note.")
+        self.assertContains(response, "1 passage dans 1 note.")
 
     def test_sans_texte_le_contenu_rendu(self):
         response = self.client.get(self.url, {"q": "projet:alpha"})

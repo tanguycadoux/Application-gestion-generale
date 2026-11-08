@@ -1,5 +1,7 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
+import unittest
+
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
@@ -177,6 +179,15 @@ class NotesSearchTests(SearchTestCase):
         )
         self.assertNotContains(response, "Aucun résultat")
 
+    @unittest.expectedFailure
+    def test_l_aide_dit_ce_qu_est_un_passage(self):
+        """#362 : les résultats sont des passages ; l'aide dit ce que c'est, et que
+        tous les mots sont cherchés dans le même."""
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Chaque résultat est un <strong>passage</strong>")
+        self.assertContains(response, "dans le même passage")
+
     def test_recherche_vide_montre_l_aide_pas_les_resultats(self):
         response = self.search(q="")
 
@@ -301,6 +312,16 @@ class PathTreeTests(SearchTestCase):
         self.assertEqual(counts["Alpha › Mesures"], 2)
         self.assertEqual(counts["Alpha › Mesures › Détail"], 1)
         self.assertEqual(counts["Alpha › thermique"], 1)
+
+    @unittest.expectedFailure
+    def test_compteurs_nommes_en_passages(self):
+        """#362 : le nombre affiché compte des passages, et le dit au survol et
+        aux lecteurs d'écran."""
+        html = self.client.get(self.url).content.decode()
+
+        self.assertIn('title="2 passages"', html)
+        self.assertIn('(2<span class="sr-only"> passages</span>)', html)
+        self.assertIn('title="1 passage"', html)
 
     def test_cases_de_la_page(self):
         response = self.client.get(self.url)

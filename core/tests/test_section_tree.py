@@ -1,6 +1,7 @@
 """L'arbre des chemins d'un projet : niveaux, indentation, compteurs (#299)."""
 
 import re
+import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -45,25 +46,28 @@ class SectionTreeTests(TreeTestCase):
 
         self.assertEqual(self.rows(), [("A", 0, "")])
 
-    def test_compte_les_note_parts_du_niveau_et_de_ses_descendants(self):
+    @unittest.expectedFailure
+    def test_compte_les_passages_du_niveau_et_de_ses_descendants(self):
+        """#362 : les note parts s'appellent des passages dans l'interface."""
         self.note("# P\n## A\nx\n### B\ny\n### C\nz")
 
         self.assertEqual(
             self.rows(),
             [
-                ("A", 0, "3 note parts"),
-                ("B", 1, "1 note part"),
-                ("C", 1, "1 note part"),
+                ("A", 0, "3 passages"),
+                ("B", 1, "1 passage"),
+                ("C", 1, "1 passage"),
             ],
         )
 
+    @unittest.expectedFailure
     def test_compte_aussi_les_taches(self):
         self.note("# P\n## A\n- [ ] Une\n### B\n- [ ] Deux\n- [ ] Trois")
 
         rows = {name: usage for name, _, usage in self.rows()}
 
-        self.assertEqual(rows["A"], "2 note parts et 3 tâches")
-        self.assertEqual(rows["B"], "1 note part et 2 tâches")
+        self.assertEqual(rows["A"], "2 passages et 3 tâches")
+        self.assertEqual(rows["B"], "1 passage et 2 tâches")
 
     def test_tache_saisie_a_la_main_comptee(self):
         section = section_for(self.project, ["A"])
@@ -102,6 +106,7 @@ class TreePageTests(TreeTestCase):
     def url(self, project=None) -> str:
         return reverse("core:project_paths", args=[(project or self.project).pk])
 
+    @unittest.expectedFailure
     def test_page_avec_le_projet_et_ses_niveaux(self):
         self.note("# P\n## Réunion\nx\n### Suite\ny")
 
@@ -109,7 +114,7 @@ class TreePageTests(TreeTestCase):
 
         self.assertContains(response, '<h1 class="flex-1">Chemins de P</h1>', html=True)
         self.assertContains(response, "Réunion")
-        self.assertContains(response, "2 note parts")
+        self.assertContains(response, "2 passages")
         self.assertContains(response, "Suite")
 
     def test_indentation_par_niveau(self):
