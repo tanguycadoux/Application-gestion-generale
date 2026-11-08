@@ -1,7 +1,5 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
-import unittest
-
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
@@ -321,7 +319,6 @@ class PathTreeTests(SearchTestCase):
         self.assertIn('(2<span class="sr-only"> passages</span>)', html)
         self.assertIn('title="1 passage"', html)
 
-    @unittest.expectedFailure
     def test_unite_des_compteurs_ecrite_a_l_ecran(self):
         """#362 : comme sur la page Chemins, le mot est visible sans survol ni
         lecteur d'écran, une fois, sous le titre de l'arbre."""
