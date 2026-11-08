@@ -1,6 +1,5 @@
 """Index plein texte des note parts (#198) : FTS5, dérivé des note parts."""
 
-import unittest
 from io import StringIO
 
 from django.core.management import call_command
@@ -49,14 +48,12 @@ class IndexedTextTests(TestCase):
 
 
 class MatchExpressionTests(TestCase):
-    @unittest.expectedFailure
     def test_chaque_mot_est_une_phrase_entre_guillemets(self):
         # Dans la colonne des formes réduites (#372).
         self.assertEqual(
             match_expression("bonjour Mondes"), 'words : "bonjour" AND words : "monde"'
         )
 
-    @unittest.expectedFailure
     def test_un_guillemet_est_doublé(self):
         self.assertEqual(match_expression('a"b'), 'words : "a""b"')
 
@@ -64,7 +61,6 @@ class MatchExpressionTests(TestCase):
         self.assertIsNone(match_expression("   "))
         self.assertIsNone(match_expression(""))
 
-    @unittest.expectedFailure
     def test_opérateurs_fts_neutralisés(self):
         # NEAR, OR, * et : ne sont pas interprétés par FTS5.
         self.assertEqual(

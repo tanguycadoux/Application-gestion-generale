@@ -1,7 +1,5 @@
 """Tolérance aux fautes de frappe (#200) : mots proches du vocabulaire de l'index."""
 
-import unittest
-
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -58,7 +56,6 @@ class VocabularyTests(TypoTestCase):
 
         self.assertEqual(similar_terms("thermique", 2), [])
 
-    @unittest.expectedFailure
     def test_plus_proche_d_abord_puis_plus_frequent(self):
         # « thermiques » n'est plus un mot proche : c'est « thermique » (#372).
         self.part("thermique thermiquez thermiques")
@@ -93,7 +90,6 @@ class ExpansionTests(TypoTestCase):
 
         self.assertEqual(results, [p])
 
-    @unittest.expectedFailure
     def test_un_mot_present_n_est_pas_elargi(self):
         self.part("thermique du banc")
         self.part("thermique encore")

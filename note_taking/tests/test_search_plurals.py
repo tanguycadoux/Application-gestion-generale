@@ -5,93 +5,68 @@ Chaque mot a une forme réduite (sans casse ni accents, sans s ni x final, -aux 
 qu'écrits, et le surlignage marque le mot tel qu'il est écrit dans la note.
 """
 
-import importlib
-import unittest
-
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.urls import reverse
 
 from core.models import Project, Section
+from core.tables import fold
 from note_taking.models import Note, NotePart
 from note_taking.search import group_by_note, search_note_parts
 from note_taking.search_index import search_parts, similar_terms
 from note_taking.search_query import parse_query
-
-
-def word_forms():
-    return importlib.import_module("note_taking.word_forms")
+from note_taking.word_forms import (
+    TOKEN_REGEX,
+    reduce_text,
+    reduce_word,
+    written_forms,
+)
 
 
 class ReduceWordTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_s_final_retire(self):
-        reduce_word = word_forms().reduce_word
-
         self.assertEqual(reduce_word("thermiques"), "thermique")
         self.assertEqual(reduce_word("reunions"), "reunion")
 
-    @unittest.expectedFailure
     def test_x_final_retire(self):
-        reduce_word = word_forms().reduce_word
-
         self.assertEqual(reduce_word("bijoux"), "bijou")
         self.assertEqual(reduce_word("cheveux"), "cheveu")
         self.assertEqual(reduce_word("tableaux"), "tableau")
 
-    @unittest.expectedFailure
     def test_aux_devient_al(self):
-        reduce_word = word_forms().reduce_word
-
         self.assertEqual(reduce_word("journaux"), "journal")
         self.assertEqual(reduce_word("chevaux"), "cheval")
 
-    @unittest.expectedFailure
     def test_le_singulier_ne_change_pas(self):
-        reduce_word = word_forms().reduce_word
-
         for word in ["thermique", "journal", "tableau", "reunion"]:
             with self.subTest(word=word):
                 self.assertEqual(reduce_word(word), word)
 
-    @unittest.expectedFailure
     def test_mots_courts_intacts(self):
-        reduce_word = word_forms().reduce_word
-
         for word in ["bus", "os", "gaz", "mots", "mais", "mois", "fois", "taux"]:
             with self.subTest(word=word):
                 self.assertEqual(reduce_word(word), word)
 
-    @unittest.expectedFailure
     def test_mot_avec_chiffre_intact(self):
-        self.assertEqual(word_forms().reduce_word("rt17s"), "rt17s")
+        self.assertEqual(reduce_word("rt17s"), "rt17s")
 
-    @unittest.expectedFailure
     def test_texte_reduit_sans_casse_ni_accents_ponctuation_gardee(self):
         self.assertEqual(
-            word_forms().reduce_text("Calculs THERMIQUES, l'été — journaux"),
+            reduce_text("Calculs THERMIQUES, l'été — journaux"),
             "calcul thermique, l'ete — journal",
         )
 
-    @unittest.expectedFailure
     def test_ecritures_d_une_forme_reduite(self):
-        forms = word_forms()
+        self.assertEqual(set(written_forms("calcul")), {"calcul", "calculs", "calculx"})
+        self.assertIn("journaux", written_forms("journal"))
+        self.assertEqual(written_forms("mot"), ["mot"])
 
-        self.assertEqual(
-            set(forms.written_forms("calcul")), {"calcul", "calculs", "calculx"}
-        )
-        self.assertIn("journaux", forms.written_forms("journal"))
-        self.assertEqual(forms.written_forms("mot"), ["mot"])
-
-    @unittest.expectedFailure
     def test_chaque_mot_est_parmi_les_ecritures_de_sa_forme_reduite(self):
-        forms = word_forms()
-
         for word in ["Thermiques", "journaux", "tableaux", "Réunion", "porte-fenêtres"]:
             with self.subTest(word=word):
-                written = " ".join(forms.TOKEN_REGEX.findall(forms.fold(word)))
-                self.assertIn(written, forms.written_forms(forms.reduce_text(word)))
+                written = " ".join(TOKEN_REGEX.findall(fold(word)))
+                self.assertIn(written, written_forms(reduce_text(word)))
 
 
 class PluralSearchTests(TestCase):
@@ -135,32 +110,27 @@ class PluralSearchTests(TestCase):
         """Sans l'élargissement aux fautes (#200) : l'index seul."""
         return search_note_parts(parse_query(text), expand=False)
 
-    @unittest.expectedFailure
     def test_le_singulier_trouve_le_pluriel(self):
         query, results = self.search("calcul thermique")
 
         self.assertEqual(set(results), {self.n1, self.n2, self.s1})
         self.assertEqual(query.expansions, [])
 
-    @unittest.expectedFailure
     def test_le_pluriel_trouve_le_singulier_sans_elargissement(self):
         query, results = self.search("calculs thermiques")
 
         self.assertEqual(set(results), {self.n1, self.n2, self.s1})
         self.assertEqual(query.expansions, [])
 
-    @unittest.expectedFailure
     def test_un_mot_courant_trouve_ses_deux_formes(self):
         _, results = self.search("thermique")
 
         self.assertEqual(set(results), {self.n1, self.n2, self.s1})
 
-    @unittest.expectedFailure
     def test_dans_le_texte(self):
         self.assertEqual(self.exact("réunion"), [self.other])
         self.assertEqual(self.exact("REUNIONS"), [self.other])
 
-    @unittest.expectedFailure
     def test_aux_et_eaux(self):
         note = Note.objects.create(date="2026-10-03")
         project = Project.objects.get(name="Chantier Sud")
@@ -177,7 +147,6 @@ class PluralSearchTests(TestCase):
     def test_le_prefixe_marche_toujours(self):
         self.assertEqual(set(self.search("therm*")[1]), {self.n1, self.n2, self.s1})
 
-    @unittest.expectedFailure
     def test_exclure_un_mot_exclut_ses_deux_formes(self):
         self.assertEqual(self.search("chantier -thermiques")[1], [self.other])
         self.assertEqual(self.search("chantier -thermique")[1], [self.other])
@@ -190,19 +159,16 @@ class PluralSearchTests(TestCase):
         self.assertEqual(self.search("mai")[1], [])
         self.assertEqual(search_note_parts(parse_query("bu"), expand=False), [])
 
-    @unittest.expectedFailure
     def test_chemin_singulier_trouve_le_niveau_au_pluriel(self):
         _, results = self.search('chemin:"calcul thermique"')
 
         self.assertEqual(set(results), {self.n1, self.n2, self.s1})
 
-    @unittest.expectedFailure
     def test_chemin_a_plusieurs_niveaux_au_singulier(self):
         _, results = self.search('chemin:"Calculs thermiques/Hypothèse"')
 
         self.assertEqual(set(results), {self.n1, self.n2})
 
-    @unittest.expectedFailure
     def test_exclure_un_chemin_exclut_ses_deux_formes(self):
         _, results = self.search('chantier -chemin:"calculs thermiques"')
 
@@ -222,13 +188,11 @@ class PluralTypoTests(TestCase):
             note=self.note, project=self.project, content=content
         )
 
-    @unittest.expectedFailure
     def test_le_pluriel_n_est_pas_un_mot_proche(self):
         self.part("thermiques")
 
         self.assertEqual(similar_terms("thermique", 2), [])
 
-    @unittest.expectedFailure
     def test_singulier_et_pluriel_comptent_ensemble(self):
         """Un mot présent dans 2 note parts, au singulier et au pluriel, n'est pas rare."""
         one = self.part("thermique")
@@ -280,7 +244,6 @@ class PluralSnippetTests(TestCase):
         self.part(text)
         self.part(text)
 
-    @unittest.expectedFailure
     def test_le_pluriel_du_texte_est_surligne(self):
         part = self.part("Les journaux de bord du banc")
         self.common("journal")
@@ -289,7 +252,6 @@ class PluralSnippetTests(TestCase):
 
         self.assertIn("<mark>journaux</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_le_titre_au_pluriel_est_surligne(self):
         part = self.part("Bilan", heading_path="Chantier Sud › Calculs thermiques")
         self.common("calcul thermique")
@@ -306,7 +268,6 @@ class PluralSnippetTests(TestCase):
 
         self.assertIn("<mark>calcul</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_mot_phrase_et_prefixe_surlignes_ensemble(self):
         part = self.part("Réglages thermiques du banc d'essai, pour la conductivité")
         self.common("thermique")
@@ -317,7 +278,6 @@ class PluralSnippetTests(TestCase):
         self.assertIn("<mark>banc d&#x27;essai</mark>", snippet)
         self.assertIn("<mark>conductivité</mark>", snippet)
 
-    @unittest.expectedFailure
     def test_page_de_recherche(self):
         self.part("Bilan", heading_path="Chantier Sud › Calculs thermiques")
         self.common("calcul thermique")
@@ -331,7 +291,6 @@ class PluralSnippetTests(TestCase):
 
 
 class IndexPluralTests(TestCase):
-    @unittest.expectedFailure
     def test_l_index_trouve_le_pluriel(self):
         project = Project.objects.create(name="Alpha")
         note = Note.objects.create(date="2026-10-15")
@@ -371,7 +330,6 @@ class ReducedIndexMigrationTests(TransactionTestCase):
             cursor.execute(sql, params)
             return cursor.fetchall()
 
-    @unittest.expectedFailure
     def test_l_index_existant_gagne_les_formes_reduites(self):
         self.migrate(self.after)
 
@@ -392,7 +350,6 @@ class ReducedIndexMigrationTests(TransactionTestCase):
         self.assertIn(("journal",), vocabulary)
         self.assertNotIn(("journaux",), vocabulary)
 
-    @unittest.expectedFailure
     def test_retour_en_arriere(self):
         self.migrate(self.after)
         self.migrate(self.before)

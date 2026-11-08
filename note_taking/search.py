@@ -5,12 +5,15 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
 
 - les mots, phrases et préfixes passent par l'index (tous requis) ; les exclusions
   sont cherchées à part et retirées, pour qu'`-mot` marche même seul ;
+- un mot est cherché à sa forme réduite (#372, `word_forms.py`) : le singulier trouve
+  le pluriel, et l'inverse ; la phrase exacte et le préfixe restent tels qu'écrits ;
 - `projet:` et `chemin:` répétés se cumulent (une note part n'a qu'un projet et un
   chemin), `tag:` répété est exigé en entier (une note part a plusieurs tags) ;
 - les noms se comparent sans casse ni accents (`core.tables.fold`), en Python : le
   `LOWER` de SQLite ne replie que l'ASCII ;
 - `chemin:` suit les niveaux (« Réunion/Préparation ») à toute profondeur et dans tous
-  les projets, et inclut les descendants (#365) ;
+  les projets, et inclut les descendants (#365) ; ses noms de niveaux se comparent à
+  leur forme réduite, comme les mots (#372) ;
 - les fautes de frappe (#200) : un mot libre sans résultat ou rare est élargi aux mots
   proches de l'index (`expand_query`), les résultats exacts passant avant les élargis.
 """
@@ -32,6 +35,8 @@ from .models import Note, NotePart
 from .rendering import heading_anchor, render_note_part
 from .search_document import GROUPS, DocPart, assemble, split_titles
 from .search_index import (
+    WORDS,
+    WRITTEN,
     match_parts,
     quote,
     similar_terms,
@@ -39,6 +44,7 @@ from .search_index import (
     term_documents,
 )
 from .search_query import SearchQuery, Term
+from .word_forms import reduce_text, written_forms
 
 # Un mot libre est élargi s'il est dans moins de RARE note parts. Au plus
 # MAX_ALTERNATIVES mots proches par mot, et aucun sous MIN_LENGTH lettres.
@@ -69,14 +75,14 @@ def expand_query(query: SearchQuery) -> Expansion:
 
     Seuls les mots simples (lettres seules) sont élargis : jamais une phrase entre
     guillemets, un préfixe, un terme exclu, une valeur d'opérateur, ni un mot avec
-    chiffre ou ponctuation.
+    chiffre ou ponctuation. Le singulier et le pluriel comptent ensemble (#372).
     """
     expansion = Expansion()
     for term in query.terms:
         if term.negated or term.kind != "word" or not term.text.isalpha():
             continue
         distance = max_distance(term.text)
-        if not distance or term_documents(fold(term.text)) >= RARE:
+        if not distance or term_documents(term.text) >= RARE:
             continue
         close = [word for word, _ in similar_terms(term.text, distance)]
         if close:
@@ -132,7 +138,7 @@ def search_note_parts(
 
     if not wanted:
         return list(parts.order_by("-note__date", "-pk"))
-    ordered = match_parts(fts_expression(wanted, " "))
+    ordered = match_parts(fts_expression(wanted, " AND "))
     expansion = expand_query(query) if expand else Expansion()
     if expansion:
         widened = match_parts(fts_expression(wanted, " AND ", expansion))
@@ -150,22 +156,39 @@ def search_note_parts(
 
 
 def fts_expression(
-    terms: list[Term], joiner: str, expansion: Expansion | None = None
+    terms: list[Term],
+    joiner: str,
+    expansion: Expansion | None = None,
+    written: bool = False,
 ) -> str:
-    """Requête FTS5 de ces termes : tous (`" "`) ou l'un d'eux (`" OR "`).
+    """Requête FTS5 de ces termes : tous (`" AND "`) ou l'un d'eux (`" OR "`).
 
-    Un mot élargi devient `("écrit" OR "proche" …)`.
+    Une phrase et un préfixe sont cherchés dans le texte tel qu'écrit (`WRITTEN`), un
+    mot à sa forme réduite dans `WORDS` (#372) ; un mot élargi (#200) devient
+    `words : ("écrit" OR "proche" …)`. `written` cherche aussi les mots dans le texte
+    tel qu'écrit, sous chacune de leurs écritures (`written_forms`) : c'est la requête
+    des extraits, qui surlignent le mot tel qu'il est écrit dans la note.
     """
     alternatives = expansion.alternatives if expansion else {}
     pieces = []
     for term in terms:
-        piece = quote(term.text)
+        if term.kind == "phrase":
+            pieces.append(f"{WRITTEN} : {quote(term.text)}")
+            continue
         if term.kind == "prefix":
-            piece += "*"
-        elif term.kind == "word" and term.text in alternatives:
-            words = [piece, *(quote(word) for word in alternatives[term.text])]
-            piece = "(" + " OR ".join(words) + ")"
-        pieces.append(piece)
+            pieces.append(f"{WRITTEN} : {quote(term.text)}*")
+            continue
+        # Les mots proches sont des mots de l'index, déjà à leur forme réduite.
+        reduced = [reduce_text(term.text), *alternatives.get(term.text, [])]
+        if written:
+            column = WRITTEN
+            words = [form for word in reduced for form in written_forms(word)] or [
+                term.text
+            ]
+        else:
+            column, words = WORDS, reduced
+        options = " OR ".join(quote(word) for word in dict.fromkeys(words))
+        pieces.append(f"{column} : ({options})")
     return joiner.join(pieces)
 
 
@@ -211,11 +234,14 @@ def section_ids_at(paths: list[str]) -> set[int]:
     « Réunion/Préparation » désigne le niveau « Préparation » directement sous
     « Réunion », à n'importe quelle profondeur et dans n'importe quel projet ;
     `projet:` restreint à l'un d'eux. Les niveaux écrits se suivent sans trou :
-    « A/B » trouve A/B, A/B/C et C/A/B, pas A/C/B.
+    « A/B » trouve A/B, A/B/C et C/A/B, pas A/C/B. Les noms se comparent à leur forme
+    réduite : « Calcul thermique » trouve « Calculs thermiques » (#372).
     """
     rows = list(Section.objects.values_list("pk", "parent_id", "name"))
     parent = {pk: parent_id for pk, parent_id, _ in rows}
-    name = {pk: fold(label) for pk, _, label in rows}
+    # Sans casse ni accents, au singulier : « Calculs thermiques » est « calcul
+    # thermique » (#372).
+    name = {pk: reduce_text(label) for pk, _, label in rows}
 
     def chain(pk: int) -> tuple[str, ...]:
         names: list[str] = []
@@ -225,7 +251,7 @@ def section_ids_at(paths: list[str]) -> set[int]:
             current = parent[current]
         return tuple(reversed(names))
 
-    wanted = {tuple(fold(level) for level in split_path(path)) for path in paths}
+    wanted = {tuple(reduce_text(level) for level in split_path(path)) for path in paths}
     wanted.discard(())
     # Un niveau convient si son chemin finit par les niveaux écrits : à n'importe
     # quelle profondeur, dans n'importe quel projet ; les descendants s'ajoutent.
@@ -300,11 +326,8 @@ def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults
     alternatives: dict[str, list[str]] = {}
     for written, found in query.expansions:
         alternatives.setdefault(written, []).append(found)
-    expression = (
-        fts_expression(wanted, " AND ", Expansion(alternatives))
-        if alternatives
-        else fts_expression(wanted, " ")
-    )
+    # Les extraits cherchent les mots tels qu'écrits dans la note (#372).
+    expression = fts_expression(wanted, " AND ", Expansion(alternatives), written=True)
     extracts = snippets(expression, [part.pk for part in parts]) if wanted else {}
     anchors: dict[str, str | None] = {}
     groups: dict[int, NoteResults] = {}

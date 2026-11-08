@@ -2,13 +2,16 @@
 
 C'est un index **dérivé** : il se recalcule avec les note parts (enregistrement,
 suppression, `reprocess_notes`) et ne contient rien qu'on ne puisse reconstruire.
-Une ligne par note part, dont le `rowid` est la clé de la note part ; on y met le
-texte de la note part et ses titres. Les blocs `{.metadata}` (déjà cherchables par
-tag) et les références `image:<pk>` n'y sont pas.
+Une ligne par note part, dont le `rowid` est la clé de la note part, et trois colonnes :
+le texte de la note part (`content`) et ses titres (`headings`) tels qu'écrits, pour
+les phrases exactes, les préfixes et les extraits, et les deux à leur forme réduite
+(`words`, #372), pour les mots : le singulier et le pluriel y sont le même mot. Les
+blocs `{.metadata}` (déjà cherchables par tag) et les références `image:<pk>` n'y
+sont pas.
 
-La table (migration `RunSQL`) ignore la casse et les accents (`unicode61
-remove_diacritics 2`). Ce module ne connaît que `NotePart` : les filtres de projet,
-de chemin et de tag restent ceux du modèle.
+La table ignore la casse et les accents (`unicode61 remove_diacritics 2`). Ce module
+ne connaît que `NotePart` : les filtres de projet, de chemin et de tag restent ceux
+du modèle.
 """
 
 import re
@@ -19,12 +22,14 @@ from django.dispatch import receiver
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 
-from core.tables import fold
-
 from .models import NotePart
 from .qmd.parser import METADATA_BLOCK_START
+from .word_forms import reduce_text
 
 TABLE = "note_part_search"
+# Filtres de colonnes de FTS5 : le texte tel qu'écrit, ou ses formes réduites (#372).
+WRITTEN = "{content headings}"
+WORDS = "words"
 SNIPPET_START, SNIPPET_END = "\x02", "\x03"
 SNIPPET_WORDS = 24
 SNIPPET_BATCH = 500
@@ -48,13 +53,19 @@ def indexed_text(content: str) -> str:
     return IMAGE_REFERENCE_REGEX.sub("", "\n".join(lines))
 
 
+def indexed_words(text: str, headings: str) -> str:
+    """La colonne `words` : le texte et les titres à leur forme réduite (#372)."""
+    return reduce_text(f"{text}\n{headings}")
+
+
 def quote(text: str) -> str:
     """Un mot ou une phrase de FTS5 entre guillemets : aucun opérateur interprété."""
     return '"' + text.replace('"', '""') + '"'
 
 
 def match_expression(text: str) -> str | None:
-    """Requête FTS5 d'un texte libre : chaque mot est une phrase entre guillemets.
+    """Requête FTS5 d'un texte libre : chaque mot, à sa forme réduite, est une phrase
+    entre guillemets cherchée dans la colonne `words` (#372).
 
     Les mots sont tous requis ; aucun opérateur de FTS5 (`OR`, `NEAR`, `*`, `:`,
     parenthèses) n'est interprété, donc un texte quelconque ne peut pas être une
@@ -63,7 +74,7 @@ def match_expression(text: str) -> str | None:
     words = text.split()
     if not words:
         return None
-    return " ".join(quote(word) for word in words)
+    return " AND ".join(f"{WORDS} : {quote(reduce_text(word))}" for word in words)
 
 
 def match_parts(expression: str) -> list[int]:
@@ -77,7 +88,8 @@ def match_parts(expression: str) -> list[int]:
 
 
 def search_parts(text: str) -> list[int]:
-    """Clés des note parts qui contiennent tous les mots, la plus pertinente d'abord."""
+    """Clés des note parts qui contiennent tous les mots (au singulier comme au
+    pluriel), la plus pertinente d'abord."""
     expression = match_expression(text)
     return [] if expression is None else match_parts(expression)
 
@@ -87,6 +99,9 @@ def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
 
     Le texte de l'extrait est échappé : seuls les `<mark>` sont du HTML. FTS5 pose
     des caractères de contrôle autour des termes, remplacés après l'échappement.
+    L'extrait vient de la colonne où les termes sont trouvés : pour montrer le texte
+    tel qu'écrit, `expression` ne cherche que dans `WRITTEN` (`fts_expression(…,
+    written=True)` dans `search.py`).
     """
     found: dict[int, SafeString] = {}
     with connection.cursor() as cursor:
@@ -106,10 +121,12 @@ def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
 
 def index_part(part: NotePart) -> None:
     unindex_part(part.pk)
+    text = indexed_text(part.content)
     with connection.cursor() as cursor:
         cursor.execute(
-            f"INSERT INTO {TABLE}(rowid, content, headings) VALUES (%s, %s, %s)",
-            [part.pk, indexed_text(part.content), part.heading_path],
+            f"INSERT INTO {TABLE}(rowid, content, headings, words) "
+            "VALUES (%s, %s, %s, %s)",
+            [part.pk, text, part.heading_path, indexed_words(text, part.heading_path)],
         )
 
 
@@ -140,8 +157,9 @@ def unindex_deleted_part(sender, instance, **kwargs):
     unindex_part(instance.pk)
 
 
-# Mots de l'index (#200) : une vue FTS5 sur la table, une ligne par mot avec le
-# nombre de note parts (`doc`) qui le contiennent.
+# Mots de l'index (#200) : une vue FTS5 sur la table, une ligne par mot et par
+# colonne avec le nombre de note parts (`doc`) qui l'y contiennent. On n'y lit que la
+# colonne des formes réduites (#372) : « thermiques » y est « thermique ».
 VOCABULARY = "note_part_vocab"
 
 
@@ -163,9 +181,12 @@ def edit_distance(a: str, b: str) -> int:
 
 
 def term_documents(word: str) -> int:
-    """Nombre de note parts qui contiennent ce mot (déjà sans casse ni accents)."""
+    """Nombre de note parts qui contiennent ce mot, au singulier ou au pluriel."""
     with connection.cursor() as cursor:
-        cursor.execute(f"SELECT doc FROM {VOCABULARY} WHERE term = %s", [word])
+        cursor.execute(
+            f"SELECT doc FROM {VOCABULARY} WHERE col = %s AND term = %s",
+            [WORDS, reduce_text(word)],
+        )
         row = cursor.fetchone()
     return row[0] if row else 0
 
@@ -174,20 +195,23 @@ def similar_terms(word: str, max_distance: int) -> list[tuple[str, int]]:
     """Les mots de l'index à `max_distance` fautes au plus de `word`, sans lui-même.
 
     Renvoie `(mot, nombre de note parts)`, le plus proche d'abord, puis le plus
-    fréquent. Casse et accents sont ignorés, comme dans l'index.
+    fréquent. Les mots sont à leur forme réduite, comme dans la colonne `words` :
+    casse, accents et pluriel sont ignorés, et « thermiques » n'est pas un mot proche
+    de « thermique » (#372).
     """
-    folded = fold(word)
+    reduced = reduce_text(word)
     with connection.cursor() as cursor:
         cursor.execute(
-            f"SELECT term, doc FROM {VOCABULARY} WHERE length(term) BETWEEN %s AND %s",
-            [len(folded) - max_distance, len(folded) + max_distance],
+            f"SELECT term, doc FROM {VOCABULARY} "
+            "WHERE col = %s AND length(term) BETWEEN %s AND %s",
+            [WORDS, len(reduced) - max_distance, len(reduced) + max_distance],
         )
         candidates = cursor.fetchall()
     found = []
     for term, documents in candidates:
-        if term == folded:
+        if term == reduced:
             continue
-        distance = edit_distance(folded, term)
+        distance = edit_distance(reduced, term)
         if distance <= max_distance:
             found.append((distance, -documents, term))
     return [(term, -negative) for _, negative, term in sorted(found)]
