@@ -1,10 +1,53 @@
+from collections.abc import Mapping
+
 from django import forms
 from django.forms import modelformset_factory
+from django.urls import reverse
 
 from core.forms import SectionPathField, section_path_text
 from core.sections import section_for
 
 from .models import Todo
+from .parent_choices import ParentContext, parent_choices
+
+
+class ParentSelect(forms.Select):
+    """Choix de la tâche parente (#390) : options groupées, libellé complet d'une
+    option coupée en infobulle, case des tâches terminées, rechargé par htmx.
+
+    Les options se calculent à l'affichage seulement, d'après `parent_data` (les
+    valeurs saisies) : un formulaire envoyé et valide n'en a pas besoin.
+    """
+
+    template_name = "todolist/widgets/parent_select.html"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.parent_data: Mapping = {}
+        self.todo: Todo | None = None
+        self.titles: dict[str, str] = {}
+
+    def create_option(
+        self, name, value, label, selected, index, subindex=None, attrs=None
+    ):
+        option = super().create_option(
+            name, value, label, selected, index, subindex, attrs
+        )
+        title = self.titles.get(str(value))
+        if title:
+            option["attrs"]["title"] = title
+        return option
+
+    def get_context(self, name, value, attrs):
+        result = parent_choices(ParentContext.from_data(self.parent_data, self.todo))
+        self.choices, self.titles = result.choices, result.titles
+        context = super().get_context(name, value, attrs)
+        context["widget"]["show_done"] = self.parent_data.get("parent_show_done") == "1"
+        url = reverse("todolist:parent_choices")
+        context["widget"]["choices_url"] = (
+            f"{url}?todo={self.todo.pk}" if self.todo else url
+        )
+        return context
 
 
 class SectionPathForm(forms.ModelForm):
@@ -47,10 +90,14 @@ class TodoForm(SectionPathForm):
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
             "progress": forms.NumberInput(attrs={"min": 0, "max": 100}),
+            "parent": ParentSelect,
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, parent_data=None, **kwargs):
+        """`parent_data` : projet, chemin, parent et case des terminées tels que
+        saisis, quand htmx recharge le choix du parent (#390)."""
         super().__init__(*args, **kwargs)
+        self.set_up_parent(parent_data)
         self.fields["due_date"].input_formats = [r"%Y-%m-%d"]
         if not (self.instance.pk and self.instance.children.exists()):
             # Sans sous-tâche, une tâche est terminée à 100 % d'avancement.
@@ -62,6 +109,20 @@ class TodoForm(SectionPathForm):
             ].help_text = (
                 "Calculé à partir des sous-tâches : la moyenne de leur avancement."
             )
+
+    def set_up_parent(self, parent_data):
+        """Le parent se choisit parmi les tâches les plus proches de ce qui est
+        saisi (#390). Seul l'affichage est trié : toute tâche reste acceptée, sauf
+        une boucle (`Todo.clean`)."""
+        widget = self.fields["parent"].widget
+        widget.todo = self.instance if self.instance.pk else None
+        if self.is_bound:
+            widget.parent_data = self.data
+        elif parent_data is not None:
+            widget.parent_data = parent_data
+            self.initial["parent"] = parent_data.get("parent")
+        else:
+            widget.parent_data = self.initial
 
 
 class NoteReviewForm(SectionPathForm):

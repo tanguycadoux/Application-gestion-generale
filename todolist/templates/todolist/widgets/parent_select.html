@@ -1,0 +1,23 @@
+{% comment %}
+Tâche parente (#390) : le <select> groupé (même chemin, même projet, autres
+projets) et la case des tâches terminées. htmx recharge ce bloc depuis le serveur
+quand le projet, le chemin ou la case changent ; sans JavaScript, la liste suit
+ce qui est enregistré (ou envoyé).
+{% endcomment %}
+<div id="parent-field"
+     class="flex flex-col items-start gap-1"
+     data-hx-get="{{ widget.choices_url }}"
+     data-hx-trigger="change from:#id_project, change from:#id_section_path, change from:#parent-show-done"
+     data-hx-include="#id_project, #id_section_path, #id_parent, #parent-show-done"
+     data-hx-target="this"
+     data-hx-swap="outerHTML">
+    {% include "django/forms/widgets/select.html" %}
+    <label class="text-sm text-slate-600">
+        <input type="checkbox"
+               id="parent-show-done"
+               name="parent_show_done"
+               value="1"
+               {% if widget.show_done %}checked{% endif %}>
+        Proposer aussi les tâches terminées
+    </label>
+</div>

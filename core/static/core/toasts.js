@@ -45,6 +45,17 @@
             document.getElementById("toasts").append(toast);
             setUp(toast);
         },
+
+        // Toasts rendus par le serveur dans la réponse d'une requête en arrière-plan
+        // (core/components/message_toasts.html, #389) : HTML de l'application, où
+        // Django a déjà échappé le texte des messages. Le document analysé est
+        // inerte (ni script ni chargement) ; seuls ses toasts sont repris.
+        insert(html) {
+            const parsed = new DOMParser().parseFromString(html, "text/html");
+            const toasts = [...parsed.querySelectorAll("[data-toast]")];
+            document.getElementById("toasts").append(...toasts);
+            toasts.forEach(setUp);
+        },
     };
 
     document.querySelectorAll("[data-toast]").forEach(setUp);
