@@ -5,8 +5,6 @@ Chaque mot a une forme réduite (sans casse ni accents, sans s ni x final, -aux 
 qu'écrits, et le surlignage marque le mot tel qu'il est écrit dans la note.
 """
 
-import unittest
-
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
@@ -406,20 +404,17 @@ class PluralHelpTests(TestCase):
 
     url = reverse("note_taking:notes_search")
 
-    @unittest.expectedFailure
     def test_l_aide_dit_que_la_phrase_garde_son_nombre(self):
         response = self.client.get(self.url)
 
         self.assertContains(response, "le singulier ne trouve pas le pluriel")
         self.assertNotContains(response, "au singulier ou au pluriel")
 
-    @unittest.expectedFailure
     def test_l_aide_dit_que_les_mots_courts_restent_tels_quels(self):
         response = self.client.get(self.url)
 
         self.assertContains(response, "5 lettres")
 
-    @unittest.expectedFailure
     def test_l_annulation_de_l_elargissement_dit_ce_qu_elle_fait(self):
         # `exact=1` ne coupe que l'élargissement aux fautes (#200) : les mots restent
         # cherchés au singulier comme au pluriel.
