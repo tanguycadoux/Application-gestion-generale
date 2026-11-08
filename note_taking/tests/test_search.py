@@ -1,7 +1,6 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
@@ -217,7 +216,6 @@ class NotesSearchTests(SearchTestCase):
         field = re.search(r'<input type="search" name="q"[^>]*>', html).group()
         self.assertRegex(field, r'class="(?:[^"]*\s)?w-full[\s"]')
 
-    @unittest.expectedFailure
     def test_la_colonne_de_la_zone_a_une_largeur_minimale(self):
         """Avec `w-full`, la zone ne donne plus de minimum à sa colonne : sans borne,
         la colonne `1fr` tombe au quart de la page dans une fenêtre étroite et la
