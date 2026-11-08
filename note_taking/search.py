@@ -30,7 +30,7 @@ from core.templatetags.ui import date_text
 
 from .models import Note, NotePart
 from .rendering import heading_anchor, render_note_part
-from .search_document import GROUPS, DocPart, assemble, split_titles
+from .search_document import GROUPS, DocPart, Level, assemble, split_titles
 from .search_index import (
     match_parts,
     quote,
@@ -324,8 +324,11 @@ def document_html(parts: list[NotePart], group: str) -> SafeString:
     """Les note parts assemblées en un document, rendu comme une note (#356).
 
     Les numéros des tableaux et figures se calculent sur le texte assemblé. Dans une
-    note, les note parts restent dans l'ordre où elles sont écrites.
+    note, les note parts restent dans l'ordre où elles sont écrites. Les titres sont
+    ceux des niveaux en base (#369) ; le lien d'une note part mène au titre tel
+    qu'il est écrit dans sa note.
     """
+    levels = levels_of(parts)
     anchors: dict[str, str | None] = {}
     pieces = []
     for part in sorted(parts, key=lambda part: part.pk):
@@ -340,12 +343,34 @@ def document_html(parts: list[NotePart], group: str) -> SafeString:
                 date_label=date_text(part.note.date, "long"),
                 note_url=note_url,
                 part_url=note_url + (f"#{anchors[last]}" if anchors[last] else ""),
-                titles=titles,
+                levels=levels[part.pk],
                 content=part.content,
-                project=part.project.name,
             )
         )
     return mark_safe(render_note_part(assemble(pieces, group)))
+
+
+def levels_of(parts: list[NotePart]) -> dict[int, tuple[Level, ...]]:
+    """Par note part, ses niveaux en base : le projet, puis sa section et ses
+    ancêtres, de la racine au plus profond. Une requête pour toutes les sections."""
+    sections: dict[int, tuple[int | None, str]] = {}
+    if any(part.section_id is not None for part in parts):
+        sections = {
+            pk: (parent_id, name)
+            for pk, parent_id, name in Section.objects.values_list(
+                "pk", "parent_id", "name"
+            )
+        }
+    found = {}
+    for part in parts:
+        chain: list[Level] = []
+        current = part.section_id
+        while current is not None:
+            parent_id, name = sections[current]
+            chain.insert(0, Level(current, name))
+            current = parent_id
+        found[part.pk] = (Level(part.project_id, part.project.name), *chain)
+    return found
 
 
 def project_counts() -> dict[int, int]:
