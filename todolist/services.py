@@ -184,7 +184,7 @@ def renamed_identities(
     ):
         raise NoteRenameError(
             f"Note du {note_date} : le renommage fusionnerait ou séparerait des "
-            "parties de la note. Décocher son titre dans le bilan, ou lui garder son "
+            "passages de la note. Décocher son titre dans le bilan, ou lui garder son "
             "ancien nom."
         )
     return [

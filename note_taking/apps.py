@@ -28,7 +28,8 @@ class NoteTakingConfig(AppConfig):
         "note_taking:notes_search", "Rechercher dans les notes", "search"
     )
     project_usages = (ProjectUsage("note_parts__note", "note", "notes"),)
-    section_usages = (SectionUsage("note_parts", "note part", "note parts"),)
+    # « Passage » : le mot de l'interface pour une note part (#362).
+    section_usages = (SectionUsage("note_parts", "passage", "passages"),)
 
     debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
 

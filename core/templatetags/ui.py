@@ -429,6 +429,7 @@ def path_tree(
     param: str = "path",
     label: str = "Chemins",
     project_param: str = "",
+    count_noun: str = "",
 ) -> dict:
     """Arbre des chemins (#302) : `{% path_tree nodes mode="checkbox" param="path" %}`.
 
@@ -442,7 +443,10 @@ def path_tree(
     - `mode="checkbox"` : une case `name=param`, à placer dans un formulaire ;
     - `label` : nom accessible de l'arbre ;
     - `project_param` : en mode case, fait de chaque projet une case
-      `name=project_param` (valeur : son identifiant), à côté de ses niveaux.
+      `name=project_param` (valeur : son identifiant), à côté de ses niveaux ;
+    - `count_noun` : ce que compte le compteur, au singulier (« passage ») ; le
+      compteur reste « (12) » à l'écran, et se lit « 12 passages » au survol et
+      par un lecteur d'écran (#362). Sans lui, le nombre seul.
 
     Sans `project_param`, un projet n'est ni un lien ni une case.
     """
@@ -467,4 +471,5 @@ def path_tree(
         "param": param,
         "label": label,
         "project_param": project_param if mode == "checkbox" else "",
+        "count_noun": count_noun,
     }

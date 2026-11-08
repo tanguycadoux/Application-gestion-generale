@@ -7,7 +7,6 @@ s'affiche : pages rendues, messages, gabarits et chaînes du code Python.
 
 import ast
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -76,7 +75,6 @@ class VisiblePagesTests(TestCase):
             "tache": reverse("todolist:todo_detail", args=[task.pk]),
         }
 
-    @unittest.expectedFailure
     def test_pages_sans_note_part(self):
         for name, url in self.pages().items():
             with self.subTest(page=name):
@@ -93,7 +91,6 @@ class VisiblePagesTests(TestCase):
 
         self.assert_no_note_part(response.content.decode())
 
-    @unittest.expectedFailure
     def test_message_de_suppression_d_un_niveau_utilise(self):
         url = reverse("core:section_delete", args=[self.project.pk, self.section.pk])
 
@@ -141,7 +138,6 @@ class SourcesTests(TestCase):
                     text = path.read_text(encoding="utf-8")
                     self.assertEqual(FORBIDDEN.findall(text), [])
 
-    @unittest.expectedFailure
     def test_chaines_python_sans_note_part(self):
         """Libellés, messages, aide des commandes : toute chaîne du code, sauf les
         docstrings, qui parlent du modèle aux développeurs. Les tests et les

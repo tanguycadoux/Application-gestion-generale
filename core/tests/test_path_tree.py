@@ -1,6 +1,5 @@
 """L'arbre des chemins réutilisable (#302) : construction des nœuds et composant."""
 
-import unittest
 from typing import Any
 
 from django.template import RequestContext, Template
@@ -264,7 +263,6 @@ class PathTreeComponentTests(TestCase):
 
         self.assertNotIn("(0)", html)
 
-    @unittest.expectedFailure
     def test_compteur_nomme_au_survol_et_pour_les_lecteurs_d_ecran(self):
         """#362 : avec `count_noun`, le nombre dit ce qu'il compte, accordé."""
         html = self.tag(

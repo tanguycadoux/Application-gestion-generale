@@ -5,8 +5,6 @@ identité (#240) change. Les tâches gardent leur fiche (avancement, échéance,
 état) et leur chemin suit.
 """
 
-import unittest
-
 from django.test import TestCase
 
 from core.models import Project, Section
@@ -170,7 +168,6 @@ class RefusedTests(RenameTasksTestCase):
 
         self.assertEqual(self.paths(), [("T", "P › A"), ("T", "P › B")])
 
-    @unittest.expectedFailure
     def test_le_refus_parle_de_passages(self):
         """#362 : le message dit « passages », le mot de l'interface."""
         self.note("# P\n## A\n- [ ] T\n## B\n- [ ] T")

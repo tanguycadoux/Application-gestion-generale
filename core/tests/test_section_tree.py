@@ -1,7 +1,6 @@
 """L'arbre des chemins d'un projet : niveaux, indentation, compteurs (#299)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -46,7 +45,6 @@ class SectionTreeTests(TreeTestCase):
 
         self.assertEqual(self.rows(), [("A", 0, "")])
 
-    @unittest.expectedFailure
     def test_compte_les_passages_du_niveau_et_de_ses_descendants(self):
         """#362 : les note parts s'appellent des passages dans l'interface."""
         self.note("# P\n## A\nx\n### B\ny\n### C\nz")
@@ -60,7 +58,6 @@ class SectionTreeTests(TreeTestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_compte_aussi_les_taches(self):
         self.note("# P\n## A\n- [ ] Une\n### B\n- [ ] Deux\n- [ ] Trois")
 
@@ -106,7 +103,6 @@ class TreePageTests(TreeTestCase):
     def url(self, project=None) -> str:
         return reverse("core:project_paths", args=[(project or self.project).pk])
 
-    @unittest.expectedFailure
     def test_page_avec_le_projet_et_ses_niveaux(self):
         self.note("# P\n## Réunion\nx\n### Suite\ny")
 

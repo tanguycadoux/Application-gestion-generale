@@ -1,7 +1,5 @@
 """Tests de la recherche de note parts par projet et sujet."""
 
-import unittest
-
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
@@ -179,7 +177,6 @@ class NotesSearchTests(SearchTestCase):
         )
         self.assertNotContains(response, "Aucun résultat")
 
-    @unittest.expectedFailure
     def test_l_aide_dit_ce_qu_est_un_passage(self):
         """#362 : les résultats sont des passages ; l'aide dit ce que c'est, et que
         tous les mots sont cherchés dans le même."""
@@ -313,7 +310,6 @@ class PathTreeTests(SearchTestCase):
         self.assertEqual(counts["Alpha › Mesures › Détail"], 1)
         self.assertEqual(counts["Alpha › thermique"], 1)
 
-    @unittest.expectedFailure
     def test_compteurs_nommes_en_passages(self):
         """#362 : le nombre affiché compte des passages, et le dit au survol et
         aux lecteurs d'écran."""
