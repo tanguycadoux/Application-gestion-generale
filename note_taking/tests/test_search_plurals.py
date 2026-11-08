@@ -5,6 +5,8 @@ Chaque mot a une forme réduite (sans casse ni accents, sans s ni x final, -aux 
 qu'écrits, et le surlignage marque le mot tel qu'il est écrit dans la note.
 """
 
+import unittest
+
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
@@ -278,6 +280,48 @@ class PluralSnippetTests(TestCase):
         self.assertIn("<mark>banc d&#x27;essai</mark>", snippet)
         self.assertIn("<mark>conductivité</mark>", snippet)
 
+    @unittest.expectedFailure
+    def test_adresse_recopiee_de_la_note_surlignee(self):
+        # Trop de combinaisons d'écritures (`MAX_COMBINATIONS`), et « https » réduit
+        # en « http » : le terme tel que tapé est surligné.
+        url = "https://intranet.exemple.fr/projet/rapport/annexe"
+        part = self.part(f"Lien : {url} pour la suite")
+
+        snippet = self.snippet(url, part)
+
+        self.assertIn(f"<mark>{url}</mark>", snippet)
+
+    @unittest.expectedFailure
+    def test_nom_de_fichier_recopie_de_la_note_surligne(self):
+        part = self.part("Voir rapport_final_essais_thermiques.pdf en annexe")
+
+        snippet = self.snippet("rapport_final_essais_thermiques.pdf", part)
+
+        self.assertIn("<mark>rapport_final_essais_thermiques.pdf</mark>", snippet)
+
+    @unittest.expectedFailure
+    def test_exposant_et_indice_surlignes(self):
+        # `fold` change « m² » en « m2 », que le texte tel qu'écrit n'a pas.
+        surface = self.part("Surface utile 20 m² dans le local")
+        emissions = self.part("Émissions de CO₂ du banc d'essai")
+
+        self.assertIn("<mark>m²</mark>", self.snippet("surface m²", surface))
+        self.assertIn("<mark>CO₂</mark>", self.snippet("émissions CO₂", emissions))
+
+    @unittest.expectedFailure
+    def test_un_terme_introuvable_tel_qu_ecrit_ne_retire_pas_l_extrait(self):
+        # « annexes » n'est pas écrit, ni la forme réduite « http » : les autres
+        # termes restent surlignés.
+        part = self.part(
+            "Lien : https://intranet.exemple.fr/projet/rapport/annexe pour la suite"
+        )
+
+        snippet = self.snippet(
+            "lien https://intranet.exemple.fr/projet/rapport/annexes", part
+        )
+
+        self.assertIn("<mark>Lien</mark>", snippet)
+
     def test_page_de_recherche(self):
         self.part("Bilan", heading_path="Chantier Sud › Calculs thermiques")
         self.common("calcul thermique")
@@ -359,3 +403,35 @@ class ReducedIndexMigrationTests(TransactionTestCase):
             [(41, "Les journaux de bord", "Alpha › Calculs thermiques")],
         )
         self.assertIn(("journaux",), self.rows("SELECT term FROM note_part_vocab"))
+
+
+class PluralHelpTests(TestCase):
+    """Ce que la page dit du singulier et du pluriel (#372)."""
+
+    url = reverse("note_taking:notes_search")
+
+    @unittest.expectedFailure
+    def test_l_aide_dit_que_la_phrase_garde_son_nombre(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "le singulier ne trouve pas le pluriel")
+        self.assertNotContains(response, "au singulier ou au pluriel")
+
+    @unittest.expectedFailure
+    def test_l_aide_dit_que_les_mots_courts_restent_tels_quels(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "5 lettres")
+
+    @unittest.expectedFailure
+    def test_l_annulation_de_l_elargissement_dit_ce_qu_elle_fait(self):
+        # `exact=1` ne coupe que l'élargissement aux fautes (#200) : les mots restent
+        # cherchés au singulier comme au pluriel.
+        project = Project.objects.create(name="Alpha")
+        note = Note.objects.create(date="2026-10-15")
+        NotePart.objects.create(note=note, project=project, content="thermique")
+
+        response = self.client.get(self.url, {"q": "thermiqe"})
+
+        self.assertContains(response, "Chercher sans corriger les fautes")
+        self.assertNotContains(response, "Chercher exactement ce qui est écrit")
