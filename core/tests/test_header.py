@@ -83,3 +83,31 @@ class HeaderTests(TestCase):
 
         self.assertLess(nav.index('id="nav-section-1"'), nav.index("<ul"))
         self.assertEqual(len(re.findall(r"<ul[ >]", nav)), 3)
+
+
+class HeaderHeightTests(TestCase):
+    """L'en-tête garde la même hauteur partout, page de recherche comprise (#370).
+
+    La page de recherche vide le bloc `menu_search` : sans hauteur fixe, l'en-tête y
+    prenait la hauteur du seul nom de l'application et la page remontait de 6 px.
+    """
+
+    def header_tag(self, name: str) -> str:
+        html = self.client.get(reverse(name)).content.decode()
+        match = re.search(r"<header [^>]*>", html)
+        assert match is not None
+        return match.group()
+
+    def test_hauteur_fixe_identique_sur_toutes_les_pages(self):
+        tags = {self.header_tag(name) for name in (*PAGES, "note_taking:notes_search")}
+
+        self.assertEqual(len(tags), 1)
+        self.assertRegex(tags.pop(), r'class="(?:[^"]*\s)?h-\d+[\s"]')
+
+    def test_le_nom_de_l_application_tient_sur_une_ligne(self):
+        """Passé à la ligne (écran étroit), il dépasserait de la hauteur fixe."""
+        html = self.client.get(reverse("core:index")).content.decode()
+
+        header = re.search(r"<header .*?</header>", html, re.S).group()
+        link = re.search(r'<a [^>]*href="/"[^>]*>', header).group()
+        self.assertIn("whitespace-nowrap", link)

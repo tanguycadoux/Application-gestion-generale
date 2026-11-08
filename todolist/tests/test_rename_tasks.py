@@ -168,6 +168,16 @@ class RefusedTests(RenameTasksTestCase):
 
         self.assertEqual(self.paths(), [("T", "P › A"), ("T", "P › B")])
 
+    def test_le_refus_parle_de_passages(self):
+        """#362 : le message dit « passages », le mot de l'interface."""
+        self.note("# P\n## A\n- [ ] T\n## B\n- [ ] T")
+        keys = [o.key for o in find_occurrences(self.project, ["A"])]
+
+        with self.assertRaisesMessage(
+            NoteRenameError, "fusionnerait ou séparerait des passages de la note"
+        ):
+            rename_titles(self.project, ["A"], "B", keys)
+
     def test_fusion_de_parties_avec_des_taches_refusee(self):
         """Deux titres qui ne diffèrent que par la casse sont deux parties ; les
         renommer pareil les fusionnerait, et les lignes ne se retrouveraient plus."""

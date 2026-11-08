@@ -2,11 +2,14 @@
 date ou par chemin, sélecteur de vue."""
 
 import re
+from datetime import date
 
 from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project
+from core.sections import section_for
+from core.templatetags.ui import date_text
 from note_taking.models import Note, NotePart
 from note_taking.search import (
     DEFAULT_GROUP,
@@ -15,7 +18,9 @@ from note_taking.search import (
     result_options,
     search_note_parts,
 )
+from note_taking.search_document import split_titles
 from note_taking.search_query import parse_query
+from note_taking.services import process_note_parts
 
 
 class PresentationTestCase(TestCase):
@@ -26,14 +31,25 @@ class PresentationTestCase(TestCase):
         cls.project = Project.objects.create(name="Alpha")
         cls.new = Note.objects.create(date="2026-10-15")
         cls.old = Note.objects.create(date="2026-09-10")
-        cls.mesure = cls.part(cls.new, "banc de mesure", "Alpha › Réunion › Bilan")
-        cls.test = cls.part(cls.new, "banc de test", "Alpha › Réunion")
-        cls.ancien = cls.part(cls.old, "un banc ancien", "Alpha › Réunion")
+        cls.mesure = cls.part(
+            cls.new, "banc de mesure", "Alpha › Réunion › Bilan", level=True
+        )
+        cls.test = cls.part(cls.new, "banc de test", "Alpha › Réunion", level=True)
+        cls.ancien = cls.part(cls.old, "un banc ancien", "Alpha › Réunion", level=True)
 
     @classmethod
-    def part(cls, note, content, heading_path):
+    def part(cls, note, content, heading_path, level=False):
+        # `level` : le niveau en base, comme à l'analyse d'une note (les titres sous
+        # le projet) ; la vue « par chemin » regroupe par niveau (#369).
+        section = (
+            section_for(cls.project, split_titles(heading_path)[1:]) if level else None
+        )
         return NotePart.objects.create(
-            note=note, project=cls.project, content=content, heading_path=heading_path
+            note=note,
+            project=cls.project,
+            section=section,
+            content=content,
+            heading_path=heading_path,
         )
 
     def get(self, **params):
@@ -206,6 +222,15 @@ class DocumentByPathTests(PresentationTestCase):
 
         self.assertLess(html.index("banc de test"), html.index("un banc ancien"))
 
+    def test_note_part_du_projet_seul_sous_le_projet(self):
+        self.part(self.new, "banc seul", "Alpha")
+
+        html = self.get(view="document", group="path").content.decode()
+
+        self.assertEqual(html.count("<h2>Alpha</h2>"), 1)
+        self.assertLess(html.index("<h2>Alpha</h2>"), html.index("banc seul"))
+        self.assertLess(html.index("banc seul"), html.index("<h3>Réunion</h3>"))
+
     def test_regroupement_inconnu_retombe_sur_la_date(self):
         html = self.get(view="document", group="autre").content.decode()
 
@@ -230,3 +255,140 @@ class ExtraitsUnchangedTests(PresentationTestCase):
 
         self.assertContains(response, "<mark>banc</mark>")
         self.assertEqual(response.context["view"], "extraits")
+
+
+# Le scénario de #369 : un même niveau écrit de plusieurs façons (casse, blancs), un
+# niveau voisin sans accents, et deux projets qui ne diffèrent que par la casse.
+NOTES_369 = {
+    "2026-10-01": (
+        "# Chantier Nord\n\n## Réunion de chantier\n\n### Préparation\n\nc0101prep\n\n"
+        "### Compte rendu\n\nc0101cr\n\n## Suivi\n\nc0101suivi\n\n"
+        "# Chantier Sud\n\n## Réunion de chantier\n\nc0101sud\n"
+    ),
+    "2026-10-05": (
+        "# Chantier Nord\n\n## Reunion de chantier\n\n### Preparation\n\nc1005\n"
+    ),
+    "2026-10-12": (
+        "# Chantier Nord\n\n## Réunion  de chantier\n\n### Préparation\n\nc1012\n"
+    ),
+    "2026-10-15": (
+        "# Chantier nord\n\n## Réunion de chantier\n\nc1015nord\n\n"
+        "# Chantier Nord\n\n## Réunion de Chantier\n\n### Préparation\n\nc1015maj\n\n"
+        "## Réunion de chantier\n\n### Préparation\n\nc1015min\n"
+    ),
+}
+OUTLINE_REGEX = re.compile(
+    r"<h([2-6])>(.*?)</h\1>"
+    r'|<strong><a href="/notes/(\d{4}-\d{2}-\d{2})/[^"]*">'
+    r"|<p>(c\d{4}\w*)</p>",
+    re.DOTALL,
+)
+
+
+def outline(html: str) -> list[str]:
+    """Les titres, les dates en lien et les marqueurs de contenu du document, dans
+    l'ordre : « h2 Chantier Nord », « 2026-10-15 », « c1015maj »."""
+    document = html.split('id="results"')[1]
+    items = []
+    for match in OUTLINE_REGEX.finditer(document):
+        level, title, day, content = match.groups()
+        if level:
+            items.append(f"h{level} {re.sub(r'<[^>]+>', '', title)}")
+        else:
+            items.append(day or content)
+    return items
+
+
+def note_title(day: int) -> str:
+    return f"h2 Note du {date_text(date(2026, 10, day), 'long')}"
+
+
+class DocumentByLevelTests(TestCase):
+    """Un groupe par niveau en base (#369), pas par titre tel qu'écrit."""
+
+    url = reverse("note_taking:notes_search")
+
+    @classmethod
+    def setUpTestData(cls):
+        for day, body in NOTES_369.items():
+            process_note_parts(Note.objects.create(date=day, body=body))
+
+    def document(self, group: str) -> list[str]:
+        response = self.client.get(
+            self.url,
+            {
+                "q": 'chemin:"réunion de chantier"',
+                "view": "document",
+                "group": group,
+            },
+        )
+        return outline(response.content.decode())
+
+    def test_par_chemin_un_groupe_par_niveau_sans_projet_rouvert(self):
+        self.assertEqual(
+            self.document("path"),
+            [
+                "h2 Chantier Nord",
+                "h3 Réunion de chantier",
+                "h4 Compte rendu",
+                "2026-10-01",
+                "c0101cr",
+                "h4 Préparation",
+                "2026-10-15",
+                "c1015maj",
+                "2026-10-15",
+                "c1015min",
+                "2026-10-12",
+                "c1012",
+                "2026-10-01",
+                "c0101prep",
+                "h3 Reunion de chantier",
+                "h4 Preparation",
+                "2026-10-05",
+                "c1005",
+                "h2 Chantier nord",
+                "h3 Réunion de chantier",
+                "2026-10-15",
+                "c1015nord",
+                "h2 Chantier Sud",
+                "h3 Réunion de chantier",
+                "2026-10-01",
+                "c0101sud",
+            ],
+        )
+
+    def test_par_date_un_meme_niveau_n_est_pas_rouvert(self):
+        self.assertEqual(
+            self.document("date"),
+            [
+                note_title(15),
+                "h3 Chantier nord",
+                "h4 Réunion de chantier",
+                "c1015nord",
+                "h3 Chantier Nord",
+                "h4 Réunion de chantier",
+                "h5 Préparation",
+                "c1015maj",
+                "c1015min",
+                note_title(12),
+                "h3 Chantier Nord",
+                "h4 Réunion de chantier",
+                "h5 Préparation",
+                "c1012",
+                note_title(5),
+                "h3 Chantier Nord",
+                "h4 Reunion de chantier",
+                "h5 Preparation",
+                "c1005",
+                note_title(1),
+                "h3 Chantier Nord",
+                "h4 Réunion de chantier",
+                "h5 Préparation",
+                "c0101prep",
+                "h5 Compte rendu",
+                "c0101cr",
+                "h3 Chantier Sud",
+                "h4 Réunion de chantier",
+                "c0101sud",
+            ],
+        )

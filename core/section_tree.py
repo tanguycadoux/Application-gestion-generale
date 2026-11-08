@@ -19,7 +19,7 @@ from .models import Project, Section
 class TreeRow:
     section: Section
     depth: int
-    # « 3 note parts et 2 tâches », vide si rien n'utilise ce niveau ni ses
+    # « 3 passages et 2 tâches », vide si rien n'utilise ce niveau ni ses
     # descendants.
     usage: str
     total: int
