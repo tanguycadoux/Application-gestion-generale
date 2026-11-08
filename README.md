@@ -108,6 +108,7 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | retour | `arrow_back` |
 | mois précédent, suivant | `chevron_left`, `chevron_right` |
 | aujourd'hui, note du jour | `today` |
+| terminer (l'édition d'une note) | `check_circle` |
 
 Confirmation avant envoi (#126, #292) : toute suppression, tout écart ou rétablissement passe par `{% confirm_button %}` (`core/templatetags/ui.py`), une **popover HTML native** sans JavaScript. Le bouton de la page (`type="button"`, `popovertarget`) l'ouvre ; le navigateur la ferme (Échap, clic à côté, « Annuler ») et la place sous le bouton, alignée sur son bord droit, par l'ancrage CSS (`.confirm-popover`, retournée au-dessus si la place manque). Elle contient le message et un formulaire POST, avec « Annuler » (`ghost`) puis l'action (« Supprimer » ou « Écarter » en `danger`, « Rétablir » en `primary`). Sans JavaScript, elle fonctionne aussi. Le bouton d'une suppression impossible est désactivé, relié à sa raison (`describedby`), et n'ouvre rien. Le message **ne reprend pas le nom de l'objet** (un titre de tâche peut être très long, avec un lien) : la page ou la ligne montre déjà de quoi il s'agit ; il dit seulement ce qui disparaît avec lui (« et ses 2 sous-tâches »). La popover ne défile jamais : le texte passe à la ligne et la hauteur s'adapte. Les vues de suppression n'acceptent que POST : il n'y a pas de page de confirmation.
 
@@ -173,6 +174,8 @@ Une note peut être :
 - remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
 À chaque enregistrement, le contenu est analysé et découpé en *note parts* (voir ci-dessous), et les TODO éventuelles sont générées.
+
+Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
 
 ### Import de fichiers
 
@@ -324,7 +327,7 @@ Une ligne en sous-liste crée une sous-tâche de la tâche au-dessus d'elle (#23
 
 Chaque TODO est rattachée au projet et à la dernière section du chemin de la note part, n'a pas d'échéance et reçoit comme tags ceux de la note part (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
 
-Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
+Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Dans l'éditeur, le bilan ne s'ouvre qu'avec « Terminer l'édition » ; « Enregistrer la note » signale seulement les tâches à revoir (#389). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
 
 - les tâches de la note : échéance, priorité, projet et sujet s'y règlent pour chacune ;
 - les tâches dont la ligne a disparu, parce qu'elle a été modifiée, déplacée ou retirée : la garder, l'écarter, ou la remplacer par la tâche d'une nouvelle ligne, qui lui garde son avancement, son échéance et ses sous-tâches.

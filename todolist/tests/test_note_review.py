@@ -1,7 +1,6 @@
 """Tâches issues des notes : sans échéance, et page bilan après l'enregistrement
 d'une note qui a des tâches à revoir (#239, #240)."""
 
-import unittest
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -67,7 +66,6 @@ class RedirectAfterSaveTests(TestCase):
 
         self.assertRedirects(response, review_url("2025-11-24"))
 
-    @unittest.expectedFailure
     def test_enregistrement_sur_place_ne_mene_pas_au_bilan(self):
         """#389 : enregistrer sans quitter l'éditeur n'ouvre pas le bilan ; un
         avertissement dit les tâches à revoir, et le bilan vient à la fin."""
@@ -85,7 +83,6 @@ class RedirectAfterSaveTests(TestCase):
         self.assertIn("2 tâches à revoir", html)
         self.assertIn("à la fin de l&#x27;édition", html)
 
-    @unittest.expectedFailure
     def test_enregistrement_sans_javascript_revient_a_l_editeur(self):
         note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
         process_note_parts(note)

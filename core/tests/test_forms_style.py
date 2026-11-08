@@ -79,7 +79,8 @@ class FormGridTemplateTests(TestCase):
 
 
 SAVE_BUTTON = (
-    '<button type="submit" form="{form}" class="{classes}" aria-label="{label}">'
+    '<button type="submit" form="{form}"{extra} class="{classes}"'
+    ' aria-label="{label}">'
     + icon_svg("save").replace("{", "{{").replace("}", "}}")
     + "</button>"
 )
@@ -94,11 +95,13 @@ def page_header(html: str) -> str:
 class SaveInHeaderTests(TestCase):
     """Enregistrer : bouton ghost en haut à droite, comme la barre d'outils d'une note."""
 
-    def assert_save_in_header(self, html: str, form_id: str, label: str):
+    def assert_save_in_header(
+        self, html: str, form_id: str, label: str, extra: str = ""
+    ):
         self.assertIn(f'<form id="{form_id}"', html)
         self.assertInHTML(
             SAVE_BUTTON.format(
-                form=form_id, classes=BUTTON_VARIANTS["ghost"], label=label
+                form=form_id, extra=extra, classes=BUTTON_VARIANTS["ghost"], label=label
             ),
             page_header(html),
         )
@@ -107,7 +110,10 @@ class SaveInHeaderTests(TestCase):
     def test_nouvelle_note(self):
         html = self.client.get(reverse("note_taking:new_note")).content.decode()
 
-        self.assert_save_in_header(html, "note-form", "Enregistrer la note")
+        # « Enregistrer » reste dans l'éditeur (#389).
+        self.assert_save_in_header(
+            html, "note-form", "Enregistrer la note", ' name="stay" value="1"'
+        )
 
     def test_modification_d_une_note(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
@@ -116,7 +122,10 @@ class SaveInHeaderTests(TestCase):
             reverse("note_taking:edit_note", args=[note.date])
         ).content.decode()
 
-        self.assert_save_in_header(html, "note-form", "Enregistrer la note")
+        # « Enregistrer » reste dans l'éditeur (#389).
+        self.assert_save_in_header(
+            html, "note-form", "Enregistrer la note", ' name="stay" value="1"'
+        )
 
     def test_formulaire_de_todo(self):
         html = self.client.get(reverse("todolist:todo_create")).content.decode()
