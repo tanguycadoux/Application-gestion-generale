@@ -1,9 +1,9 @@
 # Dépendances de développement : outillage (lint, typage, gabarits, couverture)
 -r requirements.txt
 
-coverage==7.17.0
+coverage==7.17.2
 django-stubs==6.1.2
-djlint==1.47.1
+djlint==1.49.9
 mypy==2.4.1
-ruff==0.17.3
+ruff==0.17.4
 types-Markdown==3.11.2.20261029
