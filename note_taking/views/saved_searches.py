@@ -11,8 +11,8 @@ from django.views.decorators.http import require_POST
 
 from core.exceptions import AppError
 
-from .models import SavedSearch
-from .saved_searches import Filters, rename_search, save_search, search_url
+from ..models import SavedSearch
+from ..saved_searches import Filters, rename_search, save_search, search_url
 
 
 def back_to_search(request):
