@@ -4,21 +4,31 @@ Chaque balise rend un gabarit de `core/templates/core/components/`. Les classes
 Tailwind sont dans le gabarit, ou ici quand elles dépendent d'une variante,
 toujours écrites en entier (sans les construire par morceaux). Les icônes sont
 des noms de Material Symbols Rounded, en SVG inline (`{% icon %}`, core/icons.py).
+
+La logique qui n'est pas un composant vit dans des modules de `core`, dont les
+fonctions sont enregistrées ici telles quelles : formatage des dates
+(core/dates.py), couleurs des projets (core/project_colors.py), classes des cases
+du calendrier (core/calendar_cells.py). Le code Python les importe depuis ces
+modules, pas depuis cette bibliothèque de balises.
 """
 
-import datetime
-
 from django import template
-from django.template.defaultfilters import date as format_date
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
+from core.calendar_cells import calendar_cell_classes, calendar_number_classes
+from core.dates import date_text, local, machine_date
 from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
+from core.project_colors import project_dot_class
 from core.tables import header_context, summary_context
 
 register = template.Library()
+
+register.filter("date_text", date_text)
+register.filter("project_dot_class", project_dot_class)
+register.simple_tag(calendar_cell_classes)
+register.simple_tag(calendar_number_classes)
 
 
 @register.simple_tag
@@ -269,78 +279,15 @@ def tag_list(tags) -> dict:
     return {"tags": tags}
 
 
-# Formats d'affichage des dates (#129), selon l'usage :
-# - long : la date nomme une note (titres, liens « Note du … ») ;
-# - moyen : une date dans un texte ou une fiche (échéance, dates d'une image) ;
-# - court : tableaux et listes.
-# N plutôt que M pour le mois abrégé : en français, M donne « Jui » pour juin et juillet.
-DATE_FORMATS = {
-    "long": "l j F Y",
-    "moyen": "j F Y",
-    "court": "D. j N Y",
-}
-
-
-def _local(value):
-    """Une date et heure dans le fuseau de l'application (TIME_ZONE)."""
-    if isinstance(value, datetime.datetime) and timezone.is_aware(value):
-        return timezone.localtime(value)
-    return value
-
-
-@register.filter
-def date_text(value, style: str = "moyen") -> str:
-    """Date en texte selon son format d'affichage (`long`, `moyen`, `court`).
-
-    Pour un attribut ou un message ; dans une page, préférer `{% date_time %}`.
-    """
-    if style not in DATE_FORMATS:
-        raise ValueError(f"Format de date inconnu : {style}")
-    if value in (None, ""):
-        return ""
-    return format_date(_local(value), DATE_FORMATS[style])
-
-
 @register.simple_tag
 def date_time(value, style: str = "moyen") -> str:
     """Date affichée selon son format, dans un `<time datetime="…">`."""
     if value in (None, ""):
         return ""
-    value = _local(value)
-    # Une heure se donne à la seconde : le format n'admet que 3 décimales (#259).
-    machine = (
-        value.isoformat(timespec="seconds")
-        if isinstance(value, datetime.datetime)
-        else value.isoformat()
-    )
+    value = local(value)
     return format_html(
-        '<time datetime="{}">{}</time>', machine, date_text(value, style)
+        '<time datetime="{}">{}</time>', machine_date(value), date_text(value, style)
     )
-
-
-# Point de couleur de chaque famille de projet (core.models.PROJECT_COLORS),
-# écrit en entier pour que Tailwind trouve les classes.
-PROJECT_DOT_CLASSES = {
-    "orange": "bg-orange-500",
-    "yellow": "bg-yellow-500",
-    "lime": "bg-lime-500",
-    "emerald": "bg-emerald-500",
-    "teal": "bg-teal-500",
-    "cyan": "bg-cyan-500",
-    "sky": "bg-sky-500",
-    "indigo": "bg-indigo-500",
-    "violet": "bg-violet-500",
-    "purple": "bg-purple-500",
-    "fuchsia": "bg-fuchsia-500",
-    "pink": "bg-pink-500",
-    "rose": "bg-rose-500",
-}
-
-
-@register.filter
-def project_dot_class(project) -> str:
-    """Classe du point de couleur d'un projet, pour un affichage compact."""
-    return PROJECT_DOT_CLASSES.get(project.color, "") if project else ""
 
 
 @register.inclusion_tag("core/components/project_badge.html")
@@ -348,45 +295,8 @@ def project_badge(project) -> dict:
     """Pastille d'un projet : un point de sa couleur devant son nom ; rien sans projet."""
     return {
         "project": project,
-        "dot_class": PROJECT_DOT_CLASSES.get(project.color, "") if project else "",
+        "dot_class": project_dot_class(project),
     }
-
-
-@register.simple_tag
-def calendar_cell_classes(day, inactive: bool = False, clickable: bool = True) -> str:
-    """Classes d'une case du calendrier mensuel (#88, #167), communes aux apps.
-
-    `inactive` : jour sans action possible (pointillés) ; `clickable` : la case
-    entière est un lien (fond au survol).
-    """
-    classes = [
-        "group relative flex h-full min-h-24 min-w-0 flex-col gap-1 rounded-lg border p-1.5"
-    ]
-    if inactive:
-        classes.append("cursor-not-allowed border-dashed border-slate-300")
-        classes.append("bg-slate-100" if day.is_weekend else "bg-transparent")
-    else:
-        classes.append("border-slate-200")
-        if clickable:
-            classes.append("hover:bg-blue-50")
-        classes.append("bg-slate-100" if day.is_weekend else "bg-white")
-    if not day.in_month:
-        classes.append("opacity-40")
-    if day.is_today:
-        classes.append("ring-2 ring-blue-500")
-    return " ".join(classes)
-
-
-@register.simple_tag
-def calendar_number_classes(day, inactive: bool = False) -> str:
-    """Classes du numéro d'un jour dans sa case."""
-    if day.is_today:
-        return "text-sm font-bold text-blue-800"
-    if inactive:
-        return "text-sm text-slate-300"
-    if day.is_weekend:
-        return "text-sm text-slate-400"
-    return "text-sm text-slate-600"
 
 
 @register.inclusion_tag("core/components/column_header.html", takes_context=True)

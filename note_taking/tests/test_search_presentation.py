@@ -7,9 +7,9 @@ from datetime import date
 from django.test import TestCase
 from django.urls import reverse
 
+from core.dates import date_text
 from core.models import Project
 from core.sections import section_for
-from core.templatetags.ui import date_text
 from note_taking.models import Note, NotePart
 from note_taking.search import (
     DEFAULT_GROUP,
