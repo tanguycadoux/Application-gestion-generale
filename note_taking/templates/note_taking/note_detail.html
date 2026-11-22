@@ -20,7 +20,26 @@
     </header>
 
     {% if content %}
-        <div class="rendered-content">{{ content|safe }}</div>
+        {# Le plan à droite (#404), au-dessus du texte sur une fenêtre étroite ; il reste visible quand le texte défile. #}
+        <div class="grid gap-4{% if outline %} lg:grid-cols-[minmax(0,1fr)_16rem]{% endif %}" data-note-reading>
+            <div class="rendered-content min-w-0" data-note-content>{{ content|safe }}</div>
+            {% if outline %}
+                <nav id="note-outline" aria-label="Plan de la note" class="order-first self-start overflow-hidden rounded-lg border border-slate-300 bg-white lg:sticky lg:top-0 lg:order-none">
+                    <h2 class="border-b border-slate-300 px-3 py-2 text-sm font-semibold">Plan</h2>
+                    <ul class="max-h-64 overflow-y-auto p-1 lg:max-h-[calc(100dvh-10rem)]">
+                        {% for entry in outline %}
+                            <li><a href="#{{ entry.id }}" title="{{ entry.text }}" class="block truncate rounded px-2 py-1 text-sm hover:bg-slate-100 aria-[current]:bg-blue-100 aria-[current]:font-semibold {{ entry.indent }}">{{ entry.text }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+                {# Bouton du plan : cloné par note_reading.js dans l'en-tête, absent sans JavaScript (le plan reste affiché). #}
+                <template id="outline-toggle">{% button "Plan" icon="toc" variant="ghost" type="button" %}</template>
+                {# Icône des boutons qui replient les sections, posés par note_reading.js. #}
+                <template id="section-toggle-icon">{% icon "chevron_right" class="size-5 transition-transform [[aria-expanded=true]>&]:rotate-90" %}</template>
+            {% endif %}
+        </div>
+        {% load static %}
+        <script src="{% static 'note_taking/note_reading.js' %}" defer></script>
     {% else %}
         <p class="text-slate-600">Cette note est vide.</p>
     {% endif %}
