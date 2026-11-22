@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from core.models import Project
 from core.sections import section_for
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ParentSelectParser(HTMLParser):
@@ -65,12 +65,12 @@ class ParentChoiceTestCase(TestCase):
         self.q = Project.objects.create(name="Q")
         self.reunion = section_for(self.p, ["Réunion"])
         self.bilan = section_for(self.p, ["Bilan"])
-        self.todo = Todo.objects.create(
+        self.todo = Task.objects.create(
             title="Tâche", project=self.p, section=self.reunion
         )
 
-    def task(self, title: str, project=None, section=None, **fields) -> Todo:
-        return Todo.objects.create(
+    def task(self, title: str, project=None, section=None, **fields) -> Task:
+        return Task.objects.create(
             title=title, project=project or self.p, section=section, **fields
         )
 
@@ -160,7 +160,7 @@ class ExcludedTasksTests(ParentChoiceTestCase):
         parent = self.task("Parent fini", section=self.reunion)
         self.todo.parent = parent
         self.todo.save()
-        Todo.objects.filter(pk=parent.pk).update(done=True, progress=100)
+        Task.objects.filter(pk=parent.pk).update(done=True, progress=100)
 
         options = self.edit_options()
 
@@ -172,7 +172,7 @@ class ExcludedTasksTests(ParentChoiceTestCase):
             "Écartée",
             section=self.reunion,
             created_from_note=True,
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         self.assertEqual(self.edit_options(), [])

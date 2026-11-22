@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 from todolist.templatetags.todo_ui import progress_classes
 
 TODAY = timezone.localdate()
@@ -22,7 +22,7 @@ class RemainingTests(SimpleTestCase):
     def remaining(self, offset: int | None, done: bool = False) -> tuple[str, str]:
         from todolist.templatetags.todo_ui import remaining_class, remaining_text
 
-        task = Todo(
+        task = Task(
             title="T", due_date=None if offset is None else days(offset), done=done
         )
         return remaining_text(task), remaining_class(task)
@@ -58,8 +58,8 @@ class TaskTreeTests(TestCase):
         self.asterics = Project.objects.create(name="ASTERICS", color="teal")
         self.primager = Project.objects.create(name="PRIMAger", color="purple")
 
-    def task(self, title, project=None, **fields) -> Todo:
-        return Todo.objects.create(
+    def task(self, title, project=None, **fields) -> Task:
+        return Task.objects.create(
             title=title, project=project or self.asterics, **fields
         )
 
@@ -99,13 +99,13 @@ class TaskTreeTests(TestCase):
 class TaskListPageTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(
+        self.parent = Task.objects.create(
             title="Parent", project=self.project, due_date=days(10)
         )
-        self.child = Todo.objects.create(
+        self.child = Task.objects.create(
             title="Enfant", project=self.project, parent=self.parent, due_date=days(2)
         )
-        self.done_root = Todo.objects.create(
+        self.done_root = Task.objects.create(
             title="Finie", project=self.project, progress=100
         )
 
@@ -160,8 +160,8 @@ class ProgressBarTests(TestCase):
 
     def setUp(self):
         project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(title="Parent", project=project)
-        self.child = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=project)
+        self.child = Task.objects.create(
             title="Enfant", project=project, parent=self.parent, progress=40
         )
 
@@ -191,7 +191,7 @@ class ProgressBarTests(TestCase):
         self.child.progress = 100
         self.child.save()
 
-        classes = progress_classes(Todo.objects.get(pk=self.child.pk))
+        classes = progress_classes(Task.objects.get(pk=self.child.pk))
 
         self.assertIn("[&::-webkit-progress-value]:bg-green-500", classes)
         self.assertIn("bg-green-200", classes)
@@ -207,7 +207,7 @@ class ProgressBarTests(TestCase):
         }
         for offset, (fill, track) in cases.items():
             with self.subTest(offset=offset):
-                task = Todo(
+                task = Task(
                     title="T", due_date=None if offset is None else days(offset)
                 )
                 classes = progress_classes(task)
@@ -222,7 +222,7 @@ class ProgressBarTests(TestCase):
         self.child.progress = 100
         self.child.save()
 
-        parent = Todo.objects.get(pk=self.parent.pk)
+        parent = Task.objects.get(pk=self.parent.pk)
 
         self.assertTrue(parent.to_validate)
         self.assertIn("bg-red-400", progress_classes(parent))

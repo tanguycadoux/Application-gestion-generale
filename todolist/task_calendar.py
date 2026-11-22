@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from core.month_calendar import CalendarDay, MonthCalendar, month_grid
 
-from .models import Todo
+from .models import Task
 
 # Au-delà, une case affiche « + N autres ».
 VISIBLE_TASKS = 3
@@ -20,10 +20,10 @@ VISIBLE_TASKS = 3
 
 @dataclass
 class TaskCalendarDay(CalendarDay):
-    tasks: list[Todo] = field(default_factory=list)
+    tasks: list[Task] = field(default_factory=list)
 
     @property
-    def visible_tasks(self) -> list[Todo]:
+    def visible_tasks(self) -> list[Task]:
         return self.tasks[:VISIBLE_TASKS]
 
     @property
@@ -36,7 +36,7 @@ class TaskCalendarDay(CalendarDay):
         return self.in_month
 
 
-def calendar_date(task: Todo) -> date | None:
+def calendar_date(task: Task) -> date | None:
     """Date de la tâche dans le calendrier : complétion si terminée, échéance sinon."""
     if task.done:
         return timezone.localdate(task.completed_at) if task.completed_at else None
@@ -48,7 +48,7 @@ def task_calendar(year: int, month: int, today: date) -> MonthCalendar:
     days = {day.date: day for day in calendar.days()}
 
     # Les terminées sont filtrées sur leur date locale de complétion ci-dessous.
-    tasks = Todo.objects.select_related("project").filter(
+    tasks = Task.objects.select_related("project").filter(
         Q(done=False, due_date__range=(calendar.first, calendar.last))
         | Q(done=True, completed_at__isnull=False)
     )

@@ -16,7 +16,7 @@ from core.models import Project
 from images.services import import_image
 from images.tests.files import image_file
 from note_taking.models import Note
-from todolist.models import Todo
+from todolist.models import Task
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -62,7 +62,7 @@ class ActionMessagesTests(TestCase):
         )
 
     def test_tache_modifiee(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
+        task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
             self.post("todolist:todo_edit", task.pk, data=self.task_data("Relu")),
@@ -70,7 +70,7 @@ class ActionMessagesTests(TestCase):
         )
 
     def test_tache_supprimee(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
+        task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
             self.post("todolist:todo_delete", task.pk),
@@ -78,9 +78,9 @@ class ActionMessagesTests(TestCase):
         )
 
     def test_tache_supprimee_avec_ses_sous_taches(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
-        Todo.objects.create(title="A", project=self.project, parent=task)
-        Todo.objects.create(title="B", project=self.project, parent=task)
+        task = Task.objects.create(title="Relire", project=self.project)
+        Task.objects.create(title="A", project=self.project, parent=task)
+        Task.objects.create(title="B", project=self.project, parent=task)
 
         self.assertEqual(
             self.post("todolist:todo_delete", task.pk),

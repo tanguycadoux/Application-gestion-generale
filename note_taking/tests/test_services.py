@@ -29,7 +29,7 @@ from note_taking.services import (
     process_note_parts,
     update_note_from_source_file,
 )
-from todolist.models import Todo
+from todolist.models import Task
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -233,7 +233,7 @@ class ProcessNotePartsTests(ServiceTestCase):
             process_note_parts(note)
 
         self.assertEqual(parts_summary(note), [("P", ["A"], [], "x")])
-        self.assertFalse(Todo.objects.exists())
+        self.assertFalse(Task.objects.exists())
 
     def test_contenu_vide(self):
         note = Note.objects.create(date="2025-11-24", body="")
@@ -258,14 +258,14 @@ class TodoGenerationTests(ServiceTestCase):
         """#19 : notes et TODO partagent le même modèle Project."""
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        self.assertEqual(Todo.objects.get().project, note.parts.get().project)
+        self.assertEqual(Task.objects.get().project, note.parts.get().project)
 
     def test_une_todo_par_ligne(self):
         self.process(
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Première\n- Seconde"
         )
 
-        todos = Todo.objects.order_by("pk")
+        todos = Task.objects.order_by("pk")
         self.assertEqual([t.title for t in todos], ["Première", "Seconde"])
         for todo in todos:
             self.assertTrue(todo.created_from_note)
@@ -279,21 +279,21 @@ class TodoGenerationTests(ServiceTestCase):
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
         )
 
-        todo = Todo.objects.get()
+        todo = Task.objects.get()
         self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
         self.assertEqual(todo.section.name, "S")
 
     def test_pas_de_todo_sans_tag_todo(self):
         self.process("# P\n## S\n### Notes\n- Pas une tâche")
 
-        self.assertFalse(Todo.objects.exists())
+        self.assertFalse(Task.objects.exists())
 
     def test_pas_de_doublon_au_retraitement(self):
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         process_note_parts(note)
 
-        self.assertEqual(Todo.objects.count(), 1)
+        self.assertEqual(Task.objects.count(), 1)
 
     def test_ligne_modifiee_cree_une_nouvelle_todo(self):
         """Comportement voulu pour l'instant : l'ancienne TODO est conservée."""
@@ -303,7 +303,7 @@ class TodoGenerationTests(ServiceTestCase):
         process_note_parts(note)
 
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)),
+            sorted(Task.objects.values_list("title", flat=True)),
             ["Tâche", "Tâche modifiée"],
         )
 
@@ -314,7 +314,7 @@ class TodoGenerationTests(ServiceTestCase):
         )
 
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)),
+            sorted(Task.objects.values_list("title", flat=True)),
             ["Première", "Seconde"],
         )
 
@@ -385,7 +385,7 @@ class DeepPathTests(ServiceTestCase):
         part = note.parts.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(part.heading_path, "P › S › Notes")
-        todo = Todo.objects.get()
+        todo = Task.objects.get()
         self.assertEqual(levels(todo.section), ["S", "Notes"])
 
     def test_branche_todo_dans_un_chemin(self):
@@ -397,7 +397,7 @@ class DeepPathTests(ServiceTestCase):
         part = note.parts.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(list(part.tags.values_list("name", flat=True)), ["TODO"])
-        self.assertEqual(levels(Todo.objects.get().section), ["S", "Notes"])
+        self.assertEqual(levels(Task.objects.get().section), ["S", "Notes"])
 
     def test_niveaux_inutilises_oublies_a_la_mise_a_jour(self):
         note = Note.objects.create(date="2025-11-24", body=self.BODY)

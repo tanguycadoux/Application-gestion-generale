@@ -9,7 +9,7 @@ from django.urls import reverse
 from core.models import Project, Section, Tag
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 def definitions(html: str) -> dict[str, str]:
@@ -26,8 +26,8 @@ def definitions(html: str) -> dict[str, str]:
 class TaskDetailTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(title="Parent", project=self.project)
-        self.task = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=self.project)
+        self.task = Task.objects.create(
             title="Relire",
             project=self.project,
             section=Section.objects.create(project=self.project, name="Réunion"),
@@ -39,7 +39,7 @@ class TaskDetailTests(TestCase):
         )
         self.task.tags.add(Tag.objects.create(name="urgent"))
 
-    def get(self, todo: Todo) -> str:
+    def get(self, todo: Task) -> str:
         return self.client.get(
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()
@@ -70,7 +70,7 @@ class TaskDetailTests(TestCase):
         )
 
     def test_valeurs_absentes(self):
-        task = Todo.objects.create(title="Nue", project=self.project)
+        task = Task.objects.create(title="Nue", project=self.project)
 
         fiche = definitions(self.get(task))
 
@@ -119,7 +119,7 @@ class TaskDetailTests(TestCase):
             body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- De la note",
         )
         process_note_parts(note)
-        task = Todo.objects.get(title="De la note")
+        task = Task.objects.get(title="De la note")
 
         html = self.get(task)
 

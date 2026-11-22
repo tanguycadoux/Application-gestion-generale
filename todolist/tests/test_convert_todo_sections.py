@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from core.models import Project
 from note_taking.models import Note
-from todolist.models import Todo
+from todolist.models import Task
 
 OLD = "# P\n## S\n### TODO\n\n- A\n  - B\n- C\n"
 NEW = "# P\n## S\n- [ ] A\n  - [ ] B\n- [ ] C\n"
@@ -22,17 +22,17 @@ class ConvertTestCase(TestCase):
     def note(self, body: str, day: str = "2025-11-24") -> Note:
         return Note.objects.create(date=day, body=body)
 
-    def task(self, text: str, path: str, day: str = "2025-11-24", **fields) -> Todo:
+    def task(self, text: str, path: str, day: str = "2025-11-24", **fields) -> Task:
         """Une tâche créée avant #297 : revue, identifiée par sa date, son chemin
         de titres sans `TODO` et son texte."""
-        return Todo.objects.create(
+        return Task.objects.create(
             title=text,
             project=self.project,
             created_from_note=True,
             note_part_date=date.fromisoformat(day),
             note_path=path,
             note_part_text=text,
-            note_state=fields.pop("note_state", Todo.NoteState.REVIEWED),
+            note_state=fields.pop("note_state", Task.NoteState.REVIEWED),
             **fields,
         )
 
@@ -85,10 +85,10 @@ class ApplyTests(ConvertTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.body, NEW)
-        self.assertEqual(Todo.objects.count(), 3)
+        self.assertEqual(Task.objects.count(), 3)
         for todo in (a, b, c):
             todo.refresh_from_db()
-            self.assertEqual(todo.note_state, Todo.NoteState.REVIEWED)
+            self.assertEqual(todo.note_state, Task.NoteState.REVIEWED)
         b.refresh_from_db()
         self.assertEqual(b.parent, a)
         self.assertIn(
@@ -102,10 +102,10 @@ class ApplyTests(ConvertTestCase):
         out = self.run_command("--apply")
 
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)), ["A", "Ouverte"]
+            sorted(Task.objects.values_list("title", flat=True)), ["A", "Ouverte"]
         )
         self.assertEqual(
-            Todo.objects.get(title="Ouverte").note_state, Todo.NoteState.TO_REVIEW
+            Task.objects.get(title="Ouverte").note_state, Task.NoteState.TO_REVIEW
         )
         self.assertIn("1 tâche(s) créée(s)", out)
 
@@ -164,7 +164,7 @@ class ApplyTests(ConvertTestCase):
         note.refresh_from_db()
         ghost.refresh_from_db()
         self.assertEqual(note.body, OLD)
-        self.assertEqual(ghost.note_state, Todo.NoteState.REVIEWED)
+        self.assertEqual(ghost.note_state, Task.NoteState.REVIEWED)
 
 
 class MovedTasksTests(ConvertTestCase):
@@ -193,10 +193,10 @@ class MovedTasksTests(ConvertTestCase):
         for todo, path in ((a, "P › S › Notes"), (b, "P › S › Notes › Détail")):
             todo.refresh_from_db()
             self.assertEqual(todo.note_path, path)
-            self.assertEqual(todo.note_state, Todo.NoteState.REVIEWED)
+            self.assertEqual(todo.note_state, Task.NoteState.REVIEWED)
         a.refresh_from_db()
         self.assertEqual(a.progress, 40)
-        self.assertEqual(Todo.objects.count(), 2)
+        self.assertEqual(Task.objects.count(), 2)
         note.refresh_from_db()
         self.assertEqual(
             note.body,
@@ -216,7 +216,7 @@ class MovedTasksTests(ConvertTestCase):
         ghost.refresh_from_db()
         self.assertEqual(note.body, self.BODY)
         self.assertEqual(ghost.note_path, "P › S")
-        self.assertEqual(Todo.objects.get(title="A").note_path, "P › S")
+        self.assertEqual(Task.objects.get(title="A").note_path, "P › S")
 
 
 class BoxedNotesTests(ConvertTestCase):
@@ -229,7 +229,7 @@ class BoxedNotesTests(ConvertTestCase):
         note.refresh_from_db()
         self.assertEqual(note.body, "# P\n- [ ] Ouverte\n- [x] Fait")
         self.assertEqual(
-            list(Todo.objects.values_list("title", flat=True)), ["Ouverte"]
+            list(Task.objects.values_list("title", flat=True)), ["Ouverte"]
         )
         self.assertIn(
             "0 note(s) réécrite(s), 1 autre(s) recalculée(s) ; 1 tâche(s)", out
@@ -237,7 +237,7 @@ class BoxedNotesTests(ConvertTestCase):
 
     def test_tache_saisie_a_la_main_non_comptee(self):
         self.note("# P\n- texte")
-        Todo.objects.create(title="À la main", project=self.project)
+        Task.objects.create(title="À la main", project=self.project)
 
         out = self.run_command("--apply")
 

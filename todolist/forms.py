@@ -7,7 +7,7 @@ from django.urls import reverse
 from core.forms import SectionPathField, section_path_text
 from core.sections import section_for
 
-from .models import Todo
+from .models import Task
 from .parent_choices import ParentContext, parent_choices
 
 
@@ -24,7 +24,7 @@ class ParentSelect(forms.Select):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parent_data: Mapping = {}
-        self.todo: Todo | None = None
+        self.todo: Task | None = None
         self.titles: dict[str, str] = {}
 
     def create_option(
@@ -74,7 +74,7 @@ class SectionPathForm(forms.ModelForm):
 
 class TodoForm(SectionPathForm):
     class Meta:
-        model = Todo
+        model = Task
         fields = [
             "title",
             "description",
@@ -113,7 +113,7 @@ class TodoForm(SectionPathForm):
     def set_up_parent(self, parent_data):
         """Le parent se choisit parmi les tâches les plus proches de ce qui est
         saisi (#390). Seul l'affichage est trié : toute tâche reste acceptée, sauf
-        une boucle (`Todo.clean`)."""
+        une boucle (`Task.clean`)."""
         widget = self.fields["parent"].widget
         widget.todo = self.instance if self.instance.pk else None
         if self.is_bound:
@@ -130,7 +130,7 @@ class NoteReviewForm(SectionPathForm):
     d'une tâche, l'échéance surtout."""
 
     class Meta:
-        model = Todo
+        model = Task
         fields = ["due_date", "priority", "project", "section_path"]
         widgets = {
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
@@ -141,7 +141,7 @@ class NoteReviewForm(SectionPathForm):
         self.fields["due_date"].input_formats = [r"%Y-%m-%d"]
 
 
-NoteReviewFormSet = modelformset_factory(Todo, form=NoteReviewForm, extra=0)
+NoteReviewFormSet = modelformset_factory(Task, form=NoteReviewForm, extra=0)
 
 
 class GoneLineForm(forms.ModelForm):
@@ -157,13 +157,13 @@ class GoneLineForm(forms.ModelForm):
     action = forms.ChoiceField(label="Que faire", choices=ACTIONS, initial="keep")
     replacement = forms.ModelChoiceField(
         label="Nouvelle ligne",
-        queryset=Todo.objects.none(),
+        queryset=Task.objects.none(),
         required=False,
         empty_label="—",
     )
 
     class Meta:
-        model = Todo
+        model = Task
         fields: list[str] = []
 
     def __init__(self, *args, replacements=None, **kwargs):
@@ -200,5 +200,5 @@ class BaseGoneLineFormSet(forms.BaseModelFormSet):
 
 
 GoneLineFormSet = modelformset_factory(
-    Todo, form=GoneLineForm, formset=BaseGoneLineFormSet, extra=0
+    Task, form=GoneLineForm, formset=BaseGoneLineFormSet, extra=0
 )

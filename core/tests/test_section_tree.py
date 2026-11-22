@@ -10,7 +10,7 @@ from core.section_tree import section_tree
 from core.sections import section_for
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class TreeTestCase(TestCase):
@@ -68,18 +68,18 @@ class SectionTreeTests(TreeTestCase):
 
     def test_tache_saisie_a_la_main_comptee(self):
         section = section_for(self.project, ["A"])
-        Todo.objects.create(title="T", project=self.project, section=section)
+        Task.objects.create(title="T", project=self.project, section=section)
 
         self.assertEqual(self.rows(), [("A", 0, "1 tâche")])
 
     def test_tache_ecartee_non_comptee(self):
         section = section_for(self.project, ["A"])
-        Todo.all_objects.create(
+        Task.all_objects.create(
             title="T",
             project=self.project,
             section=section,
             created_from_note=True,
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         self.assertEqual(self.rows(), [("A", 0, "")])

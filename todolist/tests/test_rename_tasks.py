@@ -13,7 +13,7 @@ from note_taking.exceptions import NoteRenameError
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences, rename_titles
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 from todolist.services import renamed_identities
 
 
@@ -33,15 +33,15 @@ class RenameTasksTestCase(TestCase):
         )
 
     def paths(self) -> list[tuple[str, str]]:
-        return sorted(Todo.objects.values_list("title", "note_path"))
+        return sorted(Task.objects.values_list("title", "note_path"))
 
 
 class TasksFollowTests(RenameTasksTestCase):
     def test_la_tache_garde_sa_fiche_et_change_de_chemin(self):
         self.note("# P\n## Réunion\n- [ ] Relire")
-        todo = Todo.objects.get()
-        Todo.objects.filter(pk=todo.pk).update(
-            progress=40, note_state=Todo.NoteState.REVIEWED
+        todo = Task.objects.get()
+        Task.objects.filter(pk=todo.pk).update(
+            progress=40, note_state=Task.NoteState.REVIEWED
         )
 
         self.rename(["Réunion"], "Rencontre")
@@ -49,19 +49,19 @@ class TasksFollowTests(RenameTasksTestCase):
         todo.refresh_from_db()
         self.assertEqual(
             (todo.note_path, todo.progress, todo.note_state),
-            ("P › Rencontre", 40, Todo.NoteState.REVIEWED),
+            ("P › Rencontre", 40, Task.NoteState.REVIEWED),
         )
-        self.assertEqual(Todo.objects.count(), 1)
+        self.assertEqual(Task.objects.count(), 1)
 
     def test_aucune_tache_perd_sa_ligne(self):
         self.note("# P\n## Réunion\n- [ ] A\n### Suite\n- [ ] B")
-        Todo.objects.update(note_state=Todo.NoteState.REVIEWED)
+        Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
         self.rename(["Réunion"], "Rencontre")
 
         self.assertEqual(
-            set(Todo.objects.values_list("note_state", flat=True)),
-            {Todo.NoteState.REVIEWED},
+            set(Task.objects.values_list("note_state", flat=True)),
+            {Task.NoteState.REVIEWED},
         )
         self.assertEqual(
             self.paths(), [("A", "P › Rencontre"), ("B", "P › Rencontre › Suite")]
@@ -69,7 +69,7 @@ class TasksFollowTests(RenameTasksTestCase):
 
     def test_sous_taches_et_parents(self):
         self.note("# P\n## Réunion\n- [ ] A\n  - [ ] B")
-        a, b = Todo.objects.order_by("pk")
+        a, b = Task.objects.order_by("pk")
         self.assertEqual(b.parent, a)
 
         self.rename(["Réunion"], "Rencontre")
@@ -108,7 +108,7 @@ class TasksFollowTests(RenameTasksTestCase):
 
         self.rename(["Réunion"], "Rencontre")
 
-        self.assertEqual(Todo.objects.count(), 2)
+        self.assertEqual(Task.objects.count(), 2)
         self.assertEqual({path for _, path in self.paths()}, {"P › Rencontre"})
 
     def test_seule_la_note_choisie(self):
@@ -119,7 +119,7 @@ class TasksFollowTests(RenameTasksTestCase):
 
         by_date = {
             todo.note_part_date.isoformat(): todo.note_path
-            for todo in Todo.objects.all()
+            for todo in Task.objects.all()
         }
         self.assertEqual(
             by_date, {"2025-11-24": "P › Réunion", "2025-11-25": "P › Rencontre"}
@@ -127,18 +127,18 @@ class TasksFollowTests(RenameTasksTestCase):
 
     def test_tache_ecartee_suit_aussi(self):
         self.note("# P\n## Réunion\n- [ ] A")
-        Todo.objects.update(note_state=Todo.NoteState.DISMISSED)
+        Task.objects.update(note_state=Task.NoteState.DISMISSED)
 
         self.rename(["Réunion"], "Rencontre")
 
-        todo = Todo.all_objects.get()
+        todo = Task.all_objects.get()
         self.assertEqual(
             (todo.note_path, todo.note_state), ("P › Rencontre", "dismissed")
         )
 
     def test_tache_saisie_a_la_main_non_touchee(self):
         self.note("# P\n## Réunion\n- [ ] A")
-        manual = Todo.objects.create(title="À la main", project=self.project)
+        manual = Task.objects.create(title="À la main", project=self.project)
 
         self.rename(["Réunion"], "Rencontre")
 

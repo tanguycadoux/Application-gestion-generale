@@ -13,7 +13,7 @@ from core.models import Project
 from images.models import Image
 from note_taking.models import Note, NotePart
 from todolist.forms import TodoForm
-from todolist.models import Todo
+from todolist.models import Task
 
 TITLE_REGEX = re.compile(r"<title>(?P<title>.*?)</title>", re.DOTALL)
 TAG_REGEX = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.DOTALL)
@@ -35,7 +35,7 @@ class PageTitlesTests(TestCase):
             note=self.note, project=Project.objects.create(name="P"), content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
-        self.todo = Todo.objects.create(
+        self.todo = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Relire"
         )
 
@@ -99,7 +99,7 @@ class PageTitlesTests(TestCase):
 
 class VocabularyTests(TestCase):
     def test_tache_et_pas_todo_dans_les_pages(self):
-        todo = Todo.objects.create(
+        todo = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Relire"
         )
         urls = [

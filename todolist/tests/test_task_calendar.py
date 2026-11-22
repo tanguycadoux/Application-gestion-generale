@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 TODAY = timezone.localdate()
 
@@ -16,8 +16,8 @@ class CompletedAtTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
-    def task(self, **fields) -> Todo:
-        return Todo.objects.create(title="T", project=self.project, **fields)
+    def task(self, **fields) -> Task:
+        return Task.objects.create(title="T", project=self.project, **fields)
 
     def test_date_de_completion_a_la_completion(self):
         task = self.task()
@@ -34,7 +34,7 @@ class CompletedAtTests(TestCase):
     def test_date_conservee_si_la_tache_reste_terminee(self):
         moment = timezone.make_aware(datetime(2025, 11, 24, 10, 0))
         task = self.task(progress=100)
-        Todo.objects.filter(pk=task.pk).update(completed_at=moment)
+        Task.objects.filter(pk=task.pk).update(completed_at=moment)
         task.refresh_from_db()
 
         task.title = "Renommée"
@@ -47,20 +47,20 @@ class CompletedAtTests(TestCase):
         child = self.task(parent=parent, progress=100)
         parent.done = True
         parent.save()
-        self.assertIsNotNone(Todo.objects.get(pk=parent.pk).completed_at)
+        self.assertIsNotNone(Task.objects.get(pk=parent.pk).completed_at)
 
         child.progress = 0
         child.save()
 
-        self.assertIsNone(Todo.objects.get(pk=parent.pk).completed_at)
+        self.assertIsNone(Task.objects.get(pk=parent.pk).completed_at)
 
 
 class TaskCalendarTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
 
-    def task(self, title: str, **fields) -> Todo:
-        return Todo.objects.create(title=title, project=self.project, **fields)
+    def task(self, title: str, **fields) -> Task:
+        return Task.objects.create(title=title, project=self.project, **fields)
 
     def day(self, when: date):
         from todolist.task_calendar import task_calendar

@@ -20,7 +20,7 @@ from django.utils.text import Truncator
 from core.models import Project, Section
 from core.sections import LABEL_SEPARATOR, existing_section, path_labels, split_path
 
-from .models import Todo
+from .models import Task
 
 # Au-delà, le titre est coupé (« … ») et le libellé complet passe en infobulle :
 # un `<select>` prend la largeur de sa plus longue option.
@@ -41,11 +41,11 @@ class ParentContext:
     # Chemin saisi qui n'existe pas encore : aucune tâche n'y est.
     unknown_path: bool = False
     show_done: bool = False
-    todo: Todo | None = None
+    todo: Task | None = None
     current_parent_id: int | None = None
 
     @classmethod
-    def from_data(cls, data: Mapping, todo: Todo | None = None) -> ParentContext:
+    def from_data(cls, data: Mapping, todo: Task | None = None) -> ParentContext:
         """D'après les valeurs d'un formulaire (envoyé, ou rechargé par htmx)."""
         project = _project(data.get("project"))
         names = split_path(data.get("section_path") or "")
@@ -61,7 +61,7 @@ class ParentContext:
 
 
 def _pk(value) -> int | None:
-    if isinstance(value, Todo | Project):
+    if isinstance(value, Task | Project):
         return value.pk
     try:
         return int(value)
@@ -76,14 +76,14 @@ def _project(value) -> Project | None:
     return Project.objects.filter(pk=pk).first() if pk else None
 
 
-def excluded_ids(todo: Todo | None) -> set[int]:
+def excluded_ids(todo: Task | None) -> set[int]:
     """La tâche et ses descendantes : en faire le parent créerait une boucle."""
     if todo is None or todo.pk is None:
         return set()
     found, level = {todo.pk}, [todo.pk]
     while level:
         level = list(
-            Todo.objects.filter(parent_id__in=level).values_list("pk", flat=True)
+            Task.objects.filter(parent_id__in=level).values_list("pk", flat=True)
         )
         found.update(level)
     return found
@@ -98,7 +98,7 @@ class ParentChoices:
 
 
 def parent_choices(context: ParentContext) -> ParentChoices:
-    tasks = Todo.objects.select_related("project").exclude(
+    tasks = Task.objects.select_related("project").exclude(
         pk__in=excluded_ids(context.todo)
     )
     if not context.show_done:
@@ -133,11 +133,11 @@ def parent_choices(context: ParentContext) -> ParentChoices:
     return result
 
 
-def _order(task: Todo) -> tuple[bool, date, str]:
+def _order(task: Task) -> tuple[bool, date, str]:
     return (task.due_date is None, task.due_date or date.min, task.title.casefold())
 
 
-def _group(task: Todo, context: ParentContext) -> str:
+def _group(task: Task, context: ParentContext) -> str:
     if context.project is None or task.project_id != context.project.pk:
         return OTHER_PROJECTS
     section_id = context.section.pk if context.section else None
@@ -146,7 +146,7 @@ def _group(task: Todo, context: ParentContext) -> str:
     return SAME_PROJECT
 
 
-def _prefix(task: Todo, group: str, paths: dict[int, str]) -> str:
+def _prefix(task: Task, group: str, paths: dict[int, str]) -> str:
     """Ce que le groupe ne dit pas : le chemin hors du même chemin, et le projet
     hors du même projet."""
     if group == SAME_PATH:

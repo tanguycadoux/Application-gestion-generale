@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 TODAY = timezone.localdate()
 SCRIPT = Path(settings.BASE_DIR) / "todolist" / "static" / "todolist" / "todo.js"
@@ -20,9 +20,9 @@ class DueSignalTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
-    def task(self, days: int | None, **fields) -> Todo:
+    def task(self, days: int | None, **fields) -> Task:
         due = TODAY + timedelta(days=days) if days is not None else None
-        return Todo(title="T", project=self.project, due_date=due, **fields)
+        return Task(title="T", project=self.project, due_date=due, **fields)
 
     def test_signal_porte_par_le_modele(self):
         for days, expected in (
@@ -40,12 +40,12 @@ class DueSignalTests(TestCase):
 class LiveToggleTests(TestCase):
     def setUp(self):
         project = Project.objects.create(name="P")
-        self.parent = Todo.objects.create(title="Parent", project=project)
-        self.child = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=project)
+        self.child = Task.objects.create(
             title="Enfant", project=project, parent=self.parent
         )
 
-    def toggle(self, todo: Todo, completed: bool):
+    def toggle(self, todo: Task, completed: bool):
         return self.client.post(
             reverse("todolist:todo_toggle", args=[todo.pk]),
             json.dumps({"completed": completed}),

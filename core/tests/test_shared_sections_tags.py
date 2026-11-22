@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 def process(date: str, raw: str) -> Note:
@@ -31,7 +31,7 @@ class SharedSectionTagTests(TestCase):
         )
 
         part_tags = set(note.parts.get().tags.all())
-        todo_tags = set(Todo.objects.get().tags.all())
+        todo_tags = set(Task.objects.get().tags.all())
         self.assertEqual({tag.name for tag in part_tags & todo_tags}, {"urgent"})
 
     def test_sujet_inutilise_absent_de_la_recherche(self):

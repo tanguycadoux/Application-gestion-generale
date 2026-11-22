@@ -9,7 +9,7 @@ from core.sections import levels, section_for
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class RenameTestCase(TestCase):
@@ -224,7 +224,7 @@ class ApplyTests(RenameTestCase):
     def test_tache_saisie_a_la_main_suit_le_niveau_renomme_en_place(self):
         self.note("# P\n## Réunion\nx")
         section = self.section("Réunion")
-        todo = Todo.objects.create(title="T", project=self.project, section=section)
+        todo = Task.objects.create(title="T", project=self.project, section=section)
 
         self.apply(section, "Rencontre", self.keys(section, "Rencontre"))
 
@@ -257,7 +257,7 @@ class ApplyTests(RenameTestCase):
     def test_niveau_sans_titre_renomme_avec_ses_taches(self):
         section = section_for(self.project, ["Manuel"])
         assert section is not None
-        todo = Todo.objects.create(title="T", project=self.project, section=section)
+        todo = Task.objects.create(title="T", project=self.project, section=section)
 
         response = self.apply(section, "Autre")
 

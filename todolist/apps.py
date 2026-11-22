@@ -23,13 +23,13 @@ class TodolistConfig(AppConfig):
     )
     project_usages = (
         ProjectUsage(
-            "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
+            "tasks", "tâche", "tâches", exclude=Q(tasks__note_state="dismissed")
         ),
     )
 
     section_usages = (
         SectionUsage(
-            "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
+            "tasks", "tâche", "tâches", exclude=Q(tasks__note_state="dismissed")
         ),
     )
 

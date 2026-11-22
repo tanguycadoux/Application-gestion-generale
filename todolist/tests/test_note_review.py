@@ -10,7 +10,7 @@ from django.urls import reverse
 from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- Première\n- Seconde"
 
@@ -20,7 +20,7 @@ def review_url(note_date: str) -> str:
 
 
 def mark_reviewed():
-    Todo.objects.update(note_state=Todo.NoteState.REVIEWED)
+    Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
 
 class NoDueDateTests(TestCase):
@@ -29,7 +29,7 @@ class NoDueDateTests(TestCase):
         process_note_parts(note)
 
         self.assertEqual(
-            list(Todo.objects.values_list("due_date", flat=True)), [None, None]
+            list(Task.objects.values_list("due_date", flat=True)), [None, None]
         )
 
 
@@ -141,7 +141,7 @@ class ReviewPageTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=BODY)
         process_note_parts(self.note)
-        self.first, self.second = Todo.objects.order_by("pk")
+        self.first, self.second = Task.objects.order_by("pk")
 
     def url(self) -> str:
         return review_url("2025-11-24")
@@ -156,7 +156,7 @@ class ReviewPageTests(TestCase):
         )
 
     def test_seulement_les_taches_de_la_note(self):
-        Todo.objects.create(title="Autre", project=self.first.project)
+        Task.objects.create(title="Autre", project=self.first.project)
 
         response = self.client.get(self.url())
 
@@ -201,12 +201,12 @@ class ReviewPageTests(TestCase):
         self.second.refresh_from_db()
         self.assertIsNone(self.second.due_date)
         self.assertEqual(
-            set(Todo.objects.values_list("note_state", flat=True)),
-            {Todo.NoteState.REVIEWED},
+            set(Task.objects.values_list("note_state", flat=True)),
+            {Task.NoteState.REVIEWED},
         )
 
     def test_sans_tache_retour_a_la_note(self):
-        Todo.objects.all().delete()
+        Task.objects.all().delete()
 
         response = self.client.get(self.url())
 

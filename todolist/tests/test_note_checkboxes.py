@@ -8,7 +8,7 @@ from django.test import TestCase
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 BLOCK = "::: {.metadata}\ntodo: true\n:::\n"
 
@@ -20,12 +20,12 @@ class CheckboxTestCase(TestCase):
         return note
 
     def titles(self) -> list[str]:
-        return list(Todo.objects.order_by("pk").values_list("title", flat=True))
+        return list(Task.objects.order_by("pk").values_list("title", flat=True))
 
     def tree(self) -> dict[str, str | None]:
         return {
             todo.title: todo.parent.title if todo.parent else None
-            for todo in Todo.objects.select_related("parent")
+            for todo in Task.objects.select_related("parent")
         }
 
 
@@ -34,7 +34,7 @@ class OpenBoxTests(CheckboxTestCase):
         self.save_note("# P\n## S\n- [ ] À faire")
 
         self.assertEqual(self.titles(), ["À faire"])
-        self.assertEqual(Todo.objects.get().section.name, "S")
+        self.assertEqual(Task.objects.get().section.name, "S")
 
     def test_element_sans_case_n_est_pas_une_tache(self):
         self.save_note("# P\n- Une idée\n- [ ] À faire")
@@ -66,7 +66,7 @@ class OpenBoxTests(CheckboxTestCase):
 
         part_tags = list(Note.objects.get().parts.get().tags.all())
         self.assertEqual(part_tags, [])
-        self.assertFalse(Todo.objects.get().tags.exists())
+        self.assertFalse(Task.objects.get().tags.exists())
 
 
 class NestingTests(CheckboxTestCase):
@@ -81,7 +81,7 @@ class NestingTests(CheckboxTestCase):
         self.save_note("# P\n- Réunion\n  - [ ] A")
 
         self.assertEqual(self.tree(), {"A": None})
-        self.assertEqual(Todo.objects.get().note_path, "P › Réunion")
+        self.assertEqual(Task.objects.get().note_path, "P › Réunion")
 
     def test_case_sous_une_case_cochee(self):
         self.save_note("# P\n- [x] Fait\n  - [ ] Reste")
@@ -114,7 +114,7 @@ class TodoBranchTests(CheckboxTestCase):
         self.save_note("# P\n## S\n" + BLOCK + "### Détail\n- A")
 
         self.assertEqual(self.titles(), ["A"])
-        self.assertEqual(Todo.objects.get().note_path, "P › S › Détail")
+        self.assertEqual(Task.objects.get().note_path, "P › S › Détail")
 
     def test_niveau_suivant_hors_de_la_branche(self):
         self.save_note("# P\n## S1\n" + BLOCK + "- A\n## S2\n- B")
@@ -125,7 +125,7 @@ class TodoBranchTests(CheckboxTestCase):
         self.save_note("# P\n::: {.metadata}\ntags: [urgent]\ntodo: true\n:::\n- A")
 
         self.assertEqual(
-            list(Todo.objects.get().tags.values_list("name", flat=True)), ["urgent"]
+            list(Task.objects.get().tags.values_list("name", flat=True)), ["urgent"]
         )
 
 
@@ -134,30 +134,30 @@ class IdentityTests(CheckboxTestCase):
 
     def test_liste_d_une_branche_todo_puis_cases(self):
         self.save_note("# P\n## S\n" + BLOCK + "- A\n  - B")
-        before = list(Todo.objects.order_by("pk").values_list("pk", flat=True))
+        before = list(Task.objects.order_by("pk").values_list("pk", flat=True))
 
         self.save_note("# P\n## S\n- [ ] A\n  - [ ] B")
 
         self.assertEqual(
-            list(Todo.objects.order_by("pk").values_list("pk", flat=True)), before
+            list(Task.objects.order_by("pk").values_list("pk", flat=True)), before
         )
         self.assertEqual(
-            set(Todo.objects.values_list("note_state", flat=True)),
-            {Todo.NoteState.TO_REVIEW},
+            set(Task.objects.values_list("note_state", flat=True)),
+            {Task.NoteState.TO_REVIEW},
         )
 
     def test_conversion_ne_marque_rien_a_revoir_en_plus(self):
         """Les tâches d'avant ne perdent pas leur ligne."""
         note = self.save_note("# P\n## S\n" + BLOCK + "- A\n- B")
-        Todo.objects.update(note_state=Todo.NoteState.REVIEWED)
+        Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
         self.save_note("# P\n## S\n- [ ] A\n- [ ] B", date=str(note.date))
 
         self.assertEqual(
-            set(Todo.objects.values_list("note_state", flat=True)),
-            {Todo.NoteState.REVIEWED},
+            set(Task.objects.values_list("note_state", flat=True)),
+            {Task.NoteState.REVIEWED},
         )
-        self.assertEqual(Todo.objects.count(), 2)
+        self.assertEqual(Task.objects.count(), 2)
 
 
 class FancyListTests(CheckboxTestCase):

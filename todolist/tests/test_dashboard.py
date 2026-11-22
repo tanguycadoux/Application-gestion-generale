@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import SOON_DAYS, Todo
+from todolist.models import SOON_DAYS, Task
 
 
 class DueTasksBlockTests(TestCase):
@@ -17,7 +17,7 @@ class DueTasksBlockTests(TestCase):
 
     def task(self, title, days=None, **fields):
         due = None if days is None else self.today + timedelta(days=days)
-        return Todo.objects.create(
+        return Task.objects.create(
             title=title, project=self.project, due_date=due, **fields
         )
 

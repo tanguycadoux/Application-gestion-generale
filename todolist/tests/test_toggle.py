@@ -6,34 +6,34 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ToggleTodoTests(TestCase):
     def setUp(self):
-        self.parent = Todo.objects.create(
+        self.parent = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Parent"
         )
-        self.child = Todo.objects.create(
+        self.child = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0],
             title="Enfant",
             parent=self.parent,
         )
-        self.grandchild = Todo.objects.create(
+        self.grandchild = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0],
             title="Petit-enfant",
             parent=self.child,
         )
 
-    def toggle(self, todo: Todo, **data):
+    def toggle(self, todo: Task, **data):
         return self.client.post(
             reverse("todolist:todo_toggle", args=[todo.pk]),
             json.dumps(data),
             content_type="application/json",
         )
 
-    def completed(self, *todos: Todo) -> list[bool]:
-        return [Todo.objects.get(pk=todo.pk).completed for todo in todos]
+    def completed(self, *todos: Task) -> list[bool]:
+        return [Task.objects.get(pk=todo.pk).completed for todo in todos]
 
     def test_methode_get_refusee(self):
         response = self.client.get(
@@ -52,7 +52,7 @@ class ToggleTodoTests(TestCase):
         )
 
     def test_todo_inexistante(self):
-        response = self.toggle(Todo(pk=999), completed=True)
+        response = self.toggle(Task(pk=999), completed=True)
 
         self.assertEqual(response.status_code, 404)
 
@@ -79,7 +79,7 @@ class UncheckRestoresProgressTests(TestCase):
     """Décocher rend l'avancement d'avant la coche (#237)."""
 
     def setUp(self):
-        self.todo = Todo.objects.create(
+        self.todo = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0],
             title="Tâche",
             progress=60,
@@ -93,7 +93,7 @@ class UncheckRestoresProgressTests(TestCase):
         )
 
     def progress(self) -> int:
-        return Todo.objects.get(pk=self.todo.pk).progress
+        return Task.objects.get(pk=self.todo.pk).progress
 
     def test_cocher_puis_decocher(self):
         self.toggle(True)
@@ -109,7 +109,7 @@ class UncheckRestoresProgressTests(TestCase):
         self.assertEqual(self.progress(), 60)
 
     def test_creee_terminee_puis_decochee(self):
-        self.todo = Todo.objects.create(
+        self.todo = Task.objects.create(
             project=Project.objects.get(name="P"), title="Finie", progress=100
         )
         self.toggle(False)

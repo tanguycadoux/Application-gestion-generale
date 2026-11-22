@@ -13,7 +13,7 @@ from django.urls import reverse
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 from todolist.services import remove_task
 
 BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C\n- D"
@@ -23,10 +23,10 @@ class RestoreTestCase(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=BODY)
         process_note_parts(self.note)
-        Todo.objects.update(note_state=Todo.NoteState.REVIEWED)
+        Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
-    def task(self, title: str) -> Todo:
-        return Todo.all_objects.get(title=title)
+    def task(self, title: str) -> Task:
+        return Task.all_objects.get(title=title)
 
     def restore(self, title: str):
         return self.client.post(
@@ -92,7 +92,7 @@ class MixedTreeTests(RestoreTestCase):
 
     def setUp(self):
         super().setUp()
-        self.manual = Todo.objects.create(
+        self.manual = Task.objects.create(
             title="M", project=self.task("A").project, parent=self.task("A")
         )
 
@@ -103,11 +103,11 @@ class MixedTreeTests(RestoreTestCase):
 
         manual = self.task("M")
         self.assertEqual((manual.note_state, manual.parent), ("", self.task("A")))
-        self.assertEqual(self.task("B").note_state, Todo.NoteState.REVIEWED)
+        self.assertEqual(self.task("B").note_state, Task.NoteState.REVIEWED)
 
     def test_racine_saisie_a_la_main_dans_les_ecartees(self):
-        Todo.objects.filter(pk=self.manual.pk).update(parent=None)
-        Todo.objects.filter(title="D").update(parent=self.manual)
+        Task.objects.filter(pk=self.manual.pk).update(parent=None)
+        Task.objects.filter(title="D").update(parent=self.manual)
         remove_task(self.task("M"))
 
         response = self.client.get(
@@ -116,7 +116,7 @@ class MixedTreeTests(RestoreTestCase):
 
         self.assertContains(response, "Saisie à la main")
         self.restore("M")
-        self.assertEqual(self.task("D").note_state, Todo.NoteState.REVIEWED)
+        self.assertEqual(self.task("D").note_state, Task.NoteState.REVIEWED)
 
 
 class RestoreTests(RestoreTestCase):
@@ -127,7 +127,7 @@ class RestoreTests(RestoreTestCase):
 
         self.assertRedirects(response, reverse("todolist:todo_list"))
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)), ["A", "B", "C", "D"]
+            sorted(Task.objects.values_list("title", flat=True)), ["A", "B", "C", "D"]
         )
         self.assertEqual(
             self.message(response),
@@ -139,7 +139,7 @@ class RestoreTests(RestoreTestCase):
 
         self.restore("D")
 
-        self.assertEqual(self.task("D").note_state, Todo.NoteState.REVIEWED)
+        self.assertEqual(self.task("D").note_state, Task.NoteState.REVIEWED)
 
     def test_gardee_sans_sa_ligne_sinon(self):
         remove_task(self.task("D"))
@@ -149,7 +149,7 @@ class RestoreTests(RestoreTestCase):
 
         self.restore("D")
 
-        self.assertEqual(self.task("D").note_state, Todo.NoteState.DETACHED)
+        self.assertEqual(self.task("D").note_state, Task.NoteState.DETACHED)
 
     def test_retrouve_son_parent_affiche(self):
         remove_task(self.task("B"))
@@ -165,7 +165,7 @@ class RestoreTests(RestoreTestCase):
         response = self.restore("B")
 
         self.assertIsNone(self.task("B").parent)
-        self.assertEqual(self.task("A").note_state, Todo.NoteState.DISMISSED)
+        self.assertEqual(self.task("A").note_state, Task.NoteState.DISMISSED)
         self.assertEqual(
             self.message(response),
             "La tâche « B » est rétablie. Sa tâche parente « A » est écartée : "
@@ -173,7 +173,7 @@ class RestoreTests(RestoreTestCase):
         )
 
     def test_avancement_du_parent_a_jour(self):
-        Todo.objects.filter(title="C").update(progress=100)
+        Task.objects.filter(title="C").update(progress=100)
         b = self.task("B")
         b.save()
         remove_task(b)

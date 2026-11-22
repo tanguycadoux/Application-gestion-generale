@@ -19,7 +19,7 @@ from note_taking.qmd.parser import (
 )
 from note_taking.services import replace_image_paths
 
-from .models import TODO_TEXT_MAX_LENGTH, Todo, update_ancestors_progress
+from .models import TASK_TEXT_MAX_LENGTH, Task, update_ancestors_progress
 
 # La case en tête du texte d'un élément de liste, vide (« [ ] ») ou cochée (« [x] »).
 BOX_REGEX = re.compile(r"^\[(?P<state>[ xX])\](?:\s+|$)")
@@ -36,8 +36,8 @@ class TodoLine:
 
 
 def create_todo_from_dict(
-    todo_data: dict, parent: Todo | None = None
-) -> tuple[Todo, bool]:
+    todo_data: dict, parent: Task | None = None
+) -> tuple[Task, bool]:
     """Tâche d'une ligne de note, créée si elle n'existe pas encore.
 
     Elle est identifiée par la date de la note, son chemin et son texte (#240),
@@ -53,10 +53,10 @@ def create_todo_from_dict(
         "note_part_date": todo_data["date"],
         "note_part_text": todo_data["content"],
     }
-    todo = Todo.all_objects.filter(**identity, note_path=todo_data["path"]).first()
+    todo = Task.all_objects.filter(**identity, note_path=todo_data["path"]).first()
     if todo is not None:
         return todo, False
-    todo = Todo.all_objects.filter(**identity, note_path="").first()
+    todo = Task.all_objects.filter(**identity, note_path="").first()
     if todo is not None:
         todo.note_path = todo_data["path"]
         todo.save(update_fields=["note_path"])
@@ -64,14 +64,14 @@ def create_todo_from_dict(
 
     project, _ = Project.objects.get_or_create(name=todo_data["project"])
     section = section_for(project, todo_data.get("sections", []))
-    todo = Todo.objects.create(
+    todo = Task.objects.create(
         **identity,
         note_path=todo_data["path"],
         title=todo_data["content"],
         project=project,
         section=section,
         parent=parent,
-        note_state=Todo.NoteState.TO_REVIEW,
+        note_state=Task.NoteState.TO_REVIEW,
     )
     tag_names = todo_data.get("tags", [])
     if tag_names:
@@ -92,7 +92,7 @@ def todo_text(line: str) -> str:
         box = BOX_REGEX.match(text)
         if box:
             text = text[box.end() :]
-    return text.strip()[:TODO_TEXT_MAX_LENGTH]
+    return text.strip()[:TASK_TEXT_MAX_LENGTH]
 
 
 def todo_lines(note_part: NotePart) -> list[TodoLine]:
@@ -205,7 +205,7 @@ def move_tasks(note_date: date, moves: list[tuple[TodoLine, TodoLine]]) -> None:
     tâche qui part aussi ne fasse pas échouer la contrainte d'unicité."""
     found = []
     for before, after in moves:
-        todos = Todo.all_objects.filter(
+        todos = Task.all_objects.filter(
             created_from_note=True,
             note_part_date=note_date,
             note_path=before.path,
@@ -213,11 +213,11 @@ def move_tasks(note_date: date, moves: list[tuple[TodoLine, TodoLine]]) -> None:
         )
         found.append((list(todos.values_list("pk", flat=True)), after.path))
     for pks, _ in found:
-        Todo.all_objects.filter(pk__in=pks).update(
+        Task.all_objects.filter(pk__in=pks).update(
             note_path=Concat(Value("\x1f"), Cast("pk", CharField()))
         )
     for pks, path in found:
-        Todo.all_objects.filter(pk__in=pks).update(note_path=path)
+        Task.all_objects.filter(pk__in=pks).update(note_path=path)
 
 
 def note_lines(note_parts: Iterable[NotePart]) -> set[tuple[str, str]]:
@@ -230,45 +230,45 @@ def note_lines(note_parts: Iterable[NotePart]) -> set[tuple[str, str]]:
 
 
 def note_todos_to_review(note_date: date):
-    return Todo.objects.filter(
+    return Task.objects.filter(
         created_from_note=True,
         note_part_date=note_date,
-        note_state=Todo.NoteState.TO_REVIEW,
+        note_state=Task.NoteState.TO_REVIEW,
     )
 
 
 def mark_gone_lines(note_date: date, lines: set[tuple[str, str]]) -> None:
     """Une tâche revue dont la ligne a disparu de la note redevient à revoir :
     le bilan propose de la garder, de l'écarter ou de la remplacer (#240)."""
-    reviewed = Todo.objects.filter(
+    reviewed = Task.objects.filter(
         created_from_note=True,
         note_part_date=note_date,
-        note_state=Todo.NoteState.REVIEWED,
+        note_state=Task.NoteState.REVIEWED,
     )
     gone = [
         todo.pk
         for todo in reviewed
         if (todo.note_path, todo.note_part_text) not in lines
     ]
-    Todo.objects.filter(pk__in=gone).update(note_state=Todo.NoteState.TO_REVIEW)
+    Task.objects.filter(pk__in=gone).update(note_state=Task.NoteState.TO_REVIEW)
 
 
-def visible_subtree(todo: Todo) -> list[Todo]:
+def visible_subtree(todo: Task) -> list[Task]:
     """La tâche et ses sous-tâches affichées, à tous les niveaux."""
     subtree, level = [todo], [todo]
     while level:
-        level = list(Todo.objects.filter(parent__in=level))
+        level = list(Task.objects.filter(parent__in=level))
         subtree += level
     return subtree
 
 
-def removal_dismisses(todo: Todo) -> bool:
+def removal_dismisses(todo: Task) -> bool:
     """Retirer la tâche l'écarte-t-il ? Oui si son arbre contient une tâche issue
     d'une note (#290)."""
     return any(task.created_from_note for task in visible_subtree(todo))
 
 
-def remove_task(todo: Todo) -> None:
+def remove_task(todo: Task) -> None:
     """Écarte ou supprime une tâche et ses sous-tâches (#240, #290).
 
     Un arbre qui contient une tâche issue d'une note est écarté en entier, tâches
@@ -280,22 +280,22 @@ def remove_task(todo: Todo) -> None:
     subtree = visible_subtree(todo)
     pks = [task.pk for task in subtree]
     if any(task.created_from_note for task in subtree):
-        Todo.objects.filter(pk__in=pks).update(note_state=Todo.NoteState.DISMISSED)
+        Task.objects.filter(pk__in=pks).update(note_state=Task.NoteState.DISMISSED)
     else:
-        Todo.all_objects.filter(
-            parent__in=pks, note_state=Todo.NoteState.DISMISSED
+        Task.all_objects.filter(
+            parent__in=pks, note_state=Task.NoteState.DISMISSED
         ).update(parent=None)
-        Todo.all_objects.filter(pk__in=pks).delete()
+        Task.all_objects.filter(pk__in=pks).delete()
     update_ancestors_progress(todo.parent_id)
 
 
-def dismissed_subtree(todo: Todo) -> list[Todo]:
+def dismissed_subtree(todo: Task) -> list[Task]:
     """La tâche et ses sous-tâches écartées, à tous les niveaux."""
     subtree, level = [todo], [todo]
     while level:
         level = list(
-            Todo.all_objects.filter(
-                parent__in=level, note_state=Todo.NoteState.DISMISSED
+            Task.all_objects.filter(
+                parent__in=level, note_state=Task.NoteState.DISMISSED
             )
         )
         subtree += level
@@ -307,7 +307,7 @@ class DismissedRow:
     """Tâche écartée dont le parent ne l'est pas, avec ses sous-tâches écartées :
     ce que « Rétablir » remet ensemble (#290)."""
 
-    task: Todo
+    task: Task
     subtasks: int
     note: Note | None
     # Texte de la confirmation, posé par la vue.
@@ -316,19 +316,19 @@ class DismissedRow:
 
 def top_dismissed():
     """Les tâches écartées dont le parent ne l'est pas : celles que la liste montre."""
-    return Todo.all_objects.filter(note_state=Todo.NoteState.DISMISSED).exclude(
-        parent__note_state=Todo.NoteState.DISMISSED
+    return Task.all_objects.filter(note_state=Task.NoteState.DISMISSED).exclude(
+        parent__note_state=Task.NoteState.DISMISSED
     )
 
 
 def dismissed_rows() -> list[DismissedRow]:
-    dismissed = Todo.all_objects.filter(
-        note_state=Todo.NoteState.DISMISSED
+    dismissed = Task.all_objects.filter(
+        note_state=Task.NoteState.DISMISSED
     ).select_related("project", "parent")
     tops = [
         task
         for task in dismissed.order_by("-note_part_date", "pk")
-        if task.parent is None or task.parent.note_state != Todo.NoteState.DISMISSED
+        if task.parent is None or task.parent.note_state != Task.NoteState.DISMISSED
     ]
     notes = Note.objects.in_bulk(
         [task.note_part_date for task in tops], field_name="date"
@@ -341,7 +341,7 @@ def dismissed_rows() -> list[DismissedRow]:
     ]
 
 
-def restore_task(todo: Todo) -> Todo | None:
+def restore_task(todo: Task) -> Task | None:
     """Rétablit une tâche écartée et ses sous-tâches écartées (#290).
 
     Chacune redevient revue si sa ligne est encore dans sa note, gardée sans sa
@@ -363,44 +363,44 @@ def restore_task(todo: Todo) -> Todo | None:
         elif (task.note_path, task.note_part_text) in lines.get(
             task.note_part_date, set()
         ):
-            state = Todo.NoteState.REVIEWED
+            state = Task.NoteState.REVIEWED
         else:
-            state = Todo.NoteState.DETACHED
+            state = Task.NoteState.DETACHED
         states.setdefault(state, []).append(task.pk)
     for state, pks in states.items():
-        Todo.all_objects.filter(pk__in=pks).update(note_state=state)
+        Task.all_objects.filter(pk__in=pks).update(note_state=state)
 
     dismissed_parent = None
-    if todo.parent_id and not Todo.objects.filter(pk=todo.parent_id).exists():
+    if todo.parent_id and not Task.objects.filter(pk=todo.parent_id).exists():
         dismissed_parent = todo.parent
-        Todo.all_objects.filter(pk=todo.pk).update(parent=None)
+        Task.all_objects.filter(pk=todo.pk).update(parent=None)
     else:
         update_ancestors_progress(todo.parent_id)
     return dismissed_parent
 
 
-def replace_task(old: Todo, new: Todo) -> None:
+def replace_task(old: Task, new: Task) -> None:
     """L'ancienne tâche, dont la ligne a disparu, prend la place de la tâche de
     la nouvelle ligne (#240) : elle garde avancement, échéance et sous-tâches, et
     reçoit celles de la nouvelle. Son titre suit la ligne, sauf s'il a été
     renommé à la main."""
     if old.title == old.note_part_text:
         old.title = new.title
-    Todo.all_objects.filter(parent=new).update(parent=old)
+    Task.all_objects.filter(parent=new).update(parent=old)
     old.note_path, old.note_part_text = new.note_path, new.note_part_text
     new.delete()
-    old.note_state = Todo.NoteState.REVIEWED
+    old.note_state = Task.NoteState.REVIEWED
     old.save()
 
 
-def create_todos_from_note_part(note_part: NotePart) -> list[Todo]:
+def create_todos_from_note_part(note_part: NotePart) -> list[Task]:
     """Une tâche par ligne de tâche d'une note part ; renvoie celles créées."""
     part_tags = [tag.name for tag in note_part.tags.all()]
 
     sections = levels(note_part.section) if note_part.section else []
     tags = [tag for tag in part_tags if tag != TODO_TAG]
-    created_todos: list[Todo] = []
-    todos: dict[int, Todo] = {}
+    created_todos: list[Task] = []
+    todos: dict[int, Task] = {}
     for line in todo_lines(note_part):
         todo_data = {
             "date": note_part.note.date,

@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 TODAY = date(2026, 3, 1)
 
@@ -33,15 +33,15 @@ class GanttTestCase(TestCase):
         )
         self.open = self.task("Sans échéance", date(2026, 2, 1), parent=self.parent)
 
-    def task(self, title: str, created: date, **fields) -> Todo:
-        task = Todo.objects.create(title=title, project=self.project, **fields)
-        Todo.objects.filter(pk=task.pk).update(created_at=aware(created))
+    def task(self, title: str, created: date, **fields) -> Task:
+        task = Task.objects.create(title=title, project=self.project, **fields)
+        Task.objects.filter(pk=task.pk).update(created_at=aware(created))
         return task
 
     def chart(self):
         from todolist.gantt import gantt_chart
 
-        return gantt_chart(Todo.objects.get(pk=self.parent.pk), today=TODAY)
+        return gantt_chart(Task.objects.get(pk=self.parent.pk), today=TODAY)
 
 
 class GanttChartTests(GanttTestCase):
@@ -86,7 +86,7 @@ class GanttChartTests(GanttTestCase):
 
 
 class GanttPageTests(GanttTestCase):
-    def html(self, todo: Todo) -> str:
+    def html(self, todo: Task) -> str:
         return self.client.get(
             reverse("todolist:todo_detail", args=[todo.pk])
         ).content.decode()

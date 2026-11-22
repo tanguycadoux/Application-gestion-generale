@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class IncoherenceTestCase(TestCase):
@@ -18,12 +18,12 @@ class IncoherenceTestCase(TestCase):
             "Enfant", parent=self.parent, due_date=date(2025, 11, 20)
         )
 
-    def task(self, title: str, **fields) -> Todo:
+    def task(self, title: str, **fields) -> Task:
         fields.setdefault("project", self.project)
-        return Todo.objects.create(title=title, **fields)
+        return Task.objects.create(title=title, **fields)
 
-    def messages(self, todo: Todo) -> list[tuple[str, int]]:
-        todo = Todo.objects.get(pk=todo.pk)
+    def messages(self, todo: Task) -> list[tuple[str, int]]:
+        todo = Task.objects.get(pk=todo.pk)
         return [(i.message, i.task.pk) for i in todo.incoherences()]
 
 

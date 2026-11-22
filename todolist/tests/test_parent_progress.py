@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from core.models import Project
 from todolist.forms import TodoForm
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ParentProgressTestCase(TestCase):
@@ -18,13 +18,13 @@ class ParentProgressTestCase(TestCase):
         self.other = self.task("Autre enfant", parent=self.parent)
         self.grandchild = self.task("Petit-enfant", parent=self.child)
 
-    def task(self, title: str, **fields) -> Todo:
-        return Todo.objects.create(title=title, project=self.project, **fields)
+    def task(self, title: str, **fields) -> Task:
+        return Task.objects.create(title=title, project=self.project, **fields)
 
-    def progress(self, *todos: Todo) -> list[int]:
-        return [Todo.objects.get(pk=todo.pk).progress for todo in todos]
+    def progress(self, *todos: Task) -> list[int]:
+        return [Task.objects.get(pk=todo.pk).progress for todo in todos]
 
-    def toggle(self, todo: Todo, completed: bool):
+    def toggle(self, todo: Task, completed: bool):
         return self.client.post(
             reverse("todolist:todo_toggle", args=[todo.pk]),
             json.dumps({"completed": completed}),
@@ -47,7 +47,7 @@ class ComputedProgressTests(ParentProgressTestCase):
             todo.save()
 
         self.assertEqual(self.progress(self.child, self.parent), [100, 100])
-        self.assertFalse(Todo.objects.get(pk=self.parent.pk).completed)
+        self.assertFalse(Task.objects.get(pk=self.parent.pk).completed)
 
     def test_avancement_saisi_d_un_parent_ignore(self):
         self.parent.progress = 100
@@ -125,7 +125,7 @@ class ToggleTests(ParentProgressTestCase):
         response = self.toggle(self.parent, completed=True)
 
         self.assertEqual(response.json()["status"], "ok")
-        self.assertTrue(Todo.objects.get(pk=self.parent.pk).completed)
+        self.assertTrue(Task.objects.get(pk=self.parent.pk).completed)
         self.assertEqual(self.progress(self.parent, self.child), [0, 0])
 
     def test_case_d_un_parent_active_avec_son_avancement(self):
@@ -143,8 +143,8 @@ class ParentValidationTests(ParentProgressTestCase):
         for todo in (self.grandchild, self.other):
             self.toggle(todo, completed=True)
 
-    def done(self, *todos: Todo) -> list[bool]:
-        return [Todo.objects.get(pk=todo.pk).completed for todo in todos]
+    def done(self, *todos: Task) -> list[bool]:
+        return [Task.objects.get(pk=todo.pk).completed for todo in todos]
 
     def test_tache_sans_sous_tache_terminee_a_100(self):
         self.other.progress = 100

@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import Todo
+from .models import Task
 
 
-@admin.register(Todo)
-class TodoAdmin(admin.ModelAdmin):
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
     list_display = (
         "pk",
         "title",

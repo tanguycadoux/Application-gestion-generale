@@ -11,7 +11,7 @@ from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.forms import TodoForm
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ProgressTests(TestCase):
@@ -19,13 +19,13 @@ class ProgressTests(TestCase):
         self.project = Project.objects.create(name="P")
 
     def test_avancement_nul_par_defaut(self):
-        todo = Todo.objects.create(title="T", project=self.project)
+        todo = Task.objects.create(title="T", project=self.project)
 
         self.assertEqual(todo.progress, 0)
         self.assertFalse(todo.completed)
 
     def test_terminee_a_cent_pour_cent(self):
-        todo = Todo.objects.create(title="T", project=self.project, progress=100)
+        todo = Task.objects.create(title="T", project=self.project, progress=100)
 
         self.assertTrue(todo.completed)
 
@@ -40,10 +40,10 @@ class ProgressTests(TestCase):
     def test_avancement_borne(self):
         for value in (-1, 101):
             with self.subTest(value=value), self.assertRaises(ValidationError):
-                Todo(title="T", project=self.project, progress=value).full_clean()
+                Task(title="T", project=self.project, progress=value).full_clean()
 
     def test_case_de_la_liste(self):
-        todo = Todo.objects.create(title="T", project=self.project, progress=40)
+        todo = Task.objects.create(title="T", project=self.project, progress=40)
         url = reverse("todolist:todo_toggle", args=[todo.pk])
 
         self.client.post(url, {"completed": True}, content_type="application/json")
@@ -62,10 +62,10 @@ class SectionAndProjectTests(TestCase):
     def test_sujet_facultatif(self):
         section = Section.objects.create(project=self.project, name="S")
 
-        todo = Todo.objects.create(title="T", project=self.project, section=section)
+        todo = Task.objects.create(title="T", project=self.project, section=section)
 
         self.assertEqual(todo.section, section)
-        self.assertIsNone(Todo.objects.create(title="U", project=self.project).section)
+        self.assertIsNone(Task.objects.create(title="U", project=self.project).section)
 
     def test_projet_obligatoire(self):
         form = TodoForm(data={"title": "T", "priority": "medium", "progress": 0})
@@ -96,18 +96,18 @@ class NoForcedInheritanceTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
         self.other = Project.objects.create(name="Autre")
-        self.parent = Todo.objects.create(
+        self.parent = Task.objects.create(
             title="Parent", project=self.project, due_date=date(2025, 12, 1)
         )
 
     def test_projet_different_du_parent_conserve(self):
-        child = Todo.objects.create(title="E", project=self.other, parent=self.parent)
+        child = Task.objects.create(title="E", project=self.other, parent=self.parent)
 
         child.refresh_from_db()
         self.assertEqual(child.project, self.other)
 
     def test_echeance_absente_conservee(self):
-        child = Todo.objects.create(title="E", project=self.project, parent=self.parent)
+        child = Task.objects.create(title="E", project=self.project, parent=self.parent)
 
         child.refresh_from_db()
         self.assertIsNone(child.due_date)
@@ -121,7 +121,7 @@ class NoForcedInheritanceTests(TestCase):
         self.assertIn('value="2025-12-01"', html)
 
     def test_boucle_toujours_refusee(self):
-        child = Todo.objects.create(title="E", project=self.project, parent=self.parent)
+        child = Task.objects.create(title="E", project=self.project, parent=self.parent)
         self.parent.parent = child
 
         with self.assertRaises(ValidationError):
@@ -129,10 +129,10 @@ class NoForcedInheritanceTests(TestCase):
 
 
 class TaskFromNoteTests(TestCase):
-    def process(self, body: str) -> Todo:
+    def process(self, body: str) -> Task:
         note = Note.objects.create(date="2025-11-24", body=body)
         process_note_parts(note)
-        return Todo.objects.get()
+        return Task.objects.get()
 
     def test_description_vide(self):
         todo = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")

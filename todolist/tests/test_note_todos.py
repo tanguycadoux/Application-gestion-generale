@@ -5,7 +5,7 @@ from django.test import TestCase
 from note_taking.models import Note
 from note_taking.services import process_note_parts
 from todolist.forms import TodoForm
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class NoteTodoTitleTests(TestCase):
@@ -13,7 +13,7 @@ class NoteTodoTitleTests(TestCase):
         body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note = Note.objects.create(date="2025-11-24", body=body)
         process_note_parts(note)
-        return list(Todo.objects.order_by("pk").values_list("title", flat=True))
+        return list(Task.objects.order_by("pk").values_list("title", flat=True))
 
     def test_marqueurs_de_liste_retires(self):
         self.assertEqual(
@@ -41,7 +41,7 @@ class NoteTodoTitleTests(TestCase):
             self.titles("- [ ] à faire", "- [x] cochée", "* [X] majuscule"),
             ["à faire"],
         )
-        self.assertFalse(Todo.objects.filter(done=True).exists())
+        self.assertFalse(Task.objects.filter(done=True).exists())
 
     def test_ligne_sans_marqueur_ignoree(self):
         """Seuls les éléments de liste sont des tâches ; un tiret dans le texte
@@ -58,7 +58,7 @@ class NoteTodoTitleTests(TestCase):
         """Une tâche de 300 caractères s'enregistre à nouveau sans modification."""
         line = "Tâche " + "x" * 294
         self.titles("- " + line)
-        todo = Todo.objects.get()
+        todo = Task.objects.get()
 
         form = TodoForm(
             data={

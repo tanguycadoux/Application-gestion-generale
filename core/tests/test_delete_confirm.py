@@ -13,7 +13,7 @@ from django.urls import reverse
 from core.models import Project
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
-from todolist.models import Todo
+from todolist.models import Task
 
 
 def page_header(html: str) -> str:
@@ -82,7 +82,7 @@ class NoteDeleteTests(DeleteFormTestCase):
 
 class TodoDeleteTests(DeleteFormTestCase):
     def setUp(self):
-        self.todo = Todo.objects.create(
+        self.todo = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Relire"
         )
         self.url = reverse("todolist:todo_delete", args=[self.todo.pk])
@@ -119,13 +119,13 @@ class TodoDeleteTests(DeleteFormTestCase):
 
     def test_pas_de_page_de_confirmation(self):
         self.assertEqual(self.client.get(self.url).status_code, 405)
-        self.assertTrue(Todo.objects.filter(pk=self.todo.pk).exists())
+        self.assertTrue(Task.objects.filter(pk=self.todo.pk).exists())
 
     def test_suppression_par_post_avec_message(self):
         response = self.client.post(self.url)
 
         self.assertRedirects(response, reverse("todolist:todo_list"))
-        self.assertFalse(Todo.objects.filter(pk=self.todo.pk).exists())
+        self.assertFalse(Task.objects.filter(pk=self.todo.pk).exists())
         self.assertEqual(
             [str(m) for m in get_messages(response.wsgi_request)],
             ["La tâche « Relire » est supprimée."],
@@ -161,7 +161,7 @@ class LongNameTests(TestCase):
         self.project = Project.objects.create(name="P")
 
     def test_titre_long_absent_de_la_confirmation_de_la_tache(self):
-        todo = Todo.objects.create(project=self.project, title=self.TITLE)
+        todo = Task.objects.create(project=self.project, title=self.TITLE)
 
         html = self.client.get(
             reverse("todolist:todo_detail", args=[todo.pk])
@@ -179,8 +179,8 @@ class LongNameTests(TestCase):
         self.assertRegex(html, r'<h1 class="[^"]*\[overflow-wrap:anywhere\]')
 
     def test_titre_long_absent_de_la_confirmation_de_rétablissement(self):
-        Todo.all_objects.create(
-            project=self.project, title=self.TITLE, note_state=Todo.NoteState.DISMISSED
+        Task.all_objects.create(
+            project=self.project, title=self.TITLE, note_state=Task.NoteState.DISMISSED
         )
 
         html = self.client.get(

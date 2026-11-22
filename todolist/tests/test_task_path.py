@@ -7,7 +7,7 @@ from django.urls import reverse
 from core.models import Project, Section
 from core.sections import levels, section_for
 from todolist.forms import NoteReviewForm, TodoForm
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class PathTestCase(TestCase):
@@ -23,7 +23,7 @@ class PathTestCase(TestCase):
             **fields,
         }
 
-    def save(self, **fields) -> Todo:
+    def save(self, **fields) -> Task:
         form = TodoForm(data=self.data(**fields))
         self.assertTrue(form.is_valid(), form.errors)
         return form.save()
@@ -176,7 +176,7 @@ class DatalistTests(PathTestCase):
 
 class NoteReviewFormTests(PathTestCase):
     def test_le_bilan_saisit_le_chemin_aussi(self):
-        todo = Todo.objects.create(title="T", project=self.project)
+        todo = Task.objects.create(title="T", project=self.project)
         form = NoteReviewForm(
             data={
                 "due_date": "",
@@ -229,7 +229,7 @@ class PathDisplayTests(PathTestCase):
         )
 
         self.assertRedirects(response, reverse("todolist:todo_list"))
-        todo = Todo.objects.get()
+        todo = Task.objects.get()
         assert todo.section is not None
         self.assertEqual(levels(todo.section), ["Réunion", "Suite"])
 
@@ -240,7 +240,7 @@ class ListFilterTests(PathTestCase):
         self.reunion = section_for(self.project, ["Réunion"])
         self.prep = section_for(self.project, ["Réunion", "Préparation"])
         self.autre = section_for(self.project, ["Autre"])
-        make = Todo.objects.create
+        make = Task.objects.create
         self.a = make(
             title="Racine réunion", project=self.project, section=self.reunion
         )
@@ -281,7 +281,7 @@ class ListFilterTests(PathTestCase):
         self.assertEqual(len(self.titles(path="abc")), 4)
 
     def test_parents_gardes_pour_le_contexte_et_attenues(self):
-        Todo.objects.filter(pk=self.b.pk).update(parent=self.c)
+        Task.objects.filter(pk=self.b.pk).update(parent=self.c)
 
         response = self.client.get(
             reverse("todolist:todo_list"), {"path": self.prep.pk}

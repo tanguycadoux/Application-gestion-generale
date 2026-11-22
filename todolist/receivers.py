@@ -9,7 +9,7 @@ from note_taking.signals import (
     note_parts_processed,
 )
 
-from .models import Todo
+from .models import Task
 from .services import (
     create_todos_from_note_part,
     mark_gone_lines,
@@ -41,7 +41,7 @@ def create_todos_from_note_parts(
 def follow_renamed_headings(sender, note, old_body, new_body, **kwargs) -> None:
     """Les tâches issues d'une note suivent ses titres réécrits : leur chemin de
     ligne change, pas leur fiche (#299). Une note sans tâche n'a rien à suivre."""
-    if not Todo.all_objects.filter(
+    if not Task.all_objects.filter(
         created_from_note=True, note_part_date=note.date
     ).exists():
         return
