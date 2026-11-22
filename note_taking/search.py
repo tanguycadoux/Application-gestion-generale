@@ -361,6 +361,18 @@ def levels_of(parts: list[NotePart]) -> dict[int, tuple[Level, ...]]:
     return found
 
 
+def facet_counts(parts: list[NotePart]) -> tuple[dict[int, int], dict[int, int]]:
+    """Par niveau, puis par projet, le nombre de ces note parts qui l'utilisent : les
+    compteurs de l'arbre des chemins pour un résultat (#380), sans requête de plus."""
+    sections: dict[int, int] = {}
+    projects: dict[int, int] = {}
+    for part in parts:
+        if part.section_id is not None:
+            sections[part.section_id] = sections.get(part.section_id, 0) + 1
+        projects[part.project_id] = projects.get(part.project_id, 0) + 1
+    return sections, projects
+
+
 def project_counts() -> dict[int, int]:
     """Par projet, le nombre de note parts qui l'utilisent, pour les cases de projets
     de l'arbre des chemins (#360)."""

@@ -157,6 +157,8 @@ class PathReport:
     written: str
     negated: bool
     levels: list[str] = field(default_factory=list)
+    # Les niveaux retenus eux-mêmes, sans descendants : marqués dans l'arbre (#380).
+    section_ids: list[int] = field(default_factory=list)
     suggestions: list[Suggestion] = field(default_factory=list)
 
     @property
@@ -182,6 +184,7 @@ def path_reports(text: str | None) -> list[PathReport]:
         token = tokens[index]
         report = PathReport(token.value.strip(), token.negated)
         retained = levels.matching(read_path(report.written))
+        report.section_ids = retained
         report.levels = sorted(
             (levels.label(pk) for pk in retained), key=lambda label: fold(label)
         )

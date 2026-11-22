@@ -1,5 +1,11 @@
 {% include "note_taking/search_expansion.html" %}
 {% include "note_taking/search_paths.html" %}
+{% if request.htmx %}
+    {# Les compteurs et marques de l'arbre suivent la requête (#380), remplacés seuls : les cases et les niveaux ouverts ne bougent pas. #}
+    {% for node in path_nodes %}
+        {% include "core/components/path_tree_facet.html" with oob=True count_noun="passage" %}
+    {% endfor %}
+{% endif %}
 {% load ui search_tags %}
 {% for error in query.errors %}
     <p class="mb-2 text-amber-800" role="alert">{{ error }}</p>

@@ -1,0 +1,18 @@
+{% comment %}
+Compteur et marque d'un nœud de l'arbre des chemins (#362, #380), dans un élément à
+identifiant : avec `oob`, une réponse htmx le remplace seul (`hx-swap-oob`). Avec
+`faceted`, un nœud à 0 est atténué (`data-zero`) au lieu de n'avoir aucun compteur.
+{% endcomment %}
+<span id="{{ node.key }}-facet"{% if oob %} data-hx-swap-oob="true"{% endif %} class="contents"{% if faceted and not node.count %} data-zero{% endif %}{% if node.marked %} data-marked{% endif %}>
+    {% if node.marked %}
+        <span class="rounded bg-blue-100 px-1 text-xs text-blue-900" title="Retenu par chemin: dans la requête">chemin:</span>
+    {% endif %}
+    {% if node.count or faceted %}
+        {% if count_noun %}
+            {# Le nombre seul à l'écran ; ce qu'il compte au survol et pour les lecteurs d'écran (#362). #}
+            <span class="{% if node.count %}text-slate-600{% else %}text-slate-500{% endif %}" title="{{ node.count }} {{ count_noun }}{{ node.count|pluralize }}">({{ node.count }}<span class="sr-only"> {{ count_noun }}{{ node.count|pluralize }}</span>)</span>
+        {% else %}
+            <span class="text-slate-600">({{ node.count }})</span>
+        {% endif %}
+    {% endif %}
+</span>
