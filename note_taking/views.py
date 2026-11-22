@@ -14,10 +14,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
+from core.dates import date_text
 from core.exceptions import AppError
 from core.path_tree import path_tree
 from core.suggestions import rank_by_name
-from core.templatetags.ui import date_text
 from images.exceptions import ImageError
 from images.models import Image
 from images.services import delete_image as delete_image_service

@@ -36,7 +36,7 @@ PROJECT_COLORS = {
     "pink",
     "rose",
 }
-PROJECT_COLORS_SOURCE = Path(settings.BASE_DIR) / "core" / "templatetags" / "ui.py"
+PROJECT_COLORS_SOURCE = Path(settings.BASE_DIR) / "core" / "project_colors.py"
 
 TAILWIND_COLORS = ALLOWED_COLORS | {
     "gray",

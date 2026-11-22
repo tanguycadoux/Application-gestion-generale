@@ -16,8 +16,8 @@ from django.views.generic import (
     UpdateView,
 )
 
+from core.dates import date_text
 from core.month_calendar import requested_month
-from core.templatetags.ui import date_text
 from note_taking.models import Note
 
 from . import task_table, tree

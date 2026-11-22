@@ -27,10 +27,10 @@ from django.db.models import Count, Q, QuerySet
 from django.urls import reverse
 from django.utils.safestring import SafeString, mark_safe
 
+from core.dates import date_text
 from core.models import Project, Section, Tag
 from core.sections import with_descendants
 from core.tables import fold
-from core.templatetags.ui import date_text
 
 from .models import Note, NotePart
 from .rendering import heading_anchor, render_note_part
