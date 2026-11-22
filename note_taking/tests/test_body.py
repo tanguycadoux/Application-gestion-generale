@@ -43,7 +43,7 @@ class BodyFromFileTests(TestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.body, "# P\nx")
-        self.assertEqual(note.parts.get().content, "x")
+        self.assertEqual(note.passages.get().content, "x")
 
     def test_mise_a_jour_retire_l_en_tete(self):
         note = Note.objects.create(date="2025-11-24")

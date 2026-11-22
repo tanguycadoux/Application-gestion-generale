@@ -12,7 +12,7 @@ from django.urls import reverse
 
 from note_taking.models import Note
 from note_taking.qmd.parser import parse_note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 def warnings(raw: str) -> list[str]:
@@ -56,16 +56,24 @@ class SkippedLevelParserTests(SimpleTestCase):
         self.assertEqual(len(warnings(raw)), 2)
 
     def test_titre_sans_projet(self):
+        """Son contenu est gardé, sans projet (#385) : le rappel du texte sans projet
+        vient d'abord, puis le titre."""
         self.assertEqual(
             warnings("## S\nx\n# P\ny"),
             [
+                "1 ligne sans projet, avant le premier titre « # » : à ranger sous "
+                "un projet.",
                 "Ligne 1 : le titre « S » (##) n'a pas de projet (#) au-dessus de "
-                "lui : son contenu n'est pas enregistré."
+                "lui : son contenu est gardé sans projet.",
             ],
         )
 
-    def test_texte_sans_titre_avant_le_projet_n_est_pas_signale(self):
-        self.assertEqual(warnings("intro\n# P\nx"), [])
+    def test_texte_sans_titre_avant_le_projet_seulement_rappele(self):
+        """#385 : aucun titre à vérifier, seulement le texte à ranger."""
+        found = warnings("intro\n# P\nx")
+
+        self.assertEqual(len(found), 1)
+        self.assertIn("sans projet", found[0])
 
     def test_titres_d_un_bloc_de_code_ou_d_un_callout_ignores(self):
         raw = '# A\n```\n### B\n```\n::: {.callout-note title="t"}\n### C\n:::\nx'
@@ -79,7 +87,8 @@ class SkippedLevelParserTests(SimpleTestCase):
         note = parse_note("2025-11-24", "# A\n### B\nx")
 
         self.assertEqual(
-            [(part.path, part.lines) for part in note.parts], [(["B"], ["x"])]
+            [(passage.path, passage.lines) for passage in note.passages],
+            [(["B"], ["x"])],
         )
 
     def test_json_historique_inchange(self):
@@ -92,7 +101,7 @@ class SkippedLevelServiceTests(TestCase):
     def test_avertissements_de_la_note(self):
         note = Note.objects.create(date="2025-11-24", body="# A\n### B\nx")
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(len(note.warnings), 1)
         self.assertIn("saute un niveau", note.warnings[0])
@@ -100,14 +109,14 @@ class SkippedLevelServiceTests(TestCase):
     def test_note_sans_saut(self):
         note = Note.objects.create(date="2025-11-24", body="# A\n## B\nx")
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(note.warnings, ())
 
     def test_le_texte_de_la_note_n_est_pas_reecrit(self):
         note = Note.objects.create(date="2025-11-24", body="# A\n### B\nx")
 
-        process_note_parts(note)
+        process_passages(note)
 
         note.refresh_from_db()
         self.assertEqual(note.body, "# A\n### B\nx")

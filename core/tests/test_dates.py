@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from core.dates import date_text
 from core.models import Project
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from todolist.models import Task
 
 APPS = ("core", "images", "note_taking", "todolist")
@@ -130,7 +130,7 @@ class DatesInPagesTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
         self.project = Project.objects.create(name="P")
-        NotePart.objects.create(note=self.note, project=self.project, content="x")
+        Passage.objects.create(note=self.note, project=self.project, content="x")
 
     def test_titre_d_une_note(self):
         html = self.client.get(

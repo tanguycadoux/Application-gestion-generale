@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.forms import TaskForm
 from todolist.models import Task
 
@@ -67,11 +67,25 @@ class SectionAndProjectTests(TestCase):
         self.assertEqual(task.section, section)
         self.assertIsNone(Task.objects.create(title="U", project=self.project).section)
 
-    def test_projet_obligatoire(self):
+    def test_projet_facultatif(self):
+        """#385 : une tâche peut être « à rattacher à un projet »."""
         form = TaskForm(data={"title": "T", "priority": "medium", "progress": 0})
 
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.save().project)
+
+    def test_chemin_sans_projet_refuse(self):
+        form = TaskForm(
+            data={
+                "title": "T",
+                "priority": "medium",
+                "progress": 0,
+                "section_path": "S",
+            }
+        )
+
         self.assertFalse(form.is_valid())
-        self.assertIn("project", form.errors)
+        self.assertIn("section_path", form.errors)
 
     def test_champs_du_formulaire(self):
         self.assertEqual(
@@ -131,7 +145,7 @@ class NoForcedInheritanceTests(TestCase):
 class TaskFromNoteTests(TestCase):
     def process(self, body: str) -> Task:
         note = Note.objects.create(date="2025-11-24", body=body)
-        process_note_parts(note)
+        process_passages(note)
         return Task.objects.get()
 
     def test_description_vide(self):

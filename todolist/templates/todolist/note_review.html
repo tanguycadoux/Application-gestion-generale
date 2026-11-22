@@ -37,6 +37,10 @@
                                 <th scope="row" class="p-2 font-normal">
                                     {{ form.id }}
                                     <a href="{% url 'todolist:task_detail' form.instance.pk %}">{{ form.instance.title }}</a>
+                                    {% if not form.instance.project %}
+                                        {# Case du texte sans projet de la note (#385) : elle reste à revoir tant qu'aucun projet n'est choisi. #}
+                                        <span class="block text-sm text-amber-800">Sans projet : à rattacher à un projet.</span>
+                                    {% endif %}
                                     {{ form.non_field_errors }}
                                 </th>
                                 {% for field in form.visible_fields %}

@@ -78,13 +78,13 @@ class DeleteImageTests(TestCase):
 
     def use(self, image: Image) -> None:
         from core.models import Project
-        from note_taking.models import Note, NotePart, NotePartImageLink
+        from note_taking.models import Note, Passage, PassageImageLink
 
         note = Note.objects.create(date="2025-11-24")
-        part = NotePart.objects.create(
+        part = Passage.objects.create(
             note=note, project=Project.objects.create(name="P")
         )
-        NotePartImageLink.objects.create(note_part=part, image=image)
+        PassageImageLink.objects.create(passage=part, image=image)
 
     def test_image_inutilisee_supprimee_avec_son_fichier(self):
         from images.services import delete_image

@@ -180,9 +180,9 @@ def render_columns(start: re.Match[str], body: list[str]) -> str:
 
 
 def render_metadata(start: re.Match[str], body: list[str]) -> str:
-    """Les tags d'un bloc `{.metadata}` en pastilles, comme ceux d'une note part.
+    """Les tags d'un bloc `{.metadata}` en pastilles, comme ceux d'un passage.
 
-    `todo: true` s'affiche comme le tag `TODO` que ses note parts reçoivent.
+    `todo: true` s'affiche comme le tag `TODO` que ses passages reçoivent.
     Une autre clé, ou une ligne mal écrite, n'est pas affichée : l'analyse
     la signale à l'enregistrement.
     """

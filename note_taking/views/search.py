@@ -16,7 +16,7 @@ from ..search import (
     group_by_note,
     project_counts,
     result_options,
-    search_note_parts,
+    search_passages,
     section_counts,
 )
 from ..search_paths import PathReport, path_reports
@@ -51,7 +51,7 @@ def notes_search(request):
         reports = path_reports(form.cleaned_data["q"])
         sections = [section.pk for section in form.cleaned_data["subjects"]]
         projects = [project.pk for project in form.cleaned_data["projects"]]
-        results = search_note_parts(
+        results = search_passages(
             query,
             projects,
             sections,
@@ -61,7 +61,7 @@ def notes_search(request):
             unfiltered = (
                 results
                 if not (projects or sections)
-                else search_note_parts(
+                else search_passages(
                     replace(query, expansions=[]),
                     expand=not request.GET.get("exact"),
                 )
@@ -76,7 +76,7 @@ def notes_search(request):
         "groups": group_by_note(query, results) if results and not as_document else [],
         "query": query,
         "path_reports": reports,
-        "note_count": len({part.note_id for part in results or []}),
+        "note_count": len({passage.note_id for passage in results or []}),
         "view": view,
         "group": group,
         "document": document_html(results, group) if as_document else None,

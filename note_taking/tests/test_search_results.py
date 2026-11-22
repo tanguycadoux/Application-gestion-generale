@@ -4,8 +4,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project
-from note_taking.models import Note, NotePart
-from note_taking.search import group_by_note, search_note_parts
+from note_taking.models import Note, Passage
+from note_taking.search import group_by_note, search_passages
 from note_taking.search_index import snippets
 from note_taking.search_query import parse_query
 
@@ -17,7 +17,7 @@ class SnippetTests(TestCase):
         cls.note = Note.objects.create(date="2026-10-15")
 
     def part(self, content, heading_path=""):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=self.note,
             project=self.project,
             content=content,
@@ -67,7 +67,7 @@ class SnippetTests(TestCase):
 
         self.assertIn("<mark>Calibration</mark>", html)
 
-    def test_plusieurs_note_parts_et_aucune(self):
+    def test_plusieurs_passages_et_aucune(self):
         a = self.part("banc un")
         b = self.part("banc deux")
         self.part("autre chose")
@@ -75,7 +75,7 @@ class SnippetTests(TestCase):
         self.assertEqual(set(snippets('"banc"', [a.pk, b.pk])), {a.pk, b.pk})
         self.assertEqual(snippets('"banc"', []), {})
 
-    def test_beaucoup_de_note_parts(self):
+    def test_beaucoup_de_passages(self):
         parts = [self.part(f"banc {i}") for i in range(700)]
 
         self.assertEqual(len(snippets('"banc"', [p.pk for p in parts])), 700)
@@ -89,17 +89,17 @@ class GroupingTests(TestCase):
         cls.new = Note.objects.create(date="2026-10-15")
 
     def part(self, note, content, heading_path=""):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=note, project=self.project, content=content, heading_path=heading_path
         )
 
     def groups(self, text):
         query = parse_query(text)
-        parts = search_note_parts(query)
+        parts = search_passages(query)
         assert parts is not None
         return group_by_note(query, parts)
 
-    def test_une_note_regroupe_ses_note_parts(self):
+    def test_une_note_regroupe_ses_passages(self):
         a = self.part(self.new, "banc un")
         b = self.part(self.new, "banc deux")
         c = self.part(self.old, "banc trois")
@@ -107,11 +107,11 @@ class GroupingTests(TestCase):
         groups = self.groups("banc")
 
         self.assertEqual(len(groups), 2)
-        by_note = {g.note: [h.part for h in g.hits] for g in groups}
+        by_note = {g.note: [h.passage for h in g.hits] for g in groups}
         self.assertEqual(set(by_note[self.new]), {a, b})
         self.assertEqual(by_note[self.old], [c])
 
-    def test_la_note_de_la_meilleure_note_part_vient_en_premier(self):
+    def test_la_note_de_la_meilleure_passage_vient_en_premier(self):
         self.part(self.new, "banc " + "autre " * 40)
         self.part(self.old, "banc")
 
@@ -176,7 +176,7 @@ class SearchPageGroupingTests(TestCase):
             (cls.new, "banc de test", "Alpha › Bilan"),
             (cls.old, "un banc", "Alpha"),
         ]:
-            NotePart.objects.create(
+            Passage.objects.create(
                 note=note, project=cls.project, content=content, heading_path=path
             )
 
@@ -205,7 +205,7 @@ class SearchPageGroupingTests(TestCase):
         self.assertContains(response, f'href="{note_url}"')
 
     def test_nombre_de_passages(self):
-        """#362 : on compte des passages, pas des « note parts »."""
+        """#362 : on compte des passages, pas des « passages »."""
         response = self.client.get(self.url, {"q": "banc"})
 
         self.assertContains(response, "3 passages dans 2 notes.")

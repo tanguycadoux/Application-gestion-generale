@@ -4,8 +4,8 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from core.models import Project
-from note_taking.models import Note, NotePart
-from note_taking.search import search_note_parts
+from note_taking.models import Note, Passage
+from note_taking.search import search_passages
 from note_taking.search_index import edit_distance, similar_terms
 from note_taking.search_query import parse_query
 
@@ -34,13 +34,13 @@ class TypoTestCase(TestCase):
         cls.note = Note.objects.create(date="2026-10-01")
 
     def part(self, content):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=self.note, project=self.project, content=content
         )
 
     def search(self, text, **kwargs):
         query = parse_query(text)
-        return query, search_note_parts(query, **kwargs)
+        return query, search_passages(query, **kwargs)
 
 
 class VocabularyTests(TypoTestCase):
@@ -198,7 +198,7 @@ class ExpansionTests(TypoTestCase):
         self.part("thermique")
         query = parse_query("thermiqe")
 
-        results = search_note_parts(query, expand=False)
+        results = search_passages(query, expand=False)
 
         self.assertEqual(results, [])
         self.assertEqual(query.expansions, [])

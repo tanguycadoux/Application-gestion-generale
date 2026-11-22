@@ -7,8 +7,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project, Section
-from note_taking.models import Note, NotePart
-from note_taking.search import search_note_parts
+from note_taking.models import Note, Passage
+from note_taking.search import search_passages
 from note_taking.search_paths import path_reports
 from note_taking.search_query import parse_query
 
@@ -33,18 +33,18 @@ class PathFixture(TestCase):
             project=cls.sud, parent=cls.lot, name="Réunion de chantier"
         )
         note = Note.objects.create(date="2026-10-15")
-        cls.p_nord = NotePart.objects.create(
+        cls.p_nord = Passage.objects.create(
             note=note, project=cls.nord, section=cls.nord_prepa, content="banc"
         )
-        cls.p_suivi = NotePart.objects.create(
+        cls.p_suivi = Passage.objects.create(
             note=note, project=cls.nord, section=cls.nord_suivi, content="banc"
         )
-        cls.p_sud = NotePart.objects.create(
+        cls.p_sud = Passage.objects.create(
             note=note, project=cls.sud, section=cls.sud_reunion, content="banc"
         )
 
     def search(self, text):
-        return set(search_note_parts(parse_query(text)))
+        return set(search_passages(parse_query(text)))
 
     def report(self, text):
         [report] = path_reports(text)

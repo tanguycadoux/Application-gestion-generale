@@ -1,4 +1,4 @@
-"""Services de note : import, mise à jour, note parts et images."""
+"""Services de note : import, mise à jour, passages et images."""
 
 from datetime import date
 
@@ -14,11 +14,11 @@ from .exceptions import (
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from .models import Note, NotePart
+from .models import Note, Passage
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.parser import HEADING_SEPARATOR, ParsedNote, parse_note
-from .rendering import IMAGE_PATH_REGEX, image_name
-from .signals import NoteFollowUp, note_parts_processed
+from .rendering import IMAGE_PATH_REGEX, image_name, note_heading_ids
+from .signals import NoteFollowUp, passages_processed
 
 
 @transaction.atomic
@@ -35,7 +35,7 @@ def update_note_from_source_file(note: Note, file) -> Note:
     note.body = body
     note.save()
 
-    process_note_parts(note)
+    process_passages(note)
     return note
 
 
@@ -50,20 +50,20 @@ def insert_note_in_table(file) -> Note:
 
     note = Note.objects.create(date=date.fromisoformat(note_date), body=body)
 
-    process_note_parts(note)
+    process_passages(note)
     return note
 
 
 @transaction.atomic
-def process_note_parts(
+def process_passages(
     note: Note, parsed_note: ParsedNote | None = None
-) -> list[NotePart]:
-    """(Re)génère les NotePart à partir de note.body, puis émet note_parts_processed.
+) -> list[Passage]:
+    """(Re)génère les passages à partir de note.body, puis émet passages_processed.
 
     À appeler après chaque sauvegarde de note.body (import fichier ou
     édition depuis le formulaire web), une fois `note` déjà persistée.
-    Tout ou rien (#221) : en cas d'erreur, les note parts et les tâches d'avant
-    restent intactes ; le texte de la note, déjà enregistré, n'est pas annulé.
+    Tout ou rien (#221) : en cas d'erreur, les passages et les tâches d'avant
+    restent intacts ; le texte de la note, déjà enregistré, n'est pas annulé.
     """
     if parsed_note is None:
         parsed_note = parse_note(str(note.date), note.body)
@@ -75,49 +75,61 @@ def process_note_parts(
                 "à la date de la note."
             )
 
-    note.parts.all().delete()
-    note_parts = insert_noteparts_in_table(note, parsed_note)
+    note.passages.all().delete()
+    passages = insert_passages(note, parsed_note)
 
     # Les stubs de Django typent les réponses en `str | None` : ce sont des objets.
     responses: list[object] = [
         response
-        for _, response in note_parts_processed.send(
-            sender=Note, note=note, note_parts=note_parts
+        for _, response in passages_processed.send(
+            sender=Note, note=note, passages=passages
         )
     ]
     note.follow_ups = tuple(
         response for response in responses if isinstance(response, NoteFollowUp)
     )
     note.warnings = tuple(parsed_note.warnings)
-    # Les sections qu'aucune note part ni tâche n'utilise plus sont oubliées (#295).
+    # Les sections qu'aucun passage ni tâche n'utilise plus sont oubliées (#295).
     forget_unused_sections()
 
-    return note_parts
+    return passages
 
 
-def insert_noteparts_in_table(note: Note, parsed_note: ParsedNote) -> list[NotePart]:
-    note_parts = []
-    for parsed_part in parsed_note.parts:
-        content = "\n".join(parsed_part.lines)
-        content, images = replace_image_paths(content)
+def insert_passages(note: Note, parsed_note: ParsedNote) -> list[Passage]:
+    """Enregistre les passages analysés, dans l'ordre, avec l'identifiant de leurs
+    titres dans la page de la note (#387). Le texte sans projet n'a ni projet ni
+    chemin (#385)."""
+    ids = note_heading_ids(note.body, parsed_note.headings)
+    passages = []
+    for position, parsed in enumerate(parsed_note.passages):
+        content, images = replace_image_paths("\n".join(parsed.lines))
 
-        project, _ = Project.objects.get_or_create(name=parsed_part.project)
+        project = (
+            Project.objects.get_or_create(name=parsed.project)[0]
+            if parsed.project is not None
+            else None
+        )
+        section = section_for(project, parsed.path) if project else None
+        anchors = [ids[number] for number in parsed.heading_numbers]
 
-        section = section_for(project, parsed_part.path)
-
-        note_part = NotePart.objects.create(
+        passage = Passage.objects.create(
             note=note,
+            position=position,
+            start_line=parsed.start_line,
+            end_line=parsed.end_line,
             project=project,
             section=section,
             content=content,
-            heading_path=HEADING_SEPARATOR.join(parsed_part.headings),
+            heading_path=HEADING_SEPARATOR.join(parsed.headings),
+            heading_id=anchors[-1] if anchors else "",
+            anchor_path=" ".join(anchors),
         )
-        note_part.tags.set(
-            [Tag.objects.get_or_create(name=name)[0] for name in parsed_part.tags]
+        passage.tags.set(
+            [Tag.objects.get_or_create(name=name)[0] for name in parsed.tags]
         )
-        note_part.images.set(images)
-        note_parts.append(note_part)
-    return note_parts
+        passage.images.set(images)
+        passages.append(passage)
+    return passages
 
 
 def replace_image_paths(content: str) -> tuple[str, list[Image]]:

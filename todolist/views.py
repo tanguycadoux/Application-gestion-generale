@@ -135,7 +135,7 @@ class TaskDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         task = self.object
         context["origin_note"] = (
-            Note.objects.filter(date=task.note_part_date).first()
+            Note.objects.filter(date=task.note_date).first()
             if task.created_from_note
             else None
         )
@@ -264,7 +264,9 @@ def note_review(request, note_date: date):
     - Tâches dont la ligne a disparu : la garder, l'écarter, ou la remplacer par
       la tâche d'une nouvelle ligne.
 
-    Enregistrer les rend revues ; sans tâche à revoir, retour direct à la note.
+    Enregistrer les rend revues, sauf une tâche encore sans projet (texte sans
+    projet de la note, #385) : elle reste à revoir. Sans tâche à revoir, retour
+    direct à la note.
     """
     day = note_date
     note = get_object_or_404(Note, date=day)
@@ -274,8 +276,8 @@ def note_review(request, note_date: date):
     if not tasks:
         return redirect("note_taking:note_detail", note_date=note.date)
 
-    lines = note_lines(note.parts.prefetch_related("tags"))
-    new_ids = [t.pk for t in tasks if (t.note_path, t.note_part_text) in lines]
+    lines = note_lines(note.passages.prefetch_related("tags"))
+    new_ids = [t.pk for t in tasks if (t.note_path, t.note_line_text) in lines]
     gone_ids = [t.pk for t in tasks if t.pk not in new_ids]
     new_tasks = Task.objects.filter(pk__in=new_ids).order_by("pk")
     data = request.POST or None
@@ -299,7 +301,13 @@ def note_review(request, note_date: date):
             for form in new_formset:
                 if form.instance.pk not in replaced:
                     task = form.save(commit=False)
-                    task.note_state = Task.NoteState.REVIEWED
+                    # Une tâche sans projet reste à revoir, jusqu'à ce qu'on lui
+                    # en choisisse un (#385).
+                    task.note_state = (
+                        Task.NoteState.REVIEWED
+                        if task.project_id
+                        else Task.NoteState.TO_REVIEW
+                    )
                     task.save()
             save_gone_lines(gone_formset)
         messages.success(

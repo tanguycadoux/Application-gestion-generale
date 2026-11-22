@@ -51,8 +51,8 @@ class TaskListTestCase(TestCase):
             title="Écartée",
             project=self.alpha,
             created_from_note=True,
-            note_part_date=TODAY,
-            note_part_text="Écartée",
+            note_date=TODAY,
+            note_line_text="Écartée",
             note_state=Task.NoteState.DISMISSED,
         )
         self.url = reverse("todolist:task_list")
@@ -249,8 +249,8 @@ class TaskFilterTests(TaskListTestCase):
             title="Autre écartée",
             project=self.beta,
             created_from_note=True,
-            note_part_date=TODAY,
-            note_part_text="Autre écartée",
+            note_date=TODAY,
+            note_line_text="Autre écartée",
             note_state=Task.NoteState.DISMISSED,
         )
 
@@ -296,8 +296,8 @@ class MultiProjectTests(TaskListTestCase):
             title="Écartée gamma",
             project=self.gamma,
             created_from_note=True,
-            note_part_date=TODAY,
-            note_part_text="Écartée gamma",
+            note_date=TODAY,
+            note_line_text="Écartée gamma",
             note_state=Task.NoteState.DISMISSED,
         )
 

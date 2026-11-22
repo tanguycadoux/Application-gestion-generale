@@ -43,7 +43,14 @@
 
         <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
             <dt class="font-semibold">Projet</dt>
-            <dd>{% project_badge object.project %}</dd>
+            <dd>
+                {% if object.project %}
+                    {% project_badge object.project %}
+                {% else %}
+                    {# Tâche « à ranger » (#385). #}
+                    <span class="text-amber-800">Aucun : à rattacher à un projet.</span>
+                {% endif %}
+            </dd>
             <dt class="font-semibold">Chemin</dt>
             <dd>{{ object.section|default:"Aucun" }}</dd>
             {% if object.tags.all %}

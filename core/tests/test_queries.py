@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from core.models import Project
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -39,7 +39,7 @@ class ListQueriesTests(TestCase):
             note = Note.objects.create(
                 date=date(2025, 11, 1 + Note.objects.count()), body="# A\nx\n# B\ny"
             )
-            process_note_parts(note)
+            process_passages(note)
 
     def test_liste_des_taches(self):
         url = reverse("todolist:task_list")
@@ -70,7 +70,7 @@ class ListQueriesTests(TestCase):
 
     def test_projets_des_notes_par_nom(self):
         note = Note.objects.create(date="2025-11-24", body="# B\nx\n# A\ny\n# B\nz")
-        process_note_parts(note)
+        process_passages(note)
 
         html = self.client.get(reverse("note_taking:notes_list")).content.decode()
 

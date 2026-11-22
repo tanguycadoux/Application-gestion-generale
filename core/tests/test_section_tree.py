@@ -9,7 +9,7 @@ from core.models import Project
 from core.section_tree import section_tree
 from core.sections import section_for
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -19,7 +19,7 @@ class TreeTestCase(TestCase):
 
     def note(self, body: str, day: str = "2025-11-24") -> Note:
         note = Note.objects.create(date=day, body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
 
@@ -46,7 +46,7 @@ class SectionTreeTests(TreeTestCase):
         self.assertEqual(self.rows(), [("A", 0, "")])
 
     def test_compte_les_passages_du_niveau_et_de_ses_descendants(self):
-        """#362 : les note parts s'appellent des passages dans l'interface."""
+        """#362 : les passages s'appellent des passages dans l'interface."""
         self.note("# P\n## A\nx\n### B\ny\n### C\nz")
 
         self.assertEqual(

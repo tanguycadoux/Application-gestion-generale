@@ -10,8 +10,8 @@ Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
   rendus par `render_markdown` ;
 - `floats` : numéros des tableaux et figures, références croisées ;
 - `headings` : décalage et identifiants des titres ;
-- `notes` : assemblage, pour une note (`render_note_body`) et une note part
-  (`render_note_part`).
+- `notes` : assemblage, pour une note (`render_note_body`) et un passage
+  (`render_passage`).
 
 Les noms utilisés hors du paquet sont réexportés ici.
 """
@@ -29,7 +29,7 @@ from .images import (
     resolve_image_refs,
 )
 from .markdown import render_plain_markdown
-from .notes import render_note_body, render_note_part
+from .notes import note_heading_ids, render_note_body, render_passage
 from .sanitize import sanitize_html
 
 __all__ = [
@@ -41,11 +41,12 @@ __all__ = [
     "heading_anchor",
     "heading_slug",
     "image_name",
+    "note_heading_ids",
     "number_floats",
     "remote_images_as_links",
     "render_markdown",
     "render_note_body",
-    "render_note_part",
+    "render_passage",
     "render_plain_markdown",
     "resolve_image_paths",
     "resolve_image_refs",

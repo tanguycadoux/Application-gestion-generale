@@ -63,7 +63,7 @@ class ImportArchiveTests(ImportTestCase):
         self.assertEqual([n.date.isoformat() for n in report.created], ["2025-11-24"])
         self.assertEqual(report.images_imported, ["banc.png"])
         note = Note.objects.get(date="2025-11-24")
-        self.assertEqual(note.parts.get().images.get().name, "banc.png")
+        self.assertEqual(note.passages.get().images.get().name, "banc.png")
 
     def test_note_existante_ignoree_sans_modification(self):
         existing = Note.objects.create(date="2025-11-24", body="# P\nVersion en base")
@@ -173,7 +173,7 @@ class ImportFilesTests(ImportTestCase):
 
         self.assertEqual(report.failed, [])
         note = Note.objects.get(date="2025-11-24")
-        self.assertEqual(note.parts.get().images.get().name, "banc.png")
+        self.assertEqual(note.passages.get().images.get().name, "banc.png")
 
     def test_image_invalide_signalee_sans_bloquer_les_autres(self):
         """#224 : un fichier image illisible est en erreur, les autres sont importés."""

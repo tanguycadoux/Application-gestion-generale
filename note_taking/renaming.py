@@ -28,7 +28,7 @@ from core.sections import LABEL_SEPARATOR
 from .exceptions import NoteRenameError
 from .models import Note
 from .qmd.parser import BLOCK_END, CALLOUT_START, CODE_FENCE, MAX_LEVEL, TITLE_REGEX
-from .services import process_note_parts
+from .services import process_passages
 from .signals import note_headings_renamed
 
 # Un titre, ligne entière : indentation, dièses, espaces, texte, espaces de fin (et
@@ -182,7 +182,7 @@ def rename_titles(
             note_headings_renamed.send(
                 sender=Note, note=note, old_body=old_body, new_body=new_body
             )
-            process_note_parts(note)
+            process_passages(note)
 
     titles = "titres réécrits" if len(keys) > 1 else "titre réécrit"
     notes = "notes" if len(chosen) > 1 else "note"

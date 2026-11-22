@@ -6,15 +6,15 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from core.models import Project, Tag
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from todolist.models import Task
 
 
 class ReprocessNotesTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx")
-        # Note part obsolète, comme après une évolution du parseur.
-        part = NotePart.objects.create(
+        # Passage obsolète, comme après une évolution du parseur.
+        part = Passage.objects.create(
             note=self.note,
             project=Project.objects.create(name="Ancien"),
             content="x",
@@ -26,20 +26,20 @@ class ReprocessNotesTests(TestCase):
         call_command("reprocess_notes", *args, stdout=out, stderr=err)
         return out.getvalue(), err.getvalue()
 
-    def parts(self, note):
+    def passages(self, note):
         return [
             (p.project.name, list(p.tags.values_list("name", flat=True)), p.content)
-            for p in note.parts.all()
+            for p in note.passages.all()
         ]
 
-    def test_recalcule_les_note_parts(self):
+    def test_recalcule_les_passages(self):
         out, _ = self.reprocess()
 
-        self.assertEqual(self.parts(self.note), [("P", [], "x")])
+        self.assertEqual(self.passages(self.note), [("P", [], "x")])
         self.assertIn("1 note(s) recalculée(s), 0 erreur(s)", out)
 
     def test_tags_inutilises_supprimes(self):
-        """Le tag « obsolète » ne servait qu'à la note part d'avant l'analyse."""
+        """Le tag « obsolète » ne servait qu'au passage d'avant l'analyse."""
         out, _ = self.reprocess()
 
         self.assertFalse(Tag.objects.filter(name="obsolète").exists())
@@ -52,7 +52,9 @@ class ReprocessNotesTests(TestCase):
 
         self.reprocess()
 
-        self.assertEqual([tag.name for tag in note.parts.get().tags.all()], ["garde"])
+        self.assertEqual(
+            [tag.name for tag in note.passages.get().tags.all()], ["garde"]
+        )
 
     def test_tag_d_une_tache_garde(self):
         Task.objects.create(
@@ -66,7 +68,7 @@ class ReprocessNotesTests(TestCase):
     def test_simulation_n_enregistre_rien(self):
         out, _ = self.reprocess("--dry-run")
 
-        self.assertEqual(self.parts(self.note), [("Ancien", ["obsolète"], "x")])
+        self.assertEqual(self.passages(self.note), [("Ancien", ["obsolète"], "x")])
         self.assertTrue(Tag.objects.filter(name="obsolète").exists())
         self.assertIn("Simulation", out)
 
@@ -77,7 +79,7 @@ class ReprocessNotesTests(TestCase):
 
         self.assertIn(f"note du {broken.date}", err)
         self.assertIn("1 note(s) recalculée(s), 1 erreur(s)", out)
-        self.assertEqual(self.parts(self.note), [("P", [], "x")])
+        self.assertEqual(self.passages(self.note), [("P", [], "x")])
 
     def test_tache_existante_non_recreee(self):
         self.note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche"

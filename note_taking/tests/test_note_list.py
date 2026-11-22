@@ -6,13 +6,13 @@ from django.urls import reverse
 from core.models import Project
 from core.tables import Sort
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 def make_note(day: str, *projects: str) -> Note:
     body = "\n".join(f"# {name}\ntexte" for name in projects) or "texte"
     note = Note.objects.create(date=day, body=body)
-    process_note_parts(note)
+    process_passages(note)
     return note
 
 

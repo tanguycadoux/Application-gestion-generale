@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 class MonthCalendarTests(TestCase):
@@ -30,7 +30,7 @@ class MonthCalendarTests(TestCase):
 
     def test_notes_et_projets_du_mois(self):
         note = Note.objects.create(date="2026-10-14", body="# Beta\nx\n# Alpha\ny")
-        process_note_parts(note)
+        process_passages(note)
 
         days = {day.date: day for week in self.build(2026, 10).weeks for day in week}
 
@@ -53,7 +53,7 @@ class IndexCalendarTests(TestCase):
 
     def test_mois_demande(self):
         note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
-        process_note_parts(note)
+        process_passages(note)
 
         response = self.get("?month=2025-11")
 
@@ -117,7 +117,7 @@ class CalendarDayLinkTests(TestCase):
 
     def test_case_d_un_jour_avec_note(self):
         note = Note.objects.create(date="2025-11-24", body="# Projet A\nx")
-        process_note_parts(note)
+        process_passages(note)
         href = reverse("note_taking:note_detail", args=[note.date])
 
         html = self.get("?month=2025-11")

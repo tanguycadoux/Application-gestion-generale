@@ -52,7 +52,14 @@ def task_calendar(year: int, month: int, today: date) -> MonthCalendar:
         Q(done=False, due_date__range=(calendar.first, calendar.last))
         | Q(done=True, completed_at__isnull=False)
     )
-    for task in sorted(tasks, key=lambda task: (task.project.name, task.title.lower())):
+    # Les tâches sans projet (#385) d'abord.
+    for task in sorted(
+        tasks,
+        key=lambda task: (
+            task.project.name if task.project else "",
+            task.title.lower(),
+        ),
+    ):
         when = calendar_date(task)
         if when in days:
             days[when].tasks.append(task)

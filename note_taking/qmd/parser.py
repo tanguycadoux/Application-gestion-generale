@@ -1,4 +1,4 @@
-"""Analyse du contenu d'une note qmd en note parts.
+"""Analyse du contenu d'une note qmd en passages (#387).
 
 Une note est découpée selon ses titres :
 
@@ -8,10 +8,16 @@ Une note est découpée selon ses titres :
 
 Des blocs `::: {.metadata}` donnent à la branche où ils sont écrits, sous-niveaux
 compris, des tags (`tags: [a, b]`) et le marqueur de tâches (`todo: true`) : une
-portée, jamais un niveau du chemin. Le texte partageant le même projet, le même
-chemin et les mêmes tags forme une note part.
+portée, jamais un niveau du chemin.
 
-Une branche `todo: true` donne le tag `TODO` à ses note parts : chaque élément de
+Un **passage** est une section telle qu'écrite : le texte entre un titre et le
+suivant, ou depuis le début de la note, dans l'ordre, avec ses lignes de début et de
+fin. Un titre répété donne deux passages ; un bloc `{.metadata}` écrit après du texte
+en ouvre un nouveau, sous le même titre, pour que ses tags ne valent que pour la
+suite. Le texte avant le premier `#` est un passage **sans projet** (#385), signalé
+par un avertissement.
+
+Une branche `todo: true` donne le tag `TODO` à ses passages : chaque élément de
 liste y est une tâche, sans case (#297). Un titre `TODO` n'a plus de sens propre.
 """
 
@@ -31,26 +37,36 @@ BLOCK_END = ":::"
 CODE_FENCE = "```"
 # Séparateur des titres d'une section, du projet au plus profond (#240).
 HEADING_SEPARATOR = " › "
-# Tag des note parts d'une branche `todo: true` (#297).
+# Tag des passages d'une branche `todo: true` (#297).
 TODO_TAG = "TODO"
 
 
 @dataclass
-class ParsedPart:
+class ParsedPassage:
+    # None pour le texte avant le premier `#` (#385).
     project: str | None
     # Titres de `##` à `######` : les niveaux sous le projet (#287).
     path: list[str]
     tags: list[str]
     lines: list[str]
-    # Titres de la section de sa première ligne, du projet au plus profond (#240).
+    # Titres de la section, du projet au plus profond (#240).
     headings: list[str] = field(default_factory=list)
+    # Rang de chacun de ces titres parmi les titres de la note (`ParsedNote.headings`).
+    heading_numbers: list[int] = field(default_factory=list)
+    # Lignes du texte de la note, à partir de 1 : du titre (ou de la première ligne)
+    # à la ligne qui précède le passage suivant.
+    start_line: int = 1
+    end_line: int = 1
 
 
 @dataclass
 class ParsedNote:
     file_date: str
     metadata: dict[str, str] = field(default_factory=dict)
-    parts: list[ParsedPart] = field(default_factory=list)
+    passages: list[ParsedPassage] = field(default_factory=list)
+    # Les titres de la note, dans l'ordre, tels qu'écrits : ceux que le parseur
+    # reconnaît (ni dans un bloc de code ni dans un callout, `#` à `######`).
+    headings: list[str] = field(default_factory=list)
     # Ce qui est accepté mais probablement pas voulu : un titre qui saute un niveau,
     # un titre sans projet (#305). Le texte de la note n'est pas réécrit.
     warnings: list[str] = field(default_factory=list)
@@ -62,12 +78,12 @@ class ParsedNote:
             "note metadata": self.metadata,
             "content": [
                 {
-                    "project": part.project,
-                    "path": part.path,
-                    "tags": part.tags,
-                    "content": part.lines,
+                    "project": passage.project,
+                    "path": passage.path,
+                    "tags": passage.tags,
+                    "content": passage.lines,
                 }
-                for part in self.parts
+                for passage in self.passages
             ],
         }
 
@@ -77,6 +93,8 @@ class Level:
     """Niveau de titre : 1 = projet, 2 à 6 = chemin sous le projet."""
 
     title: str | None = None
+    # Rang du titre parmi les titres de la note.
+    number: int | None = None
     tags: set[str] | None = None
     # `todo: true` ou `todo: false` du bloc de ce niveau ; None s'il n'en a pas.
     todo: bool | None = None
@@ -106,15 +124,21 @@ class NoteParser:
         self.in_metadata_block = False
         self.in_callout = False
         self.in_code_block = False
+        # Numéro (à partir de 0) de la ligne en cours d'analyse.
+        self.line_number = 0
+        # Tous les passages, vides compris : leurs lignes se suivent sans trou.
+        self.passages: list[ParsedPassage] = [ParsedPassage(None, [], [], [])]
 
     def parse(self, raw: str) -> ParsedNote:
-        for number, raw_line in enumerate(raw.split("\n")):
+        lines = raw.split("\n")
+        for number, raw_line in enumerate(lines):
+            self.line_number = number
             # Détection sur la ligne sans espaces ; contenu avec son indentation.
             line = raw_line.strip()
             self.parse_line(number, line, raw_line.rstrip())
             if line != "":
                 self.front_matter_allowed = False
-        self.clean_parts()
+        self.close_passages(len(lines))
         return self.note
 
     # Lignes
@@ -184,9 +208,13 @@ class NoteParser:
         self.check_level(number + 1, level, match.group(2).strip())
 
         # Un nouveau titre remplace son niveau et efface les niveaux plus profonds.
-        self.levels[level] = Level(title=match.group(2).strip())
+        title = match.group(2).strip()
+        self.levels[level] = Level(title=title, number=len(self.note.headings))
+        self.note.headings.append(title)
         for deeper in range(level + 1, MAX_LEVEL + 1):
             self.levels[deeper] = Level()
+        # Le titre ouvre un passage.
+        self.passages.append(self.new_passage(number + 1))
         return True
 
     def check_level(self, number: int, level: int, title: str) -> None:
@@ -197,7 +225,7 @@ class NoteParser:
             if level > 1:
                 self.note.warnings.append(
                     f"Ligne {number} : le titre « {title} » ({hashes}) n'a pas de "
-                    "projet (#) au-dessus de lui : son contenu n'est pas enregistré."
+                    "projet (#) au-dessus de lui : son contenu est gardé sans projet."
                 )
             return
         deepest = max(
@@ -234,7 +262,7 @@ class NoteParser:
             if state is not None:
                 state.todo = value == "true"
 
-    # Note parts
+    # Passages
 
     def current_path(self) -> list[str]:
         return [
@@ -260,33 +288,64 @@ class NoteParser:
             tags.add(TODO_TAG)
         return tags
 
+    def new_passage(self, start_line: int) -> ParsedPassage:
+        """Un passage vide sous les titres en cours, à partir de cette ligne."""
+        titled = [state for state in self.levels.values() if state.title is not None]
+        return ParsedPassage(
+            project=self.levels[1].title,
+            path=self.current_path(),
+            tags=sorted(self.current_tags()),
+            lines=[],
+            headings=[state.title for state in titled if state.title is not None],
+            heading_numbers=[
+                state.number for state in titled if state.number is not None
+            ],
+            start_line=start_line,
+        )
+
     def add_content(self, line: str) -> None:
-        project = self.levels[1].title
-        if project is None:
-            # Texte avant le premier projet : ignoré pour l'instant (#36).
-            return
-        path = self.current_path()
-        tags = self.current_tags()
+        passage = self.passages[-1]
+        tags = sorted(self.current_tags())
+        if passage.tags != tags:
+            if any(text.strip() for text in passage.lines):
+                # Un bloc `{.metadata}` après du texte : ses tags valent pour la
+                # suite seulement, dans un nouveau passage sous le même titre.
+                passage = self.new_passage(self.line_number + 1)
+                self.passages.append(passage)
+            passage.tags = tags
+        passage.lines.append(line)
 
-        for part in self.note.parts:
-            if (part.project, part.path, set(part.tags)) == (project, path, tags):
-                part.lines.append(line)
-                return
-        headings = [
-            state.title for state in self.levels.values() if state.title is not None
+    def close_passages(self, line_count: int) -> None:
+        """Pose la ligne de fin de chaque passage, retire les passages vides et les
+        lignes vides en bordure, et signale le texte sans projet (#385)."""
+        for passage, following in zip(self.passages, self.passages[1:], strict=False):
+            passage.end_line = following.start_line - 1
+        self.passages[-1].end_line = line_count
+        kept = [
+            passage for passage in self.passages if "".join(passage.lines).strip() != ""
         ]
-        self.note.parts.append(ParsedPart(project, path, list(tags), [line], headings))
+        for passage in kept:
+            while passage.lines[0] == "":
+                passage.lines.pop(0)
+            while passage.lines[-1] == "":
+                passage.lines.pop()
+        self.note.passages = kept
 
-    def clean_parts(self) -> None:
-        """Retire les parts vides et les lignes vides en bordure."""
-        self.note.parts = [
-            part for part in self.note.parts if "".join(part.lines).strip() != ""
-        ]
-        for part in self.note.parts:
-            while part.lines[0] == "":
-                part.lines.pop(0)
-            while part.lines[-1] == "":
-                part.lines.pop()
+        unfiled = sum(
+            1
+            for passage in kept
+            if passage.project is None
+            for text in passage.lines
+            if text.strip()
+        )
+        if unfiled:
+            lines = "1 ligne" if unfiled == 1 else f"{unfiled} lignes"
+            # En tête : le message de l'enregistrement ne dit que le premier.
+            self.note.warnings.insert(
+                0,
+                f"{lines} sans projet, avant le premier titre « # » : à ranger "
+                "sous un projet.",
+            )
 
 
 def parse_note(file_date: str, raw: str) -> ParsedNote:

@@ -12,7 +12,7 @@ from core.sections import levels
 from note_taking.exceptions import NoteRenameError
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences, rename_titles
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 from todolist.services import renamed_identities
 
@@ -23,7 +23,7 @@ class RenameTasksTestCase(TestCase):
 
     def note(self, body: str, day: str = "2025-11-24") -> Note:
         note = Note.objects.create(date=day, body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def rename(self, levels_: list[str], name: str, only: int | None = None) -> None:
@@ -118,8 +118,7 @@ class TasksFollowTests(RenameTasksTestCase):
         self.rename(["Réunion"], "Rencontre", only=1)
 
         by_date = {
-            task.note_part_date.isoformat(): task.note_path
-            for task in Task.objects.all()
+            task.note_date.isoformat(): task.note_path for task in Task.objects.all()
         }
         self.assertEqual(
             by_date, {"2025-11-24": "P › Réunion", "2025-11-25": "P › Rencontre"}
@@ -150,7 +149,7 @@ class TasksFollowTests(RenameTasksTestCase):
 
         self.rename(["Réunion"], "Rencontre")
 
-        part = note.parts.get()
+        part = note.passages.get()
         assert part.section is not None
         self.assertEqual(levels(part.section), ["Rencontre"])
 
@@ -158,39 +157,29 @@ class TasksFollowTests(RenameTasksTestCase):
 class RefusedTests(RenameTasksTestCase):
     def test_nom_deja_ecrit_dans_la_note_refuse(self):
         """Deux tâches de même texte, sous deux titres : renommer l'un comme l'autre
-        les confondrait. Les parties de la note fusionnent, les lignes ne se
-        retrouvent plus."""
-        self.note("# P\n## A\n- [ ] T\n## B\n- [ ] T")
-        keys = [o.key for o in find_occurrences(self.project, ["A"])]
-
-        with self.assertRaisesMessage(NoteRenameError, "fusionnerait"):
-            rename_titles(self.project, ["A"], "B", keys)
-
-        self.assertEqual(self.paths(), [("T", "P › A"), ("T", "P › B")])
-
-    def test_le_refus_parle_de_passages(self):
-        """#362 : le message dit « passages », le mot de l'interface."""
+        les confondrait en une seule tâche (même chemin, même texte, #240)."""
         self.note("# P\n## A\n- [ ] T\n## B\n- [ ] T")
         keys = [o.key for o in find_occurrences(self.project, ["A"])]
 
         with self.assertRaisesMessage(
-            NoteRenameError, "fusionnerait ou séparerait des passages de la note"
+            NoteRenameError, "confondrait deux tâches « T » sous le même chemin"
         ):
             rename_titles(self.project, ["A"], "B", keys)
 
-    def test_fusion_de_parties_avec_des_taches_refusee(self):
-        """Deux titres qui ne diffèrent que par la casse sont deux parties ; les
-        renommer pareil les fusionnerait, et les lignes ne se retrouveraient plus."""
+        self.assertEqual(self.paths(), [("T", "P › A"), ("T", "P › B")])
+
+    def test_titres_du_meme_nom_avec_des_taches_renommes(self):
+        """Deux titres qui ne diffèrent que par la casse sont deux passages (#387) ;
+        les renommer pareil ne les fusionne pas : leurs tâches les suivent."""
         self.note("# P\n## réunion\n- [ ] A\n## Réunion\n- [ ] B")
         keys = [o.key for o in find_occurrences(self.project, ["Réunion"])]
 
-        with self.assertRaisesMessage(NoteRenameError, "fusionnerait"):
-            rename_titles(self.project, ["Réunion"], "RÉUNION", keys)
+        rename_titles(self.project, ["Réunion"], "RÉUNION", keys)
 
         self.assertEqual(
-            Note.objects.get().body, "# P\n## réunion\n- [ ] A\n## Réunion\n- [ ] B"
+            Note.objects.get().body, "# P\n## RÉUNION\n- [ ] A\n## RÉUNION\n- [ ] B"
         )
-        self.assertEqual(self.paths(), [("A", "P › réunion"), ("B", "P › Réunion")])
+        self.assertEqual(self.paths(), [("A", "P › RÉUNION"), ("B", "P › RÉUNION")])
 
     def test_fusion_de_parties_sans_tache_permise(self):
         self.note("# P\n## réunion\nx\n## Réunion\ny")

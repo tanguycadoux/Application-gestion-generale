@@ -10,7 +10,7 @@ from core.models import Project, Section
 from core.sections import levels, section_for
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -20,7 +20,7 @@ class RenameTestCase(TestCase):
 
     def note(self, body: str, day: str = "2025-11-24") -> Note:
         note = Note.objects.create(date=day, body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def section(self, name: str) -> Section:
@@ -209,7 +209,7 @@ class ApplyTests(RenameTestCase):
             ["Rencontre", "Suite"],
         )
         self.assertEqual(
-            {part.section_id for part in note.parts.all()},
+            {part.section_id for part in note.passages.all()},
             {section.pk, self.section("Suite").pk},
         )
 

@@ -113,7 +113,7 @@ class Section(models.Model):
 
 
 class Tag(models.Model):
-    """Tag, partagé par les note parts et les tâches."""
+    """Tag, partagé par les passages et les tâches."""
 
     name = models.CharField(max_length=200, unique=True)
 

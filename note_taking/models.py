@@ -13,11 +13,11 @@ class Note(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
-    # Suites proposées par les autres apps au dernier recalcul des note parts
+    # Suites proposées par les autres apps au dernier recalcul des passages
     # (#239) : tâches créées, par exemple.
     follow_ups: tuple[NoteFollowUp, ...] = ()
-    # Avertissements de l'analyse au dernier recalcul : titres qui sautent un niveau
-    # ou sans projet (#305).
+    # Avertissements de l'analyse au dernier recalcul : texte sans projet (#385),
+    # titres qui sautent un niveau ou sans projet (#305).
     warnings: tuple[str, ...] = ()
 
     def __str__(self):
@@ -25,25 +25,49 @@ class Note(models.Model):
 
     @property
     def projects(self):
-        """Projets des note parts de la note, par nom.
+        """Projets des passages de la note, par nom ; le texte sans projet n'en a pas.
 
-        Sans requête si les note parts ont été préchargées avec leur projet (#188).
+        Sans requête si les passages ont été préchargés avec leur projet (#188).
         """
-        if "parts" in getattr(self, "_prefetched_objects_cache", {}):
-            unique = {part.project_id: part.project for part in self.parts.all()}
+        if "passages" in getattr(self, "_prefetched_objects_cache", {}):
+            unique = {
+                passage.project_id: passage.project
+                for passage in self.passages.all()
+                if passage.project_id is not None
+            }
             return sorted(unique.values(), key=lambda project: project.name)
-        return Project.objects.filter(note_parts__note=self).distinct()
+        return Project.objects.filter(passages__note=self).distinct()
 
     @property
     def images(self):
-        """Images utilisées par les note parts de la note."""
-        return Image.objects.filter(note_parts__note=self).distinct()
+        """Images utilisées par les passages de la note."""
+        return Image.objects.filter(passages__note=self).distinct()
 
 
-class NotePart(models.Model):
-    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="parts")
+class Passage(models.Model):
+    """Une section d'une note telle qu'écrite (#387) : le texte entre un titre et le
+    suivant, ou depuis le début de la note, à sa place.
+
+    C'est un **index dérivé** de `Note.body`, recalculé à chaque enregistrement
+    (`services.process_passages`) et par `reprocess_notes` : la recherche, les
+    compteurs et les tâches issues des notes s'en servent ; la page de la note
+    affiche le texte lui-même.
+    """
+
+    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name="passages")
+    # Rang dans la note, à partir de 0 : l'ordre où les passages sont écrits.
+    position = models.PositiveIntegerField(default=0)
+    # Lignes de `Note.body`, à partir de 1 : du titre du passage (ou de la première
+    # ligne de la note) à la ligne qui précède le passage suivant.
+    start_line = models.PositiveIntegerField(default=1)
+    end_line = models.PositiveIntegerField(default=1)
+    # Sans projet : le texte avant le premier `#` (#385).
     project = models.ForeignKey(
-        Project, on_delete=models.PROTECT, related_name="note_parts"
+        Project,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="passages",
     )
     section = models.ForeignKey(
         Section,
@@ -51,57 +75,62 @@ class NotePart(models.Model):
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name="note_parts",
+        related_name="passages",
     )
-    tags = models.ManyToManyField(Tag, related_name="note_parts", blank=True)
+    tags = models.ManyToManyField(Tag, related_name="passages", blank=True)
     # Images référencées dans le contenu (image:<pk>), recalculées à l'analyse.
     images = models.ManyToManyField(
-        Image, through="NotePartImageLink", related_name="note_parts", blank=True
+        Image, through="PassageImageLink", related_name="passages", blank=True
     )
     content = models.TextField(blank=True, default="")
     # Titres de la section, du projet au plus profond, séparés par « › » : les
     # tâches issues des notes s'y repèrent (#240).
     heading_path = models.TextField(blank=True, default="")
+    # Identifiant du titre du passage dans la page de la note (`add_heading_ids`,
+    # titres répétés numérotés `-1`, `-2`…) ; vide sans titre.
+    heading_id = models.CharField(max_length=255, blank=True, default="")
+    # Identifiants de chacun des titres de `heading_path`, séparés par des espaces.
+    anchor_path = models.TextField(blank=True, default="")
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        string_repr = str(self.project)
+        string_repr = str(self.project) if self.project else "Sans projet"
         if self.section:
             string_repr = f"{string_repr}, {self.section}"
         return string_repr
 
     def rendered_content(self):
         # Import local : rendering importe les modèles.
-        from .rendering import render_note_part
+        from .rendering import render_passage
 
-        return render_note_part(self.content)
+        return render_passage(self.content)
 
 
-class NotePartImageLink(models.Model):
-    """Utilisation d'une image par une note part.
+class PassageImageLink(models.Model):
+    """Utilisation d'une image par un passage.
 
     Le lien vers l'image est protégé : une image utilisée ne peut pas être
     supprimée.
     """
 
-    note_part = models.ForeignKey(
-        NotePart, on_delete=models.CASCADE, related_name="image_links"
+    passage = models.ForeignKey(
+        Passage, on_delete=models.CASCADE, related_name="image_links"
     )
     image = models.ForeignKey(
-        Image, on_delete=models.PROTECT, related_name="note_part_links"
+        Image, on_delete=models.PROTECT, related_name="passage_links"
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["note_part", "image"], name="unique_note_part_image"
+                fields=["passage", "image"], name="unique_passage_image"
             )
         ]
 
     def __str__(self):
-        return f"{self.note_part} → {self.image}"
+        return f"{self.passage} → {self.image}"
 
 
 class SavedSearch(models.Model):

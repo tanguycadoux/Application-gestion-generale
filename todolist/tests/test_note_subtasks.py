@@ -8,7 +8,7 @@ ligne parente.
 from django.test import TestCase
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -16,7 +16,7 @@ class NoteSubtaskTests(TestCase):
     def save_note(self, *lines: str, date: str = "2025-11-24") -> Note:
         body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note, _ = Note.objects.update_or_create(date=date, defaults={"body": body})
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def titles_and_parents(self) -> list[tuple[str, str | None]]:

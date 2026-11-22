@@ -1,12 +1,12 @@
 from django.contrib import admin
 
-from .models import Note, NotePart, NotePartImageLink
+from .models import Note, Passage, PassageImageLink
 
 
-class NotePartImageLinkInline(admin.TabularInline):
-    """Images utilisées par la note part (calculées à l'analyse)."""
+class PassageImageLinkInline(admin.TabularInline):
+    """Images utilisées par le passage (calculées à l'analyse)."""
 
-    model = NotePartImageLink
+    model = PassageImageLink
     extra = 0
     can_delete = False
     readonly_fields = ("image",)
@@ -27,8 +27,8 @@ class NoteAdmin(admin.ModelAdmin):
     list_filter = ("date",)
 
 
-@admin.register(NotePart)
-class NotePartAdmin(admin.ModelAdmin):
+@admin.register(Passage)
+class PassageAdmin(admin.ModelAdmin):
     list_display = (
         "pk",
         "project",
@@ -42,4 +42,4 @@ class NotePartAdmin(admin.ModelAdmin):
         "project",
         "section",
     )
-    inlines = [NotePartImageLinkInline]
+    inlines = [PassageImageLinkInline]

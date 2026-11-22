@@ -4,13 +4,13 @@ from dataclasses import dataclass
 
 from django.dispatch import Signal
 
-# Envoyé après le recalcul des note parts d'une note, dans la même transaction,
-# avec `note` et `note_parts`. Les tâches issues des notes en découlent (todolist).
+# Envoyé après le recalcul des passages d'une note, dans la même transaction,
+# avec `note` et `passages`. Les tâches issues des notes en découlent (todolist).
 # Un receveur peut renvoyer un `NoteFollowUp`.
-note_parts_processed = Signal()
+passages_processed = Signal()
 
 # Envoyé quand le renommage d'un niveau de chemin réécrit des titres d'une note
-# (#299), juste avant le recalcul de ses note parts, avec `note`, `old_body` et
+# (#299), juste avant le recalcul de ses passages, avec `note`, `old_body` et
 # `new_body`. Les tâches issues des notes suivent leurs titres (todolist).
 note_headings_renamed = Signal()
 

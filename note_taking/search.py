@@ -1,14 +1,14 @@
-"""Recherche des note parts (#199) : une requête analysée, appliquée à la base.
+"""Recherche des passages (#199) : une requête analysée, appliquée à la base.
 
 L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
 `search_index.py`. Ici, les deux se rejoignent :
 
 - les mots, phrases et préfixes passent par l'index (tous requis) ; les exclusions
-  sont cherchées à part et retirées, pour qu'`-mot` marche même seul ;
+  sont cherchées à passage et retirées, pour qu'`-mot` marche même seul ;
 - un mot est cherché à sa forme réduite (#372, `word_forms.py`) : le singulier trouve
   le pluriel, et l'inverse ; la phrase exacte et le préfixe restent tels qu'écrits ;
-- `projet:` et `chemin:` répétés se cumulent (une note part n'a qu'un projet et un
-  chemin), `tag:` répété est exigé en entier (une note part a plusieurs tags) ;
+- `projet:` et `chemin:` répétés se cumulent (un passage n'a qu'un projet et un
+  chemin), `tag:` répété est exigé en entier (un passage a plusieurs tags) ;
 - les noms se comparent sans casse ni accents (`core.tables.fold`), en Python : le
   `LOWER` de SQLite ne replie que l'ASCII ;
 - `chemin:` suit les niveaux (« Réunion/Préparation ») à toute profondeur et dans tous
@@ -32,13 +32,13 @@ from core.models import Project, Section, Tag
 from core.sections import with_descendants
 from core.tables import fold
 
-from .models import Note, NotePart
-from .rendering import heading_anchor, render_note_part
-from .search_document import GROUPS, DocPart, Level, assemble, split_titles
+from .models import Note, Passage
+from .rendering import heading_anchor, render_passage
+from .search_document import GROUPS, DocPassage, Level, assemble, split_titles
 from .search_index import (
     WORDS,
     WRITTEN,
-    match_parts,
+    match_passages,
     quote,
     similar_terms,
     snippets,
@@ -49,7 +49,7 @@ from .search_paths import section_ids_at
 from .search_query import SearchQuery, Term
 from .word_forms import reduce_text, written_forms
 
-# Un mot libre est élargi s'il est dans moins de RARE note parts. Au plus
+# Un mot libre est élargi s'il est dans moins de RARE passages. Au plus
 # MAX_ALTERNATIVES mots proches par mot (fautes tolérées : `tolerated_typos`).
 RARE = 2
 MAX_ALTERNATIVES = 3
@@ -85,17 +85,17 @@ def expand_query(query: SearchQuery) -> Expansion:
     return expansion
 
 
-def search_note_parts(
+def search_passages(
     query: SearchQuery,
     project_ids: Iterable[int] = (),
     section_ids: Iterable[int] = (),
     expand: bool = True,
-) -> list[NotePart] | None:
-    """Les note parts qui répondent à la requête et aux filtres de la page.
+) -> list[Passage] | None:
+    """Les passages qui répondent à la requête et aux filtres de la page.
 
     Renvoie `None` quand il n'y a rien à chercher (on n'a pas encore cherché), et
-    une liste, éventuellement vide, sinon. Avec du texte, la plus pertinente vient
-    en premier ; sans texte, la plus récente.
+    une liste, éventuellement vide, sinon. Avec du texte, le plus pertinent vient
+    en premier ; sans texte, la note la plus récente, dans l'ordre de ses passages.
 
     `expand` (#200) élargit les mots sans résultat ou rares aux mots proches de
     l'index : ceux qui ont servi sont dans `query.expansions` (écrit, trouvé), et les
@@ -106,7 +106,7 @@ def search_note_parts(
     if not (query or project_ids or section_ids):
         return None
 
-    parts: QuerySet[NotePart] = NotePart.objects.select_related(
+    passages: QuerySet[Passage] = Passage.objects.select_related(
         "note", "section", "project"
     ).prefetch_related("tags")
 
@@ -117,26 +117,28 @@ def search_note_parts(
         chosen |= Q(project__in=project_ids)
     if section_ids:
         chosen |= Q(section_id__in=with_descendants(set(section_ids)))
-    parts = parts.filter(chosen)
-    parts = filter_projects(parts, query)
-    parts = filter_tags(parts, query)
-    parts = filter_paths(parts, query)
+    passages = passages.filter(chosen)
+    passages = filter_projects(passages, query)
+    passages = filter_tags(passages, query)
+    passages = filter_paths(passages, query)
     if query.date_from:
-        parts = parts.filter(note__date__gte=query.date_from)
+        passages = passages.filter(note__date__gte=query.date_from)
     if query.date_to:
-        parts = parts.filter(note__date__lte=query.date_to)
+        passages = passages.filter(note__date__lte=query.date_to)
 
     wanted = [term for term in query.terms if not term.negated]
     unwanted = [term for term in query.terms if term.negated]
     if unwanted:
-        parts = parts.exclude(pk__in=match_parts(fts_expression(unwanted, " OR ")))
+        passages = passages.exclude(
+            pk__in=match_passages(fts_expression(unwanted, " OR "))
+        )
 
     if not wanted:
-        return list(parts.order_by("-note__date", "-pk"))
-    ordered = match_parts(fts_expression(wanted, " AND "))
+        return list(passages.order_by("-note__date", "position", "pk"))
+    ordered = match_passages(fts_expression(wanted, " AND "))
     expansion = expand_query(query) if expand else Expansion()
     if expansion:
-        widened = match_parts(fts_expression(wanted, " AND ", expansion))
+        widened = match_passages(fts_expression(wanted, " AND ", expansion))
         exact = set(ordered)
         extra = [pk for pk in widened if pk not in exact]
         if extra:
@@ -147,7 +149,7 @@ def search_note_parts(
                 for found in words
             ]
     rank = {pk: i for i, pk in enumerate(ordered)}
-    return sorted(parts.filter(pk__in=rank), key=lambda part: rank[part.pk])
+    return sorted(passages.filter(pk__in=rank), key=lambda passage: rank[passage.pk])
 
 
 def fts_expression(
@@ -192,29 +194,29 @@ def fts_expression(
 
 
 def filter_projects(
-    parts: QuerySet[NotePart], query: SearchQuery
-) -> QuerySet[NotePart]:
+    passages: QuerySet[Passage], query: SearchQuery
+) -> QuerySet[Passage]:
     if query.projects:
-        parts = parts.filter(project__in=project_ids_named(query.projects))
+        passages = passages.filter(project__in=project_ids_named(query.projects))
     if query.not_projects:
-        parts = parts.exclude(project__in=project_ids_named(query.not_projects))
-    return parts
+        passages = passages.exclude(project__in=project_ids_named(query.not_projects))
+    return passages
 
 
-def filter_tags(parts: QuerySet[NotePart], query: SearchQuery) -> QuerySet[NotePart]:
+def filter_tags(passages: QuerySet[Passage], query: SearchQuery) -> QuerySet[Passage]:
     for name in query.tags:
-        parts = parts.filter(tags__in=tag_ids_named([name]))
+        passages = passages.filter(tags__in=tag_ids_named([name]))
     if query.not_tags:
-        parts = parts.exclude(tags__in=tag_ids_named(query.not_tags))
-    return parts
+        passages = passages.exclude(tags__in=tag_ids_named(query.not_tags))
+    return passages
 
 
-def filter_paths(parts: QuerySet[NotePart], query: SearchQuery) -> QuerySet[NotePart]:
+def filter_paths(passages: QuerySet[Passage], query: SearchQuery) -> QuerySet[Passage]:
     if query.paths:
-        parts = parts.filter(section_id__in=section_ids_at(query.paths))
+        passages = passages.filter(section_id__in=section_ids_at(query.paths))
     if query.not_paths:
-        parts = parts.exclude(section_id__in=section_ids_at(query.not_paths))
-    return parts
+        passages = passages.exclude(section_id__in=section_ids_at(query.not_paths))
+    return passages
 
 
 def project_ids_named(names: list[str]) -> list[int]:
@@ -227,8 +229,8 @@ def tag_ids_named(names: list[str]) -> list[int]:
     return [t.pk for t in Tag.objects.all() if fold(t.name) in wanted]
 
 
-# Présentation des résultats (#356) : les extraits (une carte par note part), ou le
-# document (les note parts assemblées en Markdown, regroupées par date ou par chemin).
+# Présentation des résultats (#356) : les extraits (une carte par passage), ou le
+# document (les passages assemblés en Markdown, regroupés par date ou par chemin).
 VIEWS = ("extraits", "document")
 DEFAULT_VIEW = "extraits"
 DEFAULT_GROUP = "date"
@@ -257,10 +259,10 @@ class Crumb:
 
 @dataclass
 class Hit:
-    """Une note part trouvée : son extrait surligné (s'il y a du texte à chercher),
+    """Un passage trouvé : son extrait surligné (s'il y a du texte à chercher),
     l'ancre de sa section dans la page de la note, et son chemin ascendant (#356)."""
 
-    part: NotePart
+    passage: Passage
     snippet: SafeString | None
     anchor: str | None
     crumbs: list[Crumb] = field(default_factory=list)
@@ -281,110 +283,148 @@ class NoteResults:
     hits: list[Hit] = field(default_factory=list)
 
 
-def group_by_note(query: SearchQuery, parts: list[NotePart]) -> list[NoteResults]:
-    """Les résultats par note, dans l'ordre de leur première note part (donc la note de
-    la note part la plus pertinente d'abord), avec extraits et ancres (#201)."""
+def group_by_note(query: SearchQuery, passages: list[Passage]) -> list[NoteResults]:
+    """Les résultats par note, dans l'ordre de leur premier passage (donc la note du
+    passage le plus pertinent d'abord), avec extraits et ancres (#201).
+
+    Chaque titre du chemin mène à sa propre occurrence dans la note : l'identifiant
+    enregistré avec le passage (#387), y compris pour un titre répété.
+    """
     wanted = [term for term in query.terms if not term.negated]
     # Les mots élargis (#200) sont surlignés aussi : un résultat élargi a son extrait.
     alternatives: dict[str, list[str]] = {}
     for written, found in query.expansions:
         alternatives.setdefault(written, []).append(found)
-    # Les extraits cherchent les mots tels qu'écrits dans la note (#372). Les note
-    # parts ont déjà tous les termes : `OR` garde l'extrait quand l'un d'eux n'est pas
-    # trouvé tel qu'écrit (une forme réduite que la note n'écrit pas).
+    # Les extraits cherchent les mots tels qu'écrits dans la note (#372). Les
+    # passages ont déjà tous les termes : `OR` garde l'extrait quand l'un d'eux n'est
+    # pas trouvé tel qu'écrit (une forme réduite que la note n'écrit pas).
     expression = fts_expression(wanted, " OR ", Expansion(alternatives), written=True)
-    extracts = snippets(expression, [part.pk for part in parts]) if wanted else {}
-    anchors: dict[str, str | None] = {}
+    extracts = (
+        snippets(expression, [passage.pk for passage in passages]) if wanted else {}
+    )
     groups: dict[int, NoteResults] = {}
-    for part in parts:
-        crumbs = []
-        for title in split_titles(part.heading_path):
-            if title not in anchors:
-                anchors[title] = heading_anchor(title)
-            crumbs.append(Crumb(TITLE_ATTRIBUTES_REGEX.sub("", title), anchors[title]))
-        anchor = crumbs[-1].anchor if crumbs else None
-        group = groups.setdefault(part.note_id, NoteResults(part.note))
-        group.hits.append(Hit(part, extracts.get(part.pk), anchor, crumbs))
+    for passage in passages:
+        titles = split_titles(passage.heading_path)
+        anchors = passage_anchors(passage, titles)
+        crumbs = [
+            Crumb(TITLE_ATTRIBUTES_REGEX.sub("", title), anchor)
+            for title, anchor in zip(titles, anchors, strict=True)
+        ]
+        group = groups.setdefault(passage.note_id, NoteResults(passage.note))
+        group.hits.append(
+            Hit(
+                passage,
+                extracts.get(passage.pk),
+                anchors[-1] if anchors else None,
+                crumbs,
+            )
+        )
     return list(groups.values())
 
 
-def document_html(parts: list[NotePart], group: str) -> SafeString:
-    """Les note parts assemblées en un document, rendu comme une note (#356).
+def passage_anchors(passage: Passage, titles: tuple[str, ...]) -> list[str | None]:
+    """L'identifiant de chaque titre du chemin d'un passage dans la page de sa note.
+
+    Ceux enregistrés à l'analyse (`anchor_path`) ; à défaut (un passage enregistré
+    sans eux), celui que prend le titre seul, qui est celui de sa première
+    occurrence.
+    """
+    stored = passage.anchor_path.split()
+    if len(stored) == len(titles):
+        return list(stored)
+    return [heading_anchor(title) for title in titles]
+
+
+# Le premier niveau du document pour le texte sans projet (#385) : aucune clé de
+# projet ne vaut 0.
+NO_PROJECT = Level(0, "Sans projet")
+
+
+def document_html(passages: list[Passage], group: str) -> SafeString:
+    """Les passages assemblés en un document, rendu comme une note (#356).
 
     Les numéros des tableaux et figures se calculent sur le texte assemblé. Dans une
-    note, les note parts restent dans l'ordre où elles sont écrites. Les titres sont
-    ceux des niveaux en base (#369) ; le lien d'une note part mène au titre tel
-    qu'il est écrit dans sa note.
+    note, les passages restent dans l'ordre où ils sont écrits (#387). Les titres
+    sont ceux des niveaux en base (#369) ; le lien d'un passage mène à son titre dans
+    sa note, à sa propre occurrence.
     """
-    levels = levels_of(parts)
-    anchors: dict[str, str | None] = {}
+    levels = levels_of(passages)
     pieces = []
-    for part in sorted(parts, key=lambda part: part.pk):
-        titles = split_titles(part.heading_path)
-        last = titles[-1] if titles else ""
-        if last not in anchors:
-            anchors[last] = heading_anchor(last)
-        note_url = reverse("note_taking:note_detail", args=[part.note.date])
+    for passage in sorted(
+        passages, key=lambda passage: (passage.note_id, passage.position, passage.pk)
+    ):
+        anchors = passage_anchors(passage, split_titles(passage.heading_path))
+        anchor = anchors[-1] if anchors else None
+        note_url = reverse("note_taking:note_detail", args=[passage.note.date])
         pieces.append(
-            DocPart(
-                date=part.note.date,
-                date_label=date_text(part.note.date, "long"),
+            DocPassage(
+                date=passage.note.date,
+                date_label=date_text(passage.note.date, "long"),
                 note_url=note_url,
-                part_url=note_url + (f"#{anchors[last]}" if anchors[last] else ""),
-                levels=levels[part.pk],
-                content=part.content,
+                passage_url=note_url + (f"#{anchor}" if anchor else ""),
+                levels=levels[passage.pk],
+                content=passage.content,
             )
         )
-    return mark_safe(render_note_part(assemble(pieces, group)))
+    return mark_safe(render_passage(assemble(pieces, group)))
 
 
-def levels_of(parts: list[NotePart]) -> dict[int, tuple[Level, ...]]:
-    """Par note part, ses niveaux en base : le projet, puis sa section et ses
-    ancêtres, de la racine au plus profond. Une requête pour toutes les sections."""
+def levels_of(passages: list[Passage]) -> dict[int, tuple[Level, ...]]:
+    """Par passage, ses niveaux en base : le projet, puis sa section et ses
+    ancêtres, de la racine au plus profond. Une requête pour toutes les sections.
+    Le texte sans projet n'a que `NO_PROJECT`."""
     sections: dict[int, tuple[int | None, str]] = {}
-    if any(part.section_id is not None for part in parts):
+    if any(passage.section_id is not None for passage in passages):
         sections = {
             pk: (parent_id, name)
             for pk, parent_id, name in Section.objects.values_list(
                 "pk", "parent_id", "name"
             )
         }
-    found = {}
-    for part in parts:
+    found: dict[int, tuple[Level, ...]] = {}
+    for passage in passages:
+        if passage.project is None:
+            found[passage.pk] = (NO_PROJECT,)
+            continue
         chain: list[Level] = []
-        current = part.section_id
+        current = passage.section_id
         while current is not None:
             parent_id, name = sections[current]
             chain.insert(0, Level(current, name))
             current = parent_id
-        found[part.pk] = (Level(part.project_id, part.project.name), *chain)
+        found[passage.pk] = (Level(passage.project.pk, passage.project.name), *chain)
     return found
 
 
-def facet_counts(parts: list[NotePart]) -> tuple[dict[int, int], dict[int, int]]:
-    """Par niveau, puis par projet, le nombre de ces note parts qui l'utilisent : les
+def facet_counts(passages: list[Passage]) -> tuple[dict[int, int], dict[int, int]]:
+    """Par niveau, puis par projet, le nombre de ces passages qui l'utilisent : les
     compteurs de l'arbre des chemins pour un résultat (#380), sans requête de plus."""
     sections: dict[int, int] = {}
     projects: dict[int, int] = {}
-    for part in parts:
-        if part.section_id is not None:
-            sections[part.section_id] = sections.get(part.section_id, 0) + 1
-        projects[part.project_id] = projects.get(part.project_id, 0) + 1
+    for passage in passages:
+        if passage.section_id is not None:
+            sections[passage.section_id] = sections.get(passage.section_id, 0) + 1
+        if passage.project_id is not None:
+            projects[passage.project_id] = projects.get(passage.project_id, 0) + 1
     return sections, projects
 
 
 def project_counts() -> dict[int, int]:
-    """Par projet, le nombre de note parts qui l'utilisent, pour les cases de projets
+    """Par projet, le nombre de passages qui l'utilisent, pour les cases de projets
     de l'arbre des chemins (#360)."""
-    rows = NotePart.objects.values("project").annotate(total=Count("pk"))
+    rows = (
+        Passage.objects.filter(project__isnull=False)
+        .values("project")
+        .annotate(total=Count("pk"))
+    )
     return {row["project"]: row["total"] for row in rows}
 
 
 def section_counts() -> dict[int, int]:
-    """Par clé de niveau, le nombre de note parts qui l'utilisent elles-mêmes, pour
+    """Par clé de niveau, le nombre de passages qui l'utilisent eux-mêmes, pour
     l'arbre des chemins (`core.path_tree`, qui ajoute les descendants) (#302)."""
     rows = (
-        NotePart.objects.filter(section__isnull=False)
+        Passage.objects.filter(section__isnull=False)
         .values("section")
         .annotate(total=Count("pk"))
     )

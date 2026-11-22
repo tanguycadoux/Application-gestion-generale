@@ -3,7 +3,7 @@
 from django.test import TestCase
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.forms import TaskForm
 from todolist.models import Task
 
@@ -12,7 +12,7 @@ class NoteTaskTitleTests(TestCase):
     def titles(self, *lines: str) -> list[str]:
         body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note = Note.objects.create(date="2025-11-24", body=body)
-        process_note_parts(note)
+        process_passages(note)
         return list(Task.objects.order_by("pk").values_list("title", flat=True))
 
     def test_marqueurs_de_liste_retires(self):

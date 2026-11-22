@@ -1,10 +1,10 @@
-"""Service de recherche (#199) : la requête analysée appliquée aux note parts."""
+"""Service de recherche (#199) : la requête analysée appliquée aux passages."""
 
 from django.test import TestCase
 
 from core.models import Project, Section, Tag
-from note_taking.models import Note, NotePart
-from note_taking.search import search_note_parts
+from note_taking.models import Note, Passage
+from note_taking.search import search_passages
 from note_taking.search_query import parse_query
 
 
@@ -33,12 +33,12 @@ class SearchServiceTests(TestCase):
 
     @staticmethod
     def part(note, project, content, section):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=note, project=project, section=section, content=content
         )
 
     def search(self, text, projects=(), sections=()):
-        return search_note_parts(parse_query(text), projects, sections)
+        return search_passages(parse_query(text), projects, sections)
 
     def test_rien_a_chercher(self):
         self.assertIsNone(self.search(""))
@@ -61,7 +61,7 @@ class SearchServiceTests(TestCase):
     def test_prefixe(self):
         self.assertEqual(set(self.search("therm*")), {self.p1, self.p2})
         # Sans astérisque, pas de préfixe (et sans élargissement aux fautes, #200).
-        self.assertEqual(search_note_parts(parse_query("thermiq"), expand=False), [])
+        self.assertEqual(search_passages(parse_query("thermiq"), expand=False), [])
 
     def test_exclusion(self):
         self.assertEqual(self.search("thermique -brouillon"), [self.p2])
