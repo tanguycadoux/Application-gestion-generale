@@ -8,8 +8,8 @@ from core.icons import icon_svg
 from core.models import Project
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
-from todolist.forms import TodoForm
-from todolist.models import Todo
+from todolist.forms import TaskForm
+from todolist.models import Task
 
 from .stylesheets import read_source_css
 
@@ -48,7 +48,7 @@ class FormGridTemplateTests(TestCase):
     """`{{ form }}` rend chaque champ en deux cellules de grille : libellé, champ."""
 
     def test_libelle_puis_cellule_du_champ(self):
-        html = str(TodoForm())
+        html = str(TaskForm())
 
         self.assertNotIn("<p>", html)
         self.assertInHTML(
@@ -57,7 +57,7 @@ class FormGridTemplateTests(TestCase):
         self.assertIn('<div class="min-w-0">', html)
 
     def test_erreurs_dans_la_cellule_du_champ(self):
-        form = TodoForm(data={"title": ""})
+        form = TaskForm(data={"title": ""})
         form.is_valid()
 
         row = str(form).split('<label for="id_title">')[1].split("<label")[0]
@@ -127,17 +127,17 @@ class SaveInHeaderTests(TestCase):
             html, "note-form", "Enregistrer la note", ' name="stay" value="1"'
         )
 
-    def test_formulaire_de_todo(self):
-        html = self.client.get(reverse("todolist:todo_create")).content.decode()
+    def test_formulaire_de_tache(self):
+        html = self.client.get(reverse("todolist:task_create")).content.decode()
 
-        self.assert_save_in_header(html, "todo-form", "Enregistrer la tâche")
+        self.assert_save_in_header(html, "task-form", "Enregistrer la tâche")
 
 
 class FormPagesTests(TestCase):
-    def test_formulaire_de_todo_en_grille(self):
-        html = self.client.get(reverse("todolist:todo_create")).content.decode()
+    def test_formulaire_de_tache_en_grille(self):
+        html = self.client.get(reverse("todolist:task_create")).content.decode()
 
-        self.assertIn(f'<form id="todo-form" method="post" class="{FORM_GRID}">', html)
+        self.assertIn(f'<form id="task-form" method="post" class="{FORM_GRID}">', html)
 
     def test_formulaire_de_note_en_colonne_de_la_hauteur_restante(self):
         """Pas de grille : un seul champ large, qui défile dans sa zone (#89)."""
@@ -158,11 +158,11 @@ class FormPagesTests(TestCase):
         self.assertNotIn('<p class="flex flex-col">', html)
         self.assertIn('<p class="flex items-baseline gap-2">', html)
 
-    def test_modification_d_une_todo_accessible(self):
-        todo = Todo.objects.create(
+    def test_modification_d_une_tache_accessible(self):
+        task = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="T"
         )
 
-        response = self.client.get(reverse("todolist:todo_edit", args=[todo.pk]))
+        response = self.client.get(reverse("todolist:task_edit", args=[task.pk]))
 
         self.assertEqual(response.status_code, 200)

@@ -147,7 +147,7 @@ class ToastScriptTests(SimpleTestCase):
         for name in (
             "note_taking/editor.js",
             "note_taking/images_capture.js",
-            "todolist/todo.js",
+            "todolist/task.js",
         ):
             with self.subTest(name=name):
                 script = read_static(name)

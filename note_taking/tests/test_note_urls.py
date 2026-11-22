@@ -98,7 +98,7 @@ class NoteUrlTests(TestCase):
         for name, prefix in (
             ("note_taking:notes_list", "/notes/"),
             ("note_taking:images_list", "/images/"),
-            ("todolist:todo_list", "/tasks/"),
+            ("todolist:task_list", "/tasks/"),
             ("core:projects", "/projects/"),
         ):
             with self.subTest(name=name):

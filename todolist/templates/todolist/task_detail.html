@@ -6,7 +6,7 @@
 {% block extra_head %}
     {{ block.super }}
     {% load static %}
-    <script src="{% static 'todolist/todo.js' %}"></script>
+    <script src="{% static 'todolist/task.js' %}"></script>
 {% endblock extra_head %}
 
 {% block content %}
@@ -14,10 +14,10 @@
         <header class="mb-4 flex items-start">
             <h1 class="min-w-0 flex-1 [overflow-wrap:anywhere]">{{ object.title }}</h1>
 
-            {% url 'todolist:todo_edit' object.pk as url %}
+            {% url 'todolist:task_edit' object.pk as url %}
             {% button "Modifier la tâche" icon="edit" href=url variant="ghost" icon_only=True %}
 
-            {% url 'todolist:todo_delete' object.pk as url %}
+            {% url 'todolist:task_delete' object.pk as url %}
             {% if dismisses %}
                 {% confirm_button "Écarter la tâche" id="delete-confirm" icon="playlist_remove" icon_only=True message=delete_confirm action=url confirm_label="Écarter" confirm_icon="playlist_remove" %}
             {% else %}
@@ -34,7 +34,7 @@
                     </h2>
                     <ul class="mt-2 list-disc pl-6">
                         {% for incoherence in incoherences %}
-                            <li>{{ incoherence.message }} <a href="{% url 'todolist:todo_detail' incoherence.task.pk %}">Voir « {{ incoherence.task }} »</a></li>
+                            <li>{{ incoherence.message }} <a href="{% url 'todolist:task_detail' incoherence.task.pk %}">Voir « {{ incoherence.task }} »</a></li>
                         {% endfor %}
                     </ul>
                 </aside>
@@ -63,7 +63,7 @@
             <dd>{% date_time object.created_at "moyen" %}</dd>
             {% if object.parent %}
                 <dt class="font-semibold">Tâche parente</dt>
-                <dd><a href="{% url 'todolist:todo_detail' object.parent.pk %}">{{ object.parent }}</a></dd>
+                <dd><a href="{% url 'todolist:task_detail' object.parent.pk %}">{{ object.parent }}</a></dd>
             {% endif %}
             {% if origin_note %}
                 <dt class="font-semibold">Note d'origine</dt>
@@ -81,7 +81,7 @@
         <section aria-labelledby="children-title">
             <header class="mb-2 flex items-center gap-2">
                 <h2 id="children-title" class="flex-1">Sous-tâches</h2>
-                {% url 'todolist:todo_create' as url %}
+                {% url 'todolist:task_create' as url %}
                 {% querystring parent=object.pk as query %}
                 {% button "Ajouter une sous-tâche" icon="add" href=url|add:query %}
             </header>

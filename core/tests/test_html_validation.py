@@ -20,7 +20,7 @@ from core.sections import section_for
 from images.models import Image
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 from .debug_urls import DebugUrlsTestCase
 
@@ -107,7 +107,7 @@ class HtmlValidationTests(TestCase):
         process_note_parts(self.note)
         # Niveau inutilisé avec un sous-niveau : bouton de suppression actif (#299).
         section_for(project, ["Inutilisé", "Sous-niveau"])
-        self.parent = Todo.objects.create(
+        self.parent = Task.objects.create(
             title="Parent",
             project=project,
             section=Section.objects.get(name="Réunion"),
@@ -116,25 +116,25 @@ class HtmlValidationTests(TestCase):
         )
         self.parent.tags.add(Tag.objects.get_or_create(name="urgent")[0])
         # Tâche dont la ligne a disparu de la note : seconde section du bilan (#240).
-        Todo.objects.create(
+        Task.objects.create(
             title="Ligne retirée",
             project=project,
             created_from_note=True,
             note_part_date=TODAY,
             note_part_text="Ligne retirée",
-            note_state=Todo.NoteState.TO_REVIEW,
+            note_state=Task.NoteState.TO_REVIEW,
         )
         # Tâche écartée : section « Écartées » de la liste (#290).
-        Todo.objects.create(
+        Task.objects.create(
             title="Écartée",
             project=project,
             created_from_note=True,
             note_part_date=TODAY,
             note_part_text="Écartée",
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
         # Sous-tâche incohérente : autre projet, échéance après le parent.
-        Todo.objects.create(
+        Task.objects.create(
             title="Enfant",
             project=other,
             parent=self.parent,
@@ -168,15 +168,15 @@ class HtmlValidationTests(TestCase):
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),
-            "taches_liste": reverse("todolist:todo_list"),
+            "taches_liste": reverse("todolist:task_list"),
             "taches_liste_filtres": (
-                reverse("todolist:todo_list")
+                reverse("todolist:task_list")
                 + "?state=all&title=e&sort=-due&project=ASTERICS&project=PDS1"
             ),
-            "taches_liste_ecartees": reverse("todolist:todo_list") + "?state=dismissed",
-            "tache": reverse("todolist:todo_detail", args=[parent]),
-            "tache_nouvelle": reverse("todolist:todo_create"),
-            "tache_modifier": reverse("todolist:todo_edit", args=[parent]),
+            "taches_liste_ecartees": reverse("todolist:task_list") + "?state=dismissed",
+            "tache": reverse("todolist:task_detail", args=[parent]),
+            "tache_nouvelle": reverse("todolist:task_create"),
+            "tache_modifier": reverse("todolist:task_edit", args=[parent]),
             "taches_bilan": self.note.follow_ups[0].url,
         }
 

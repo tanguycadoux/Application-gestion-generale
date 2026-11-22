@@ -1,4 +1,4 @@
-"""Tests des services de note : import, mise à jour, note parts, TODO, images.
+"""Tests des services de note : import, mise à jour, note parts, tâches, images.
 
 Ces tests figent le comportement actuel décrit dans le README, afin de
 détecter toute régression lors de la restructuration (M3).
@@ -29,7 +29,7 @@ from note_taking.services import (
     process_note_parts,
     update_note_from_source_file,
 )
-from todolist.models import Todo
+from todolist.models import Task
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -233,7 +233,7 @@ class ProcessNotePartsTests(ServiceTestCase):
             process_note_parts(note)
 
         self.assertEqual(parts_summary(note), [("P", ["A"], [], "x")])
-        self.assertFalse(Todo.objects.exists())
+        self.assertFalse(Task.objects.exists())
 
     def test_contenu_vide(self):
         note = Note.objects.create(date="2025-11-24", body="")
@@ -248,30 +248,30 @@ class ProcessNotePartsTests(ServiceTestCase):
         self.assertEqual(note.parts.get().content, "x\n\ny")
 
 
-class TodoGenerationTests(ServiceTestCase):
+class TaskGenerationTests(ServiceTestCase):
     def process(self, raw: str) -> Note:
         note = Note.objects.create(date="2025-11-24", body=raw)
         process_note_parts(note)
         return note
 
     def test_meme_projet_que_la_note_part(self):
-        """#19 : notes et TODO partagent le même modèle Project."""
+        """#19 : notes et tâches partagent le même modèle Project."""
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        self.assertEqual(Todo.objects.get().project, note.parts.get().project)
+        self.assertEqual(Task.objects.get().project, note.parts.get().project)
 
-    def test_une_todo_par_ligne(self):
+    def test_une_tache_par_ligne(self):
         self.process(
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Première\n- Seconde"
         )
 
-        todos = Todo.objects.order_by("pk")
-        self.assertEqual([t.title for t in todos], ["Première", "Seconde"])
-        for todo in todos:
-            self.assertTrue(todo.created_from_note)
-            self.assertIsNone(todo.due_date)
-            self.assertEqual(todo.note_part_date, date(2025, 11, 24))
-            self.assertEqual(todo.project.name, "P")
+        tasks = Task.objects.order_by("pk")
+        self.assertEqual([t.title for t in tasks], ["Première", "Seconde"])
+        for task in tasks:
+            self.assertTrue(task.created_from_note)
+            self.assertIsNone(task.due_date)
+            self.assertEqual(task.note_part_date, date(2025, 11, 24))
+            self.assertEqual(task.project.name, "P")
 
     def test_tags_de_la_part_sans_todo_et_sujet_a_part(self):
         """Le sujet de la note part devient le sujet de la tâche, pas un tag (#163)."""
@@ -279,42 +279,42 @@ class TodoGenerationTests(ServiceTestCase):
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
         )
 
-        todo = Todo.objects.get()
-        self.assertEqual(list(todo.tags.values_list("name", flat=True)), ["urgent"])
-        self.assertEqual(todo.section.name, "S")
+        task = Task.objects.get()
+        self.assertEqual(list(task.tags.values_list("name", flat=True)), ["urgent"])
+        self.assertEqual(task.section.name, "S")
 
-    def test_pas_de_todo_sans_tag_todo(self):
+    def test_pas_de_tache_sans_tag_todo(self):
         self.process("# P\n## S\n### Notes\n- Pas une tâche")
 
-        self.assertFalse(Todo.objects.exists())
+        self.assertFalse(Task.objects.exists())
 
     def test_pas_de_doublon_au_retraitement(self):
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         process_note_parts(note)
 
-        self.assertEqual(Todo.objects.count(), 1)
+        self.assertEqual(Task.objects.count(), 1)
 
-    def test_ligne_modifiee_cree_une_nouvelle_todo(self):
-        """Comportement voulu pour l'instant : l'ancienne TODO est conservée."""
+    def test_ligne_modifiee_cree_une_nouvelle_tache(self):
+        """Comportement voulu pour l'instant : l'ancienne tâche est conservée."""
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche modifiée"
         process_note_parts(note)
 
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)),
+            sorted(Task.objects.values_list("title", flat=True)),
             ["Tâche", "Tâche modifiée"],
         )
 
-    def test_ligne_vide_ne_cree_pas_de_todo(self):
-        """Une ligne vide ou un tiret seul ne crée pas de TODO."""
+    def test_ligne_vide_ne_cree_pas_de_tache(self):
+        """Une ligne vide ou un tiret seul ne crée pas de tâche."""
         self.process(
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Première\n\n-\n- Seconde"
         )
 
         self.assertEqual(
-            sorted(Todo.objects.values_list("title", flat=True)),
+            sorted(Task.objects.values_list("title", flat=True)),
             ["Première", "Seconde"],
         )
 
@@ -385,8 +385,8 @@ class DeepPathTests(ServiceTestCase):
         part = note.parts.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(part.heading_path, "P › S › Notes")
-        todo = Todo.objects.get()
-        self.assertEqual(levels(todo.section), ["S", "Notes"])
+        task = Task.objects.get()
+        self.assertEqual(levels(task.section), ["S", "Notes"])
 
     def test_branche_todo_dans_un_chemin(self):
         body = "# P\n## S\n### Notes\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
@@ -397,7 +397,7 @@ class DeepPathTests(ServiceTestCase):
         part = note.parts.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(list(part.tags.values_list("name", flat=True)), ["TODO"])
-        self.assertEqual(levels(Todo.objects.get().section), ["S", "Notes"])
+        self.assertEqual(levels(Task.objects.get().section), ["S", "Notes"])
 
     def test_niveaux_inutilises_oublies_a_la_mise_a_jour(self):
         note = Note.objects.create(date="2025-11-24", body=self.BODY)

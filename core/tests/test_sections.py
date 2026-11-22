@@ -26,7 +26,7 @@ from core.sections import (
     with_descendants,
 )
 from note_taking.models import Note, NotePart
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class SplitPathTests(TestCase):
@@ -292,18 +292,18 @@ class ForgetUnusedTests(TestCase):
 
     def test_section_utilisee_par_une_tache(self):
         section = section_for(self.project, ["A"])
-        Todo.objects.create(title="T", project=self.project, section=section)
+        Task.objects.create(title="T", project=self.project, section=section)
 
         self.assertEqual(forget_unused_sections(), 0)
 
     def test_section_utilisee_par_une_tache_ecartee(self):
         section = section_for(self.project, ["A"])
-        Todo.objects.create(
+        Task.objects.create(
             title="T",
             project=self.project,
             section=section,
             created_from_note=True,
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         self.assertEqual(forget_unused_sections(), 0)

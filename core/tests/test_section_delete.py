@@ -11,7 +11,7 @@ from core.sections import section_for
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class SectionDeleteTestCase(TestCase):
@@ -115,7 +115,7 @@ class SectionDeleteTests(SectionDeleteTestCase):
 
     def test_refuse_un_niveau_utilise_par_une_tache(self):
         section = self.level("A")
-        Todo.objects.create(title="T", project=self.project, section=section)
+        Task.objects.create(title="T", project=self.project, section=section)
 
         response = self.client.post(self.url(section))
 
@@ -132,19 +132,19 @@ class SectionDeleteTests(SectionDeleteTestCase):
 
     def test_une_tache_ecartee_ne_retient_pas_le_niveau(self):
         section = self.level("A")
-        todo = Todo.all_objects.create(
+        task = Task.all_objects.create(
             title="T",
             project=self.project,
             section=section,
             created_from_note=True,
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         self.client.post(self.url(section))
 
         self.assertFalse(Section.objects.filter(pk=section.pk).exists())
-        todo.refresh_from_db()
-        self.assertIsNone(todo.section)
+        task.refresh_from_db()
+        self.assertIsNone(task.section)
 
     def test_pas_de_page_de_confirmation(self):
         section = self.level("A")

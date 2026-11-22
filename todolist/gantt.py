@@ -16,13 +16,13 @@ from django.utils import timezone
 
 from core.month_calendar import shift_month
 
-from .models import Todo
+from .models import Task
 from .tree import TaskRow, descendant_rows
 
 
 @dataclass
 class GanttRow:
-    task: Todo
+    task: Task
     level: int
     begin: date
     finish: date
@@ -45,7 +45,7 @@ class GanttChart:
     ticks: list[tuple[str, float]] = field(default_factory=list)
 
 
-def gantt_chart(task: Todo, today: date | None = None) -> GanttChart | None:
+def gantt_chart(task: Task, today: date | None = None) -> GanttChart | None:
     """Frise des descendants de `task` ; None s'il n'en a pas."""
     today = today or timezone.localdate()
     descendants = descendant_rows(task)

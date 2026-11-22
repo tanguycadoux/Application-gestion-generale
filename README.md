@@ -5,7 +5,7 @@ Application pour l'organisation quotidienne.
 Projet Django `app_gestion`, contenant des applications :
 
 - `note_taking` pour la prise de notes,
-- `todolist` pour la gestion de TODO.
+- `todolist` pour la gestion des tâches.
 
 ## Installation et lancement
 
@@ -86,7 +86,7 @@ Exemples :
 ```django
 {% load ui %}
 {% button "Importer" %}
-{% url 'todolist:todo_edit' todo.pk as url %}{% button "Modifier" href=url %}
+{% url 'todolist:task_edit' task.pk as url %}{% button "Modifier" href=url %}
 {% button "Supprimer la note" icon="delete" href=url variant="ghost-danger" icon_only=True %}
 ```
 
@@ -153,7 +153,7 @@ app_gestion/          # configuration du projet (settings, urls)
 core/                 # éléments communs : projets, sections (sujets), tags, page d'accueil, gabarit de base, statiques
 images/               # images utilisables dans les notes (modèle, import)
 note_taking/          # application de prise de notes
-todolist/             # application de gestion des TODO
+todolist/             # application de gestion des tâches
 docs/                 # documentation (architecture et décisions)
 assets/css/source.css # source de la feuille Tailwind (thème, styles de base)
 static/               # statiques communs : bibliothèques embarquées (vendor/), feuille compilée (css/, non versionnée)
@@ -173,7 +173,7 @@ Une note peut être :
 - importée depuis un ou plusieurs fichiers quarto (`.qmd`),
 - remplacement par un fichier source : plus de formulaire sur la page de la note, à reprendre dans l'import (#115, #134) ; la vue `update_source_file` reste en attendant.
 
-À chaque enregistrement, le contenu est analysé et découpé en *passages* (voir ci-dessous), et les TODO éventuelles sont générées.
+À chaque enregistrement, le contenu est analysé et découpé en *passages* (voir ci-dessous), et les tâches éventuelles sont générées.
 
 Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
 
@@ -204,11 +204,11 @@ Une note est structurée de cette manière :
 
 Un seul niveau a un sens propre à l'application : `#` donne le **projet** (#287). Les titres suivants, `##` à `######`, forment le **chemin** sous le projet, sans limite de profondeur : ici « Réunion › Préparation › Ordre du jour ». Un texte hérite du projet et du chemin des titres au-dessus de lui. Un titre est un niveau, quel que soit son texte : une virgule ou une barre oblique n'y change rien (« Conception, approvisionnement et fabrication », « Rapport RT17/A »).
 
-Le contenu est découpé en *passages* : chaque passage regroupe le texte partageant le même projet, le même chemin et les mêmes tags (le modèle `NotePart` dans le code, #362). Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, chemins et tags sont communs aux notes et aux TODO (app `core`). Un projet utilisé par une note ou une TODO ne peut pas être supprimé.
+Le contenu est découpé en *passages* : chaque passage regroupe le texte partageant le même projet, le même chemin et les mêmes tags (le modèle `NotePart` dans le code, #362). Les projets sont créés automatiquement s'ils n'existent pas encore. Projets, chemins et tags sont communs aux notes et aux tâches (app `core`). Un projet utilisé par une note ou une tâche ne peut pas être supprimé.
 
 Un chemin est une suite de **sections** du modèle, un arbre sous le projet (#295) : le même titre sous deux projets est deux sections, et deux titres qui ne diffèrent que par la casse sont le même niveau, écrit comme la première fois. Une section qu'aucune note ni tâche n'utilise plus est supprimée à l'enregistrement d'une note.
 
-Une tâche s'écrit en case à cocher, `- [ ] texte` : voir « Génération des TODO ».
+Une tâche s'écrit en case à cocher, `- [ ] texte` : voir « Génération des tâches ».
 
 Un titre peut **sauter un niveau** (`# Projet` puis `### Détail`, sans `##`) : le chemin reste « Détail » sous le projet, car il se fait des titres et pas de leur niveau. L'enregistrement de la note (création, modification, remplacement par le fichier source) **le signale** par un avertissement après le message de succès (« Ligne 5 : le titre « Détail » (###) saute un niveau sous « Projet » (#). »), avec le nombre des autres titres dans le même cas ; le compte rendu d'import les liste sous chaque note créée. Un titre `##` à `######` **sans projet** (`#`) au-dessus de lui est signalé aussi : son contenu n'est pas enregistré. Le texte de la note n'est jamais réécrit.
 
@@ -288,7 +288,7 @@ tags: [tag]
 
 Ces tags restent transverses : on les retrouve quel que soit le projet. Après une évolution de l'analyse, `python manage.py reprocess_notes` recalcule les passages de toutes les notes et supprime les tags que plus rien n'utilise.
 
-### Génération des TODO
+### Génération des tâches
 
 Une tâche s'écrit comme une **case à cocher** vide, la syntaxe de Pandoc et de Quarto, n'importe où dans une note (#297) :
 
@@ -325,7 +325,7 @@ Le titre de la tâche est le texte de la ligne, sans son marqueur de liste (`-`,
 
 Une ligne en sous-liste crée une sous-tâche de la tâche au-dessus d'elle (#238), selon la règle d'imbrication de Pandoc, celle du rendu : son marqueur commence au moins à la colonne du texte de la ligne parente (2 espaces après `- `, 3 après `1. `). Une tâche est reconnue par la date de la note, le chemin de sa ligne (titres de la section, puis éléments parents, tâches ou non) et son texte (#240) : la même ligne sous un autre sujet ou sous un autre parent donne une autre tâche. Indenter une ligne plus tard change donc son chemin : le bilan propose alors de remplacer l'ancienne tâche par la nouvelle.
 
-Chaque TODO est rattachée au projet et à la dernière section du chemin de son passage, n'a pas d'échéance et reçoit comme tags ceux du passage (sans `TODO`). Une TODO déjà générée pour la même ligne n'est pas recréée.
+Chaque tâche est rattachée au projet et à la dernière section du chemin de son passage, n'a pas d'échéance et reçoit comme tags ceux du passage (sans `TODO`). Une tâche déjà générée pour la même ligne n'est pas recréée.
 
 Une tâche créée depuis une note est **à revoir** : tant qu'une note en a, son enregistrement ouvre une page bilan (#239, #240). Dans l'éditeur, le bilan ne s'ouvre qu'avec « Terminer l'édition » ; « Enregistrer la note » signale seulement les tâches à revoir (#389). Après un import, le compte rendu indique le nombre de tâches à revoir de chaque note, avec un lien vers son bilan. Le bilan présente :
 
@@ -380,7 +380,7 @@ L'accueil des tâches est un calendrier du mois (#167), sur le même composant q
 
 Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais **signalés** (#165), sur le parent comme sur l'enfant : échéance d'une sous-tâche après celle de son parent, projet différent de celui du parent, parent terminé avec une sous-tâche en cours. Le détail d'une tâche les liste dans un encadré « À corriger », avec un lien vers l'autre tâche ; les listes marquent une tâche incohérente d'une icône d'avertissement.
 
-La liste (`/tasks/list/`) est un tableau arborescent (#166) : chaque tâche racine forme un groupe, ouvert par la pastille de son projet, avec ses sous-tâches indentées sous leur parent direct. Une ligne porte la case à cocher, le nom (lien vers le détail, avec la mention « à valider » d'un parent et l'icône d'incohérence), l'avancement en barre (`<progress>`, bleue en cours, verte à 100 %, #182), le temps restant (« aujourd'hui », « dans 3 j », « 2 j de retard », en semaines puis en mois au-delà de 30 et 90 jours ; rouge en retard, ambre sous 3 jours) et l'échéance. Les frères sont triés par échéance, sans échéance à la fin, et les racines par l'échéance la plus proche des tâches non terminées de leur arbre. Un **filtre d'état** dans l'en-tête de la colonne « Tâche » (#294, #178) choisit les arbres affichés : en cours (par défaut), terminées (racine terminée), toutes, ou écartées, qui ont leur propre tableau avec le bouton « Rétablir » ; le même panneau filtre par titre (sans casse ni accents), projets (un ou plusieurs cochés, avec leur pastille, dans une liste repliable où l'on peut chercher) et chemin (descendants compris), et les colonnes Tâche, Avancement et Échéance trient (`?sort=title`, `-due`…), les sous-tâches restant sous leur parent. Tri et filtres sont dans l'adresse (`?state=done&project=ASTERICS&sort=-due`). Le détail d'un parent reprend le même tableau pour ses sous-tâches (`todolist/task_table.html`, arbre construit par `todolist/tree.py`). La case d'une tâche sans sous-tâche la passe à 100 %, et la décocher lui rend l'avancement qu'elle avait avant d'être terminée, 0 % si elle a été créée terminée (#237) ; celle d'une tâche qui a des sous-tâches la valide ou non. Dans la liste, la ligne cochée et celles de ses ancêtres sont mises à jour sur place, sans recharger la page : la position et l'état affiché restent tels quels, et un arbre dont la racine vient d'être terminée ne change d'état affiché qu'à la visite suivante. Dans le détail, dont l'en-tête et la frise changent aussi, la page est rechargée. Si l'enregistrement échoue, la case revient à son état et un toast le signale (#189). Le signal de l'échéance (terminée, en retard, proche sous 3 jours, normale) est une seule règle du modèle, `Todo.due_signal`, commune à la barre, au temps restant, au calendrier et à la frise.
+La liste (`/tasks/list/`) est un tableau arborescent (#166) : chaque tâche racine forme un groupe, ouvert par la pastille de son projet, avec ses sous-tâches indentées sous leur parent direct. Une ligne porte la case à cocher, le nom (lien vers le détail, avec la mention « à valider » d'un parent et l'icône d'incohérence), l'avancement en barre (`<progress>`, bleue en cours, verte à 100 %, #182), le temps restant (« aujourd'hui », « dans 3 j », « 2 j de retard », en semaines puis en mois au-delà de 30 et 90 jours ; rouge en retard, ambre sous 3 jours) et l'échéance. Les frères sont triés par échéance, sans échéance à la fin, et les racines par l'échéance la plus proche des tâches non terminées de leur arbre. Un **filtre d'état** dans l'en-tête de la colonne « Tâche » (#294, #178) choisit les arbres affichés : en cours (par défaut), terminées (racine terminée), toutes, ou écartées, qui ont leur propre tableau avec le bouton « Rétablir » ; le même panneau filtre par titre (sans casse ni accents), projets (un ou plusieurs cochés, avec leur pastille, dans une liste repliable où l'on peut chercher) et chemin (descendants compris), et les colonnes Tâche, Avancement et Échéance trient (`?sort=title`, `-due`…), les sous-tâches restant sous leur parent. Tri et filtres sont dans l'adresse (`?state=done&project=ASTERICS&sort=-due`). Le détail d'un parent reprend le même tableau pour ses sous-tâches (`todolist/task_table.html`, arbre construit par `todolist/tree.py`). La case d'une tâche sans sous-tâche la passe à 100 %, et la décocher lui rend l'avancement qu'elle avait avant d'être terminée, 0 % si elle a été créée terminée (#237) ; celle d'une tâche qui a des sous-tâches la valide ou non. Dans la liste, la ligne cochée et celles de ses ancêtres sont mises à jour sur place, sans recharger la page : la position et l'état affiché restent tels quels, et un arbre dont la racine vient d'être terminée ne change d'état affiché qu'à la visite suivante. Dans le détail, dont l'en-tête et la frise changent aussi, la page est rechargée. Si l'enregistrement échoue, la case revient à son état et un toast le signale (#189). Le signal de l'échéance (terminée, en retard, proche sous 3 jours, normale) est une seule règle du modèle, `Task.due_signal`, commune à la barre, au temps restant, au calendrier et à la frise.
 
 La **tâche parente** se choisit dans une liste qui présente d'abord les tâches les plus proches (#390) : celles du **même chemin**, puis du **même projet**, puis des **autres projets** (avec leur chemin, et leur projet), chaque groupe par échéance puis par titre. Seules les tâches en cours sont proposées, sauf si la case « Proposer aussi les tâches terminées » est cochée ; le parent actuel l'est toujours. La tâche elle-même et ses descendantes, qui feraient une boucle, ne le sont jamais. Un titre long est coupé, le titre complet en infobulle. La liste se recharge quand le projet, le chemin ou la case changent (htmx) ; sans JavaScript, elle suit ce qui est enregistré. Un parent d'un autre projet reste permis, et signalé.
 

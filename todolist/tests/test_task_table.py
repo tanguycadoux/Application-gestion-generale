@@ -8,8 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
-from todolist.templatetags.todo_ui import progress_classes
+from todolist.models import Task
+from todolist.templatetags.task_ui import progress_classes
 
 TODAY = timezone.localdate()
 
@@ -20,9 +20,9 @@ def days(n: int):
 
 class RemainingTests(SimpleTestCase):
     def remaining(self, offset: int | None, done: bool = False) -> tuple[str, str]:
-        from todolist.templatetags.todo_ui import remaining_class, remaining_text
+        from todolist.templatetags.task_ui import remaining_class, remaining_text
 
-        task = Todo(
+        task = Task(
             title="T", due_date=None if offset is None else days(offset), done=done
         )
         return remaining_text(task), remaining_class(task)
@@ -58,8 +58,8 @@ class TaskTreeTests(TestCase):
         self.asterics = Project.objects.create(name="ASTERICS", color="teal")
         self.primager = Project.objects.create(name="PRIMAger", color="purple")
 
-    def task(self, title, project=None, **fields) -> Todo:
-        return Todo.objects.create(
+    def task(self, title, project=None, **fields) -> Task:
+        return Task.objects.create(
             title=title, project=project or self.asterics, **fields
         )
 
@@ -99,18 +99,18 @@ class TaskTreeTests(TestCase):
 class TaskListPageTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(
+        self.parent = Task.objects.create(
             title="Parent", project=self.project, due_date=days(10)
         )
-        self.child = Todo.objects.create(
+        self.child = Task.objects.create(
             title="Enfant", project=self.project, parent=self.parent, due_date=days(2)
         )
-        self.done_root = Todo.objects.create(
+        self.done_root = Task.objects.create(
             title="Finie", project=self.project, progress=100
         )
 
     def html(self) -> str:
-        return self.client.get(reverse("todolist:todo_list")).content.decode()
+        return self.client.get(reverse("todolist:task_list")).content.decode()
 
     def test_tableau_avec_un_groupe_par_racine(self):
         html = self.html()
@@ -130,9 +130,9 @@ class TaskListPageTests(TestCase):
         assert row is not None
         row_html = row.group()
 
-        self.assertIn('class="todo-toggle"', row_html)
+        self.assertIn('class="task-toggle"', row_html)
         self.assertIn(
-            f'href="{reverse("todolist:todo_detail", args=[self.child.pk])}"', row_html
+            f'href="{reverse("todolist:task_detail", args=[self.child.pk])}"', row_html
         )
         self.assertIn("pl-6", row_html)
         self.assertIn("dans 2 j", row_html)
@@ -146,7 +146,7 @@ class TaskListPageTests(TestCase):
 
     def test_meme_tableau_dans_le_detail_d_un_parent(self):
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         ).content.decode()
 
         section = html[html.index('aria-labelledby="children-title"') :]
@@ -160,13 +160,13 @@ class ProgressBarTests(TestCase):
 
     def setUp(self):
         project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(title="Parent", project=project)
-        self.child = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=project)
+        self.child = Task.objects.create(
             title="Enfant", project=project, parent=self.parent, progress=40
         )
 
     def html(self) -> str:
-        return self.client.get(reverse("todolist:todo_list")).content.decode()
+        return self.client.get(reverse("todolist:task_list")).content.decode()
 
     def test_colonne_avancement(self):
         self.assertRegex(
@@ -191,7 +191,7 @@ class ProgressBarTests(TestCase):
         self.child.progress = 100
         self.child.save()
 
-        classes = progress_classes(Todo.objects.get(pk=self.child.pk))
+        classes = progress_classes(Task.objects.get(pk=self.child.pk))
 
         self.assertIn("[&::-webkit-progress-value]:bg-green-500", classes)
         self.assertIn("bg-green-200", classes)
@@ -207,7 +207,7 @@ class ProgressBarTests(TestCase):
         }
         for offset, (fill, track) in cases.items():
             with self.subTest(offset=offset):
-                task = Todo(
+                task = Task(
                     title="T", due_date=None if offset is None else days(offset)
                 )
                 classes = progress_classes(task)
@@ -222,7 +222,7 @@ class ProgressBarTests(TestCase):
         self.child.progress = 100
         self.child.save()
 
-        parent = Todo.objects.get(pk=self.parent.pk)
+        parent = Task.objects.get(pk=self.parent.pk)
 
         self.assertTrue(parent.to_validate)
         self.assertIn("bg-red-400", progress_classes(parent))

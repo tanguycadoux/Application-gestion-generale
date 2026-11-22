@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class NoteSubtaskTests(TestCase):
@@ -21,15 +21,15 @@ class NoteSubtaskTests(TestCase):
 
     def titles_and_parents(self) -> list[tuple[str, str | None]]:
         return [
-            (todo.title, todo.parent.title if todo.parent else None)
-            for todo in Todo.objects.select_related("parent").order_by("pk")
+            (task.title, task.parent.title if task.parent else None)
+            for task in Task.objects.select_related("parent").order_by("pk")
         ]
 
     def tree(self) -> dict[str, str | None]:
         """Titre de chaque tâche, et titre de sa parente."""
         return {
-            todo.title: todo.parent.title if todo.parent else None
-            for todo in Todo.objects.select_related("parent")
+            task.title: task.parent.title if task.parent else None
+            for task in Task.objects.select_related("parent")
         }
 
     def test_sous_liste_a_deux_espaces(self):
@@ -91,8 +91,8 @@ class NoteSubtaskTests(TestCase):
 
     def test_rattachement_manuel_garde(self):
         self.save_note("- A", "  - B", "- C")
-        b = Todo.objects.get(title="B")
-        b.parent = Todo.objects.get(title="C")
+        b = Task.objects.get(title="B")
+        b.parent = Task.objects.get(title="C")
         b.save()
 
         self.save_note("- A", "  - B", "- C")

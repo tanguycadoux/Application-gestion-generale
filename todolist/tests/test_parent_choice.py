@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from core.models import Project
 from core.sections import section_for
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ParentSelectParser(HTMLParser):
@@ -65,18 +65,18 @@ class ParentChoiceTestCase(TestCase):
         self.q = Project.objects.create(name="Q")
         self.reunion = section_for(self.p, ["Réunion"])
         self.bilan = section_for(self.p, ["Bilan"])
-        self.todo = Todo.objects.create(
+        self.edited = Task.objects.create(
             title="Tâche", project=self.p, section=self.reunion
         )
 
-    def task(self, title: str, project=None, section=None, **fields) -> Todo:
-        return Todo.objects.create(
+    def task(self, title: str, project=None, section=None, **fields) -> Task:
+        return Task.objects.create(
             title=title, project=project or self.p, section=section, **fields
         )
 
-    def edit_options(self, todo=None) -> list[dict]:
-        todo = todo or self.todo
-        html = self.client.get(reverse("todolist:todo_edit", args=[todo.pk]))
+    def edit_options(self, task=None) -> list[dict]:
+        task = task or self.edited
+        html = self.client.get(reverse("todolist:task_edit", args=[task.pk]))
         return parent_options(html.content.decode())
 
     def texts(self, options) -> list[str]:
@@ -101,11 +101,11 @@ class GroupsTests(ParentChoiceTestCase):
         )
 
     def test_tache_sans_chemin_meme_chemin_est_la_racine_du_projet(self):
-        todo = self.task("Sans chemin")
+        task = self.task("Sans chemin")
         self.task("Racine")
         self.task("Ordre du jour", section=self.reunion)
 
-        options = self.edit_options(todo)
+        options = self.edit_options(task)
 
         self.assertEqual(
             [(option["group"], option["text"]) for option in options],
@@ -130,7 +130,7 @@ class GroupsTests(ParentChoiceTestCase):
         self.task("Ordre du jour", section=self.reunion)
 
         html = self.client.get(
-            reverse("todolist:todo_edit", args=[self.todo.pk])
+            reverse("todolist:task_edit", args=[self.edited.pk])
         ).content.decode()
 
         self.assertIn('label="Même chemin"', html)
@@ -140,7 +140,7 @@ class GroupsTests(ParentChoiceTestCase):
 
 class ExcludedTasksTests(ParentChoiceTestCase):
     def test_ni_la_tache_ni_ses_descendantes(self):
-        child = self.task("Enfant", section=self.reunion, parent=self.todo)
+        child = self.task("Enfant", section=self.reunion, parent=self.edited)
         self.task("Petit-enfant", section=self.reunion, parent=child)
         self.task("Voisine", section=self.reunion)
 
@@ -158,9 +158,9 @@ class ExcludedTasksTests(ParentChoiceTestCase):
 
     def test_parent_actuel_garde_meme_termine(self):
         parent = self.task("Parent fini", section=self.reunion)
-        self.todo.parent = parent
-        self.todo.save()
-        Todo.objects.filter(pk=parent.pk).update(done=True, progress=100)
+        self.edited.parent = parent
+        self.edited.save()
+        Task.objects.filter(pk=parent.pk).update(done=True, progress=100)
 
         options = self.edit_options()
 
@@ -172,7 +172,7 @@ class ExcludedTasksTests(ParentChoiceTestCase):
             "Écartée",
             section=self.reunion,
             created_from_note=True,
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         self.assertEqual(self.edit_options(), [])
@@ -202,7 +202,7 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
 
     def get(self, **params):
         url = reverse("todolist:parent_choices")
-        return self.client.get(url, {"todo": self.todo.pk, **params})
+        return self.client.get(url, {"task": self.edited.pk, **params})
 
     def test_suit_le_projet_et_le_chemin_saisis(self):
         self.task("Bilan annuel", section=self.bilan)
@@ -276,11 +276,11 @@ class ChoicesEndpointTests(ParentChoiceTestCase):
 class FormTests(ParentChoiceTestCase):
     def test_champ_recharge_par_htmx(self):
         html = self.client.get(
-            reverse("todolist:todo_edit", args=[self.todo.pk])
+            reverse("todolist:task_edit", args=[self.edited.pk])
         ).content.decode()
 
         url = reverse("todolist:parent_choices")
-        self.assertIn(f'data-hx-get="{url}?todo={self.todo.pk}"', html)
+        self.assertIn(f'data-hx-get="{url}?task={self.edited.pk}"', html)
         self.assertIn('name="parent_show_done"', html)
 
     def test_parent_d_un_autre_projet_permis(self):
@@ -288,7 +288,7 @@ class FormTests(ParentChoiceTestCase):
         other = self.task("Ailleurs", project=self.q)
 
         response = self.client.post(
-            reverse("todolist:todo_edit", args=[self.todo.pk]),
+            reverse("todolist:task_edit", args=[self.edited.pk]),
             {
                 "title": "Tâche",
                 "priority": "medium",
@@ -300,15 +300,15 @@ class FormTests(ParentChoiceTestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.todo.refresh_from_db()
-        self.assertEqual(self.todo.parent, other)
+        self.edited.refresh_from_db()
+        self.assertEqual(self.edited.parent, other)
 
     def test_creation_d_une_sous_tache(self):
         """`?parent=` : le parent est choisi, son projet aussi."""
         parent = self.task("Ordre du jour", section=self.reunion)
 
         html = self.client.get(
-            reverse("todolist:todo_create") + f"?parent={parent.pk}"
+            reverse("todolist:task_create") + f"?parent={parent.pk}"
         ).content.decode()
 
         selected = [o for o in parent_options(html) if o["selected"]]
@@ -316,7 +316,7 @@ class FormTests(ParentChoiceTestCase):
 
     def test_formulaire_refuse_garde_la_case(self):
         response = self.client.post(
-            reverse("todolist:todo_edit", args=[self.todo.pk]),
+            reverse("todolist:task_edit", args=[self.edited.pk]),
             {
                 "title": "",
                 "priority": "medium",

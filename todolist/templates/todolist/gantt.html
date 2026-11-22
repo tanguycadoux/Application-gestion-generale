@@ -1,4 +1,4 @@
-{% load l10n ui todo_ui %}
+{% load l10n ui task_ui %}
 {% comment %}
 Frise de type Gantt des sous-tâches (#168). Les positions sont des données : elles
 passent par des variables CSS (--start, --width…) que lisent les classes Tailwind,
@@ -24,7 +24,7 @@ sans localisation (unlocalize) : en français, 33.7 s'afficherait 33,7, invalide
                     {# La tâche observée : déjà sur sa page. #}
                     <span class="font-semibold">{{ row.task.title }}</span>
                 {% else %}
-                    <a href="{% url 'todolist:todo_detail' row.task.pk %}">{{ row.task.title }}</a>
+                    <a href="{% url 'todolist:task_detail' row.task.pk %}">{{ row.task.title }}</a>
                 {% endif %}
             </div>
             <div class="relative h-7">

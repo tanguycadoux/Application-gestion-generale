@@ -9,7 +9,7 @@ from core.sections import levels, section_for
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class RenameTestCase(TestCase):
@@ -224,13 +224,13 @@ class ApplyTests(RenameTestCase):
     def test_tache_saisie_a_la_main_suit_le_niveau_renomme_en_place(self):
         self.note("# P\n## Réunion\nx")
         section = self.section("Réunion")
-        todo = Todo.objects.create(title="T", project=self.project, section=section)
+        task = Task.objects.create(title="T", project=self.project, section=section)
 
         self.apply(section, "Rencontre", self.keys(section, "Rencontre"))
 
-        todo.refresh_from_db()
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Rencontre"])
+        task.refresh_from_db()
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Rencontre"])
 
     def test_partiel_l_ancien_et_le_nouveau_niveau_coexistent(self):
         first = self.note("# P\n## Réunion\nx")
@@ -257,7 +257,7 @@ class ApplyTests(RenameTestCase):
     def test_niveau_sans_titre_renomme_avec_ses_taches(self):
         section = section_for(self.project, ["Manuel"])
         assert section is not None
-        todo = Todo.objects.create(title="T", project=self.project, section=section)
+        task = Task.objects.create(title="T", project=self.project, section=section)
 
         response = self.apply(section, "Autre")
 
@@ -265,8 +265,8 @@ class ApplyTests(RenameTestCase):
             response, reverse("core:project_paths", args=[self.project.pk])
         )
         section.refresh_from_db()
-        todo.refresh_from_db()
-        self.assertEqual((section.name, todo.section_id), ("Autre", section.pk))
+        task.refresh_from_db()
+        self.assertEqual((section.name, task.section_id), ("Autre", section.pk))
 
     def test_note_changee_depuis_le_bilan_rien_n_est_ecrit(self):
         note = self.note("# P\n## Réunion\nx")

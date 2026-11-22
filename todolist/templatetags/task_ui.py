@@ -1,4 +1,4 @@
-"""Affichage des tâches dans le tableau (#166), à charger avec `{% load todo_ui %}`.
+"""Affichage des tâches dans le tableau (#166), à charger avec `{% load task_ui %}`.
 
 Les classes Tailwind sont écrites en entier.
 """

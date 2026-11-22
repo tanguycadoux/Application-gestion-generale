@@ -18,7 +18,7 @@ from django.urls import reverse
 from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 BASE_DIR = Path(settings.BASE_DIR)
 APPS = ("core", "images", "note_taking", "todolist", "app_gestion")
@@ -59,7 +59,7 @@ class VisiblePagesTests(TestCase):
     def pages(self) -> dict[str, str]:
         search = reverse("note_taking:notes_search")
         rename = reverse("core:section_rename", args=[self.project.pk, self.section.pk])
-        task = Todo.objects.get(title="Relancer le banc")
+        task = Task.objects.get(title="Relancer le banc")
         return {
             "projets": reverse("core:projects"),
             "chemins": reverse("core:project_paths", args=[self.project.pk]),
@@ -71,8 +71,8 @@ class VisiblePagesTests(TestCase):
             "recherche_aucun": f"{search}?q=introuvable",
             "note": reverse("note_taking:note_detail", args=[self.note.date]),
             "taches_bilan": reverse("todolist:note_review", args=[self.note.date]),
-            "taches_liste": reverse("todolist:todo_list"),
-            "tache": reverse("todolist:todo_detail", args=[task.pk]),
+            "taches_liste": reverse("todolist:task_list"),
+            "tache": reverse("todolist:task_detail", args=[task.pk]),
         }
 
     def test_pages_sans_note_part(self):

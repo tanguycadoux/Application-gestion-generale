@@ -11,7 +11,7 @@ from django.utils import timezone
 from core.models import Project
 from core.sections import section_for
 from core.tables import Sort
-from todolist.models import Todo
+from todolist.models import Task
 
 TODAY = timezone.localdate()
 
@@ -25,7 +25,7 @@ class TaskListTestCase(TestCase):
         self.alpha = Project.objects.create(name="ALPHA", color="teal")
         self.beta = Project.objects.create(name="BETA", color="rose")
         self.reunion = section_for(self.alpha, ["Réunion"])
-        make = Todo.objects.create
+        make = Task.objects.create
         self.ete = make(
             title="Été à préparer",
             project=self.alpha,
@@ -53,9 +53,9 @@ class TaskListTestCase(TestCase):
             created_from_note=True,
             note_part_date=TODAY,
             note_part_text="Écartée",
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
-        self.url = reverse("todolist:todo_list")
+        self.url = reverse("todolist:task_list")
 
     def get(self, **params):
         return self.client.get(self.url, params)
@@ -120,7 +120,7 @@ class StateFilterTests(TaskListTestCase):
                 self.assertContains(self.get(state=state), f">{heading}")
 
     def test_aucune_tache_pour_cet_etat(self):
-        Todo.objects.filter(done=True).delete()
+        Task.objects.filter(done=True).delete()
 
         self.assertContains(self.get(state="done"), "Aucune tâche terminée.")
 
@@ -157,7 +157,7 @@ class StateFilterTests(TaskListTestCase):
         self.assertIn("1 tâche écartée", html)
 
     def test_pas_de_lien_sans_tache_ecartee(self):
-        Todo.all_objects.filter(note_state=Todo.NoteState.DISMISSED).delete()
+        Task.all_objects.filter(note_state=Task.NoteState.DISMISSED).delete()
 
         self.assertNotIn("écartée", self.get().content.decode())
 
@@ -165,7 +165,7 @@ class StateFilterTests(TaskListTestCase):
         html = self.get(state="dismissed").content.decode()
 
         self.assertIn(f'popovertarget="restore-{self.ecartee.pk}"', html)
-        self.assertIn(reverse("todolist:todo_restore", args=[self.ecartee.pk]), html)
+        self.assertIn(reverse("todolist:task_restore", args=[self.ecartee.pk]), html)
 
 
 class TaskFilterTests(TaskListTestCase):
@@ -186,7 +186,7 @@ class TaskFilterTests(TaskListTestCase):
 
     def test_chemin_et_descendants(self):
         sub = section_for(self.alpha, ["Réunion", "Préparation"])
-        Todo.objects.filter(pk=self.bilan.pk).update(section=sub)
+        Task.objects.filter(pk=self.bilan.pk).update(section=sub)
 
         response = self.get(path=self.reunion.pk)
 
@@ -245,13 +245,13 @@ class TaskFilterTests(TaskListTestCase):
         self.assertContains(response, "Aucune tâche ne répond aux filtres.")
 
     def test_les_filtres_s_appliquent_aussi_aux_ecartees(self):
-        Todo.all_objects.create(
+        Task.all_objects.create(
             title="Autre écartée",
             project=self.beta,
             created_from_note=True,
             note_part_date=TODAY,
             note_part_text="Autre écartée",
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         response = self.get(state="dismissed", project="BETA")
@@ -276,7 +276,7 @@ class MultiProjectTests(TaskListTestCase):
     def setUp(self):
         super().setUp()
         self.gamma = Project.objects.create(name="GAMMA", color="sky")
-        Todo.objects.create(title="Tâche gamma", project=self.gamma)
+        Task.objects.create(title="Tâche gamma", project=self.gamma)
 
     def test_union_des_projets_coches(self):
         response = self.get(project=["ALPHA", "GAMMA"])
@@ -292,13 +292,13 @@ class MultiProjectTests(TaskListTestCase):
         self.assertEqual(self.titles(response), ["Finie", "Bilan"])
 
     def test_s_applique_aux_ecartees(self):
-        Todo.all_objects.create(
+        Task.all_objects.create(
             title="Écartée gamma",
             project=self.gamma,
             created_from_note=True,
             note_part_date=TODAY,
             note_part_text="Écartée gamma",
-            note_state=Todo.NoteState.DISMISSED,
+            note_state=Task.NoteState.DISMISSED,
         )
 
         response = self.get(state="dismissed", project=["GAMMA", "BETA"])
@@ -355,7 +355,7 @@ class TaskSortTests(TaskListTestCase):
                 )
 
     def test_les_sous_taches_se_trient_entre_elles(self):
-        Todo.objects.create(
+        Task.objects.create(
             title="Autre enfant", project=self.beta, parent=self.sans_date, progress=50
         )
 
@@ -395,15 +395,15 @@ class TaskSortTests(TaskListTestCase):
         self.assertIn('<input type="hidden" name="sort" value="title">', html)
 
     def test_detail_d_un_parent_garde_son_tri_par_echeance(self):
-        Todo.objects.create(
+        Task.objects.create(
             title="Tard", project=self.beta, parent=self.sans_date, due_date=days(9)
         )
-        Todo.objects.create(
+        Task.objects.create(
             title="Tôt", project=self.beta, parent=self.sans_date, due_date=days(1)
         )
 
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.sans_date.pk])
+            reverse("todolist:task_detail", args=[self.sans_date.pk])
         ).content.decode()
 
         self.assertLess(html.index(">Tôt<"), html.index(">Tard<"))
@@ -416,7 +416,7 @@ class PathTreeFilterTests(TaskListTestCase):
     def setUp(self):
         super().setUp()
         self.prep = section_for(self.alpha, ["Réunion", "Préparation"])
-        Todo.objects.filter(pk=self.ete.pk).update(section=self.prep)
+        Task.objects.filter(pk=self.ete.pk).update(section=self.prep)
 
     def panel(self, **params) -> str:
         html = self.get(**params).content.decode()
@@ -439,7 +439,7 @@ class PathTreeFilterTests(TaskListTestCase):
         )
 
     def test_plusieurs_chemins_coches(self):
-        Todo.objects.filter(pk=self.bilan.pk).update(
+        Task.objects.filter(pk=self.bilan.pk).update(
             section=section_for(self.beta, ["Suivi"])
         )
         suivi = section_for(self.beta, ["Suivi"])

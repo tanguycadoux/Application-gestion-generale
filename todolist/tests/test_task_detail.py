@@ -9,7 +9,7 @@ from django.urls import reverse
 from core.models import Project, Section, Tag
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 def definitions(html: str) -> dict[str, str]:
@@ -26,8 +26,8 @@ def definitions(html: str) -> dict[str, str]:
 class TaskDetailTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
-        self.parent = Todo.objects.create(title="Parent", project=self.project)
-        self.task = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=self.project)
+        self.task = Task.objects.create(
             title="Relire",
             project=self.project,
             section=Section.objects.create(project=self.project, name="Réunion"),
@@ -39,9 +39,9 @@ class TaskDetailTests(TestCase):
         )
         self.task.tags.add(Tag.objects.create(name="urgent"))
 
-    def get(self, todo: Todo) -> str:
+    def get(self, task: Task) -> str:
         return self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
     def test_fiche(self):
@@ -66,11 +66,11 @@ class TaskDetailTests(TestCase):
 
         self.assertIn("bg-teal-500", html)
         self.assertIn(
-            f'href="{reverse("todolist:todo_detail", args=[self.parent.pk])}"', html
+            f'href="{reverse("todolist:task_detail", args=[self.parent.pk])}"', html
         )
 
     def test_valeurs_absentes(self):
-        task = Todo.objects.create(title="Nue", project=self.project)
+        task = Task.objects.create(title="Nue", project=self.project)
 
         fiche = definitions(self.get(task))
 
@@ -104,7 +104,7 @@ class TaskDetailTests(TestCase):
         assert section is not None
         self.assertIn("Relire", section.group())
         self.assertIn(
-            reverse("todolist:todo_create") + f"?parent={self.parent.pk}",
+            reverse("todolist:task_create") + f"?parent={self.parent.pk}",
             section.group(),
         )
 
@@ -119,7 +119,7 @@ class TaskDetailTests(TestCase):
             body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- De la note",
         )
         process_note_parts(note)
-        task = Todo.objects.get(title="De la note")
+        task = Task.objects.get(title="De la note")
 
         html = self.get(task)
 

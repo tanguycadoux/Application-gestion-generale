@@ -1,6 +1,6 @@
 """Filtres de la liste des tâches (#294, #178), sur les composants de `core.tables`.
 
-Les filtres s'appliquent à des listes de `Todo` (toutes les tâches sont déjà
+Les filtres s'appliquent à des listes de `Task` (toutes les tâches sont déjà
 chargées pour construire l'arbre) : ce qui répond aux filtres reste affiché, avec
 ses parents, atténués, pour garder l'arbre lisible (`tree.restrict_to`). Les quatre
 filtres sont dans le panneau de la colonne « Tâche ».
@@ -18,10 +18,10 @@ from core.tables import (
     fold,
 )
 
-from .models import Todo
+from .models import Task
 
 # État affiché : en cours par défaut, comme la liste d'avant. Les écartées ne sont
-# pas des tâches de la liste (`Todo.objects` les exclut) : elles ont leur tableau.
+# pas des tâches de la liste (`Task.objects` les exclut) : elles ont leur tableau.
 OPEN, DONE, ALL, DISMISSED = "open", "done", "all", "dismissed"
 STATES = (
     (OPEN, "En cours"),
@@ -32,17 +32,17 @@ STATES = (
 STATE_LABELS = dict(STATES)
 
 
-def keep_all(tasks: list[Todo], state: str) -> list[Todo]:
+def keep_all(tasks: list[Task], state: str) -> list[Task]:
     """L'état ne retire aucune tâche d'un tableau : il choisit les arbres affichés."""
     return tasks
 
 
-def filter_title(tasks: list[Todo], text: str) -> list[Todo]:
+def filter_title(tasks: list[Task], text: str) -> list[Task]:
     needle = fold(text)
     return [task for task in tasks if needle in fold(task.title)]
 
 
-def filter_tree(tasks: list[Todo], chosen: tuple[tuple[str, ...], tuple[int, ...]]):
+def filter_tree(tasks: list[Task], chosen: tuple[tuple[str, ...], tuple[int, ...]]):
     """Les tâches d'un des projets cochés ou d'un des niveaux cochés, descendants
     compris (#302, #298)."""
     names, paths = chosen
@@ -61,9 +61,9 @@ def counts_for(state: str) -> tuple[dict[int, int], dict[int, int]]:
     montrerait. Le compteur d'un niveau ne compte que ses propres tâches (le
     composant y ajoute les descendants)."""
     if state == DISMISSED:
-        tasks = Todo.all_objects.filter(note_state=Todo.NoteState.DISMISSED)
+        tasks = Task.all_objects.filter(note_state=Task.NoteState.DISMISSED)
     else:
-        tasks = Todo.objects.all()
+        tasks = Task.objects.all()
         if state in (OPEN, DONE):
             tasks = tasks.filter(done=state == DONE)
     rows = tasks.values_list("project_id", "section_id")

@@ -8,7 +8,7 @@ from django.urls import reverse
 from core.models import Project, Section
 from images.models import Image
 from note_taking.models import Note, NotePart
-from todolist.models import Todo
+from todolist.models import Task
 
 from .stylesheets import read_source_css
 
@@ -41,7 +41,7 @@ class HeadingHierarchyTests(TestCase):
             note=self.note, project=project, section=section, content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
-        self.todo = Todo.objects.create(title="T", project=project)
+        self.task = Task.objects.create(title="T", project=project)
 
     def pages(self) -> list[str]:
         return [
@@ -55,9 +55,9 @@ class HeadingHierarchyTests(TestCase):
             reverse("note_taking:images_list"),
             reverse("note_taking:image_detail", args=[self.image.pk]),
             reverse("todolist:index"),
-            reverse("todolist:todo_list"),
-            reverse("todolist:todo_detail", args=[self.todo.pk]),
-            reverse("todolist:todo_create"),
+            reverse("todolist:task_list"),
+            reverse("todolist:task_detail", args=[self.task.pk]),
+            reverse("todolist:task_create"),
         ]
 
     def assertHierarchy(self, html: str) -> None:

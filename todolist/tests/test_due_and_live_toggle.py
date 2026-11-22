@@ -10,19 +10,19 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Project
-from todolist.models import Todo
+from todolist.models import Task
 
 TODAY = timezone.localdate()
-SCRIPT = Path(settings.BASE_DIR) / "todolist" / "static" / "todolist" / "todo.js"
+SCRIPT = Path(settings.BASE_DIR) / "todolist" / "static" / "todolist" / "task.js"
 
 
 class DueSignalTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="P")
 
-    def task(self, days: int | None, **fields) -> Todo:
+    def task(self, days: int | None, **fields) -> Task:
         due = TODAY + timedelta(days=days) if days is not None else None
-        return Todo(title="T", project=self.project, due_date=due, **fields)
+        return Task(title="T", project=self.project, due_date=due, **fields)
 
     def test_signal_porte_par_le_modele(self):
         for days, expected in (
@@ -40,14 +40,14 @@ class DueSignalTests(TestCase):
 class LiveToggleTests(TestCase):
     def setUp(self):
         project = Project.objects.create(name="P")
-        self.parent = Todo.objects.create(title="Parent", project=project)
-        self.child = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=project)
+        self.child = Task.objects.create(
             title="Enfant", project=project, parent=self.parent
         )
 
-    def toggle(self, todo: Todo, completed: bool):
+    def toggle(self, task: Task, completed: bool):
         return self.client.post(
-            reverse("todolist:todo_toggle", args=[todo.pk]),
+            reverse("todolist:task_toggle", args=[task.pk]),
             json.dumps({"completed": completed}),
             content_type="application/json",
         )
@@ -58,12 +58,12 @@ class LiveToggleTests(TestCase):
         self.assertEqual(set(rows), {str(self.child.pk), str(self.parent.pk)})
         child_row = rows[str(self.child.pk)]
         self.assertTrue(child_row.startswith(f'<tr data-task-id="{self.child.pk}"'))
-        self.assertRegex(child_row, r'class="todo-toggle"[^>]* checked')
+        self.assertRegex(child_row, r'class="task-toggle"[^>]* checked')
         # Le parent, dont l'avancement passe à 100 %, est à valider.
         self.assertIn('value="100"', rows[str(self.parent.pk)])
 
     def test_liste_mise_a_jour_sur_place(self):
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(reverse("todolist:task_list")).content.decode()
 
         self.assertIn("data-live-rows", html)
         self.assertIn(f'<tr data-task-id="{self.child.pk}"', html)
@@ -71,7 +71,7 @@ class LiveToggleTests(TestCase):
     def test_detail_recharge_la_page(self):
         """L'en-tête et la frise du détail changent aussi : la page se recharge."""
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         ).content.decode()
 
         self.assertNotIn("data-live-rows", html)

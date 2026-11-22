@@ -16,7 +16,7 @@ from core.models import Project
 from images.services import import_image
 from images.tests.files import image_file
 from note_taking.models import Note
-from todolist.models import Todo
+from todolist.models import Task
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -57,33 +57,33 @@ class ActionMessagesTests(TestCase):
 
     def test_tache_creee(self):
         self.assertEqual(
-            self.post("todolist:todo_create", data=self.task_data("Relire")),
+            self.post("todolist:task_create", data=self.task_data("Relire")),
             ["La tâche « Relire » est créée."],
         )
 
     def test_tache_modifiee(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
+        task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
-            self.post("todolist:todo_edit", task.pk, data=self.task_data("Relu")),
+            self.post("todolist:task_edit", task.pk, data=self.task_data("Relu")),
             ["La tâche « Relu » est modifiée."],
         )
 
     def test_tache_supprimee(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
+        task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
-            self.post("todolist:todo_delete", task.pk),
+            self.post("todolist:task_delete", task.pk),
             ["La tâche « Relire » est supprimée."],
         )
 
     def test_tache_supprimee_avec_ses_sous_taches(self):
-        task = Todo.objects.create(title="Relire", project=self.project)
-        Todo.objects.create(title="A", project=self.project, parent=task)
-        Todo.objects.create(title="B", project=self.project, parent=task)
+        task = Task.objects.create(title="Relire", project=self.project)
+        Task.objects.create(title="A", project=self.project, parent=task)
+        Task.objects.create(title="B", project=self.project, parent=task)
 
         self.assertEqual(
-            self.post("todolist:todo_delete", task.pk),
+            self.post("todolist:task_delete", task.pk),
             ["La tâche « Relire » et ses 2 sous-tâches sont supprimées."],
         )
 

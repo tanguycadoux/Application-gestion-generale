@@ -15,7 +15,7 @@ from django.urls import reverse
 from core.models import Project
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 # La confirmation est une popover HTML native, ouverte par le bouton de l'en-tête.
 CONFIRM_REGEX = re.compile(
@@ -24,31 +24,31 @@ CONFIRM_REGEX = re.compile(
 
 
 class DeleteTestCase(TestCase):
-    def confirm(self, task: Todo) -> str:
+    def confirm(self, task: Task) -> str:
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[task.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
         match = CONFIRM_REGEX.search(html)
         assert match is not None
         return unescape(match.group("message"))
 
-    def delete(self, task: Todo) -> list[str]:
-        response = self.client.post(reverse("todolist:todo_delete", args=[task.pk]))
+    def delete(self, task: Task) -> list[str]:
+        response = self.client.post(reverse("todolist:task_delete", args=[task.pk]))
         return [str(m) for m in get_messages(response.wsgi_request)]
 
 
 class ParentDeleteTests(DeleteTestCase):
     def setUp(self):
         project = Project.objects.create(name="P")
-        self.parent = Todo.objects.create(title="Parent", project=project)
-        self.child = Todo.objects.create(
+        self.parent = Task.objects.create(title="Parent", project=project)
+        self.child = Task.objects.create(
             title="Enfant", project=project, parent=self.parent
         )
         self.project = project
 
     def add_grandchildren(self):
-        Todo.objects.create(title="Enfant 2", project=self.project, parent=self.parent)
-        Todo.objects.create(
+        Task.objects.create(title="Enfant 2", project=self.project, parent=self.parent)
+        Task.objects.create(
             title="Petit-enfant", project=self.project, parent=self.child
         )
 
@@ -77,11 +77,11 @@ class ParentDeleteTests(DeleteTestCase):
 
         self.delete(self.parent)
 
-        self.assertFalse(Todo.objects.exists())
+        self.assertFalse(Task.objects.exists())
 
     def test_bouton_supprimer(self):
         response = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         )
 
         self.assertContains(response, "Supprimer la tâche")
@@ -102,12 +102,12 @@ class DismissTests(DeleteTestCase):
             date="2025-11-24", body="# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B"
         )
         process_note_parts(note)
-        self.a = Todo.objects.get(title="A")
-        self.b = Todo.objects.get(title="B")
+        self.a = Task.objects.get(title="A")
+        self.b = Task.objects.get(title="B")
 
-    def detail(self, task: Todo) -> str:
+    def detail(self, task: Task) -> str:
         return self.client.get(
-            reverse("todolist:todo_detail", args=[task.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
     def test_bouton_ecarter(self):
@@ -132,8 +132,8 @@ class DismissTests(DeleteTestCase):
         )
 
     def test_parent_saisi_a_la_main(self):
-        parent = Todo.objects.create(title="Parent", project=self.a.project)
-        Todo.objects.filter(pk=self.a.pk).update(parent=parent)
+        parent = Task.objects.create(title="Parent", project=self.a.project)
+        Task.objects.filter(pk=self.a.pk).update(parent=parent)
 
         self.assertIn("Écarter la tâche", self.detail(parent))
         self.assertEqual(

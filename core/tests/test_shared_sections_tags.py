@@ -1,4 +1,4 @@
-"""Tests des chemins et tags partagés entre notes et TODO (#20, #295).
+"""Tests des chemins et tags partagés entre notes et tâches (#20, #295).
 
 Le même nom de niveau sous deux projets est deux sections : voir
 `test_sections.py`."""
@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 def process(date: str, raw: str) -> Note:
@@ -24,15 +24,15 @@ class SharedSectionTagTests(TestCase):
 
         self.assertEqual(first.parts.get().section.pk, second.parts.get().section.pk)
 
-    def test_note_part_et_todo_partagent_les_tags(self):
+    def test_note_part_et_tache_partagent_les_tags(self):
         note = process(
             "2025-11-24",
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche",
         )
 
         part_tags = set(note.parts.get().tags.all())
-        todo_tags = set(Todo.objects.get().tags.all())
-        self.assertEqual({tag.name for tag in part_tags & todo_tags}, {"urgent"})
+        task_tags = set(Task.objects.get().tags.all())
+        self.assertEqual({tag.name for tag in part_tags & task_tags}, {"urgent"})
 
     def test_sujet_inutilise_absent_de_la_recherche(self):
         note = process("2025-11-24", "# P\n## Ancien sujet\nx")

@@ -21,14 +21,14 @@ from core.month_calendar import requested_month
 from note_taking.models import Note
 
 from . import task_table, tree
-from .forms import GoneLineFormSet, NoteReviewFormSet, TodoForm
+from .forms import GoneLineFormSet, NoteReviewFormSet, TaskForm
 from .gantt import gantt_chart
-from .models import Todo
+from .models import Task
 from .services import (
     dismissed_rows,
     dismissed_subtree,
     note_lines,
-    note_todos_to_review,
+    note_tasks_to_review,
     removal_dismisses,
     remove_task,
     replace_task,
@@ -57,7 +57,7 @@ def parse_date_param(value: str):
         return None
 
 
-def todo_list(request):
+def task_list(request):
     """Tableau arborescent des tâches (#166) : un groupe par tâche racine.
 
     Tri (`?sort=due|title|progress`, `-` pour décroissant) et filtres dans l'URL
@@ -103,21 +103,21 @@ def todo_list(request):
                 "count": sum(1 for g in groups for row in g.rows if not row.muted),
             }
         )
-    return render(request, "todolist/todo_list.html", context)
+    return render(request, "todolist/task_list.html", context)
 
 
 @require_POST
-def restore_todo(request, pk):
+def restore_task_view(request, pk):
     """Rétablit une tâche écartée et ses sous-tâches écartées (#290)."""
-    todo = get_object_or_404(
-        Todo.all_objects, pk=pk, note_state=Todo.NoteState.DISMISSED
+    task = get_object_or_404(
+        Task.all_objects, pk=pk, note_state=Task.NoteState.DISMISSED
     )
-    subtasks = len(dismissed_subtree(todo)) - 1
-    dismissed_parent = restore_task(todo)
+    subtasks = len(dismissed_subtree(task)) - 1
+    dismissed_parent = restore_task(task)
     message = (
-        f"La tâche « {todo.title} »{with_subtasks(subtasks)} sont rétablies."
+        f"La tâche « {task.title} »{with_subtasks(subtasks)} sont rétablies."
         if subtasks
-        else f"La tâche « {todo.title} » est rétablie."
+        else f"La tâche « {task.title} » est rétablie."
     )
     if dismissed_parent:
         message += (
@@ -125,7 +125,7 @@ def restore_todo(request, pk):
             "elle est rétablie sans tâche parente."
         )
     messages.success(request, message)
-    return redirect("todolist:todo_list")
+    return redirect("todolist:task_list")
 
 
 def with_subtasks(count: int) -> str:
@@ -135,26 +135,26 @@ def with_subtasks(count: int) -> str:
     return " et sa sous-tâche" if count == 1 else f" et ses {count} sous-tâches"
 
 
-class TodoDetailView(DetailView):
-    model = Todo
-    template_name = "todolist/todo_detail.html"
+class TaskDetailView(DetailView):
+    model = Task
+    template_name = "todolist/task_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        todo = self.object
+        task = self.object
         context["origin_note"] = (
-            Note.objects.filter(date=todo.note_part_date).first()
-            if todo.created_from_note
+            Note.objects.filter(date=task.note_part_date).first()
+            if task.created_from_note
             else None
         )
-        context["children_groups"] = [TaskGroup(todo, descendant_rows(todo))]
+        context["children_groups"] = [TaskGroup(task, descendant_rows(task))]
         context["children"] = context["children_groups"][0].rows
-        context["gantt"] = gantt_chart(todo)
+        context["gantt"] = gantt_chart(task)
         # Les sous-tâches partent avec la tâche : la confirmation le dit (#223). Le titre
         # n'y figure pas : il peut être très long, et la page est celle de la tâche.
         # Un arbre qui contient une tâche issue d'une note est écarté (#290).
         subtasks = with_subtasks(len(context["children"]))
-        context["dismisses"] = removal_dismisses(todo)
+        context["dismisses"] = removal_dismisses(task)
         context["delete_confirm"] = (
             f"Écarter la tâche{subtasks} ? La section « Écartées » "
             "de la liste des tâches permet de revenir en arrière."
@@ -164,11 +164,11 @@ class TodoDetailView(DetailView):
         return context
 
 
-class TodoCreateView(SuccessMessageMixin, CreateView):
-    model = Todo
-    form_class = TodoForm
-    template_name = "todolist/todo_form.html"
-    success_url = reverse_lazy("todolist:todo_list")
+class TaskCreateView(SuccessMessageMixin, CreateView):
+    model = Task
+    form_class = TaskForm
+    template_name = "todolist/task_form.html"
+    success_url = reverse_lazy("todolist:task_list")
     success_message = "La tâche « %(title)s » est créée."
 
     def get_initial(self):
@@ -179,30 +179,30 @@ class TodoCreateView(SuccessMessageMixin, CreateView):
         parent_id = self.request.GET.get("parent")
         if parent_id:
             try:
-                parent = Todo.objects.get(pk=parent_id)
+                parent = Task.objects.get(pk=parent_id)
                 initial["parent"] = parent
                 initial["project"] = parent.project
                 initial["due_date"] = parent.due_date
-            except Todo.DoesNotExist:
+            except Task.DoesNotExist:
                 pass
         return initial
 
 
-class TodoUpdateView(SuccessMessageMixin, UpdateView):
-    model = Todo
-    form_class = TodoForm
-    template_name = "todolist/todo_form.html"
-    success_url = reverse_lazy("todolist:todo_list")
+class TaskUpdateView(SuccessMessageMixin, UpdateView):
+    model = Task
+    form_class = TaskForm
+    template_name = "todolist/task_form.html"
+    success_url = reverse_lazy("todolist:task_list")
     success_message = "La tâche « %(title)s » est modifiée."
 
 
-class TodoDeleteView(SuccessMessageMixin, DeleteView):
+class TaskDeleteView(SuccessMessageMixin, DeleteView):
     """Supprime ou écarte une tâche ; la confirmation se fait par popover HTML,
     dans la page de la tâche."""
 
-    model = Todo
+    model = Task
     http_method_names = ["post"]
-    success_url = reverse_lazy("todolist:todo_list")
+    success_url = reverse_lazy("todolist:task_list")
 
     def form_valid(self, form):
         # Compté avant la suppression, qui emporte les sous-tâches (#223).
@@ -228,15 +228,15 @@ class TodoDeleteView(SuccessMessageMixin, DeleteView):
 def parent_choices_view(request):
     """Choix de la tâche parente rechargé par htmx quand le projet, le chemin ou
     la case des terminées changent dans le formulaire d'une tâche (#390)."""
-    todo_id = request.GET.get("todo", "")
-    todo = Todo.objects.filter(pk=todo_id).first() if todo_id.isdigit() else None
-    form = TodoForm(instance=todo, parent_data=request.GET)
+    task_id = request.GET.get("task", "")
+    task = Task.objects.filter(pk=task_id).first() if task_id.isdigit() else None
+    form = TaskForm(instance=task, parent_data=request.GET)
     return HttpResponse(str(form["parent"]))
 
 
 @require_POST
-def toggle_todo(request, pk):
-    todo = get_object_or_404(Todo, pk=pk)
+def toggle_task(request, pk):
+    task = get_object_or_404(Task, pk=pk)
 
     try:
         data = json.loads(request.body)
@@ -246,14 +246,14 @@ def toggle_todo(request, pk):
         return JsonResponse({"error": "Corps de requête JSON invalide."}, status=400)
 
     completed = bool(data.get("completed"))
-    if todo.children.exists():
+    if task.children.exists():
         # Un parent se coche à la main ; son avancement reste calculé (#164).
-        todo.done = completed
+        task.done = completed
     else:
         # Décocher rend l'avancement d'avant la coche (#237).
-        todo.progress = 100 if completed else todo.progress_before_done
-    todo.save()
-    toggled_ids = [todo.pk, *todo.updated_ancestor_ids]
+        task.progress = 100 if completed else task.progress_before_done
+    task.save()
+    toggled_ids = [task.pk, *task.updated_ancestor_ids]
     # Lignes à jour, que la liste remplace sans recharger la page (#189).
     rows = {
         str(pk): render_to_string(
@@ -276,23 +276,23 @@ def note_review(request, note_date: date):
     """
     day = note_date
     note = get_object_or_404(Note, date=day)
-    todos = list(
-        note_todos_to_review(day).select_related("project", "section").order_by("pk")
+    tasks = list(
+        note_tasks_to_review(day).select_related("project", "section").order_by("pk")
     )
-    if not todos:
+    if not tasks:
         return redirect("note_taking:note_detail", note_date=note.date)
 
     lines = note_lines(note.parts.prefetch_related("tags"))
-    new_ids = [t.pk for t in todos if (t.note_path, t.note_part_text) in lines]
-    gone_ids = [t.pk for t in todos if t.pk not in new_ids]
-    new_todos = Todo.objects.filter(pk__in=new_ids).order_by("pk")
+    new_ids = [t.pk for t in tasks if (t.note_path, t.note_part_text) in lines]
+    gone_ids = [t.pk for t in tasks if t.pk not in new_ids]
+    new_tasks = Task.objects.filter(pk__in=new_ids).order_by("pk")
     data = request.POST or None
-    new_formset = NoteReviewFormSet(data, queryset=new_todos, prefix="new")
+    new_formset = NoteReviewFormSet(data, queryset=new_tasks, prefix="new")
     gone_formset = GoneLineFormSet(
         data,
-        queryset=Todo.objects.filter(pk__in=gone_ids).order_by("pk"),
+        queryset=Task.objects.filter(pk__in=gone_ids).order_by("pk"),
         prefix="gone",
-        form_kwargs={"replacements": new_todos},
+        form_kwargs={"replacements": new_tasks},
     )
 
     if request.method == "POST" and new_formset.is_valid() and gone_formset.is_valid():
@@ -306,9 +306,9 @@ def note_review(request, note_date: date):
         with transaction.atomic():
             for form in new_formset:
                 if form.instance.pk not in replaced:
-                    todo = form.save(commit=False)
-                    todo.note_state = Todo.NoteState.REVIEWED
-                    todo.save()
+                    task = form.save(commit=False)
+                    task.note_state = Task.NoteState.REVIEWED
+                    task.save()
             save_gone_lines(gone_formset)
         messages.success(
             request,
@@ -325,11 +325,11 @@ def note_review(request, note_date: date):
 def save_gone_lines(formset) -> None:
     """Applique le choix fait pour chaque tâche dont la ligne a disparu."""
     for form in formset:
-        todo, action = form.instance, form.cleaned_data["action"]
+        task, action = form.instance, form.cleaned_data["action"]
         if action == "keep":
-            todo.note_state = Todo.NoteState.DETACHED
-            todo.save()
+            task.note_state = Task.NoteState.DETACHED
+            task.save()
         elif action == "dismiss":
-            remove_task(todo)
+            remove_task(task)
         else:
-            replace_task(todo, form.cleaned_data["replacement"])
+            replace_task(task, form.cleaned_data["replacement"])

@@ -68,7 +68,7 @@ Un seul menu pour toute l'application, dans `core/templates/base.html` : une sec
 Un tableau de bord, un `<section>` nommé par bloc (`aria-labelledby`), sur deux colonnes à partir de `lg`. Les blocs viennent des apps (voir « Apps et dépendances ») : `core` appelle la fonction de contexte de chacun et rend son gabarit, comme `home_link` le faisait pour l'ancien menu d'accueil.
 
 - **Note du jour** : la date, puis « Ouvrir la note du jour » si elle existe, « Créer la note du jour » (formulaire prérempli à la date) sinon.
-- **Tâches à échéance proche** : les tâches en cours dont l'échéance est passée ou à moins de `SOON_DAYS` jours (le seuil du signal `soon`), les plus en retard d'abord, **dix au plus** puis « et N autres » : un retard accumulé n'envahit pas l'accueil. Chaque ligne : titre (deux lignes au plus, titre complet en infobulle), pastille du projet, temps restant coloré comme dans la liste. Les tâches écartées sont exclues (`Todo.objects`).
+- **Tâches à échéance proche** : les tâches en cours dont l'échéance est passée ou à moins de `SOON_DAYS` jours (le seuil du signal `soon`), les plus en retard d'abord, **dix au plus** puis « et N autres » : un retard accumulé n'envahit pas l'accueil. Chaque ligne : titre (deux lignes au plus, titre complet en infobulle), pastille du projet, temps restant coloré comme dans la liste. Les tâches écartées sont exclues (`Task.objects`).
 - Pas de « dernières notes » ni d'accès aux projets : le menu commun suffit (choix de l'utilisateur).
 
 ## Pages de développement (#235, #156)
@@ -144,16 +144,20 @@ Les vues sont fines : elles délèguent aux services et n'attrapent que les erre
 
 | Module | Rôle |
 |---|---|
-| `models.py` | `Todo` : avancement, état terminé, propagation aux ancêtres (`update_ancestors_progress`), incohérences, signal d'échéance (`due_signal`) |
-| `tree.py` | arbre des tâches en une requête (`children_map`), groupes et lignes du tableau ; chaque tâche y reçoit son parent et ses enfants déjà chargés (`Todo.tree`, #188) |
+| `models.py` | `Task` : avancement, état terminé, incohérences (`incoherences`), signal d'échéance (`due_signal`) |
+| `progress.py` | propagation de l'avancement aux ancêtres (`update_ancestors_progress`), après chaque enregistrement et à la suppression (signal `post_delete`, #164) |
+| `coherence.py` | incohérences entre une tâche, son parent et ses enfants (`Incoherence`, `pair_incoherences`, #165) |
+| `tree.py` | arbre des tâches en une requête (`children_map`), groupes et lignes du tableau ; chaque tâche y reçoit son parent et ses enfants déjà chargés (`Task.tree`, #188) |
 | `services.py`, `receivers.py` | tâches issues des notes, créées à l'écoute de `note_parts_processed` ; le receveur propose le bilan des tâches créées (`note_review`, #239) |
 | `task_calendar.py` | calendrier des tâches : une tâche en cours à son échéance, une tâche terminée à sa date de complétion |
 | `gantt.py` | frise de type Gantt du détail d'un parent (#168) |
 | `parent_choices.py` | choix de la tâche parente (#390) : groupes « Même chemin », « Même projet », « Autres projets » d'après le projet et le chemin saisis, tâches en cours sauf demande, sans la tâche ni ses descendantes ; calculé à l'affichage par le widget `ParentSelect` (`forms.py`), rechargé par htmx (`todolist:parent_choices`) |
-| `templatetags/todo_ui.py` | affichage du tableau : indentation, temps restant, couleurs du signal d'échéance |
-| `static/todolist/todo.js` | case à cocher : la vue renvoie les lignes modifiées, que la liste remplace sans recharger la page (#189) |
+| `templatetags/task_ui.py` | affichage du tableau : indentation, temps restant, couleurs du signal d'échéance |
+| `static/todolist/task.js` | case à cocher : la vue renvoie les lignes modifiées, que la liste remplace sans recharger la page (#189) |
 
 Le tableau des tâches (`task_table.html`, une ligne par `task_row.html`) sert à la liste et au détail d'un parent.
+
+Noms internes (#194) : le code dit « task » (modèle `Task`, vues `Task*View`, URL `todolist:task_*`, gabarits `task_*.html`, `task.js`, `task_ui`) ; seule l'app garde son nom, `todolist` (libellé, dossier et historique des migrations). Le marqueur TODO écrit dans les notes garde le sien (tag `TODO`, clé `todo`, `is_todo_part`, `convert_todo_sections`).
 
 ## Modèle de données
 
@@ -163,15 +167,15 @@ Note ──< NotePart >── Project          (core)
            │  └──<>── Tag              (core)
            └────<>─── Image            (images), via NotePartImageLink
 
-Todo >── Project, Todo >── Section (option), Todo >─< Tag,
+Task >── Project, Task >── Section (option), Task >─< Tag,
 Section >── Project, Section >── Section (parent, option),
-Todo >── Todo (parent, option)
+Task >── Task (parent, option)
 ```
 
 - **`Note`** : une note par jour (`date` unique) ; `body` contient le texte de la note.
 - **`NotePart`** : morceau de note partageant projet, section (la dernière du chemin) et tags, avec les titres de sa section (`heading_path`, #240). **Données dérivées** de `Note.body`.
 - **`Project`, `Section`, `Tag`** : partagés par les notes et les tâches. Un projet a un nom unique, une couleur (#162) et une description. Une section est un niveau d'un chemin sous un projet (voir « Chemins sous un projet »).
-- **`Todo`** (tâche) : titre, projet, section (son sujet) et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date, le chemin et le texte de sa ligne (`note_part_date`, `note_path`, `note_part_text`), et son état dans la note (`note_state` : à revoir, revue, gardée sans sa ligne, écartée, #240). `Todo.objects` exclut les tâches écartées ; `Todo.all_objects` les compte.
+- **`Task`** (tâche) : titre, projet, section (son sujet) et tags, description, priorité, échéance ; avancement en pourcentage (`progress`), état terminé (`done`) et moment où elle l'est devenue (`completed_at`), avancement d'avant la coche, rendu au décochage (`progress_before_done`, #237) ; parent optionnel, pour les sous-tâches. Une tâche issue d'une note garde la date, le chemin et le texte de sa ligne (`note_part_date`, `note_path`, `note_part_text`), et son état dans la note (`note_state` : à revoir, revue, gardée sans sa ligne, écartée, #240). `Task.objects` exclut les tâches écartées ; `Task.all_objects` les compte.
 - **`Image`** : nom de fichier d'origine (unique, sert de référence dans les notes), fichier affiché, source éditable optionnelle.
 
 ## Décisions
@@ -212,7 +216,7 @@ Une case vide `- [ ] texte`, où qu'elle soit, donne une tâche ; dans une branc
 - **Cycle de vie** (#240) : une tâche créée est **à revoir**. Tant qu'une note a des tâches à revoir, son enregistrement (formulaire, remplacement par le fichier source) redirige vers son bilan (`todolist:note_review`), et un import le cite dans son compte rendu. Le bilan se calcule depuis la base, sans session. Il présente :
   - les tâches dont la ligne est dans la note : échéance, priorité, projet et sujet ; enregistrer les rend **revues**, même sans échéance. « Plus tard » les laisse à revoir ;
   - les tâches dont la ligne a disparu (modifiée, déplacée ou retirée) : une tâche revue dans ce cas redevient à revoir. On la garde (**gardée sans sa ligne**, plus jamais présentée), on l'écarte, ou on la remplace par la tâche d'une nouvelle ligne : l'ancienne prend son chemin et son texte, garde avancement, échéance et sous-tâches, reçoit celles de la nouvelle, qui est supprimée. Son titre suit la ligne, sauf s'il a été renommé à la main.
-- **Tâche écartée** (#240, #290) : retirer une tâche dont l'arbre (elle et ses sous-tâches) contient une tâche issue d'une note écarte l'arbre en entier, tâches saisies à la main comprises, pour que le rétablir le rende intact (`remove_task`) ; la page de la tâche dit alors « Écarter » au lieu de « Supprimer » (`removal_dismisses`). Un arbre saisi à la main est supprimé ; une tâche déjà écartée qu'il portait est détachée. Une tâche écartée n'est plus affichée nulle part (`Todo.objects` l'exclut : listes, sous-tâches, avancement du parent, formulaires) ni comptée dans les usages d'un projet (`ProjectUsage.exclude`), et le prochain enregistrement de la note ne la recrée pas. Un projet utilisé seulement par des tâches écartées se supprime avec elles (`protect_unless_dismissed`).
+- **Tâche écartée** (#240, #290) : retirer une tâche dont l'arbre (elle et ses sous-tâches) contient une tâche issue d'une note écarte l'arbre en entier, tâches saisies à la main comprises, pour que le rétablir le rende intact (`remove_task`) ; la page de la tâche dit alors « Écarter » au lieu de « Supprimer » (`removal_dismisses`). Un arbre saisi à la main est supprimé ; une tâche déjà écartée qu'il portait est détachée. Une tâche écartée n'est plus affichée nulle part (`Task.objects` l'exclut : listes, sous-tâches, avancement du parent, formulaires) ni comptée dans les usages d'un projet (`ProjectUsage.exclude`), et le prochain enregistrement de la note ne la recrée pas. Un projet utilisé seulement par des tâches écartées se supprime avec elles (`protect_unless_dismissed`).
 - **Rétablir** (#290) : la liste des tâches a un état « Écartées » (`?state=dismissed`, #294), un tableau à part avec une ligne par tâche écartée dont le parent ne l'est pas (`dismissed_rows`), ses filtres s'appliquant aussi à ces lignes ; la liste en cours renvoie vers lui par un lien qui compte les écartées (`top_dismissed`). « Rétablir » (`restore_task`) rétablit aussi ses sous-tâches écartées, ce que la confirmation et le message disent. Chacune redevient revue si sa ligne est encore dans sa note, gardée sans sa ligne sinon ; une tâche saisie à la main le redevient. La tâche retrouve son parent s'il est encore affiché ; s'il est écarté, elle revient à la racine, et le message le signale. Pas de suppression définitive : la ligne, si elle est encore dans la note, reviendrait en tâche au prochain enregistrement, ce que l'écart sert justement à empêcher.
 
 ### Avancement, état terminé et incohérences des tâches (#164, #165)
@@ -221,7 +225,7 @@ Une case vide `- [ ] texte`, où qu'elle soit, donne une tâche ; dans une branc
 - Un parent se coche à la main. Il se décoche dès qu'un de ses enfants n'est plus terminé. À 100 % et non coché, il est « à valider ».
 - Les écarts entre une tâche et ses sous-tâches ne sont pas empêchés mais signalés, des deux côtés : échéance d'une sous-tâche après celle du parent, projet différent. Seule une boucle parent-enfant est refusée.
 - Supprimer une tâche supprime ses sous-tâches ; la confirmation et le message le disent (#223).
-- Une seule règle d'urgence, `Todo.due_signal` : terminée, en retard, proche (sous 3 jours) ou normale (#189).
+- Une seule règle d'urgence, `Task.due_signal` : terminée, en retard, proche (sous 3 jours) ou normale (#189).
 
 ### Projets, sections et tags partagés (#19, #20, #295)
 
@@ -237,7 +241,7 @@ Un chemin est une suite de niveaux sous un projet : « Réunion › Préparation
 
 - Un niveau est **unique sous son parent, casse ignorée** ; un niveau déjà connu garde la casse de sa première écriture (`section_for`). Le `LOWER` de SQLite ne replie que l'ASCII : la comparaison complète se fait en Python, les contraintes de la base sont un filet.
 - Le séparateur n'existe qu'à la **saisie** (« / » entre niveaux, « // » pour un « / » littéral : `split_path`, `join_path`) et à l'**affichage** (« › »). Les notes ne passent pas par ce texte : leurs titres donnent directement les niveaux.
-- Supprimer un niveau supprime ses descendants. `Section.project` est en cascade ; `NotePart.section` est protégé, `Todo.section` passe à vide.
+- Supprimer un niveau supprime ses descendants. `Section.project` est en cascade ; `NotePart.section` est protégé, `Task.section` passe à vide.
 - `core` ne connaît aucune app : `forget_unused_sections` lit les clés étrangères qui mènent à `Section` sur le modèle, sans importer les apps.
 - **Dans les notes** (#296) : `#` donne le projet, `##` à `######` les niveaux du chemin, sans limite de profondeur (`NoteParser.current_path`). Les titres ne donnent plus de tags : seuls les blocs `{.metadata}` en donnent, avec une portée sur la branche, jamais un niveau. `heading_path` garde tous les titres tels qu'écrits, dont dépend l'identité des tâches (#240).
 - **Titres qui sautent un niveau** (#305) : `NoteParser.check_level` relève, dans `ParsedNote.warnings`, un titre de niveau plus profond que le plus profond au-dessus de lui plus un, et un titre sans projet (`#`) au-dessus. L'analyse les accepte telle quelle (le chemin se fait des titres, pas de leur niveau, et un renommage repère un titre par la suite des titres au-dessus de lui, #299) et **ne réécrit jamais le texte**. `process_note_parts` les range dans `note.warnings`, comme les suites proposées (`note.follow_ups`) : l'enregistrement les montre en un avertissement (`warnings_message`), le compte rendu d'import les liste.

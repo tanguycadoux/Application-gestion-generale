@@ -18,23 +18,23 @@ class TodolistConfig(AppConfig):
         20,
         (
             NavItem("todolist:index", "Calendrier", "calendar_month"),
-            NavItem("todolist:todo_list", "Liste des tâches", "checklist"),
+            NavItem("todolist:task_list", "Liste des tâches", "checklist"),
         ),
     )
     project_usages = (
         ProjectUsage(
-            "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
+            "tasks", "tâche", "tâches", exclude=Q(tasks__note_state="dismissed")
         ),
     )
 
     section_usages = (
         SectionUsage(
-            "todos", "tâche", "tâches", exclude=Q(todos__note_state="dismissed")
+            "tasks", "tâche", "tâches", exclude=Q(tasks__note_state="dismissed")
         ),
     )
 
     def ready(self):
-        from . import dashboard, receivers  # noqa: F401
+        from . import dashboard, progress, receivers  # noqa: F401
 
         self.dashboard_blocks = (
             DashboardBlock(

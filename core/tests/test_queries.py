@@ -10,7 +10,7 @@ from django.urls import reverse
 from core.models import Project
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ListQueriesTests(TestCase):
@@ -23,11 +23,11 @@ class ListQueriesTests(TestCase):
         a = Project.objects.get_or_create(name="A")[0]
         b = Project.objects.get_or_create(name="B")[0]
         for i in range(count):
-            parent = Todo.objects.create(
+            parent = Task.objects.create(
                 title=f"Parent {i}", project=a, due_date=date(2025, 11, 24)
             )
             # Sous-tâche incohérente : autre projet, échéance après le parent.
-            Todo.objects.create(
+            Task.objects.create(
                 title=f"Enfant {i}",
                 project=b,
                 parent=parent,
@@ -42,7 +42,7 @@ class ListQueriesTests(TestCase):
             process_note_parts(note)
 
     def test_liste_des_taches(self):
-        url = reverse("todolist:todo_list")
+        url = reverse("todolist:task_list")
         self.add_tasks(2)
         few = self.queries(url)
         self.add_tasks(6)
@@ -51,12 +51,12 @@ class ListQueriesTests(TestCase):
 
     def test_detail_d_une_tache_parente(self):
         a = Project.objects.create(name="A")
-        parent = Todo.objects.create(title="Parent", project=a)
-        url = reverse("todolist:todo_detail", args=[parent.pk])
-        Todo.objects.create(title="E0", project=a, parent=parent)
+        parent = Task.objects.create(title="Parent", project=a)
+        url = reverse("todolist:task_detail", args=[parent.pk])
+        Task.objects.create(title="E0", project=a, parent=parent)
         few = self.queries(url)
         for i in range(1, 6):
-            Todo.objects.create(title=f"E{i}", project=a, parent=parent)
+            Task.objects.create(title=f"E{i}", project=a, parent=parent)
 
         self.assertEqual(self.queries(url), few)
 

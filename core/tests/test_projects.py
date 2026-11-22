@@ -8,7 +8,7 @@ from django.urls import reverse
 from core.models import Project
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.models import Todo
+from todolist.models import Task
 
 FAMILIES = [
     "orange",
@@ -86,7 +86,7 @@ class ProjectPagesTests(TestCase):
         self.used = Project.objects.create(name="Utilisé", color="teal")
         note = Note.objects.create(date="2025-11-24", body="# Utilisé\nx")
         process_note_parts(note)
-        Todo.objects.create(title="T", project=self.used)
+        Task.objects.create(title="T", project=self.used)
         self.unused = Project.objects.create(
             name="Libre", color="rose", description="Pour plus tard"
         )

@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from core.models import Project
 from note_taking.models import Note, NotePart
-from todolist.models import Todo
+from todolist.models import Task
 
 APPS = ("core", "images", "note_taking", "todolist")
 
@@ -124,17 +124,17 @@ class DatesInPagesTests(TestCase):
 
         self.assertIn(f"Note du {self.LONG}", html)
 
-    def test_echeance_d_une_todo(self):
-        todo = Todo.objects.create(
+    def test_echeance_d_une_tache(self):
+        task = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0],
             title="T",
             due_date="2025-11-24",
         )
 
         detail = self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
-        listing = self.client.get(reverse("todolist:todo_list")).content.decode()
+        listing = self.client.get(reverse("todolist:task_list")).content.decode()
 
         self.assertInHTML('<time datetime="2025-11-24">24 novembre 2025</time>', detail)
         self.assertInHTML(

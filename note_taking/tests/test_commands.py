@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from core.models import Project, Tag
 from note_taking.models import Note, NotePart
-from todolist.models import Todo
+from todolist.models import Task
 
 
 class ReprocessNotesTests(TestCase):
@@ -55,7 +55,7 @@ class ReprocessNotesTests(TestCase):
         self.assertEqual([tag.name for tag in note.parts.get().tags.all()], ["garde"])
 
     def test_tag_d_une_tache_garde(self):
-        Todo.objects.create(
+        Task.objects.create(
             title="T", project=Project.objects.create(name="Q")
         ).tags.add(Tag.objects.create(name="de la tâche"))
 
@@ -79,15 +79,15 @@ class ReprocessNotesTests(TestCase):
         self.assertIn("1 note(s) recalculée(s), 1 erreur(s)", out)
         self.assertEqual(self.parts(self.note), [("P", [], "x")])
 
-    def test_todo_existante_non_recreee(self):
+    def test_tache_existante_non_recreee(self):
         self.note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
         self.note.save()
         self.reprocess()
-        todo = Todo.objects.get()
-        todo.progress = 100
-        todo.save()
+        task = Task.objects.get()
+        task.progress = 100
+        task.save()
 
         self.reprocess()
 
-        self.assertEqual(Todo.objects.count(), 1)
-        self.assertTrue(Todo.objects.get().completed)
+        self.assertEqual(Task.objects.count(), 1)
+        self.assertTrue(Task.objects.get().completed)

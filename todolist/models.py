@@ -1,48 +1,49 @@
-from dataclasses import dataclass
+"""Modèle des tâches. La propagation de l'avancement aux ancêtres est dans
+`progress.py`, les incohérences avec le parent et les enfants dans `coherence.py`."""
+
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
 from django.utils import timezone
 
-from core.dates import date_text
 from core.models import Project, Section, Tag
+
+from .coherence import Incoherence, pair_incoherences
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
 
 
 # Titre et texte d'origine d'une tâche : une ligne de note longue doit tenir (#222).
-TODO_TEXT_MAX_LENGTH = 500
+TASK_TEXT_MAX_LENGTH = 500
 
 
 # Seuil de l'échéance proche, en jours (ambre).
 SOON_DAYS = 3
 
 
-class TodoManager(models.Manager):
+class TaskManager(models.Manager):
     """Tâches affichées : sans les tâches écartées (#240)."""
 
     def get_queryset(self):
-        return super().get_queryset().exclude(note_state=Todo.NoteState.DISMISSED)
+        return super().get_queryset().exclude(note_state=Task.NoteState.DISMISSED)
 
 
 def protect_unless_dismissed(collector, field, sub_objs, using):
     """Un projet utilisé par une tâche est protégé ; ses tâches écartées, que plus
     rien n'affiche, sont supprimées avec lui (#240)."""
-    dismissed = [obj for obj in sub_objs if obj.note_state == Todo.NoteState.DISMISSED]
-    active = [obj for obj in sub_objs if obj.note_state != Todo.NoteState.DISMISSED]
+    dismissed = [obj for obj in sub_objs if obj.note_state == Task.NoteState.DISMISSED]
+    active = [obj for obj in sub_objs if obj.note_state != Task.NoteState.DISMISSED]
     if active:
         models.PROTECT(collector, field, active, using)
     if dismissed:
         models.CASCADE(collector, field, dismissed, using)
 
 
-class Todo(models.Model):
+class Task(models.Model):
     class NoteState(models.TextChoices):
         """Où en est une tâche issue d'une note (#240) ; vide pour une tâche
         saisie à la main."""
@@ -58,23 +59,23 @@ class Todo(models.Model):
         ("high", "Haute"),
     ]
 
-    title = models.CharField("titre", max_length=TODO_TEXT_MAX_LENGTH)
+    title = models.CharField("titre", max_length=TASK_TEXT_MAX_LENGTH)
     project = models.ForeignKey(
         Project,
         verbose_name="projet",
         on_delete=protect_unless_dismissed,
-        related_name="todos",
+        related_name="tasks",
     )
     section = models.ForeignKey(
         Section,
         verbose_name="chemin",
         on_delete=models.SET_NULL,
-        related_name="todos",
+        related_name="tasks",
         null=True,
         blank=True,
     )
     tags = models.ManyToManyField(
-        Tag, verbose_name="tags", related_name="todos", blank=True
+        Tag, verbose_name="tags", related_name="tasks", blank=True
     )
     description = models.TextField("description", blank=True)
     # Avancement en pourcentage (#163) ; une tâche est terminée à 100 %.
@@ -97,7 +98,7 @@ class Todo(models.Model):
     created_from_note = models.BooleanField(default=False)
     note_part_date = models.DateField(null=True, blank=True)
     note_part_text = models.CharField(
-        max_length=TODO_TEXT_MAX_LENGTH, blank=True, default=""
+        max_length=TASK_TEXT_MAX_LENGTH, blank=True, default=""
     )
     # Chemin de la ligne dans la note : titres de sa section sans `TODO`, puis
     # lignes parentes, séparés par « › » (#240). Avec la date et le texte, il
@@ -132,11 +133,11 @@ class Todo(models.Model):
     )
 
     if TYPE_CHECKING:
-        children: QuerySet[Todo]
+        children: QuerySet[Task]
 
     # Parent et enfants déjà chargés par l'arbre des tâches (todolist.tree, #188) :
     # les incohérences se calculent alors sans requête.
-    tree: tuple[Todo | None, list[Todo]] | None = None
+    tree: tuple[Task | None, list[Task]] | None = None
 
     # Ancêtres dont l'avancement a changé au dernier enregistrement (#164).
     updated_ancestor_ids: list[int]
@@ -144,7 +145,7 @@ class Todo(models.Model):
     # Toutes les tâches, écartées comprises : l'identité des tâches issues des
     # notes les compte, pour ne pas les recréer.
     all_objects = models.Manager()
-    objects = TodoManager()
+    objects = TaskManager()
 
     class Meta:
         verbose_name = "tâche"
@@ -175,7 +176,7 @@ class Todo(models.Model):
         old_parent_id, old_progress, was_done = None, 0, False
         if self.pk:
             old_parent_id, old_progress, was_done = (
-                Todo.objects.filter(pk=self.pk)
+                Task.objects.filter(pk=self.pk)
                 .values_list("parent_id", "progress", "done")
                 .first()
             ) or (None, 0, False)
@@ -194,6 +195,9 @@ class Todo(models.Model):
 
         super().save(*args, **kwargs)
 
+        # Importé ici : `progress` dépend du modèle.
+        from .progress import update_ancestors_progress
+
         self.updated_ancestor_ids = update_ancestors_progress(self.parent_id)
         if old_parent_id not in (None, self.parent_id):
             update_ancestors_progress(old_parent_id)
@@ -203,7 +207,7 @@ class Todo(models.Model):
         count, level = 0, [self.pk]
         while level:
             level = list(
-                Todo.objects.filter(parent_id__in=level).values_list("pk", flat=True)
+                Task.objects.filter(parent_id__in=level).values_list("pk", flat=True)
             )
             count += len(level)
         return count
@@ -267,94 +271,3 @@ class Todo(models.Model):
         if days <= SOON_DAYS:
             return "soon"
         return "normal"
-
-
-def update_ancestors_progress(parent_id: int | None) -> list[int]:
-    """Recalcule l'avancement des ancêtres, du parent jusqu'à la racine (#164).
-
-    Un parent coché se décoche dès qu'un de ses enfants n'est plus terminé ; un
-    parent sans plus d'enfant garde ses dernières valeurs. Renvoie les
-    identifiants des tâches modifiées.
-    """
-    updated = []
-    while parent_id is not None:
-        parent = Todo.objects.filter(pk=parent_id).first()
-        if parent is None:
-            break
-        computed = parent.children_progress()
-        if computed is None:
-            break
-        done = parent.done and not parent.children.filter(done=False).exists()
-        if (computed, done) == (parent.progress, parent.done):
-            break
-        Todo.objects.filter(pk=parent.pk).update(
-            progress=computed,
-            done=done,
-            completed_at=parent.completed_at if done else None,
-        )
-        updated.append(parent.pk)
-        parent_id = parent.parent_id
-    return updated
-
-
-@receiver(post_delete, sender=Todo)
-def update_progress_after_delete(sender, instance: Todo, **kwargs):
-    update_ancestors_progress(instance.parent_id)
-
-
-@dataclass
-class Incoherence:
-    """Écart à corriger, et l'autre tâche concernée (#165)."""
-
-    message: str
-    task: Todo
-
-
-def pair_incoherences(
-    parent: Todo, child: Todo, from_parent: bool
-) -> list[Incoherence]:
-    """Incohérences entre un parent et un de ses enfants, vues de l'un ou de l'autre."""
-    found = []
-    if parent.due_date and child.due_date and child.due_date > parent.due_date:
-        parent_due = date_text(parent.due_date, "moyen")
-        child_due = date_text(child.due_date, "moyen")
-        found.append(
-            Incoherence(
-                f"L'échéance de la sous-tâche « {child} » ({child_due}) est après "
-                f"celle-ci ({parent_due}).",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Son échéance ({child_due}) est après celle de la tâche parente "
-                f"« {parent} » ({parent_due}).",
-                parent,
-            )
-        )
-    if child.project_id != parent.project_id:
-        found.append(
-            Incoherence(
-                f"La sous-tâche « {child} » a un autre projet ({child.project}).",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Son projet ({child.project}) diffère de celui de la tâche parente "
-                f"« {parent} » ({parent.project}).",
-                parent,
-            )
-        )
-    if parent.done and not child.done:
-        found.append(
-            Incoherence(
-                f"Elle est terminée alors que la sous-tâche « {child} » ne l'est pas.",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Elle n'est pas terminée alors que la tâche parente « {parent} » "
-                "l'est.",
-                parent,
-            )
-        )
-    return found
