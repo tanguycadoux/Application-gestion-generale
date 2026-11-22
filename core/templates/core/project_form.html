@@ -5,7 +5,7 @@
 
 {% block content %}
     <header class="mb-4 flex items-start">
-        <h1 class="flex-1">{% if object %}Modifier le projet « {{ object.name }} »{% else %}Nouveau projet{% endif %}</h1>
+        <h1 class="flex-1">{% filter nbsp_punct %}{% if object %}Modifier le projet « {{ object.name }} »{% else %}Nouveau projet{% endif %}{% endfilter %}</h1>
 
         {% button "Enregistrer le projet" icon="save" variant="ghost" icon_only=True form="project-form" %}
     </header>

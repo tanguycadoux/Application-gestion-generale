@@ -13,7 +13,7 @@ from todolist.models import Task
 class ReprocessNotesTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx")
-        # Note part obsolète, comme après une évolution du parseur.
+        # Passage obsolète, comme après une évolution du parseur.
         part = Passage.objects.create(
             note=self.note,
             project=Project.objects.create(name="Ancien"),

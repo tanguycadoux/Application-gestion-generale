@@ -24,12 +24,36 @@ class SectionPathInput(forms.TextInput):
 
     template_name = "core/forms/widgets/section_path.html"
 
+    def __init__(self, attrs=None):
+        # Un chemin est long (« Réunions de chantier/Préparation ») : le champ prend la
+        # largeur de sa cellule, dans le formulaire de tâche comme dans le bilan (#379).
+        super().__init__({"class": "w-full min-w-64 max-w-md", **(attrs or {})})
+
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         widget = context["widget"]
         widget["datalist_id"] = f"{widget['attrs'].get('id', name)}-chemins"
         widget["attrs"]["list"] = widget["datalist_id"]
         widget["suggestions"] = path_suggestions()
+        return context
+
+
+class TagSelectMultiple(forms.SelectMultiple):
+    """Choix des tags ; sans aucun tag en base, une phrase dit d'où ils viennent, au
+    lieu d'une liste vide muette (#379). Les options se lisent à l'affichage, comme
+    pour toute liste : pas de requête de plus."""
+
+    template_name = "core/forms/widgets/tag_select.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        widget = context["widget"]
+        if not widget["optgroups"]:
+            widget["empty_id"] = f"{widget['attrs'].get('id', name)}_vide"
+            described = widget["attrs"].get("aria-describedby")
+            widget["attrs"]["aria-describedby"] = " ".join(
+                filter(None, [described, widget["empty_id"]])
+            )
         return context
 
 

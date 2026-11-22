@@ -1,0 +1,2 @@
+{% include "django/forms/widgets/select.html" %}
+{% if widget.empty_id %}<div id="{{ widget.empty_id }}" class="text-sm text-slate-600">Aucun tag pour l'instant : ils viennent des blocs <code>{.metadata}</code> des notes.</div>{% endif %}

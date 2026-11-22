@@ -109,7 +109,7 @@ class GanttPageTests(GanttTestCase):
         html = self.html(self.parent)
 
         self.assertIn("du 31 janvier 2026 au 10 février 2026, 40 %", html)
-        self.assertIn("depuis le 1 février 2026, sans échéance, 0 %", html)
+        self.assertIn("depuis le 1er février 2026, sans échéance, 0 %", html)
 
     def test_pas_de_frise_sans_sous_tache(self):
         html = self.html(self.grandchild)

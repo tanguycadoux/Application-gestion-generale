@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.messages.storage.base import Message
@@ -211,7 +213,8 @@ def rename_section(request, pk, section_pk):
     except AppError as e:
         messages.error(request, str(e))
         return redirect(
-            f"{reverse('core:section_rename', args=[pk, section_pk])}?name={new_name}"
+            f"{reverse('core:section_rename', args=[pk, section_pk])}"
+            f"?{urlencode({'name': new_name})}"
         )
     messages.success(
         request,

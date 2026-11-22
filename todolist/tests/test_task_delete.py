@@ -57,19 +57,19 @@ class ParentDeleteTests(DeleteTestCase):
 
         self.assertEqual(
             self.confirm(self.parent),
-            "Supprimer définitivement la tâche et ses 3 sous-tâches ?",
+            "Supprimer définitivement la tâche et ses 3 sous-tâches\u00a0?",
         )
 
     def test_confirmation_une_seule_sous_tache(self):
         self.assertEqual(
             self.confirm(self.parent),
-            "Supprimer définitivement la tâche et sa sous-tâche ?",
+            "Supprimer définitivement la tâche et sa sous-tâche\u00a0?",
         )
 
     def test_confirmation_sans_sous_tache_inchangee(self):
         self.assertEqual(
             self.confirm(self.child),
-            "Supprimer définitivement la tâche ?",
+            "Supprimer définitivement la tâche\u00a0?",
         )
 
     def test_sous_taches_supprimees_avec_la_tache(self):
@@ -119,7 +119,7 @@ class DismissTests(DeleteTestCase):
     def test_confirmation(self):
         self.assertEqual(
             self.confirm(self.a),
-            "Écarter la tâche et sa sous-tâche ? La section « Écartées » "
+            "Écarter la tâche et sa sous-tâche\u00a0? La section «\u00a0Écartées\u00a0» "
             "de la liste des tâches permet de revenir en arrière.",
         )
 

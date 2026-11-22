@@ -14,6 +14,7 @@ from django.utils import timezone
 # - long : la date nomme une note (titres, liens « Note du … ») ;
 # - moyen : une date dans un texte ou une fiche (échéance, dates d'une image) ;
 # - court : tableaux et listes.
+# Le jour s'écrit `j`, en chiffres sans zéro : « 1er » le premier du mois (#383).
 # N plutôt que M pour le mois abrégé : en français, M donne « Jui » pour juin et juillet.
 DATE_FORMATS = {
     "long": "l j F Y",
@@ -38,7 +39,13 @@ def date_text(value, style: str = "moyen") -> str:
         raise ValueError(f"Format de date inconnu : {style}")
     if value in (None, ""):
         return ""
-    return format_date(local(value), DATE_FORMATS[style])
+    value = local(value)
+    date_format = DATE_FORMATS[style]
+    if value.day == 1:
+        # Le 1er du mois (#383) : « jeudi 1er octobre 2026 ». Les formats écrivent
+        # le jour par `j` (en chiffres, sans zéro) ; « er » échappé est du texte.
+        date_format = date_format.replace("j", r"j\e\r")
+    return format_date(value, date_format)
 
 
 def machine_date(value) -> str:

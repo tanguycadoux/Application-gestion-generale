@@ -7,7 +7,7 @@
     {% url 'core:project_paths' project.pk as back_url %}
 
     <header class="mb-4 flex items-start gap-2">
-        <h1 class="flex-1">Renommer « {{ section.name }} »</h1>
+        <h1 class="flex-1">{% filter nbsp_punct %}Renommer « {{ section.name }} »{% endfilter %}</h1>
         {% button "Retour aux chemins" icon="arrow_back" href=back_url variant="ghost" %}
     </header>
 
@@ -26,7 +26,7 @@
             <input type="hidden" name="name" value="{{ new_name }}">
 
             <section aria-labelledby="review-title" class="mb-4">
-                <h2 id="review-title" class="mb-2">Bilan : « {{ section.name }} » devient « {{ new_name }} »</h2>
+                <h2 id="review-title" class="mb-2">{% filter nbsp_punct %}Bilan : « {{ section.name }} » devient « {{ new_name }} »{% endfilter %}</h2>
 
                 {% if occurrences %}
                     <fieldset>

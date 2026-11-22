@@ -1,5 +1,7 @@
 """Renommer un niveau de chemin : le nom, le bilan, puis l'écriture (#299)."""
 
+from urllib.parse import parse_qs, urlsplit
+
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -116,7 +118,10 @@ class ReviewTests(RenameTestCase):
             self.url(self.section("Réunion")), {"name": "Rencontre"}
         )
 
-        self.assertContains(response, "Bilan : « Réunion » devient « Rencontre »")
+        self.assertContains(
+            response,
+            "Bilan\u00a0: «\u00a0Réunion\u00a0» devient «\u00a0Rencontre\u00a0»",
+        )
         self.assertContains(response, "2 titres à réécrire")
         self.assertContains(response, "Note du 24 novembre 2025, ligne 2")
         self.assertContains(response, "Note du 25 novembre 2025, ligne 2")
@@ -286,6 +291,24 @@ class ApplyTests(RenameTestCase):
         note.refresh_from_db()
         section.refresh_from_db()
         self.assertEqual((note.body, section.name), ("# P\n## Autre\nx", "Réunion"))
+
+    def test_apres_une_erreur_le_nom_revient_entier(self):
+        """`&` coupait le paramètre et `#` ouvrait un fragment : « Essais & mesures
+        #1 » revenait « Essais » (#371)."""
+        note = self.note("# P\n## Réunion\nx")
+        section = self.section("Réunion")
+        keys = self.keys(section, "Rencontre")
+        note.body = "# P\n## Autre\nx"
+        note.save()
+        name = "Essais & mesures #1 + 50 % ?a=b"
+
+        response = self.apply(section, name, keys)
+
+        location = urlsplit(response["Location"])
+        self.assertEqual(location.fragment, "")
+        self.assertEqual(parse_qs(location.query), {"name": [name]})
+        page = self.client.get(response["Location"])
+        self.assertEqual(page.context["new_name"], name)
 
     def test_echec_annule_aussi_le_renommage_en_place(self):
         self.note("# P\n## Réunion\nx")

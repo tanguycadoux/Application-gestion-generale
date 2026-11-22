@@ -5,10 +5,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.icons import icon_svg
-from core.models import Project
+from core.models import Project, Tag
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
-from todolist.forms import TaskForm
+from todolist.forms import NoteReviewForm, TaskForm
 from todolist.models import Task
 
 from .stylesheets import read_source_css
@@ -166,3 +166,53 @@ class FormPagesTests(TestCase):
         response = self.client.get(reverse("todolist:task_edit", args=[task.pk]))
 
         self.assertEqual(response.status_code, 200)
+
+
+TALL_LABEL = 'class="self-start pt-[calc(var(--spacing)+1px)]"'
+
+
+class TallFieldLabelTests(TestCase):
+    """Libellé d'un champ haut sur sa première ligne, pas sur la dernière (#379)."""
+
+    def test_zone_de_texte_et_liste_multiple(self):
+        html = str(TaskForm()).replace("&nbsp;", " ")
+
+        self.assertInHTML(
+            f'<label for="id_description" {TALL_LABEL}>Description :</label>', html
+        )
+        self.assertInHTML(f'<label for="id_tags" {TALL_LABEL}>Tags :</label>', html)
+
+    def test_champ_d_une_ligne_sur_la_ligne_de_base(self):
+        html = str(TaskForm()).replace("\xa0", " ")
+
+        self.assertInHTML('<label for="id_title">Titre :</label>', html)
+        self.assertInHTML('<label for="id_project">Projet :</label>', html)
+
+    def test_liste_multiple_de_largeur_minimale(self):
+        self.assertIn("select[multiple] {\n        @apply min-w-48;", read_source_css())
+
+
+class TagsFieldTests(TestCase):
+    def test_sans_tag_le_champ_le_dit(self):
+        html = str(TaskForm())
+
+        self.assertIn("Aucun tag pour l'instant", html)
+        self.assertIn('aria-describedby="id_tags_vide"', html)
+        self.assertIn('<div id="id_tags_vide" class="text-sm text-slate-600">', html)
+
+    def test_avec_des_tags_pas_de_message(self):
+        Tag.objects.create(name="rapport")
+
+        self.assertNotIn("Aucun tag", str(TaskForm()))
+
+
+class SectionPathWidthTests(TestCase):
+    """Le chemin prend la largeur de sa cellule (#379)."""
+
+    def test_formulaire_de_tache(self):
+        html = str(TaskForm()["section_path"])
+
+        self.assertIn('class="w-full min-w-64 max-w-md"', html)
+
+    def test_bilan_d_une_note(self):
+        self.assertIn('class="w-full min-w-64 max-w-md"', str(NoteReviewForm()))

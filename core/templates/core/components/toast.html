@@ -4,7 +4,7 @@
      data-toast
      {% if autohide %}data-toast-autohide{% endif %}>
     {% if icon %}{% icon icon %}{% endif %}
-    <p class="flex-1">{{ message }}</p>
+    <p class="flex-1">{{ message|nbsp_punct }}</p>
     <button type="button"
             class="-m-1 shrink-0 cursor-pointer rounded p-1 hover:bg-black/5"
             aria-label="Fermer la notification"
