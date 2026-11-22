@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from django.db.models import Count, Q
 
-from .app_registry import section_usages
+from .app_registry import SectionUsage, section_usages
 from .models import Project, Section
 
 
@@ -41,20 +41,24 @@ class TreeRow:
         return f"Supprimer définitivement le niveau{below} ?"
 
 
+def usage_annotations(usages: list[SectionUsage]) -> dict[str, Count]:
+    """`usage_0`, `usage_1`… : ce qui utilise le niveau lui-même, par usage déclaré
+    (descendants exclus), à passer à `annotate`."""
+    return {
+        f"usage_{index}": Count(
+            usage.lookup,
+            distinct=True,
+            filter=~usage.exclude if usage.exclude else Q(),
+        )
+        for index, usage in enumerate(usages)
+    }
+
+
 def section_tree(project: Project) -> list[TreeRow]:
     """Les niveaux du projet, parents d'abord, frères triés par nom."""
     usages = section_usages()
     sections = list(
-        Section.objects.filter(project=project).annotate(
-            **{
-                f"usage_{index}": Count(
-                    usage.lookup,
-                    distinct=True,
-                    filter=~usage.exclude if usage.exclude else Q(),
-                )
-                for index, usage in enumerate(usages)
-            }
-        )
+        Section.objects.filter(project=project).annotate(**usage_annotations(usages))
     )
     children: dict[int | None, list[Section]] = defaultdict(list)
     for section in sections:

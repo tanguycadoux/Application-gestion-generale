@@ -5,6 +5,7 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from core.sections import section_for
+from todolist.models import Task
 
 
 class ProjectSuggestionsTests(TestCase):
@@ -155,6 +156,73 @@ class ElsewhereSuggestionsTests(TestCase):
         where = self.elsewhere(project="Inconnu", q="réunion")
 
         self.assertEqual(where, {"Réunion": "ASTERICS › Réunion (+1)"})
+
+    def test_graphie_la_plus_frequente_proposee(self):
+        """« Preparation » (un niveau) passait devant « Préparation » (quatre) parce
+        que son chemin vient avant dans l'ordre alphabétique (#377)."""
+        nord = Project.objects.create(name="Chantier Nord", color="teal")
+        sud = Project.objects.create(name="Chantier Sud", color="rose")
+        section_for(nord, ["Réunions de chantier", "Préparation"])
+        section_for(nord, ["Visites", "Préparation"])
+        section_for(sud, ["Réunions de chantier", "Préparation"])
+        # « ASTERICS › Analyse › Preparation » vient avant tous les autres chemins.
+        section_for(self.asterics, ["Analyse", "Preparation"])
+
+        where = self.elsewhere(project="Inconnu", q="prep")
+
+        # Quatre « Préparation » (celle d'ASTERICS comprise) et une « Preparation » :
+        # la graphie courante, l'un de ses chemins, et les quatre autres niveaux.
+        self.assertEqual(
+            where, {"Préparation": "ASTERICS › Réunion › Préparation (+4)"}
+        )
+
+    def test_a_nombre_de_niveaux_egal_la_graphie_la_plus_utilisee(self):
+        """« Analyse » et « analyse » ont un niveau chacun : celle qui porte le plus
+        de tâches l'emporte, et son chemin est celui qu'on montre."""
+        analyse = section_for(self.pds, ["Essais", "analyse"])
+        Task.objects.create(title="T", project=self.pds, section=analyse)
+
+        self.assertEqual(
+            self.elsewhere(project="Inconnu", q="analyse"),
+            {"analyse": "PDS1 › Essais › analyse (+1)"},
+        )
+
+    def test_a_egalite_complete_l_ordre_alphabetique(self):
+        section_for(self.pds, ["Essais", "analyse"])
+
+        self.assertEqual(
+            self.elsewhere(project="Inconnu", q="analyse"),
+            {"Analyse": "ASTERICS › Analyse (+1)"},
+        )
+
+    def test_chemin_montre_celui_du_niveau_le_plus_utilise(self):
+        """Deux « Bilan » : le chemin montré est celui qui sert, pas le premier dans
+        l'ordre alphabétique."""
+        section_for(self.asterics, ["Réunion", "Bilan"])
+        bilan = Section.objects.get(project=self.pds, name="Bilan")
+        Task.objects.create(title="T", project=self.pds, section=bilan)
+
+        self.assertEqual(
+            self.elsewhere(project="Inconnu", q="bilan"),
+            {"Bilan": "PDS1 › Autre › Bilan (+1)"},
+        )
+
+    def test_taches_ecartees_non_comptees(self):
+        analyse = section_for(self.pds, ["Essais", "analyse"])
+        Task.objects.create(title="T", project=self.pds, section=analyse)
+        majuscule = Section.objects.get(project=self.asterics, name="Analyse")
+        for title in ("T1", "T2"):
+            Task.objects.create(
+                title=title,
+                project=self.asterics,
+                section=majuscule,
+                note_state="dismissed",
+            )
+
+        self.assertEqual(
+            self.elsewhere(project="Inconnu", q="analyse"),
+            {"analyse": "PDS1 › Essais › analyse (+1)"},
+        )
 
     def test_projet_ou_chemin_inconnu_propose_quand_meme_les_noms_d_ailleurs(self):
         """Un projet qu'on vient de taper n'existe pas encore : rien au niveau, mais
