@@ -4,7 +4,7 @@ from django import forms
 from django.forms import modelformset_factory
 from django.urls import reverse
 
-from core.forms import SectionPathField, section_path_text
+from core.forms import SectionPathField, TagSelectMultiple, section_path_text
 from core.sections import section_for
 
 from .models import Task
@@ -91,6 +91,7 @@ class TaskForm(SectionPathForm):
             "due_date": forms.DateInput(format=r"%Y-%m-%d", attrs={"type": "date"}),
             "progress": forms.NumberInput(attrs={"min": 0, "max": 100}),
             "parent": ParentSelect,
+            "tags": TagSelectMultiple,
         }
 
     def __init__(self, *args, parent_data=None, **kwargs):
