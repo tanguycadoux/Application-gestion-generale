@@ -15,11 +15,11 @@ from core.exceptions import AppError
 
 from .. import note_table
 from ..forms import NewNoteForm
-from ..models import Note, NotePart
+from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
 from ..note_outline import outline_sections
 from ..rendering import render_note_body
-from ..services import process_note_parts
+from ..services import process_passages
 from .common import next_page, note_name, warnings_message
 
 
@@ -68,7 +68,7 @@ class NoteList(ListView):
             super()
             .get_queryset()
             .prefetch_related(
-                Prefetch("parts", queryset=NotePart.objects.select_related("project"))
+                Prefetch("passages", queryset=Passage.objects.select_related("project"))
             )
         )
         notes = note_table.FILTERS.apply(notes, self.active_filters)
@@ -113,8 +113,8 @@ def note_by_id(request, pk, action=""):
     return response
 
 
-def save_note_parts(request, note: Note, done: str, *, stay: bool = False) -> str:
-    """Recalcule les note parts d'une note enregistrée, et le dit (#192).
+def save_passages(request, note: Note, done: str, *, stay: bool = False) -> str:
+    """Recalcule les passages d'une note enregistrée, et le dit (#192).
 
     Si l'analyse échoue, seul le message d'erreur s'affiche. Renvoie la page où
     aller ensuite : celle de la note, ou la suite proposée par une autre app,
@@ -122,7 +122,7 @@ def save_note_parts(request, note: Note, done: str, *, stay: bool = False) -> st
     note : la suite proposée n'y mène pas, un avertissement la signale.
     """
     try:
-        process_note_parts(note)
+        process_passages(note)
     except AppError as e:
         messages.error(
             request,
@@ -170,7 +170,7 @@ def new_note(request):
         if form.is_valid():
             note = form.save()
             stay = stays_in_editor(request)
-            return redirect(save_note_parts(request, note, "créée", stay=stay))
+            return redirect(save_passages(request, note, "créée", stay=stay))
     else:
         note_date = parse_date_param(request.GET.get("date", ""))
         existing = Note.objects.filter(date=note_date).first() if note_date else None
@@ -198,7 +198,7 @@ def edit_note(request, note_date):
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
-            url = save_note_parts(request, note, "modifiée", stay=stay)
+            url = save_passages(request, note, "modifiée", stay=stay)
             if in_place:
                 response = toasts_response(request)
                 if str(note.date) != str(note_date):

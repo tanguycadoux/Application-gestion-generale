@@ -7,7 +7,7 @@ from note_taking.exceptions import NoteError
 from note_taking.models import Note
 from note_taking.qmd.parser import HEADING_SEPARATOR
 from note_taking.qmd.todo_sections import Conversion, convert_todo_sections
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 from todolist.services import lines_of
 
@@ -48,9 +48,9 @@ def moves_of(note: Note, found: Conversion) -> list[Move]:
 def existing_tasks(move: Move):
     return Task.all_objects.filter(
         created_from_note=True,
-        note_part_date=move.note.date,
+        note_date=move.note.date,
         note_path=move.path,
-        note_part_text=move.text,
+        note_line_text=move.text,
     )
 
 
@@ -186,7 +186,7 @@ class Command(BaseCommand):
                 note.save()
             try:
                 for note in [note for note, _ in concerned] + boxed:
-                    process_note_parts(note)
+                    process_passages(note)
             except NoteError as error:
                 raise CommandError(f"{error}. Rien n'a été modifié.") from error
 

@@ -14,7 +14,7 @@ from django.urls import reverse
 
 from core.models import Project
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 # La confirmation est une popover HTML native, ouverte par le bouton de l'en-tête.
@@ -101,7 +101,7 @@ class DismissTests(DeleteTestCase):
         note = Note.objects.create(
             date="2025-11-24", body="# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B"
         )
-        process_note_parts(note)
+        process_passages(note)
         self.a = Task.objects.get(title="A")
         self.b = Task.objects.get(title="B")
 

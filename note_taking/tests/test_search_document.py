@@ -5,18 +5,18 @@ from datetime import date
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from note_taking.search_document import DocPart, Level, assemble, split_titles
+from note_taking.search_document import DocPassage, Level, assemble, split_titles
 
 
 def level_part(day, levels, content):
-    """Une note part aux niveaux donnés, (identité, nom en base), du projet au plus
+    """Un passage aux niveaux donnés, (identité, nom en base), du projet au plus
     profond (#369)."""
     iso = date(2026, 10, day).isoformat()
-    return DocPart(
+    return DocPassage(
         date=date(2026, 10, day),
         date_label=f"{day} octobre 2026",
         note_url=f"/notes/{iso}/",
-        part_url=f"/notes/{iso}/#ancre",
+        passage_url=f"/notes/{iso}/#ancre",
         levels=tuple(Level(key, name) for key, name in levels),
         content=content,
     )
@@ -27,7 +27,7 @@ KEYS: dict[tuple[str, ...], int] = {}
 
 
 def part(day, titles, content):
-    """Une note part aux niveaux nommés : deux mêmes suites de noms sont le même
+    """Un passage aux niveaux nommés : deux mêmes suites de noms sont le même
     niveau, deux suites différentes deux niveaux distincts."""
     levels = [
         (KEYS.setdefault(tuple(titles[: depth + 1]), len(KEYS) + 1), title)
@@ -47,7 +47,7 @@ class SplitTitlesTests(SimpleTestCase):
 
 
 class ByDateTests(SimpleTestCase):
-    def test_une_note_part(self):
+    def test_une_passage(self):
         text = assemble([part(15, ["Alpha", "Réunion"], "texte")], "date")
 
         self.assertEqual(
@@ -124,7 +124,7 @@ class ByDateTests(SimpleTestCase):
 
 
 class ByPathTests(SimpleTestCase):
-    def test_une_note_part(self):
+    def test_une_passage(self):
         text = assemble([part(15, ["Alpha", "Réunion"], "texte")], "path")
 
         self.assertEqual(

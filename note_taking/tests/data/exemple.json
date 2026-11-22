@@ -207,12 +207,7 @@
         "revue"
       ],
       "content": [
-        "Texte entouré de lignes vides.",
-        "",
-        "",
-        "",
-        "",
-        "Ce texte est regroupé avec le premier « Points ouverts » (mêmes projet, sujet et tags)."
+        "Texte entouré de lignes vides."
       ]
     },
     {
@@ -227,6 +222,20 @@
       ],
       "content": [
         "Une décision."
+      ]
+    },
+    {
+      "project": "Projet Beta",
+      "path": [
+        "Revue",
+        "Points ouverts"
+      ],
+      "tags": [
+        "interne",
+        "revue"
+      ],
+      "content": [
+        "Ce texte est un passage à part, à sa place, sous le même chemin que le premier « Points ouverts » (mêmes projet, chemin et tags)."
       ]
     }
   ]

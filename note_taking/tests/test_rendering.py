@@ -1,4 +1,4 @@
-"""Tests du rendu HTML des notes : note parts et vue Markdown complète."""
+"""Tests du rendu HTML des notes : passages et vue Markdown complète."""
 
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
@@ -8,13 +8,13 @@ from django.urls import reverse
 from core.icons import icon_svg
 from core.models import Project
 from images.models import Image
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.rendering import IMAGE_MISSING_PATH, render_markdown
 
 
-class NotePartRenderingTests(TestCase):
+class PassageRenderingTests(TestCase):
     def render(self, content: str) -> str:
-        return NotePart(project=Project(name="P"), content=content).rendered_content()
+        return Passage(project=Project(name="P"), content=content).rendered_content()
 
     def test_markdown_simple(self):
         self.assertHTMLEqual(
@@ -613,8 +613,8 @@ class CalloutRenderingTests(SimpleTestCase):
 
         self.assertNotIn('class="callout', html)
 
-    def test_rendu_d_une_note_part(self):
-        part = NotePart(
+    def test_rendu_d_une_passage(self):
+        part = Passage(
             project=Project(name="P"),
             content='::: {.callout-note title="Remarque"}\nContenu\n:::',
         )

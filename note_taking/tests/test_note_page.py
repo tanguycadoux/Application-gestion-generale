@@ -1,10 +1,10 @@
-"""La page d'une note affiche le texte tel qu'écrit ; les note parts sont un index (#234)."""
+"""La page d'une note affiche le texte tel qu'écrit ; les passages sont un index (#234)."""
 
 from django.test import TestCase
 from django.urls import reverse
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 BODY = """Introduction avant tout titre.
 
@@ -29,7 +29,7 @@ Texte d'Alpha.
 class NotePageTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=BODY)
-        process_note_parts(self.note)
+        process_passages(self.note)
         self.html = self.client.get(
             reverse("note_taking:note_detail", args=[self.note.date])
         ).content.decode()

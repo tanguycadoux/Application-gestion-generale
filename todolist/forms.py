@@ -61,10 +61,20 @@ class SectionPathForm(forms.ModelForm):
         if self.instance.pk:
             self.initial["section_path"] = section_path_text(self.instance.section)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("section_path") and not cleaned_data.get("project"):
+            self.add_error(
+                "section_path", "Un chemin se range sous un projet : choisir le projet."
+            )
+        return cleaned_data
+
     def save(self, commit=True):
         task = super().save(commit=False)
-        task.section = section_for(
-            self.cleaned_data["project"], self.cleaned_data["section_path"]
+        project = self.cleaned_data["project"]
+        # Sans projet (#385), pas de chemin.
+        task.section = (
+            section_for(project, self.cleaned_data["section_path"]) if project else None
         )
         if commit:
             task.save()
@@ -172,7 +182,7 @@ class GoneLineForm(forms.ModelForm):
             self.fields["replacement"].queryset = replacements
         # Le titre seul est ambigu : le chemin dit où est la ligne dans la note.
         self.fields["replacement"].label_from_instance = lambda task: " › ".join(
-            part for part in (task.note_path, task.note_part_text) if part
+            part for part in (task.note_path, task.note_line_text) if part
         )
 
     def clean(self):

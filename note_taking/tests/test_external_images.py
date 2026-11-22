@@ -10,9 +10,9 @@ from django.urls import reverse
 
 from core.models import Project
 from images.models import Image
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.rendering import image_name
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 URL = "https://example.com/logo.png"
 
@@ -21,9 +21,9 @@ class ExternalImageAnalysisTests(TestCase):
     def test_image_externe_analysee(self):
         note = Note.objects.create(date="2025-11-24", body=f"# P\n![Logo]({URL})")
 
-        process_note_parts(note)
+        process_passages(note)
 
-        part = note.parts.get()
+        part = note.passages.get()
         self.assertEqual(part.content, f"![Logo]({URL})")
         self.assertFalse(part.images.exists())
 
@@ -33,16 +33,16 @@ class ExternalImageAnalysisTests(TestCase):
             date="2025-11-24", body="# P\n![Banc](images\\banc.png)"
         )
 
-        process_note_parts(note)
+        process_passages(note)
 
-        self.assertEqual(list(note.parts.get().images.all()), [image])
+        self.assertEqual(list(note.passages.get().images.all()), [image])
 
 
 class ExternalImageRenderingTests(TestCase):
     def render_part(self, content: str) -> str:
-        return NotePart(project=Project(name="P"), content=content).rendered_content()
+        return Passage(project=Project(name="P"), content=content).rendered_content()
 
-    def test_note_part_lien_au_lieu_de_l_image(self):
+    def test_passage_lien_au_lieu_de_l_image(self):
         html = self.render_part(f"![Logo]({URL})")
 
         self.assertInHTML(f'<a href="{URL}">Logo</a>', html)

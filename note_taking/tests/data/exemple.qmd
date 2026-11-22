@@ -115,4 +115,4 @@ Une décision.
 
 ### Points ouverts
 
-Ce texte est regroupé avec le premier « Points ouverts » (mêmes projet, sujet et tags).
+Ce texte est un passage à part, à sa place, sous le même chemin que le premier « Points ouverts » (mêmes projet, chemin et tags).

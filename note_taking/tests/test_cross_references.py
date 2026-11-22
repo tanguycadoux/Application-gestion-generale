@@ -8,7 +8,7 @@ dans un document Quarto (1.10.19 : « Table 1: », « Figure 1: », même avec
 from django.test import SimpleTestCase, TestCase
 
 from core.models import Project
-from note_taking.models import NotePart
+from note_taking.models import Passage
 from note_taking.rendering import number_floats, render_markdown, render_note_body
 
 TABLE = "| a |\n|---|\n| 1 |"
@@ -145,7 +145,7 @@ class ReferenceTests(SimpleTestCase):
 
 
 class RenderContextTests(TestCase):
-    """Les numéros dépendent du texte rendu : note entière ou note part seule."""
+    """Les numéros dépendent du texte rendu : note entière ou passage seul."""
 
     BODY = "# P\n\n![A](a.png){#fig-a}\n\n## S\n\nVoir @fig-b.\n\n![B](b.png){#fig-b}"
 
@@ -156,8 +156,8 @@ class RenderContextTests(TestCase):
         self.assertIn(f"Figure{NBSP}2: B", html)
         self.assertIn(f'class="quarto-xref">Figure{NBSP}2</a>', html)
 
-    def test_note_part_repart_de_un(self):
-        part = NotePart(
+    def test_passage_repart_de_un(self):
+        part = Passage(
             project=Project(name="P"), content="Voir @fig-b.\n\n![B](b.png){#fig-b}"
         )
 
@@ -166,8 +166,8 @@ class RenderContextTests(TestCase):
         self.assertIn(f"Figure{NBSP}1: B", html)
         self.assertIn(f'class="quarto-xref">Figure{NBSP}1</a>', html)
 
-    def test_reference_hors_de_la_note_part_comme_quarto(self):
-        part = NotePart(project=Project(name="P"), content="Voir @fig-a.")
+    def test_reference_hors_de_la_passage_comme_quarto(self):
+        part = Passage(project=Project(name="P"), content="Voir @fig-a.")
 
         self.assertIn("<strong>?@fig-a</strong>", part.rendered_content())
 

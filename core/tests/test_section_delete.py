@@ -10,7 +10,7 @@ from core.models import Project, Section
 from core.sections import section_for
 from core.templatetags.ui import BUTTON_VARIANTS
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -28,7 +28,7 @@ class SectionDeleteTestCase(TestCase):
 
     def note(self, body: str) -> Note:
         note = Note.objects.create(date="2025-11-24", body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def messages(self, response) -> list[tuple[str, str]]:

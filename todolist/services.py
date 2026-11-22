@@ -9,7 +9,7 @@ from django.db.models.functions import Cast, Concat
 from core.models import Project, Tag
 from core.sections import levels, section_for
 from note_taking.exceptions import NoteRenameError
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.qmd.lists import CODE_INDENT, LIST_ITEM_REGEX, text_column
 from note_taking.qmd.parser import (
     CODE_FENCE,
@@ -28,7 +28,7 @@ BOX_REGEX = re.compile(r"^\[(?P<state>[ xX])\](?:\s+|$)")
 
 @dataclass
 class TaskLine:
-    """Ligne de tâche d'une note part : son chemin (titres de la section, puis
+    """Ligne de tâche d'un passage : son chemin (titres de la section, puis
     éléments parents), son texte, et la tâche dont elle est la sous-tâche."""
 
     path: str
@@ -51,8 +51,8 @@ def create_task_from_dict(
     """
     identity = {
         "created_from_note": True,
-        "note_part_date": task_data["date"],
-        "note_part_text": task_data["content"],
+        "note_date": task_data["date"],
+        "note_line_text": task_data["content"],
     }
     task = Task.all_objects.filter(**identity, note_path=task_data["path"]).first()
     if task is not None:
@@ -63,8 +63,13 @@ def create_task_from_dict(
         task.save(update_fields=["note_path"])
         return task, False
 
-    project, _ = Project.objects.get_or_create(name=task_data["project"])
-    section = section_for(project, task_data.get("sections", []))
+    # Sans projet ni chemin : une case du texte avant le premier `#`, à ranger (#385).
+    project = (
+        Project.objects.get_or_create(name=task_data["project"])[0]
+        if task_data["project"] is not None
+        else None
+    )
+    section = section_for(project, task_data.get("sections", [])) if project else None
     task = Task.objects.create(
         **identity,
         note_path=task_data["path"],
@@ -96,10 +101,10 @@ def task_text(line: str) -> str:
     return text.strip()[:TASK_TEXT_MAX_LENGTH]
 
 
-def task_lines(note_part: NotePart) -> list[TaskLine]:
-    """Lignes de tâches d'une note part, sans accès à la base (#297) ; voir
+def task_lines(passage: Passage) -> list[TaskLine]:
+    """Lignes de tâches d'un passage, sans accès à la base (#297) ; voir
     `lines_of`."""
-    return lines_of(note_part.heading_path, note_part.content, is_todo_part(note_part))
+    return lines_of(passage.heading_path, passage.content, is_todo_passage(passage))
 
 
 def lines_of(heading_path: str, content: str, flagged: bool) -> list[TaskLine]:
@@ -157,15 +162,15 @@ def lines_of(heading_path: str, content: str, flagged: bool) -> list[TaskLine]:
 
 
 def body_lines(note_date: date, body: str) -> list[list[TaskLine]]:
-    """Les lignes de tâches de chaque note part d'un texte de note, dans l'ordre :
+    """Les lignes de tâches de chaque passage d'un texte de note, dans l'ordre :
     ce que l'analyse en tirerait, sans toucher à la base (images exceptées)."""
     return [
         lines_of(
-            HEADING_SEPARATOR.join(part.headings),
-            replace_image_paths("\n".join(part.lines))[0],
-            TODO_TAG in part.tags,
+            HEADING_SEPARATOR.join(passage.headings),
+            replace_image_paths("\n".join(passage.lines))[0],
+            TODO_TAG in passage.tags,
         )
-        for part in parse_note(str(note_date), body).parts
+        for passage in parse_note(str(note_date), body).passages
     ]
 
 
@@ -175,9 +180,10 @@ def renamed_identities(
     """Les lignes de tâches dont le chemin change quand des titres sont réécrits,
     avant et après (#299).
 
-    Seuls des titres changent : les note parts et leurs lignes se retrouvent une à
-    une, dans le même ordre. Si le renommage en fusionnait ou en séparait, elles ne
-    se retrouvent plus et la note est refusée.
+    Seuls des titres changent : un passage par section écrite (#387), les passages
+    et leurs lignes se retrouvent un à un, dans le même ordre (par précaution, la
+    note est refusée sinon). Deux lignes de même texte qui se retrouveraient sous le
+    même chemin seraient une seule tâche : la note est refusée aussi.
     """
     old, new = body_lines(note_date, old_body), body_lines(note_date, new_body)
     if len(old) != len(new) or any(
@@ -188,16 +194,25 @@ def renamed_identities(
             "passages de la note. Décocher son titre dans le bilan, ou lui garder son "
             "ancien nom."
         )
+    before = {(line.path, line.text) for lines in old for line in lines}
+    after = [(line.path, line.text) for lines in new for line in lines]
+    if len(set(after)) < len(before):
+        text = next(text for path, text in after if after.count((path, text)) > 1)
+        raise NoteRenameError(
+            f"Note du {note_date} : le renommage confondrait deux tâches « {text} » "
+            "sous le même chemin. Décocher son titre dans le bilan, ou lui garder son "
+            "ancien nom."
+        )
     return [
         (before, after)
-        for part_before, part_after in zip(old, new, strict=True)
-        for before, after in zip(part_before, part_after, strict=True)
+        for passage_before, passage_after in zip(old, new, strict=True)
+        for before, after in zip(passage_before, passage_after, strict=True)
         if (before.path, before.text) != (after.path, after.text)
     ]
 
 
-def is_todo_part(note_part: NotePart) -> bool:
-    return any(tag.name == TODO_TAG for tag in note_part.tags.all())
+def is_todo_passage(passage: Passage) -> bool:
+    return any(tag.name == TODO_TAG for tag in passage.tags.all())
 
 
 def move_tasks(note_date: date, moves: list[tuple[TaskLine, TaskLine]]) -> None:
@@ -208,9 +223,9 @@ def move_tasks(note_date: date, moves: list[tuple[TaskLine, TaskLine]]) -> None:
     for before, after in moves:
         tasks = Task.all_objects.filter(
             created_from_note=True,
-            note_part_date=note_date,
+            note_date=note_date,
             note_path=before.path,
-            note_part_text=before.text,
+            note_line_text=before.text,
         )
         found.append((list(tasks.values_list("pk", flat=True)), after.path))
     for pks, _ in found:
@@ -221,19 +236,17 @@ def move_tasks(note_date: date, moves: list[tuple[TaskLine, TaskLine]]) -> None:
         Task.all_objects.filter(pk__in=pks).update(note_path=path)
 
 
-def note_lines(note_parts: Iterable[NotePart]) -> set[tuple[str, str]]:
+def note_lines(passages: Iterable[Passage]) -> set[tuple[str, str]]:
     """Chemin et texte des lignes de tâches d'une note : leur identité (#240)."""
     return {
-        (line.path, line.text)
-        for note_part in note_parts
-        for line in task_lines(note_part)
+        (line.path, line.text) for passage in passages for line in task_lines(passage)
     }
 
 
 def note_tasks_to_review(note_date: date):
     return Task.objects.filter(
         created_from_note=True,
-        note_part_date=note_date,
+        note_date=note_date,
         note_state=Task.NoteState.TO_REVIEW,
     )
 
@@ -243,13 +256,13 @@ def mark_gone_lines(note_date: date, lines: set[tuple[str, str]]) -> None:
     le bilan propose de la garder, de l'écarter ou de la remplacer (#240)."""
     reviewed = Task.objects.filter(
         created_from_note=True,
-        note_part_date=note_date,
+        note_date=note_date,
         note_state=Task.NoteState.REVIEWED,
     )
     gone = [
         task.pk
         for task in reviewed
-        if (task.note_path, task.note_part_text) not in lines
+        if (task.note_path, task.note_line_text) not in lines
     ]
     Task.objects.filter(pk__in=gone).update(note_state=Task.NoteState.TO_REVIEW)
 
@@ -328,16 +341,12 @@ def dismissed_rows() -> list[DismissedRow]:
     ).select_related("project", "parent")
     tops = [
         task
-        for task in dismissed.order_by("-note_part_date", "pk")
+        for task in dismissed.order_by("-note_date", "pk")
         if task.parent is None or task.parent.note_state != Task.NoteState.DISMISSED
     ]
-    notes = Note.objects.in_bulk(
-        [task.note_part_date for task in tops], field_name="date"
-    )
+    notes = Note.objects.in_bulk([task.note_date for task in tops], field_name="date")
     return [
-        DismissedRow(
-            task, len(dismissed_subtree(task)) - 1, notes.get(task.note_part_date)
-        )
+        DismissedRow(task, len(dismissed_subtree(task)) - 1, notes.get(task.note_date))
         for task in tops
     ]
 
@@ -352,18 +361,16 @@ def restore_task(task: Task) -> Task | None:
     """
     subtree = dismissed_subtree(task)
     notes = Note.objects.filter(
-        date__in={item.note_part_date for item in subtree if item.created_from_note}
+        date__in={item.note_date for item in subtree if item.created_from_note}
     )
     lines: dict[date | None, set[tuple[str, str]]] = {
-        note.date: note_lines(note.parts.prefetch_related("tags")) for note in notes
+        note.date: note_lines(note.passages.prefetch_related("tags")) for note in notes
     }
     states: dict[str, list[int]] = {}
     for item in subtree:
         if not item.created_from_note:
             state = ""
-        elif (item.note_path, item.note_part_text) in lines.get(
-            item.note_part_date, set()
-        ):
+        elif (item.note_path, item.note_line_text) in lines.get(item.note_date, set()):
             state = Task.NoteState.REVIEWED
         else:
             state = Task.NoteState.DETACHED
@@ -385,27 +392,27 @@ def replace_task(old: Task, new: Task) -> None:
     la nouvelle ligne (#240) : elle garde avancement, échéance et sous-tâches, et
     reçoit celles de la nouvelle. Son titre suit la ligne, sauf s'il a été
     renommé à la main."""
-    if old.title == old.note_part_text:
+    if old.title == old.note_line_text:
         old.title = new.title
     Task.all_objects.filter(parent=new).update(parent=old)
-    old.note_path, old.note_part_text = new.note_path, new.note_part_text
+    old.note_path, old.note_line_text = new.note_path, new.note_line_text
     new.delete()
     old.note_state = Task.NoteState.REVIEWED
     old.save()
 
 
-def create_tasks_from_note_part(note_part: NotePart) -> list[Task]:
-    """Une tâche par ligne de tâche d'une note part ; renvoie celles créées."""
-    part_tags = [tag.name for tag in note_part.tags.all()]
+def create_tasks_from_passage(passage: Passage) -> list[Task]:
+    """Une tâche par ligne de tâche d'un passage ; renvoie celles créées."""
+    passage_tags = [tag.name for tag in passage.tags.all()]
 
-    sections = levels(note_part.section) if note_part.section else []
-    tags = [tag for tag in part_tags if tag != TODO_TAG]
+    sections = levels(passage.section) if passage.section else []
+    tags = [tag for tag in passage_tags if tag != TODO_TAG]
     created_tasks: list[Task] = []
     tasks: dict[int, Task] = {}
-    for line in task_lines(note_part):
+    for line in task_lines(passage):
         task_data = {
-            "date": note_part.note.date,
-            "project": note_part.project.name,
+            "date": passage.note.date,
+            "project": passage.project.name if passage.project else None,
             "path": line.path,
             "content": line.text,
             "sections": sections,

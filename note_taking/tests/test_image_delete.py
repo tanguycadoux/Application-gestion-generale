@@ -12,7 +12,7 @@ from core.models import Project
 from images.models import Image
 from images.services import import_image
 from images.tests.files import image_file
-from note_taking.models import Note, NotePart, NotePartImageLink
+from note_taking.models import Note, Passage, PassageImageLink
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -29,10 +29,10 @@ class ImageDeleteTests(TestCase):
 
     def use(self, note_date: str = "2025-11-24") -> None:
         note = Note.objects.get_or_create(date=note_date)[0]
-        part = NotePart.objects.create(
+        part = Passage.objects.create(
             note=note, project=Project.objects.get_or_create(name="P")[0]
         )
-        NotePartImageLink.objects.create(note_part=part, image=self.image)
+        PassageImageLink.objects.create(passage=part, image=self.image)
 
     def delete(self):
         with self.captureOnCommitCallbacks(execute=True):

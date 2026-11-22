@@ -4,7 +4,7 @@ from .models import Tag
 
 
 def forget_unused_tags() -> int:
-    """Supprime les tags qu'aucune note part ni tâche n'utilise ; renvoie leur nombre.
+    """Supprime les tags qu'aucun passage ni tâche n'utilise ; renvoie leur nombre.
 
     `core` ne connaît pas les apps : ce qui utilise un tag, ce sont les relations
     qui y mènent, lues sur le modèle.

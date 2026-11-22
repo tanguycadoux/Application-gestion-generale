@@ -12,7 +12,7 @@ from django.urls import reverse
 from core.models import Section
 from core.tests.debug_urls import DebugUrlsTestCase
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -111,7 +111,7 @@ class NoteFormViewTests(ViewTestCase):
             reverse("note_taking:note_detail", args=[note.date]),
             fetch_redirect_response=False,
         )
-        self.assertEqual(note.parts.count(), 1)
+        self.assertEqual(note.passages.count(), 1)
 
     def test_creation_contenu_non_traitable(self):
         """La note est enregistrée même si son contenu ne peut pas être traité."""
@@ -133,12 +133,12 @@ class NoteFormViewTests(ViewTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.body, "# P\n### A\ny")
-        self.assertEqual(list(note.parts.values_list("content", flat=True)), ["y"])
+        self.assertEqual(list(note.passages.values_list("content", flat=True)), ["y"])
 
     def test_modification_interrompue_garde_les_parts_d_avant(self):
-        """#221 : le texte est enregistré, les note parts d'avant restent intactes."""
+        """#221 : le texte est enregistré, les passages d'avant restent intacts."""
         note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        process_note_parts(note)
+        process_passages(note)
         body = "# P\ny\n# Q\n![a](absente.png)"
 
         response = self.client.post(
@@ -148,7 +148,7 @@ class NoteFormViewTests(ViewTestCase):
 
         note.refresh_from_db()
         self.assertEqual(note.body, body)
-        self.assertEqual(list(note.parts.values_list("content", flat=True)), ["x"])
+        self.assertEqual(list(note.passages.values_list("content", flat=True)), ["x"])
         self.assertEqual(self.levels(response), ["error"])
 
     def test_modification_contenu_non_traitable(self):
@@ -211,13 +211,13 @@ class ClearNotesRemovedTests(ViewTestCase):
 
 
 class RenderedPartsDisplayTests(ViewTestCase):
-    """Le HTML rendu des note parts est affiché tel quel (#56)."""
+    """Le HTML rendu des passages est affiché tel quel (#56)."""
 
     RAW = "# P\n## S\nPremier paragraphe.\n\nSecond paragraphe."
 
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=self.RAW)
-        process_note_parts(self.note)
+        process_passages(self.note)
 
     def assertRenderedAsIs(self, response):
         html = response.content.decode()
@@ -255,7 +255,7 @@ class RenderedContentContainerTests(ViewTestCase):
 
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=self.RAW)
-        process_note_parts(self.note)
+        process_passages(self.note)
 
     def test_detail_de_la_note(self):
         response = self.client.get(

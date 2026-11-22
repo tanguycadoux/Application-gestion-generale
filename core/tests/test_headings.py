@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from images.models import Image
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from todolist.models import Task
 
 from .stylesheets import read_source_css
@@ -37,7 +37,7 @@ class HeadingHierarchyTests(TestCase):
         project = Project.objects.create(name="P")
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
         section = self.section = Section.objects.create(project=project, name="S")
-        NotePart.objects.create(
+        Passage.objects.create(
             note=self.note, project=project, section=section, content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")

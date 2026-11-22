@@ -29,9 +29,9 @@ class ConvertTestCase(TestCase):
             title=text,
             project=self.project,
             created_from_note=True,
-            note_part_date=date.fromisoformat(day),
+            note_date=date.fromisoformat(day),
             note_path=path,
-            note_part_text=text,
+            note_line_text=text,
             note_state=fields.pop("note_state", Task.NoteState.REVIEWED),
             **fields,
         )

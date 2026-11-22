@@ -31,7 +31,9 @@ class ImageDetail(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["notes"] = (
-            Note.objects.filter(parts__images=self.object).distinct().order_by("date")
+            Note.objects.filter(passages__images=self.object)
+            .distinct()
+            .order_by("date")
         )
         return context
 

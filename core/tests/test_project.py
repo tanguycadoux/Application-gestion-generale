@@ -4,7 +4,7 @@ from django.db.models import ProtectedError
 from django.test import TestCase
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -15,10 +15,10 @@ class ProjectDeletionTests(TestCase):
         self.note = Note.objects.create(
             date="2025-11-24", body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- a"
         )
-        process_note_parts(self.note)
+        process_passages(self.note)
 
-    def test_projet_utilise_par_une_note_part(self):
-        project = self.note.parts.get().project
+    def test_projet_utilise_par_une_passage(self):
+        project = self.note.passages.get().project
         Task.objects.all().delete()
 
         with self.assertRaises(ProtectedError):

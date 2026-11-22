@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- Première\n- Seconde"
@@ -26,7 +26,7 @@ def mark_reviewed():
 class NoDueDateTests(TestCase):
     def test_tache_issue_d_une_note_sans_echeance(self):
         note = Note.objects.create(date="2025-11-24", body=BODY)
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(
             list(Task.objects.values_list("due_date", flat=True)), [None, None]
@@ -56,7 +56,7 @@ class RedirectAfterSaveTests(TestCase):
         note = Note.objects.create(
             date="2025-11-24", body="# P\n::: {.metadata}\ntodo: true\n:::\n- Première"
         )
-        process_note_parts(note)
+        process_passages(note)
         mark_reviewed()
 
         response = self.client.post(
@@ -70,7 +70,7 @@ class RedirectAfterSaveTests(TestCase):
         """#389 : enregistrer sans quitter l'éditeur n'ouvre pas le bilan ; un
         avertissement dit les tâches à revoir, et le bilan vient à la fin."""
         note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
-        process_note_parts(note)
+        process_passages(note)
 
         response = self.client.post(
             reverse("note_taking:edit_note", args=[note.date]),
@@ -85,7 +85,7 @@ class RedirectAfterSaveTests(TestCase):
 
     def test_enregistrement_sans_javascript_revient_a_l_editeur(self):
         note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
-        process_note_parts(note)
+        process_passages(note)
 
         response = self.client.post(
             reverse("note_taking:edit_note", args=[note.date]),
@@ -98,7 +98,7 @@ class RedirectAfterSaveTests(TestCase):
 
     def test_modification_sans_tache_a_revoir(self):
         note = Note.objects.create(date="2025-11-24", body=BODY)
-        process_note_parts(note)
+        process_passages(note)
         mark_reviewed()
 
         response = self.client.post(
@@ -112,7 +112,7 @@ class RedirectAfterSaveTests(TestCase):
 
     def test_remplacement_par_le_fichier_source(self):
         note = Note.objects.create(date="2025-11-24", body="# P\ntexte")
-        process_note_parts(note)
+        process_passages(note)
         file = SimpleUploadedFile(
             "2025-11-24.qmd", f"---\ndate: 2025-11-24\n---\n{BODY}".encode()
         )
@@ -140,7 +140,7 @@ class RedirectAfterSaveTests(TestCase):
 class ReviewPageTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=BODY)
-        process_note_parts(self.note)
+        process_passages(self.note)
         self.first, self.second = Task.objects.order_by("pk")
 
     def url(self) -> str:

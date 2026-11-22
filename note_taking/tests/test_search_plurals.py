@@ -12,9 +12,9 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from core.tables import fold
-from note_taking.models import Note, NotePart
-from note_taking.search import group_by_note, search_note_parts
-from note_taking.search_index import search_parts, similar_terms
+from note_taking.models import Note, Passage
+from note_taking.search import group_by_note, search_passages
+from note_taking.search_index import search_passage_ids, similar_terms
 from note_taking.search_query import parse_query
 from note_taking.word_forms import (
     TOKEN_REGEX,
@@ -94,7 +94,7 @@ class PluralSearchTests(TestCase):
 
     @staticmethod
     def part(note, project, section, heading_path, content):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=note,
             project=project,
             section=section,
@@ -104,11 +104,11 @@ class PluralSearchTests(TestCase):
 
     def search(self, text):
         query = parse_query(text)
-        return query, search_note_parts(query)
+        return query, search_passages(query)
 
     def exact(self, text):
         """Sans l'élargissement aux fautes (#200) : l'index seul."""
-        return search_note_parts(parse_query(text), expand=False)
+        return search_passages(parse_query(text), expand=False)
 
     def test_le_singulier_trouve_le_pluriel(self):
         query, results = self.search("calcul thermique")
@@ -157,7 +157,7 @@ class PluralSearchTests(TestCase):
         self.part(note, project, None, "", "mais encore un bus")
 
         self.assertEqual(self.search("mai")[1], [])
-        self.assertEqual(search_note_parts(parse_query("bu"), expand=False), [])
+        self.assertEqual(search_passages(parse_query("bu"), expand=False), [])
 
     def test_chemin_singulier_trouve_le_niveau_au_pluriel(self):
         _, results = self.search('chemin:"calcul thermique"')
@@ -184,7 +184,7 @@ class PluralTypoTests(TestCase):
         cls.note = Note.objects.create(date="2026-10-01")
 
     def part(self, content):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=self.note, project=self.project, content=content
         )
 
@@ -194,13 +194,13 @@ class PluralTypoTests(TestCase):
         self.assertEqual(similar_terms("thermique", 2), [])
 
     def test_singulier_et_pluriel_comptent_ensemble(self):
-        """Un mot présent dans 2 note parts, au singulier et au pluriel, n'est pas rare."""
+        """Un mot présent dans 2 passages, au singulier et au pluriel, n'est pas rare."""
         one = self.part("thermique")
         two = self.part("thermiques")
         self.part("thermiqua")
 
         query = parse_query("thermique")
-        results = search_note_parts(query)
+        results = search_passages(query)
 
         self.assertEqual(set(results or []), {one, two})
         self.assertEqual(query.expansions, [])
@@ -209,7 +209,7 @@ class PluralTypoTests(TestCase):
         p = self.part("la résistance thermique")
 
         query = parse_query("thermiqes")
-        results = search_note_parts(query)
+        results = search_passages(query)
 
         self.assertEqual(results, [p])
         self.assertEqual(query.expansions, [("thermiqes", "thermique")])
@@ -224,7 +224,7 @@ class PluralSnippetTests(TestCase):
         cls.note = Note.objects.create(date="2026-10-15")
 
     def part(self, content, heading_path=""):
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=self.note,
             project=self.project,
             content=content,
@@ -233,14 +233,14 @@ class PluralSnippetTests(TestCase):
 
     def snippet(self, text, part):
         query = parse_query(text)
-        parts = search_note_parts(query) or []
+        parts = search_passages(query) or []
         hits = [hit for group in group_by_note(query, parts) for hit in group.hits]
-        found = [hit.snippet for hit in hits if hit.part == part]
+        found = [hit.snippet for hit in hits if hit.passage == part]
         assert found, f"{part.content} n'est pas trouvée"
         return found[0]
 
     def common(self, text):
-        """Deux autres note parts : le mot n'est plus rare, donc pas élargi (#200)."""
+        """Deux autres passages : le mot n'est plus rare, donc pas élargi (#200)."""
         self.part(text)
         self.part(text)
 
@@ -332,11 +332,11 @@ class IndexPluralTests(TestCase):
     def test_l_index_trouve_le_pluriel(self):
         project = Project.objects.create(name="Alpha")
         note = Note.objects.create(date="2026-10-15")
-        part = NotePart.objects.create(
+        part = Passage.objects.create(
             note=note, project=project, content="Mesures thermiques"
         )
 
-        self.assertEqual(search_parts("mesure thermique"), [part.pk])
+        self.assertEqual(search_passage_ids("mesure thermique"), [part.pk])
 
 
 class ReducedIndexMigrationTests(TransactionTestCase):
@@ -358,10 +358,11 @@ class ReducedIndexMigrationTests(TransactionTestCase):
             )
 
     def tearDown(self):
+        # La migration des passages (#387) remplace cet index par `passage_search`.
         executor = MigrationExecutor(connection)
         executor.migrate(executor.loader.graph.leaf_nodes())
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM note_part_search")
+            cursor.execute("DELETE FROM passage_search")
 
     def rows(self, sql, params=()):
         with connection.cursor() as cursor:
@@ -420,7 +421,7 @@ class PluralHelpTests(TestCase):
         # cherchés au singulier comme au pluriel.
         project = Project.objects.create(name="Alpha")
         note = Note.objects.create(date="2026-10-15")
-        NotePart.objects.create(note=note, project=project, content="thermique")
+        Passage.objects.create(note=note, project=project, content="thermique")
 
         response = self.client.get(self.url, {"q": "thermiqe"})
 

@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from core.models import Project, Section, Tag
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
@@ -118,7 +118,7 @@ class TaskDetailTests(TestCase):
             date="2025-11-24",
             body="# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- De la note",
         )
-        process_note_parts(note)
+        process_passages(note)
         task = Task.objects.get(title="De la note")
 
         html = self.get(task)

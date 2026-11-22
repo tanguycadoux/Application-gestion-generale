@@ -1,7 +1,6 @@
 """Vocabulaire de l'interface : « passage », jamais « note part » (#362).
 
-`NotePart` reste le nom du modèle dans le code (#387 le renommera) ; l'utilisateur,
-lui, ne lit que « passage ». Ces tests empêchent le mot de revenir dans ce qui
+Le modèle s'appelle `Passage` depuis #387, et l'utilisateur ne lit que « passage ». Ces tests empêchent le mot de revenir dans ce qui
 s'affiche : pages rendues, messages, gabarits et chaînes du code Python.
 """
 
@@ -17,14 +16,14 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 BASE_DIR = Path(settings.BASE_DIR)
 APPS = ("core", "images", "note_taking", "todolist", "app_gestion")
 
 # « note part », « note parts », « Note-part », « notepart » : tout ce qu'un
-# utilisateur pourrait lire. Pas les identifiants (`note_part`, `NotePart`).
+# utilisateur pourrait lire. Pas les identifiants (`Passage`, `passages`).
 FORBIDDEN = re.compile(r"\bnote[\s-]?parts?\b", re.IGNORECASE)
 
 # Commentaires des gabarits : ils ne sont jamais rendus.
@@ -49,7 +48,7 @@ class VisiblePagesTests(TestCase):
 
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=NOTE_BODY)
-        process_note_parts(self.note)
+        process_passages(self.note)
         self.project = Project.objects.get(name="Alpha")
         self.section = Section.objects.get(project=self.project, name="Réunion")
 

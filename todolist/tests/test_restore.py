@@ -12,7 +12,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 from todolist.services import remove_task
 
@@ -22,7 +22,7 @@ BODY = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C\n- D"
 class RestoreTestCase(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body=BODY)
-        process_note_parts(self.note)
+        process_passages(self.note)
         Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
     def task(self, title: str) -> Task:
@@ -145,7 +145,7 @@ class RestoreTests(RestoreTestCase):
         remove_task(self.task("D"))
         self.note.body = "# P\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B\n  - C"
         self.note.save()
-        process_note_parts(self.note)
+        process_passages(self.note)
 
         self.restore("D")
 

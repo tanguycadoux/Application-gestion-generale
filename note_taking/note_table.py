@@ -31,13 +31,13 @@ def filter_dates(notes: QuerySet, value) -> QuerySet:
 
 def filter_projects(notes: QuerySet, names: tuple[str, ...]) -> QuerySet:
     # Les notes d'au moins un des projets cochés. `distinct` : une note qui a
-    # plusieurs parties de ces projets ne compte qu'une fois.
-    return notes.filter(parts__project__name__in=names).distinct()
+    # plusieurs passages de ces projets ne compte qu'une fois.
+    return notes.filter(passages__project__name__in=names).distinct()
 
 
 def project_choices() -> list[Choice]:
     """Les projets qui ont au moins une note, avec leur pastille."""
-    projects = Project.objects.filter(note_parts__isnull=False).distinct()
+    projects = Project.objects.filter(passages__isnull=False).distinct()
     return [Choice(p.name, p.name, p) for p in projects.order_by("name")]
 
 

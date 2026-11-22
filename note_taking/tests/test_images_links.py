@@ -1,4 +1,4 @@
-"""Tests des liens entre note parts et images (#26)."""
+"""Tests des liens entre passages et images (#26)."""
 
 import shutil
 import tempfile
@@ -9,13 +9,13 @@ from django.test import TestCase, override_settings
 from images.services import import_image
 from images.tests.files import image_file
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
-class NotePartImagesTests(TestCase):
+class PassageImagesTests(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -27,16 +27,16 @@ class NotePartImagesTests(TestCase):
 
     def process(self, body: str) -> Note:
         note = Note.objects.create(date="2025-11-24", body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
-    def test_images_liees_a_leur_note_part(self):
+    def test_images_liees_a_leur_passage(self):
         note = self.process(
             "# P\n### A\n![](images/banc.png)\n### B\n![](capteur.png)\n![](banc.png)"
         )
 
         self.assertEqual(
-            {part.section.name: set(part.images.all()) for part in note.parts.all()},
+            {part.section.name: set(part.images.all()) for part in note.passages.all()},
             {"A": {self.banc}, "B": {self.capteur, self.banc}},
         )
 
@@ -49,10 +49,10 @@ class NotePartImagesTests(TestCase):
         note = self.process("# P\n![](banc.png)")
 
         note.body = "# P\n![](capteur.png)"
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(list(note.images), [self.capteur])
-        self.assertFalse(self.banc.note_parts.exists())
+        self.assertFalse(self.banc.passages.exists())
 
     def test_image_utilisee_non_supprimable(self):
         self.process("# P\n![](banc.png)")

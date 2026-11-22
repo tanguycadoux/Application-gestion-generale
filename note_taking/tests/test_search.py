@@ -1,4 +1,4 @@
-"""Tests de la recherche de note parts par projet et sujet."""
+"""Tests de la recherche de passages par projet et sujet."""
 
 import re
 
@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
 from core.models import Project, Section
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 
 
 class SearchTestCase(TestCase):
@@ -26,17 +26,17 @@ class SearchTestCase(TestCase):
         )
         old = Note.objects.create(date="2025-11-23")
         new = Note.objects.create(date="2025-11-24")
-        cls.alpha_thermique = NotePart.objects.create(
+        cls.alpha_thermique = Passage.objects.create(
             note=old, project=cls.alpha, section=cls.s_alpha_thermique, content="a1"
         )
-        cls.alpha_mesures = NotePart.objects.create(
+        cls.alpha_mesures = Passage.objects.create(
             note=new, project=cls.alpha, section=cls.s_mesures, content="a2"
         )
-        cls.beta_thermique = NotePart.objects.create(
+        cls.beta_thermique = Passage.objects.create(
             note=new, project=cls.beta, section=cls.s_beta_thermique, content="b1"
         )
-        NotePart.objects.create(note=new, project=cls.beta, section=None, content="b2")
-        NotePart.objects.create(
+        Passage.objects.create(note=new, project=cls.beta, section=None, content="b2")
+        Passage.objects.create(
             note=new, project=cls.alpha, section=cls.s_detail, content="a3"
         )
 
@@ -116,7 +116,7 @@ class NotesSearchTests(SearchTestCase):
         self.assertEqual(self.contents(response), ["a2"])
 
     def test_texte_libre_sans_casse_ni_accents(self):
-        NotePart.objects.create(
+        Passage.objects.create(
             note=Note.objects.get(date="2025-11-24"),
             project=self.alpha,
             content="Résistance thermique",
@@ -130,7 +130,7 @@ class NotesSearchTests(SearchTestCase):
 
     def test_texte_libre_et_projet(self):
         """Le texte s'ajoute aux filtres : tous doivent être satisfaits."""
-        NotePart.objects.create(
+        Passage.objects.create(
             note=Note.objects.get(date="2025-11-24"),
             project=self.beta,
             content="a2 chez Beta",
@@ -150,10 +150,10 @@ class NotesSearchTests(SearchTestCase):
 
     def test_texte_libre_trie_par_pertinence(self):
         note = Note.objects.get(date="2025-11-23")
-        NotePart.objects.create(
+        Passage.objects.create(
             note=note, project=self.alpha, content="banc " + "autre " * 30
         )
-        court = NotePart.objects.create(note=note, project=self.alpha, content="banc")
+        court = Passage.objects.create(note=note, project=self.alpha, content="banc")
 
         response = self.search(q="banc")
 
@@ -298,14 +298,14 @@ class PathTreeTests(SearchTestCase):
         projects = [n for n in self.nodes(response) if not n.selectable]
         self.assertEqual([n.name for n in projects], ["Alpha", "Beta"])
 
-    def test_parent_propose_meme_sans_note_part(self):
+    def test_parent_propose_meme_sans_passage(self):
         """Un niveau dont seuls les descendants servent reste proposé : on peut
         chercher dessous."""
         rapports = Section.objects.create(project=self.alpha, name="Rapports")
         annuel = Section.objects.create(
             project=self.alpha, parent=rapports, name="Annuel"
         )
-        NotePart.objects.create(
+        Passage.objects.create(
             note=Note.objects.get(date="2025-11-24"),
             project=self.alpha,
             section=annuel,
@@ -317,7 +317,7 @@ class PathTreeTests(SearchTestCase):
         self.assertIn("Alpha › Rapports", labels)
         self.assertIn("Alpha › Rapports › Annuel", labels)
 
-    def test_niveau_sans_note_part_absent(self):
+    def test_niveau_sans_passage_absent(self):
         Section.objects.create(project=self.alpha, name="Vide")
 
         self.assertNotIn("Alpha › Vide", self.labels(self.client.get(self.url)))
@@ -356,7 +356,7 @@ class PathTreeTests(SearchTestCase):
 
     def test_unite_des_compteurs_avec_l_arbre_seulement(self):
         """Sans niveau ni projet à proposer, pas d'arbre : pas de légende non plus."""
-        NotePart.objects.all().delete()
+        Passage.objects.all().delete()
         response = self.client.get(self.url)
 
         self.assertNotContains(response, "Entre parenthèses")

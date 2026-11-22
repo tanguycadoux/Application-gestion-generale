@@ -1,4 +1,4 @@
-"""Tests des services de note : import, mise à jour, note parts, tâches, images.
+"""Tests des services de note : import, mise à jour, passages, tâches, images.
 
 Ces tests figent le comportement actuel décrit dans le README, afin de
 détecter toute régression lors de la restructuration (M3).
@@ -22,11 +22,11 @@ from note_taking.exceptions import (
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.rendering import IMAGE_MISSING_PATH
 from note_taking.services import (
     insert_note_in_table,
-    process_note_parts,
+    process_passages,
     update_note_from_source_file,
 )
 from todolist.models import Task
@@ -43,12 +43,12 @@ def qmd_file(name: str, content: str, encoding: str = "utf-8") -> SimpleUploaded
 def parts_summary(note: Note) -> list[tuple]:
     return [
         (
-            part.project.name,
+            part.project.name if part.project else None,
             levels(part.section) if part.section else [],
             sorted(part.tags.values_list("name", flat=True)),
             part.content,
         )
-        for part in note.parts.order_by("pk")
+        for part in note.passages.order_by("pk")
     ]
 
 
@@ -83,7 +83,7 @@ class ImportNoteTests(ServiceTestCase):
 
         note = insert_note_in_table(qmd_file("2025-11-24.qmd", HEADER + "# P\nx"))
 
-        self.assertEqual(note.parts.get().project, existing)
+        self.assertEqual(note.passages.get().project, existing)
         self.assertEqual(Project.objects.count(), 1)
 
     def test_prefixe_test_refuse(self):
@@ -195,11 +195,11 @@ class UpdateNoteTests(ServiceTestCase):
         self.assertEqual(parts_summary(self.note), [("P", ["Ancien"], [], "x")])
 
 
-class ProcessNotePartsTests(ServiceTestCase):
+class ProcessPassagesTests(ServiceTestCase):
     def test_contenu_sans_bloc_en_tete(self):
         note = Note.objects.create(date="2025-11-24", body="# P\n## S\nx")
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(parts_summary(note), [("P", ["S"], [], "x")])
 
@@ -209,28 +209,28 @@ class ProcessNotePartsTests(ServiceTestCase):
         )
 
         with self.assertRaisesMessage(NoteParseError, "ne correspond pas"):
-            process_note_parts(note)
+            process_passages(note)
 
     def test_regeneration_remplace_les_parts(self):
         note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx\n### B\ny")
-        process_note_parts(note)
+        process_passages(note)
 
         note.body = "# P\n### C\nz"
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(parts_summary(note), [("P", ["C"], [], "z")])
-        self.assertEqual(NotePart.objects.count(), 1)
+        self.assertEqual(Passage.objects.count(), 1)
 
     def test_analyse_interrompue_garde_les_parts_d_avant(self):
-        """#221 : tout ou rien, note parts et tâches comprises."""
+        """#221 : tout ou rien, passages et tâches comprises."""
         note = Note.objects.create(date="2025-11-24", body="# P\n### A\nx")
-        process_note_parts(note)
+        process_passages(note)
 
         note.body = (
             "# P\n::: {.metadata}\ntodo: true\n:::\n- Tâche\n# Q\n![a](absente.png)"
         )
         with self.assertRaises(ImageNotFoundError):
-            process_note_parts(note)
+            process_passages(note)
 
         self.assertEqual(parts_summary(note), [("P", ["A"], [], "x")])
         self.assertFalse(Task.objects.exists())
@@ -238,27 +238,27 @@ class ProcessNotePartsTests(ServiceTestCase):
     def test_contenu_vide(self):
         note = Note.objects.create(date="2025-11-24", body="")
 
-        self.assertEqual(process_note_parts(note), [])
+        self.assertEqual(process_passages(note), [])
 
     def test_lignes_jointes_dans_le_contenu(self):
         note = Note.objects.create(date="2025-11-24", body="# P\nx\n\ny")
 
-        process_note_parts(note)
+        process_passages(note)
 
-        self.assertEqual(note.parts.get().content, "x\n\ny")
+        self.assertEqual(note.passages.get().content, "x\n\ny")
 
 
 class TaskGenerationTests(ServiceTestCase):
     def process(self, raw: str) -> Note:
         note = Note.objects.create(date="2025-11-24", body=raw)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
-    def test_meme_projet_que_la_note_part(self):
+    def test_meme_projet_que_la_passage(self):
         """#19 : notes et tâches partagent le même modèle Project."""
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        self.assertEqual(Task.objects.get().project, note.parts.get().project)
+        self.assertEqual(Task.objects.get().project, note.passages.get().project)
 
     def test_une_tache_par_ligne(self):
         self.process(
@@ -270,11 +270,11 @@ class TaskGenerationTests(ServiceTestCase):
         for task in tasks:
             self.assertTrue(task.created_from_note)
             self.assertIsNone(task.due_date)
-            self.assertEqual(task.note_part_date, date(2025, 11, 24))
+            self.assertEqual(task.note_date, date(2025, 11, 24))
             self.assertEqual(task.project.name, "P")
 
     def test_tags_de_la_part_sans_todo_et_sujet_a_part(self):
-        """Le sujet de la note part devient le sujet de la tâche, pas un tag (#163)."""
+        """Le sujet du passage devient le sujet de la tâche, pas un tag (#163)."""
         self.process(
             "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n::: {.metadata}\ntags: [urgent]\n:::\n- Tâche"
         )
@@ -291,7 +291,7 @@ class TaskGenerationTests(ServiceTestCase):
     def test_pas_de_doublon_au_retraitement(self):
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(Task.objects.count(), 1)
 
@@ -300,7 +300,7 @@ class TaskGenerationTests(ServiceTestCase):
         note = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
         note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche modifiée"
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(
             sorted(Task.objects.values_list("title", flat=True)),
@@ -328,19 +328,19 @@ class ImageTests(ServiceTestCase):
             date="2025-11-24", body="# P\n![Banc](dossier/banc.png)"
         )
 
-        process_note_parts(note)
+        process_passages(note)
 
-        self.assertEqual(note.parts.get().content, f"![Banc](image:{image.pk})")
+        self.assertEqual(note.passages.get().content, f"![Banc](image:{image.pk})")
 
     def test_image_non_importee(self):
         note = Note.objects.create(date="2025-11-24", body="# P\n![Banc](banc.png)")
 
         with self.assertRaises(ImageNotFoundError):
-            process_note_parts(note)
+            process_passages(note)
 
     def test_rendu_avec_image(self):
         image = import_image(image_file("banc.png"))
-        part = NotePart(
+        part = Passage(
             project=Project(name="P"),
             content=f"![Banc](image:{image.pk})",
         )
@@ -348,28 +348,28 @@ class ImageTests(ServiceTestCase):
         self.assertIn(f'src="{image.file.url}"', part.rendered_content())
 
     def test_rendu_image_supprimee(self):
-        part = NotePart(project=Project(name="P"), content="![Banc](image:999)")
+        part = Passage(project=Project(name="P"), content="![Banc](image:999)")
 
         self.assertIn(f'src="{static(IMAGE_MISSING_PATH)}"', part.rendered_content())
 
 
 class DeepPathTests(ServiceTestCase):
-    """Les titres `##` à `######` forment le chemin de la note part (#296)."""
+    """Les titres `##` à `######` forment le chemin du passage (#296)."""
 
     BODY = "# P\n## S\n### Notes\n#### Détail\nx"
 
-    def test_chemin_de_la_note_part(self):
+    def test_chemin_de_la_passage(self):
         note = Note.objects.create(date="2025-11-24", body=self.BODY)
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(
             parts_summary(note), [("P", ["S", "Notes", "Détail"], [], "x")]
         )
 
     def test_une_seule_section_par_niveau(self):
-        process_note_parts(Note.objects.create(date="2025-11-24", body=self.BODY))
-        process_note_parts(Note.objects.create(date="2025-11-25", body=self.BODY))
+        process_passages(Note.objects.create(date="2025-11-24", body=self.BODY))
+        process_passages(Note.objects.create(date="2025-11-25", body=self.BODY))
 
         self.assertEqual(
             sorted(Section.objects.values_list("name", flat=True)),
@@ -380,9 +380,9 @@ class DeepPathTests(ServiceTestCase):
         body = "# P\n## S\n### Notes\n- [ ] Tâche"
         note = Note.objects.create(date="2025-11-24", body=body)
 
-        process_note_parts(note)
+        process_passages(note)
 
-        part = note.parts.get()
+        part = note.passages.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(part.heading_path, "P › S › Notes")
         task = Task.objects.get()
@@ -392,18 +392,18 @@ class DeepPathTests(ServiceTestCase):
         body = "# P\n## S\n### Notes\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
         note = Note.objects.create(date="2025-11-24", body=body)
 
-        process_note_parts(note)
+        process_passages(note)
 
-        part = note.parts.get()
+        part = note.passages.get()
         self.assertEqual(levels(part.section), ["S", "Notes"])
         self.assertEqual(list(part.tags.values_list("name", flat=True)), ["TODO"])
         self.assertEqual(levels(Task.objects.get().section), ["S", "Notes"])
 
     def test_niveaux_inutilises_oublies_a_la_mise_a_jour(self):
         note = Note.objects.create(date="2025-11-24", body=self.BODY)
-        process_note_parts(note)
+        process_passages(note)
 
         note.body = "# P\n## S\nx"
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(list(Section.objects.values_list("name", flat=True)), ["S"])

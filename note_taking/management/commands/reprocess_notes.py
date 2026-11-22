@@ -5,7 +5,7 @@ from core.tags import forget_unused_tags
 from note_taking.exceptions import NoteError
 from note_taking.models import Note
 from note_taking.search_index import rebuild_index
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 class Command(BaseCommand):
@@ -31,7 +31,7 @@ class Command(BaseCommand):
                 try:
                     # Une note en erreur est annulée sans bloquer les autres.
                     with transaction.atomic():
-                        process_note_parts(note)
+                        process_passages(note)
                 except NoteError as e:
                     errors += 1
                     self.stderr.write(f"Échec pour la note du {note.date} : {e}")
@@ -40,7 +40,7 @@ class Command(BaseCommand):
 
             # Après un recalcul, les tags d'avant l'analyse actuelle ne servent plus.
             forgotten = forget_unused_tags()
-            # L'index de recherche repart des note parts, orphelines comprises (#198).
+            # L'index de recherche repart des passages, orphelins compris (#198).
             rebuild_index()
 
             if dry_run:

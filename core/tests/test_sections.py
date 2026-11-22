@@ -25,7 +25,7 @@ from core.sections import (
     with_ancestors,
     with_descendants,
 )
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from todolist.models import Task
 
 
@@ -181,10 +181,10 @@ class SectionModelTests(TestCase):
 
         self.assertFalse(Section.objects.exists())
 
-    def test_section_protegee_par_une_note_part(self):
+    def test_section_protegee_par_un_passage(self):
         section = section_for(self.project, ["A"])
         note = Note.objects.create(date="2025-11-24")
-        NotePart.objects.create(note=note, project=self.project, section=section)
+        Passage.objects.create(note=note, project=self.project, section=section)
 
         with self.assertRaises(Exception) as caught:
             section.delete()
@@ -267,8 +267,8 @@ class ForgetUnusedTests(TestCase):
         self.project = Project.objects.create(name="P")
         self.note = Note.objects.create(date="2025-11-24")
 
-    def part(self, *names: str) -> NotePart:
-        return NotePart.objects.create(
+    def part(self, *names: str) -> Passage:
+        return Passage.objects.create(
             note=self.note,
             project=self.project,
             section=section_for(self.project, list(names)),

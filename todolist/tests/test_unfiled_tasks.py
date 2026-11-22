@@ -24,7 +24,7 @@ class UnfiledTaskTests(TestCase):
 
     def review(self, project: Project | None):
         filed = Task.objects.get(title="rangée")
-        data = {
+        data: dict[str, object] = {
             "new-TOTAL_FORMS": "2",
             "new-INITIAL_FORMS": "2",
             "gone-TOTAL_FORMS": "0",

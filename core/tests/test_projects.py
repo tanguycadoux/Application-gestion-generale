@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from core.models import Project
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 FAMILIES = [
@@ -50,7 +50,7 @@ class ProjectColorTests(TestCase):
     def test_projet_cree_par_une_note(self):
         note = Note.objects.create(date="2025-11-24", body="# Nouveau\nx")
 
-        process_note_parts(note)
+        process_passages(note)
 
         self.assertEqual(Project.objects.get(name="Nouveau").color, "orange")
 
@@ -85,7 +85,7 @@ class ProjectPagesTests(TestCase):
     def setUp(self):
         self.used = Project.objects.create(name="Utilisé", color="teal")
         note = Note.objects.create(date="2025-11-24", body="# Utilisé\nx")
-        process_note_parts(note)
+        process_passages(note)
         Task.objects.create(title="T", project=self.used)
         self.unused = Project.objects.create(
             name="Libre", color="rose", description="Pour plus tard"

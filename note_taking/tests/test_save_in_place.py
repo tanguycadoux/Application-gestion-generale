@@ -37,7 +37,9 @@ class SaveInPlaceHtmxTests(TestCase):
         self.note.refresh_from_db()
         self.assertEqual(self.note.body, "# P\ny")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(self.note.parts.values_list("content", flat=True)), ["y"])
+        self.assertEqual(
+            list(self.note.passages.values_list("content", flat=True)), ["y"]
+        )
 
     def test_repond_par_les_toasts(self):
         response = self.post("# P\ny")

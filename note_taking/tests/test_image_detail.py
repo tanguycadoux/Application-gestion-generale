@@ -5,15 +5,15 @@ from django.urls import reverse
 
 from core.models import Project
 from images.models import Image
-from note_taking.models import Note, NotePart, NotePartImageLink
+from note_taking.models import Note, Passage, PassageImageLink
 
 
 def use_image(image: Image, note_date: str) -> Note:
     note = Note.objects.get_or_create(date=note_date)[0]
-    part = NotePart.objects.create(
+    part = Passage.objects.create(
         note=note, project=Project.objects.get_or_create(name="P")[0]
     )
-    NotePartImageLink.objects.create(note_part=part, image=image)
+    PassageImageLink.objects.create(passage=part, image=image)
     return note
 
 
@@ -36,7 +36,7 @@ class ImageDetailTests(TestCase):
     def test_notes_qui_utilisent_l_image(self):
         later = use_image(self.image, "2026-02-03")
         earlier = use_image(self.image, "2025-11-24")
-        use_image(self.image, "2025-11-24")  # deux note parts de la même note
+        use_image(self.image, "2025-11-24")  # deux passages de la même note
 
         html = self.get().content.decode()
 

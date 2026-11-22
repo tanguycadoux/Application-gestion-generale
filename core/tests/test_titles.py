@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from core.models import Project
 from images.models import Image
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from todolist.forms import TaskForm
 from todolist.models import Task
 
@@ -31,7 +31,7 @@ def visible_text(html: str) -> str:
 class PageTitlesTests(TestCase):
     def setUp(self):
         self.note = Note.objects.create(date="2025-11-24", body="# P\nx")
-        NotePart.objects.create(
+        Passage.objects.create(
             note=self.note, project=Project.objects.create(name="P"), content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")

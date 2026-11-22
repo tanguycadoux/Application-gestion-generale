@@ -154,15 +154,20 @@ class StoredPassageTests(TestCase):
         )
 
     def test_identifiants_comme_la_page_de_la_note(self):
-        """Ceux de `add_heading_ids` sur la note rendue : un titre d'encadré compte."""
-        body = "# P\n::: {.callout-note}\n## Suivi\n:::\n## Suivi\ntexte"
+        """Ceux de `add_heading_ids` sur la note rendue : le titre d'un encadré en
+        est le titre, sans identifiant ; celui d'une citation en prend un."""
+        body = (
+            "# P\n::: {.callout-note}\n## Suivi\n:::\n## Suivi\nun\n"
+            "> ## Bilan\n\n## Bilan\ndeux"
+        )
         note = self.process(body)
 
         page = self.client.get(reverse("note_taking:note_detail", args=[note.date]))
 
-        anchor = self.stored(note)[-1].heading_id
-        self.assertEqual(anchor, "suivi-1")
-        self.assertContains(page, f'id="{anchor}"')
+        anchors = [p.heading_id for p in self.stored(note)]
+        self.assertEqual(anchors, ["p", "suivi", "bilan-1"])
+        for anchor in anchors:
+            self.assertContains(page, f'id="{anchor}"')
 
     def test_identifiant_explicite(self):
         note = self.process("# P\n## Suivi {#mon-suivi}\ntexte")
@@ -291,3 +296,15 @@ class PassageModelTests(TestCase):
         note = Note.objects.create(date="2026-11-22")
 
         self.assertEqual(str(Passage.objects.create(note=note)), "Sans projet")
+
+
+class QuotedHeadingTests(TestCase):
+    def test_titre_d_une_citation_avant_le_sien(self):
+        """Un titre dans une citation prend un identifiant sans être un titre de
+        la note : le titre qui le suit est le `-1`."""
+        note = Note.objects.create(
+            date="2026-11-22", body="# P\n> ## Suivi\n\n## Suivi\ntexte"
+        )
+        process_passages(note)
+
+        self.assertEqual(note.passages.last().heading_id, "suivi-1")

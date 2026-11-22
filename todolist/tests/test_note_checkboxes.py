@@ -7,7 +7,7 @@ ignorée. Dans une branche `todo: true`, chaque élément de liste est une tâch
 from django.test import TestCase
 
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 BLOCK = "::: {.metadata}\ntodo: true\n:::\n"
@@ -16,7 +16,7 @@ BLOCK = "::: {.metadata}\ntodo: true\n:::\n"
 class CheckboxTestCase(TestCase):
     def save_note(self, body: str, date: str = "2025-11-24") -> Note:
         note, _ = Note.objects.update_or_create(date=date, defaults={"body": body})
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def titles(self) -> list[str]:
@@ -64,7 +64,7 @@ class OpenBoxTests(CheckboxTestCase):
     def test_tache_sans_tag_todo(self):
         self.save_note("# P\n- [ ] A")
 
-        part_tags = list(Note.objects.get().parts.get().tags.all())
+        part_tags = list(Note.objects.get().passages.get().tags.all())
         self.assertEqual(part_tags, [])
         self.assertFalse(Task.objects.get().tags.exists())
 

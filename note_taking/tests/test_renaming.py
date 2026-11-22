@@ -17,7 +17,7 @@ from note_taking.renaming import (
     rename_titles,
     rewrite_titles,
 )
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 class HeadingsTests(SimpleTestCase):
@@ -132,7 +132,7 @@ class RenameTitlesTests(TestCase):
 
     def note(self, body: str, day: str = "2025-11-24") -> Note:
         note = Note.objects.create(date=day, body=body)
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def section(self, *names: str) -> Section:
@@ -162,7 +162,9 @@ class RenameTitlesTests(TestCase):
         note.refresh_from_db()
         self.assertEqual(note.body, "# P\n## Rencontre\nx\n### Suite\ny")
         self.assertEqual(
-            sorted(levels(part.section) for part in note.parts.all() if part.section),
+            sorted(
+                levels(part.section) for part in note.passages.all() if part.section
+            ),
             [["Rencontre"], ["Rencontre", "Suite"]],
         )
         self.assertEqual(report, ["1 titre réécrit dans 1 note."])

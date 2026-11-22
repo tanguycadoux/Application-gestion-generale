@@ -60,11 +60,15 @@ class Task(models.Model):
     ]
 
     title = models.CharField("titre", max_length=TASK_TEXT_MAX_LENGTH)
+    # Sans projet : une case du texte sans projet d'une note, « à rattacher à un
+    # projet » (#385). Le bilan de la note et la fiche de la tâche le signalent.
     project = models.ForeignKey(
         Project,
         verbose_name="projet",
         on_delete=protect_unless_dismissed,
         related_name="tasks",
+        null=True,
+        blank=True,
     )
     section = models.ForeignKey(
         Section,
@@ -96,8 +100,9 @@ class Task(models.Model):
     progress_before_done = models.PositiveSmallIntegerField(default=0, editable=False)
 
     created_from_note = models.BooleanField(default=False)
-    note_part_date = models.DateField(null=True, blank=True)
-    note_part_text = models.CharField(
+    # Date de la note d'origine et texte de la ligne, sans marqueur ni case (#240).
+    note_date = models.DateField(null=True, blank=True)
+    note_line_text = models.CharField(
         max_length=TASK_TEXT_MAX_LENGTH, blank=True, default=""
     )
     # Chemin de la ligne dans la note : titres de sa section sans `TODO`, puis
@@ -155,9 +160,9 @@ class Task(models.Model):
             models.UniqueConstraint(
                 fields=[
                     "created_from_note",
-                    "note_part_date",
+                    "note_date",
                     "note_path",
-                    "note_part_text",
+                    "note_line_text",
                 ],
                 condition=Q(created_from_note=True),
                 name="unique_note_line_when_created_from_note",

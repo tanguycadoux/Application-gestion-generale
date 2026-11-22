@@ -10,17 +10,17 @@ from django.urls import reverse
 from core.dates import date_text
 from core.models import Project
 from core.sections import section_for
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.search import (
     DEFAULT_GROUP,
     DEFAULT_VIEW,
     group_by_note,
     result_options,
-    search_note_parts,
+    search_passages,
 )
 from note_taking.search_document import split_titles
 from note_taking.search_query import parse_query
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 class PresentationTestCase(TestCase):
@@ -44,7 +44,7 @@ class PresentationTestCase(TestCase):
         section = (
             section_for(cls.project, split_titles(heading_path)[1:]) if level else None
         )
-        return NotePart.objects.create(
+        return Passage.objects.create(
             note=note,
             project=cls.project,
             section=section,
@@ -112,7 +112,7 @@ class BreadcrumbTests(PresentationTestCase):
 
     def test_les_niveaux_sont_dans_les_hits(self):
         query = parse_query("mesure")
-        parts = search_note_parts(query)
+        parts = search_passages(query)
         assert parts is not None
 
         hit = group_by_note(query, parts)[0].hits[0]
@@ -222,7 +222,7 @@ class DocumentByPathTests(PresentationTestCase):
 
         self.assertLess(html.index("banc de test"), html.index("un banc ancien"))
 
-    def test_note_part_du_projet_seul_sous_le_projet(self):
+    def test_passage_du_projet_seul_sous_le_projet(self):
         self.part(self.new, "banc seul", "Alpha")
 
         html = self.get(view="document", group="path").content.decode()
@@ -311,7 +311,7 @@ class DocumentByLevelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         for day, body in NOTES_369.items():
-            process_note_parts(Note.objects.create(date=day, body=body))
+            process_passages(Note.objects.create(date=day, body=body))
 
     def document(self, group: str) -> list[str]:
         response = self.client.get(

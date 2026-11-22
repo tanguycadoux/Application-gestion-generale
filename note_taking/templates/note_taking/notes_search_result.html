@@ -15,7 +15,7 @@
     {# Pas encore de recherche : l'aide de syntaxe, ouverte. #}
     {% include "note_taking/search_help.html" with open=True %}
 {% elif results %}
-    {# Un résultat est un passage (une note part dans le code, #362). #}
+    {# Un résultat est un passage (`Passage`, #362, #387). #}
     <p class="mb-2 text-sm text-slate-600">{{ results|length }} passage{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
 
     {# Présentation (#356) : des liens, sans JavaScript, qui gardent le reste de l'adresse. #}
@@ -65,14 +65,14 @@
                                     {% endif %}
                                 </h3>
                             </div>
-                            {% tag_list hit.part.tags.all %}
+                            {% tag_list hit.passage.tags.all %}
                         </header>
 
                         {% if hit.snippet %}
                             <p class="text-sm [&_mark]:rounded-sm [&_mark]:bg-amber-200">{{ hit.snippet }}</p>
                         {% else %}
                             <div class="rendered-content">
-                                {{ hit.part.rendered_content|safe }}
+                                {{ hit.passage.rendered_content|safe }}
                             </div>
                         {% endif %}
                     </section>

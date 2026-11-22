@@ -1,16 +1,16 @@
-"""Index plein texte des note parts (#198) : une table FTS5 de SQLite.
+"""Index plein texte des passages (#198) : une table FTS5 de SQLite.
 
-C'est un index **dérivé** : il se recalcule avec les note parts (enregistrement,
+C'est un index **dérivé** : il se recalcule avec les passages (enregistrement,
 suppression, `reprocess_notes`) et ne contient rien qu'on ne puisse reconstruire.
-Une ligne par note part, dont le `rowid` est la clé de la note part, et trois colonnes :
-le texte de la note part (`content`) et ses titres (`headings`) tels qu'écrits, pour
+Une ligne par passage, dont le `rowid` est la clé du passage, et trois colonnes :
+le texte du passage (`content`) et ses titres (`headings`) tels qu'écrits, pour
 les phrases exactes, les préfixes et les extraits, et les deux à leur forme réduite
 (`words`, #372), pour les mots : le singulier et le pluriel y sont le même mot. Les
 blocs `{.metadata}` (déjà cherchables par tag) et les références `image:<pk>` n'y
 sont pas.
 
 La table ignore la casse et les accents (`unicode61 remove_diacritics 2`). Ce module
-ne connaît que `NotePart` : les filtres de projet, de chemin et de tag restent ceux
+ne connaît que `Passage` : les filtres de projet, de chemin et de tag restent ceux
 du modèle.
 """
 
@@ -22,11 +22,11 @@ from django.dispatch import receiver
 from django.utils.html import escape
 from django.utils.safestring import SafeString, mark_safe
 
-from .models import NotePart
+from .models import Passage
 from .qmd.parser import METADATA_BLOCK_START
 from .word_forms import reduce_text
 
-TABLE = "note_part_search"
+TABLE = "passage_search"
 # Filtres de colonnes de FTS5 : le texte tel qu'écrit, ou ses formes réduites (#372).
 WRITTEN = "{content headings}"
 WORDS = "words"
@@ -39,7 +39,7 @@ IMAGE_REFERENCE_REGEX = re.compile(r"\(image:\d+\)(\{[^}]*\})?")
 
 
 def indexed_text(content: str) -> str:
-    """Le texte d'une note part qu'on met dans l'index."""
+    """Le texte d'un passage qu'on met dans l'index."""
     lines = []
     in_metadata = False
     for line in content.splitlines():
@@ -77,8 +77,8 @@ def match_expression(text: str) -> str | None:
     return " AND ".join(f"{WORDS} : {quote(reduce_text(word))}" for word in words)
 
 
-def match_parts(expression: str) -> list[int]:
-    """Clés des note parts qui répondent à une requête FTS5, la plus pertinente d'abord."""
+def match_passages(expression: str) -> list[int]:
+    """Clés des passages qui répondent à une requête FTS5, le plus pertinent d'abord."""
     with connection.cursor() as cursor:
         cursor.execute(
             f"SELECT rowid FROM {TABLE} WHERE {TABLE} MATCH %s ORDER BY rank",
@@ -87,15 +87,15 @@ def match_parts(expression: str) -> list[int]:
         return [row[0] for row in cursor.fetchall()]
 
 
-def search_parts(text: str) -> list[int]:
-    """Clés des note parts qui contiennent tous les mots (au singulier comme au
+def search_passage_ids(text: str) -> list[int]:
+    """Clés des passages qui contiennent tous les mots (au singulier comme au
     pluriel), la plus pertinente d'abord."""
     expression = match_expression(text)
-    return [] if expression is None else match_parts(expression)
+    return [] if expression is None else match_passages(expression)
 
 
 def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
-    """Extrait de chaque note part, les termes trouvés entre `<mark>` (#201).
+    """Extrait de chaque passage, les termes trouvés entre `<mark>` (#201).
 
     Le texte de l'extrait est échappé : seuls les `<mark>` sont du HTML. FTS5 pose
     des caractères de contrôle autour des termes, remplacés après l'échappement.
@@ -119,48 +119,53 @@ def snippets(expression: str, pks: list[int]) -> dict[int, SafeString]:
     return found
 
 
-def index_part(part: NotePart) -> None:
-    unindex_part(part.pk)
-    text = indexed_text(part.content)
+def index_passage(passage: Passage) -> None:
+    unindex_passage(passage.pk)
+    text = indexed_text(passage.content)
     with connection.cursor() as cursor:
         cursor.execute(
             f"INSERT INTO {TABLE}(rowid, content, headings, words) "
             "VALUES (%s, %s, %s, %s)",
-            [part.pk, text, part.heading_path, indexed_words(text, part.heading_path)],
+            [
+                passage.pk,
+                text,
+                passage.heading_path,
+                indexed_words(text, passage.heading_path),
+            ],
         )
 
 
-def unindex_part(pk: int) -> None:
+def unindex_passage(pk: int) -> None:
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM {TABLE} WHERE rowid = %s", [pk])
 
 
 def rebuild_index() -> int:
-    """Vide l'index puis y remet toutes les note parts. Renvoie leur nombre."""
+    """Vide l'index puis y remet tous les passages. Renvoie leur nombre."""
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM {TABLE}")
     count = 0
-    for part in NotePart.objects.only("pk", "content", "heading_path").iterator():
-        index_part(part)
+    for passage in Passage.objects.only("pk", "content", "heading_path").iterator():
+        index_passage(passage)
         count += 1
     return count
 
 
-@receiver(post_save, sender=NotePart)
-def index_saved_part(sender, instance, raw=False, **kwargs):
+@receiver(post_save, sender=Passage)
+def index_saved_passage(sender, instance, raw=False, **kwargs):
     if not raw:
-        index_part(instance)
+        index_passage(instance)
 
 
-@receiver(post_delete, sender=NotePart)
-def unindex_deleted_part(sender, instance, **kwargs):
-    unindex_part(instance.pk)
+@receiver(post_delete, sender=Passage)
+def unindex_deleted_passage(sender, instance, **kwargs):
+    unindex_passage(instance.pk)
 
 
 # Mots de l'index (#200) : une vue FTS5 sur la table, une ligne par mot et par
-# colonne avec le nombre de note parts (`doc`) qui l'y contiennent. On n'y lit que la
+# colonne avec le nombre de passages (`doc`) qui l'y contiennent. On n'y lit que la
 # colonne des formes réduites (#372) : « thermiques » y est « thermique ».
-VOCABULARY = "note_part_vocab"
+VOCABULARY = "passage_vocab"
 
 
 # Fautes tolérées (#200) : aucune sous TYPO_MIN_LENGTH lettres.
@@ -192,7 +197,7 @@ def edit_distance(a: str, b: str) -> int:
 
 
 def term_documents(word: str) -> int:
-    """Nombre de note parts qui contiennent ce mot, au singulier ou au pluriel."""
+    """Nombre de passages qui contiennent ce mot, au singulier ou au pluriel."""
     with connection.cursor() as cursor:
         cursor.execute(
             f"SELECT doc FROM {VOCABULARY} WHERE col = %s AND term = %s",
@@ -205,7 +210,7 @@ def term_documents(word: str) -> int:
 def similar_terms(word: str, max_distance: int) -> list[tuple[str, int]]:
     """Les mots de l'index à `max_distance` fautes au plus de `word`, sans lui-même.
 
-    Renvoie `(mot, nombre de note parts)`, le plus proche d'abord, puis le plus
+    Renvoie `(mot, nombre de passages)`, le plus proche d'abord, puis le plus
     fréquent. Les mots sont à leur forme réduite, comme dans la colonne `words` :
     casse, accents et pluriel sont ignorés, et « thermiques » n'est pas un mot proche
     de « thermique » (#372).

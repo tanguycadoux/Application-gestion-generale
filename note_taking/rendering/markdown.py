@@ -12,7 +12,7 @@ class NoSetextHeadingsExtension(markdown.Extension):
     """Désactive les titres « setext » (texte souligné de - ou de =).
 
     Les notes n'utilisent que les titres en #, sur lesquels repose le découpage en
-    note parts. Sans cela, un élément de liste vide (« - ») après un élément de
+    passages. Sans cela, un élément de liste vide (« - ») après un élément de
     liste ferait de celui-ci un titre, là où Quarto affiche une liste (#124).
     """
 

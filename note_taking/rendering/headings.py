@@ -55,6 +55,16 @@ def add_heading_ids(html: str) -> str:
     return HEADING_BLOCK_REGEX.sub(add, html)
 
 
+def heading_texts(html: str) -> list[tuple[str, str]]:
+    """Le texte et l'identifiant de chaque titre de ce HTML, dans l'ordre."""
+    found = []
+    for match in HEADING_BLOCK_REGEX.finditer(html):
+        anchor = ANY_ID_REGEX.search(match["attrs"])
+        text = html_module.unescape(HTML_TAG_REGEX.sub("", match["inner"])).strip()
+        found.append((text, html_module.unescape(anchor["id"]) if anchor else ""))
+    return found
+
+
 def heading_anchor(title: str) -> str | None:
     """L'identifiant que prend ce titre, tel qu'écrit, dans la page d'une note.
 

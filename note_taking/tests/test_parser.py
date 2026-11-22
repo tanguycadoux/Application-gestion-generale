@@ -22,7 +22,7 @@ from django.test import SimpleTestCase
 from note_taking.exceptions import NoteParseError
 from note_taking.qmd.parser import (
     ParsedNote,
-    ParsedPart,
+    ParsedPassage,
     parse_note,
     parse_note_raw_file_as_dict,
 )
@@ -45,7 +45,7 @@ def normalize(parsed: dict) -> dict:
 
 
 def parts(raw: str) -> list[tuple]:
-    """Résumé des note parts : (projet, chemin, tags triés, lignes)."""
+    """Résumé des passages : (projet, chemin, tags triés, lignes)."""
     return [
         (part["project"], part["path"], sorted(part["tags"]), part["content"])
         for part in parse(raw)["content"]
@@ -61,15 +61,19 @@ class ParsedNoteTests(SimpleTestCase):
             ParsedNote(
                 file_date="2025-11-24",
                 metadata={"date": "2025-11-24"},
-                parts=[
-                    ParsedPart(
+                passages=[
+                    ParsedPassage(
                         project="P",
                         path=["S"],
                         tags=[],
                         lines=["x"],
                         headings=["P", "S"],
+                        heading_numbers=[0, 1],
+                        start_line=5,
+                        end_line=6,
                     )
                 ],
+                headings=["P", "S"],
             ),
         )
 
@@ -186,7 +190,7 @@ class HierarchyTests(SimpleTestCase):
 
 
 class TodoKeyTests(SimpleTestCase):
-    """`todo: true` dans un bloc marque la branche : ses note parts reçoivent le tag
+    """`todo: true` dans un bloc marque la branche : ses passages reçoivent le tag
     `TODO`, et chaque élément de liste y est une tâche (#297). Un titre `TODO` n'a
     plus de sens propre."""
 
@@ -360,8 +364,11 @@ class FixedBugsTests(SimpleTestCase):
         raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
         self.assertEqual(parts(raw), [("P", [], [], ["avant", "---", "apres"])])
 
-    def test_texte_avant_premier_projet_ignore(self):
-        self.assertEqual(parts("intro\n# P\nx"), [("P", [], [], ["x"])])
+    def test_texte_avant_premier_projet_sans_projet(self):
+        """#385 : un passage sans projet, et non plus ignoré (#36)."""
+        self.assertEqual(
+            parts("intro\n# P\nx"), [(None, [], [], ["intro"]), ("P", [], [], ["x"])]
+        )
 
     def test_metadonnee_contenant_deux_points(self):
         result = parse("---\nheure: 10:30\n---\n# P\nx")
@@ -376,11 +383,12 @@ class FixedBugsTests(SimpleTestCase):
 
 
 class GroupingTests(SimpleTestCase):
-    def test_regroupement_de_sections_non_adjacentes(self):
+    def test_sections_non_adjacentes_a_leur_place(self):
+        """#387 : un passage par section écrite, dans l'ordre, sans regroupement."""
         raw = "# P\n### A\nx\n### B\ny\n### A\nz"
         self.assertEqual(
             parts(raw),
-            [("P", ["A"], [], ["x", "z"]), ("P", ["B"], [], ["y"])],
+            [("P", ["A"], [], ["x"]), ("P", ["B"], [], ["y"]), ("P", ["A"], [], ["z"])],
         )
 
     def test_lignes_vides_en_bordure_retirees(self):

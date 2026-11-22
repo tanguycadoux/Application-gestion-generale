@@ -5,7 +5,7 @@ from datetime import date
 
 from core.month_calendar import CalendarDay, MonthCalendar, month_grid, requested_month
 
-from .models import Note, NotePart
+from .models import Note, Passage
 
 
 @dataclass
@@ -27,7 +27,7 @@ def month_calendar(year: int, month: int, today: date) -> MonthCalendar:
     notes = {note.date: note for note in Note.objects.filter(date__range=period)}
     projects: dict[date, list[str]] = {}
     for note_date, name in (
-        NotePart.objects.filter(note__date__range=period)
+        Passage.objects.filter(note__date__range=period, project__isnull=False)
         .values_list("note__date", "project__name")
         .distinct()
         .order_by("note__date", "project__name")

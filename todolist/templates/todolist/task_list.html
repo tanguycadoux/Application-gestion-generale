@@ -61,7 +61,7 @@
                                 {% if row.note %}
                                     <a href="{% url 'note_taking:note_detail' row.note.date %}">Note du {% date_time row.note.date "moyen" %}</a>
                                 {% elif row.task.created_from_note %}
-                                    {% date_time row.task.note_part_date "moyen" %}
+                                    {% date_time row.task.note_date "moyen" %}
                                 {% else %}
                                     Saisie à la main
                                 {% endif %}

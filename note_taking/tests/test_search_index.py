@@ -1,4 +1,4 @@
-"""Index plein texte des note parts (#198) : FTS5, dérivé des note parts."""
+"""Index plein texte des passages (#198) : FTS5, dérivé des passages."""
 
 from io import StringIO
 
@@ -7,25 +7,25 @@ from django.db import connection
 from django.test import TestCase
 
 from core.models import Project
-from note_taking.models import Note, NotePart
+from note_taking.models import Note, Passage
 from note_taking.search_index import (
     indexed_text,
     match_expression,
     rebuild_index,
-    search_parts,
+    search_passage_ids,
 )
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 
 
 def make_part(note, content, project, heading_path=""):
-    return NotePart.objects.create(
+    return Passage.objects.create(
         note=note, project=project, content=content, heading_path=heading_path
     )
 
 
 def indexed_rows() -> int:
     with connection.cursor() as cursor:
-        cursor.execute("SELECT count(*) FROM note_part_search")
+        cursor.execute("SELECT count(*) FROM passage_search")
         return cursor.fetchone()[0]
 
 
@@ -76,118 +76,118 @@ class IndexTests(TestCase):
         cls.note = Note.objects.create(date="2025-11-24")
         cls.autre = Note.objects.create(date="2025-11-25")
 
-    def test_une_note_part_créée_est_cherchable(self):
+    def test_une_passage_créée_est_cherchable(self):
         part = make_part(self.note, "Mesure de la résistance thermique", self.project)
 
-        self.assertEqual(search_parts("thermique"), [part.pk])
+        self.assertEqual(search_passage_ids("thermique"), [part.pk])
 
     def test_insensible_à_la_casse_et_aux_accents(self):
         part = make_part(self.note, "Résistance THERMIQUE", self.project)
 
-        self.assertEqual(search_parts("resistance thermique"), [part.pk])
-        self.assertEqual(search_parts("RÉSISTANCE"), [part.pk])
+        self.assertEqual(search_passage_ids("resistance thermique"), [part.pk])
+        self.assertEqual(search_passage_ids("RÉSISTANCE"), [part.pk])
 
     def test_les_titres_sont_indexés(self):
         part = make_part(
             self.note, "x", self.project, heading_path="Alpha › Calibration"
         )
 
-        self.assertEqual(search_parts("calibration"), [part.pk])
+        self.assertEqual(search_passage_ids("calibration"), [part.pk])
 
     def test_tous_les_mots_sont_requis(self):
         make_part(self.note, "alpha seul", self.project)
         both = make_part(self.note, "alpha et beta", self.project)
 
-        self.assertEqual(search_parts("alpha beta"), [both.pk])
+        self.assertEqual(search_passage_ids("alpha beta"), [both.pk])
 
     def test_aucun_résultat(self):
         make_part(self.note, "du texte", self.project)
 
-        self.assertEqual(search_parts("absent"), [])
+        self.assertEqual(search_passage_ids("absent"), [])
 
     def test_texte_vide_ne_cherche_rien(self):
         make_part(self.note, "du texte", self.project)
 
-        self.assertEqual(search_parts(""), [])
+        self.assertEqual(search_passage_ids(""), [])
 
     def test_la_syntaxe_fts_ne_plante_pas(self):
         make_part(self.note, "du texte", self.project)
 
         for text in ['"', "a*", "NEAR(", "(", "a AND", "col:x", "-x", "^"]:
             with self.subTest(text=text):
-                search_parts(text)
+                search_passage_ids(text)
 
     def test_les_métadonnées_ne_sont_pas_cherchables(self):
         make_part(self.note, "::: {.metadata}\ntags: urgent\n:::\ncorps", self.project)
 
-        self.assertEqual(search_parts("urgent"), [])
+        self.assertEqual(search_passage_ids("urgent"), [])
 
     def test_le_plus_pertinent_vient_en_premier(self):
         faible = make_part(self.note, "thermique " + "autre " * 40, self.project)
         fort = make_part(self.note, "thermique", self.project)
 
-        self.assertEqual(search_parts("thermique"), [fort.pk, faible.pk])
+        self.assertEqual(search_passage_ids("thermique"), [fort.pk, faible.pk])
 
-    def test_modifier_une_note_part_met_l_index_à_jour(self):
+    def test_modifier_une_passage_met_l_index_à_jour(self):
         part = make_part(self.note, "ancien", self.project)
 
         part.content = "nouveau"
         part.save()
 
-        self.assertEqual(search_parts("ancien"), [])
-        self.assertEqual(search_parts("nouveau"), [part.pk])
+        self.assertEqual(search_passage_ids("ancien"), [])
+        self.assertEqual(search_passage_ids("nouveau"), [part.pk])
 
-    def test_supprimer_une_note_part_la_retire_de_l_index(self):
+    def test_supprimer_une_passage_la_retire_de_l_index(self):
         part = make_part(self.note, "texte", self.project)
 
         part.delete()
 
-        self.assertEqual(search_parts("texte"), [])
+        self.assertEqual(search_passage_ids("texte"), [])
         self.assertEqual(indexed_rows(), 0)
 
-    def test_supprimer_une_note_retire_ses_note_parts(self):
+    def test_supprimer_une_note_retire_ses_passages(self):
         make_part(self.note, "texte", self.project)
         kept = make_part(self.autre, "texte", self.project)
 
         self.note.delete()
 
-        self.assertEqual(search_parts("texte"), [kept.pk])
+        self.assertEqual(search_passage_ids("texte"), [kept.pk])
 
-    def test_recalculer_les_note_parts_reconstruit_l_index(self):
+    def test_recalculer_les_passages_reconstruit_l_index(self):
         self.note.body = "# Alpha\n\nbanc d'essai\n"
         self.note.save()
-        process_note_parts(self.note)
+        process_passages(self.note)
 
-        first = search_parts("essai")
-        process_note_parts(self.note)
+        first = search_passage_ids("essai")
+        process_passages(self.note)
 
         self.assertEqual(len(first), 1)
-        self.assertEqual(len(search_parts("essai")), 1)
-        self.assertEqual(indexed_rows(), NotePart.objects.count())
+        self.assertEqual(len(search_passage_ids("essai")), 1)
+        self.assertEqual(indexed_rows(), Passage.objects.count())
 
-    def test_rebuild_index_repart_des_note_parts(self):
+    def test_rebuild_index_repart_des_passages(self):
         part = make_part(self.note, "texte", self.project)
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM note_part_search")
+            cursor.execute("DELETE FROM passage_search")
             cursor.execute(
-                "INSERT INTO note_part_search(rowid, content, headings) "
+                "INSERT INTO passage_search(rowid, content, headings) "
                 "VALUES (999999, 'fantôme', '')"
             )
 
         rebuild_index()
 
-        self.assertEqual(search_parts("texte"), [part.pk])
-        self.assertEqual(search_parts("fantôme"), [])
+        self.assertEqual(search_passage_ids("texte"), [part.pk])
+        self.assertEqual(search_passage_ids("fantôme"), [])
         self.assertEqual(indexed_rows(), 1)
 
 
 class ReprocessNotesIndexTests(TestCase):
     def test_reprocess_notes_reconstruit_l_index(self):
         note = Note.objects.create(date="2025-11-24", body="# Alpha\n\nbanc\n")
-        process_note_parts(note)
+        process_passages(note)
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM note_part_search")
+            cursor.execute("DELETE FROM passage_search")
 
         call_command("reprocess_notes", stdout=StringIO())
 
-        self.assertEqual(len(search_parts("banc")), 1)
+        self.assertEqual(len(search_passage_ids("banc")), 1)

@@ -28,7 +28,7 @@ def number_floats(html: str) -> str:
     """Numérote les tableaux et figures du HTML rendu, et relie les références.
 
     Les numéros repartent de 1 et suivent l'ordre du texte rendu (une note, ou
-    une note part seule) : le même tableau n'a pas le même numéro dans les deux,
+    un passage seul) : le même tableau n'a pas le même numéro dans les deux,
     écart assumé avec Quarto. Seuls comptent les tableaux à `{#tbl-…}` et à
     légende, et les figures à `{#fig-…}` et à légende : une image seule devient
     une `<figure>`, comme dans Quarto. Une référence sans cible dans ce texte

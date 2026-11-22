@@ -12,14 +12,14 @@ from django.urls import reverse
 from core.forms import section_path_text
 from core.models import Project
 from note_taking.models import Note
-from note_taking.services import process_note_parts
+from note_taking.services import process_passages
 from todolist.models import Task
 
 
 class LifecycleTestCase(TestCase):
     def save_note(self, body: str, date: str = "2025-11-24") -> Note:
         note, _ = Note.objects.update_or_create(date=date, defaults={"body": body})
-        process_note_parts(note)
+        process_passages(note)
         return note
 
     def titles(self) -> list[str]:
@@ -60,8 +60,8 @@ class IdentityTests(LifecycleTestCase):
             title="Renommée",
             project=Project.objects.create(name="P"),
             created_from_note=True,
-            note_part_date="2025-11-24",
-            note_part_text="Tâche",
+            note_date="2025-11-24",
+            note_line_text="Tâche",
         )
 
         self.save_note("# P\n## A\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
@@ -237,7 +237,7 @@ class GoneLineTests(LifecycleTestCase):
 
         b = Task.objects.get(pk=self.b.pk)
         self.assertEqual(
-            (b.title, b.note_part_text, b.progress, str(b.due_date), b.note_state),
+            (b.title, b.note_line_text, b.progress, str(b.due_date), b.note_state),
             ("B modifiée", "B modifiée", 60, "2025-12-01", Task.NoteState.REVIEWED),
         )
         self.assertFalse(Task.all_objects.filter(pk=new.pk).exists())
