@@ -9,6 +9,7 @@ from django.template import Context, Template
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
+from core.dates import date_text
 from core.models import Project
 from note_taking.models import Note, NotePart
 from todolist.models import Task
@@ -49,6 +50,35 @@ class DateFormatsTests(SimpleTestCase):
             render('{{ d|date_text:"court" }}', d=datetime.date(2026, 6, 7)),
             "dim. 7 juin 2026",
         )
+
+    def test_premier_du_mois(self):
+        """Le 1er du mois s'écrit « 1er », dans les trois formats (#383)."""
+        day = datetime.date(2026, 10, 1)
+
+        self.assertEqual(
+            render('{{ d|date_text:"long" }}', d=day), "jeudi 1er octobre 2026"
+        )
+        self.assertEqual(render('{{ d|date_text:"moyen" }}', d=day), "1er octobre 2026")
+        self.assertEqual(
+            render('{{ d|date_text:"court" }}', d=day), "jeu. 1er oct. 2026"
+        )
+        self.assertHTMLEqual(
+            render('{% date_time d "long" %}', d=day),
+            '<time datetime="2026-10-01">jeudi 1er octobre 2026</time>',
+        )
+
+    def test_premier_du_mois_avec_heure(self):
+        moment = datetime.datetime(2026, 10, 1, 12, tzinfo=datetime.UTC)
+
+        self.assertEqual(date_text(moment, "moyen"), "1er octobre 2026")
+
+    def test_autres_jours_sans_suffixe(self):
+        for day in (2, 10, 11, 21, 31):
+            with self.subTest(day=day):
+                self.assertEqual(
+                    date_text(datetime.date(2026, 10, day), "moyen"),
+                    f"{day} octobre 2026",
+                )
 
     def test_balise_time(self):
         html = render('{% date_time d "long" %}', d=datetime.date(2025, 11, 24))
