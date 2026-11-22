@@ -2,12 +2,19 @@
 Formulaire en grille (#132) : deux cellules par champ, le libellé puis le champ
 avec ses erreurs et son aide. Le <form> porte la grille :
 grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3.
+Libellé sur la ligne de base du champ, sauf pour un champ haut (zone de texte, liste
+à choix multiples) dont la ligne de base est la dernière ligne : son libellé est en
+haut de la cellule, décalé de la bordure et du rembourrage du champ (py-1), pour
+tomber sur sa première ligne (#379).
 {% endcomment %}
 {% if errors %}<div class="col-span-2">{{ errors }}</div>{% endif %}
 {% for field, errors in fields %}
     {% if field.use_fieldset %}
         <span id="{{ field.auto_id }}_label">{{ field.label }}&nbsp;:</span>
         <div class="min-w-0" role="group" aria-labelledby="{{ field.auto_id }}_label">
+    {% elif field.widget_type == "textarea" or field.field.widget.allow_multiple_selected %}
+        <label for="{{ field.id_for_label }}" class="self-start pt-[calc(var(--spacing)+1px)]">{{ field.label }}&nbsp;:</label>
+        <div class="min-w-0">
     {% else %}
         {{ field.label_tag }}
         <div class="min-w-0">

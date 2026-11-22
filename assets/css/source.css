@@ -41,6 +41,11 @@
     input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select, textarea {
         @apply max-w-full rounded-lg border border-slate-300 bg-white px-2 py-1;
     }
+    /* Une liste à choix multiples sans option (aucun tag en base) serait une bande
+       de quelques pixels (#379). */
+    select[multiple] {
+        @apply min-w-48;
+    }
     input:focus-visible, select:focus-visible, textarea:focus-visible {
         @apply outline-2 outline-offset-2 outline-blue-700;
     }
