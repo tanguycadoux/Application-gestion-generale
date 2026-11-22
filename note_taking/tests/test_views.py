@@ -248,7 +248,8 @@ class RenderedContentContainerTests(ViewTestCase):
 
     # Le paragraphe rendu se trouve dans le conteneur, avant toute fermeture de div.
     CONTAINER_REGEX = re.compile(
-        r'<div class="rendered-content">(?:(?!</div>).)*<p>Premier paragraphe\.</p>',
+        r'<div class="rendered-content(?: [^"]*)?"[^>]*>(?:(?!</div>).)*'
+        r"<p>Premier paragraphe\.</p>",
         re.DOTALL,
     )
 
