@@ -5,7 +5,7 @@ from datetime import date
 
 from django.urls import reverse
 
-from core.templatetags.ui import date_text
+from core.dates import date_text
 
 from ..models import Note
 

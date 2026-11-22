@@ -9,8 +9,8 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
+from core.dates import date_text
 from core.models import Project, Section, Tag
-from core.templatetags.ui import date_text
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet

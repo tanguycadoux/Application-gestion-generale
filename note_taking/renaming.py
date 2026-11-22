@@ -21,9 +21,9 @@ from django.db import transaction
 from django.urls import reverse
 
 from core.app_registry import HeadingOccurrence
+from core.dates import date_text
 from core.models import Project
 from core.sections import LABEL_SEPARATOR
-from core.templatetags.ui import date_text
 
 from .exceptions import NoteRenameError
 from .models import Note
