@@ -47,7 +47,11 @@ def filter_tree(tasks: list[Task], chosen: tuple[tuple[str, ...], tuple[int, ...
     compris (#302, #298)."""
     names, paths = chosen
     ids = with_descendants(set(paths))
-    return [t for t in tasks if t.project.name in names or t.section_id in ids]
+    return [
+        t
+        for t in tasks
+        if (t.project and t.project.name in names) or t.section_id in ids
+    ]
 
 
 def read_state(data) -> str:

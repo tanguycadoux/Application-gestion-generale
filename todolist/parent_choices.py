@@ -152,8 +152,9 @@ def _prefix(task: Task, group: str, paths: dict[int, str]) -> str:
     if group == SAME_PATH:
         return ""
     # `path_labels` : « Projet › Réunion › Préparation ».
-    where = paths[task.section_id] if task.section_id else task.project.name
+    project = task.project.name if task.project else ""
+    where = paths[task.section_id] if task.section_id else project
     if group == SAME_PROJECT:
-        where = where.removeprefix(task.project.name)
+        where = where.removeprefix(project)
         where = where.removeprefix(LABEL_SEPARATOR)
     return where + LABEL_SEPARATOR if where else ""
