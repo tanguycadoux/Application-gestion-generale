@@ -34,6 +34,16 @@
         toast.addEventListener("focusout", resume);
     }
 
+    // Espaces insécables avant « ; : ! ? » et dans les guillemets (#383), comme le
+    // filtre nbsp_punct (core/typography.py) pour les toasts rendus par le serveur.
+    const SPACES = "[   ]*[ ][   ]*";
+    const BEFORE = new RegExp(`${SPACES}(?=[;:!?»])`, "g");
+    const AFTER = new RegExp(`(?<=«)${SPACES}`, "g");
+
+    function nbspPunct(text) {
+        return text.replace(BEFORE, " ").replace(AFTER, " ");
+    }
+
     // Toast créé par un script : le gabarit de base rend un modèle par niveau
     // (<template id="toast-template-error">), cloné ici ; le message est placé en
     // texte, jamais lu comme du HTML (#142).
@@ -41,7 +51,7 @@
         show(message, level = "error") {
             const template = document.getElementById(`toast-template-${level}`);
             const toast = template.content.firstElementChild.cloneNode(true);
-            toast.querySelector("p").textContent = message;
+            toast.querySelector("p").textContent = nbspPunct(message);
             document.getElementById("toasts").append(toast);
             setUp(toast);
         },

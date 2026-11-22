@@ -79,7 +79,7 @@ class WithDebugTests(DebugUrlsTestCase):
 
         self.assertRedirects(response, reverse("core:alerts_gallery"))
         self.assertContains(
-            response, "Confirmation reçue : rien n&#x27;a été supprimé."
+            response, "Confirmation reçue\u00a0: rien n&#x27;a été supprimé."
         )
 
     def test_section_debug_en_dernier_dans_le_menu(self):

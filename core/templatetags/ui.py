@@ -8,7 +8,7 @@ des noms de Material Symbols Rounded, en SVG inline (`{% icon %}`, core/icons.py
 La logique qui n'est pas un composant vit dans des modules de `core`, dont les
 fonctions sont enregistrées ici telles quelles : formatage des dates
 (core/dates.py), couleurs des projets (core/project_colors.py), classes des cases
-du calendrier (core/calendar_cells.py). Le code Python les importe depuis ces
+du calendrier (core/calendar_cells.py), espaces insécables (core/typography.py). Le code Python les importe depuis ces
 modules, pas depuis cette bibliothèque de balises.
 """
 
@@ -22,11 +22,14 @@ from core.dates import date_text, local, machine_date
 from core.icons import DEFAULT_CLASSES, UnknownIconError, icon_svg
 from core.project_colors import project_dot_class
 from core.tables import header_context, summary_context
+from core.typography import nbsp_punct
 
 register = template.Library()
 
 register.filter("date_text", date_text)
 register.filter("project_dot_class", project_dot_class)
+# Espaces insécables avant « ; : ! ? » et dans les guillemets (#383).
+register.filter("nbsp_punct", nbsp_punct, is_safe=True, needs_autoescape=True)
 register.simple_tag(calendar_cell_classes)
 register.simple_tag(calendar_number_classes)
 

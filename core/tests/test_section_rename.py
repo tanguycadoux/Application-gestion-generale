@@ -118,7 +118,10 @@ class ReviewTests(RenameTestCase):
             self.url(self.section("Réunion")), {"name": "Rencontre"}
         )
 
-        self.assertContains(response, "Bilan : « Réunion » devient « Rencontre »")
+        self.assertContains(
+            response,
+            "Bilan\u00a0: «\u00a0Réunion\u00a0» devient «\u00a0Rencontre\u00a0»",
+        )
         self.assertContains(response, "2 titres à réécrire")
         self.assertContains(response, "Note du 24 novembre 2025, ligne 2")
         self.assertContains(response, "Note du 25 novembre 2025, ligne 2")

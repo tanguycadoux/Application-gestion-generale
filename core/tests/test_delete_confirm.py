@@ -66,7 +66,7 @@ class NoteDeleteTests(DeleteFormTestCase):
             page_header(html),
             "delete-note",
             self.url,
-            "Supprimer définitivement la note du 24 novembre 2025 ?",
+            "Supprimer définitivement la note du 24 novembre 2025\u00a0?",
         )
 
     def test_pas_de_page_de_confirmation(self):
@@ -106,7 +106,7 @@ class TaskDeleteTests(DeleteFormTestCase):
             re.DOTALL,
         )
         assert popover is not None, header
-        self.assertIn("Supprimer définitivement la tâche ?", popover[1])
+        self.assertIn("Supprimer définitivement la tâche\u00a0?", popover[1])
         form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
         assert form is not None
         self.assertIn(f'action="{self.url}"', form[0])
@@ -170,7 +170,7 @@ class LongNameTests(TestCase):
         popovers = self.popovers(html)
         self.assertEqual(len(popovers), 1)
         classes, body = popovers[0]
-        self.assertIn("Supprimer définitivement la tâche ?", body)
+        self.assertIn("Supprimer définitivement la tâche\u00a0?", body)
         self.assertNotIn("exemple.org", body)
         self.assertNotIn("Relire", body)
         self.assert_no_scroll(classes)
@@ -193,7 +193,7 @@ class LongNameTests(TestCase):
             re.DOTALL,
         )
         assert popover is not None
-        self.assertIn("Rétablir la tâche ?", popover[2])
+        self.assertIn("Rétablir la tâche\u00a0?", popover[2])
         self.assertNotIn("exemple.org", popover[2])
         self.assert_no_scroll(popover[1])
 
@@ -206,6 +206,6 @@ class LongNameTests(TestCase):
         popovers = self.popovers(html)
         self.assertTrue(popovers)
         for classes, body in popovers:
-            self.assertIn("Supprimer définitivement le projet ?", body)
+            self.assertIn("Supprimer définitivement le projet\u00a0?", body)
             self.assertNotIn(name, body)
             self.assert_no_scroll(classes)
