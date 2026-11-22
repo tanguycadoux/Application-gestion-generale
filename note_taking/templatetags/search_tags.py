@@ -1,9 +1,10 @@
-from urllib.parse import urlencode
-
 from django import template
 from django.urls import reverse
 
-from ..saved_searches import NAME_MAX_LENGTH, all_searches, search_url
+from core.models import Project
+from core.sections import path_labels
+
+from ..saved_searches import NAME_MAX_LENGTH, Filters, all_searches, filters_of
 
 register = template.Library()
 
@@ -12,20 +13,25 @@ register = template.Library()
 def saved_searches(context, current_q=None) -> dict:
     """Les recherches enregistrées, et de quoi enregistrer la recherche en cours (#203).
 
-    `current_q` : le texte de la zone de recherche. La balise charge elle-même la
-    liste : la vue de la page n'a rien à lui passer.
+    `current_q` : le texte de la zone de recherche ; les cases cochées de l'arbre
+    viennent de l'adresse (#380). La balise charge elle-même la liste : la vue de la
+    page n'a rien à lui passer.
     """
-    q = (current_q or "").strip()
-    suffix = f"?{urlencode({'q': q})}" if q else ""
+    request = context.get("request")
+    current = Filters.read(request.GET) if request else Filters()
+    current.q = (current_q or "").strip()
+    url = current.url()
+    suffix = url[url.index("?") :] if "?" in url else ""
     items = []
     for search in all_searches():
         rename_url = reverse("note_taking:saved_search_rename", args=[search.pk])
         delete_url = reverse("note_taking:saved_search_delete", args=[search.pk])
+        filters = filters_of(search)
         items.append(
             {
                 "search": search,
-                "url": search_url(search),
-                "current": bool(q) and search.q.strip() == q,
+                "url": filters.url(),
+                "current": bool(current) and filters == current,
                 "rename_action": rename_url + suffix,
                 "delete_action": delete_url + suffix,
                 "delete_id": f"delete-saved-search-{search.pk}",
@@ -33,12 +39,28 @@ def saved_searches(context, current_q=None) -> dict:
         )
     return {
         "items": items,
-        "q": q,
-        "default_name": q[:NAME_MAX_LENGTH],
+        "q": current.q,
+        "projects": current.projects,
+        "subjects": current.subjects,
+        "empty": not current,
+        "default_name": default_name(current)[:NAME_MAX_LENGTH],
         "name_max_length": NAME_MAX_LENGTH,
         "create_url": reverse("note_taking:saved_search_create"),
         "csrf_token": context.get("csrf_token", ""),
     }
+
+
+def default_name(filters: Filters) -> str:
+    """Le nom proposé : le texte, ou à défaut les projets et niveaux cochés."""
+    if filters.q or not filters:
+        return filters.q
+    names = dict(
+        Project.objects.filter(pk__in=filters.projects).values_list("pk", "name")
+    )
+    labels = path_labels() if filters.subjects else {}
+    chosen = [names[pk] for pk in filters.projects if pk in names]
+    chosen += [labels[pk] for pk in filters.subjects if pk in labels]
+    return ", ".join(chosen)
 
 
 @register.simple_tag(takes_context=True)
