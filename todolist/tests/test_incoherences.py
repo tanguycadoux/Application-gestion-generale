@@ -41,7 +41,7 @@ class DueDateTests(IncoherenceTestCase):
             [
                 (
                     "L'échéance de la sous-tâche « Enfant » (5 décembre 2025) "
-                    "est après celle-ci (1 décembre 2025).",
+                    "est après celle-ci (1er décembre 2025).",
                     self.child.pk,
                 )
             ],
@@ -51,7 +51,7 @@ class DueDateTests(IncoherenceTestCase):
             [
                 (
                     "Son échéance (5 décembre 2025) est après celle de la tâche "
-                    "parente « Parent » (1 décembre 2025).",
+                    "parente « Parent » (1er décembre 2025).",
                     self.parent.pk,
                 )
             ],
