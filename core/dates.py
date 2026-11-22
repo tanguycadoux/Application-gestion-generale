@@ -49,3 +49,12 @@ def machine_date(value) -> str:
     if isinstance(value, datetime.datetime):
         return value.isoformat(timespec="seconds")
     return value.isoformat()
+
+
+def parse_date_param(value: str) -> datetime.date | None:
+    """Date d'un paramètre d'adresse au format AAAA-MM-JJ, ou None si la valeur
+    n'en est pas une (partagé par les vues des notes et des tâches, #190)."""
+    try:
+        return datetime.date.fromisoformat(value)
+    except ValueError:
+        return None

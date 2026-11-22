@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
+from core.dates import parse_date_param
 from core.exceptions import AppError
 
 from .. import note_table
@@ -19,7 +20,7 @@ from ..note_calendar import requested_month_calendar
 from ..note_outline import outline_sections
 from ..rendering import render_note_body
 from ..services import process_note_parts
-from .common import next_page, note_name, parse_date_param, warnings_message
+from .common import next_page, note_name, warnings_message
 
 
 def index(request):
