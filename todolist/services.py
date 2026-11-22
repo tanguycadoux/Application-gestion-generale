@@ -19,7 +19,8 @@ from note_taking.qmd.parser import (
 )
 from note_taking.services import replace_image_paths
 
-from .models import TASK_TEXT_MAX_LENGTH, Task, update_ancestors_progress
+from .models import TASK_TEXT_MAX_LENGTH, Task
+from .progress import update_ancestors_progress
 
 # La case en tête du texte d'un élément de liste, vide (« [ ] ») ou cochée (« [x] »).
 BOX_REGEX = re.compile(r"^\[(?P<state>[ xX])\](?:\s+|$)")

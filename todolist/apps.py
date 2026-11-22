@@ -34,7 +34,7 @@ class TodolistConfig(AppConfig):
     )
 
     def ready(self):
-        from . import dashboard, receivers  # noqa: F401
+        from . import dashboard, progress, receivers  # noqa: F401
 
         self.dashboard_blocks = (
             DashboardBlock(

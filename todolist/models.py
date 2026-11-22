@@ -1,16 +1,17 @@
-from dataclasses import dataclass
+"""Modèle des tâches. La propagation de l'avancement aux ancêtres est dans
+`progress.py`, les incohérences avec le parent et les enfants dans `coherence.py`."""
+
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
 from django.utils import timezone
 
-from core.dates import date_text
 from core.models import Project, Section, Tag
+
+from .coherence import Incoherence, pair_incoherences
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -194,6 +195,9 @@ class Task(models.Model):
 
         super().save(*args, **kwargs)
 
+        # Importé ici : `progress` dépend du modèle.
+        from .progress import update_ancestors_progress
+
         self.updated_ancestor_ids = update_ancestors_progress(self.parent_id)
         if old_parent_id not in (None, self.parent_id):
             update_ancestors_progress(old_parent_id)
@@ -267,94 +271,3 @@ class Task(models.Model):
         if days <= SOON_DAYS:
             return "soon"
         return "normal"
-
-
-def update_ancestors_progress(parent_id: int | None) -> list[int]:
-    """Recalcule l'avancement des ancêtres, du parent jusqu'à la racine (#164).
-
-    Un parent coché se décoche dès qu'un de ses enfants n'est plus terminé ; un
-    parent sans plus d'enfant garde ses dernières valeurs. Renvoie les
-    identifiants des tâches modifiées.
-    """
-    updated = []
-    while parent_id is not None:
-        parent = Task.objects.filter(pk=parent_id).first()
-        if parent is None:
-            break
-        computed = parent.children_progress()
-        if computed is None:
-            break
-        done = parent.done and not parent.children.filter(done=False).exists()
-        if (computed, done) == (parent.progress, parent.done):
-            break
-        Task.objects.filter(pk=parent.pk).update(
-            progress=computed,
-            done=done,
-            completed_at=parent.completed_at if done else None,
-        )
-        updated.append(parent.pk)
-        parent_id = parent.parent_id
-    return updated
-
-
-@receiver(post_delete, sender=Task)
-def update_progress_after_delete(sender, instance: Task, **kwargs):
-    update_ancestors_progress(instance.parent_id)
-
-
-@dataclass
-class Incoherence:
-    """Écart à corriger, et l'autre tâche concernée (#165)."""
-
-    message: str
-    task: Task
-
-
-def pair_incoherences(
-    parent: Task, child: Task, from_parent: bool
-) -> list[Incoherence]:
-    """Incohérences entre un parent et un de ses enfants, vues de l'un ou de l'autre."""
-    found = []
-    if parent.due_date and child.due_date and child.due_date > parent.due_date:
-        parent_due = date_text(parent.due_date, "moyen")
-        child_due = date_text(child.due_date, "moyen")
-        found.append(
-            Incoherence(
-                f"L'échéance de la sous-tâche « {child} » ({child_due}) est après "
-                f"celle-ci ({parent_due}).",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Son échéance ({child_due}) est après celle de la tâche parente "
-                f"« {parent} » ({parent_due}).",
-                parent,
-            )
-        )
-    if child.project_id != parent.project_id:
-        found.append(
-            Incoherence(
-                f"La sous-tâche « {child} » a un autre projet ({child.project}).",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Son projet ({child.project}) diffère de celui de la tâche parente "
-                f"« {parent} » ({parent.project}).",
-                parent,
-            )
-        )
-    if parent.done and not child.done:
-        found.append(
-            Incoherence(
-                f"Elle est terminée alors que la sous-tâche « {child} » ne l'est pas.",
-                child,
-            )
-            if from_parent
-            else Incoherence(
-                f"Elle n'est pas terminée alors que la tâche parente « {parent} » "
-                "l'est.",
-                parent,
-            )
-        )
-    return found
