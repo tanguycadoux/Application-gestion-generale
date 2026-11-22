@@ -7,7 +7,8 @@
 // `#.`, `(@)`. L'analyseur de @lezer/markdown ne connaît que les puces et `1.` `1)` : pour les
 // autres, la ligne est un élément si Pandoc en ferait un (voir `eligible`).
 import { syntaxTree } from "@codemirror/language";
-import { EditorSelection } from "@codemirror/state";
+import { EditorSelection, RangeSetBuilder } from "@codemirror/state";
+import { Decoration, ViewPlugin } from "@codemirror/view";
 
 // Une ligne d'élément, avant validation : retrait, marqueur, espaces qui suivent.
 const ITEM_LINE = /^(\s*)([-*+]|(?:\d+|[A-Za-z]+|#)[.)]|\((?:\d+|[A-Za-z]+|@[\w-]*)\))([ \t]+|$)/;
@@ -356,3 +357,43 @@ export const listKeymap = [
     { key: "Mod-]", run: (view) => shiftItems(view, 1) },
     { key: "Mod-[", run: (view) => shiftItems(view, -1) },
 ];
+
+// Marqueurs que l'analyseur ne connaît pas (#328) : `a.`, `(1)`, `#.`, `iv)`… Pour lui, ces
+// lignes sont des paragraphes ; ils sont colorés comme les `ListMark` (`cm-pandoc-list-mark`,
+// même couleur que les autres marqueurs), d'après la règle de `itemOf`. Coloration seule :
+// l'arbre syntaxique ne contient toujours pas ces listes.
+const pandocMark = Decoration.mark({ class: "cm-pandoc-list-mark" });
+
+function pandocMarks(view) {
+    const builder = new RangeSetBuilder();
+    const { state } = view;
+    for (const { from, to } of view.visibleRanges) {
+        let line = state.doc.lineAt(from);
+        while (true) {
+            const item = itemOf(state, line);
+            if (item && !knownToParser(item.marker)) {
+                const start = line.from + item.indent;
+                builder.add(start, start + item.text.length, pandocMark);
+            }
+            if (line.to >= to || line.number === state.doc.lines) break;
+            line = state.doc.line(line.number + 1);
+        }
+    }
+    return builder.finish();
+}
+
+export const pandocListMarks = ViewPlugin.fromClass(
+    class {
+        constructor(view) {
+            this.decorations = pandocMarks(view);
+        }
+
+        update(update) {
+            // L'arbre avance par morceaux : une ligne peut changer de nature sans édition.
+            if (update.docChanged || update.viewportChanged || syntaxTree(update.state) !== syntaxTree(update.startState)) {
+                this.decorations = pandocMarks(update.view);
+            }
+        }
+    },
+    { decorations: (plugin) => plugin.decorations },
+);

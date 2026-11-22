@@ -15,7 +15,7 @@ import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
 import { Strikethrough, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
-import { listKeymap } from "./lists.js";
+import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
 
@@ -55,6 +55,8 @@ const theme = EditorView.theme({
     ".cm-content": { padding: "0.25rem 0.5rem" },
     // Où une image déposée s'insérera : un trait bleu bien visible.
     ".cm-dropCursor": { borderLeft: "2px solid var(--color-blue-700)" },
+    // Même couleur que les marqueurs connus de l'analyseur (`processingInstruction`).
+    ".cm-pandoc-list-mark": { color: "var(--color-amber-700)" },
 });
 
 // Textes du panneau de recherche (Ctrl+F), en anglais par défaut.
@@ -139,6 +141,8 @@ function mountEditor(textarea) {
                 markdown.extension,
                 suggest,
                 syntaxHighlighting(highlighting),
+                // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
+                pandocListMarks,
                 EditorView.lineWrapping,
                 search({ top: true }),
                 // Entrée continue les listes (lists.js) avant de passer à la ligne.
