@@ -27,6 +27,7 @@ from .captures import import_capture
 from .forms import NewNoteForm, NoteSearchForm
 from .models import Note, NotePart
 from .note_calendar import requested_month_calendar
+from .note_outline import outline_sections
 from .qmd.export import write_note_archive, write_notes_archive
 from .qmd.parser import parse_note
 from .rendering import render_note_body
@@ -69,7 +70,10 @@ class NoteDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["content"] = render_note_body(self.object.body, heading_ids=True)
+        # Plan de la note et sections repliables (#404).
+        layout = outline_sections(render_note_body(self.object.body, heading_ids=True))
+        context["content"] = layout.html
+        context["outline"] = layout.entries
         return context
 
 
