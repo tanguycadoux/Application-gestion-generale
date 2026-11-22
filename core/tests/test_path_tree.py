@@ -339,3 +339,84 @@ class PathTreeProjectCheckboxTests(TestCase):
 
         self.assertNotIn("group-open", html)
         self.assertIn("[details[open]>summary>&]:rotate-90", html)
+
+
+class FacetTreeTests(TestCase):
+    """Compteurs du résultat courant et niveaux marqués (#380)."""
+
+    def setUp(self):
+        self.s = make_sections()
+
+    def by_name(self, nodes):
+        return {node.label: node for node in nodes}
+
+    def test_used_decide_des_niveaux_gardes_counts_de_l_affichage(self):
+        s = self.s
+        nodes = self.by_name(
+            path_tree(
+                {s["detail"].pk: 1},
+                only_counted=True,
+                used={s["detail"].pk: 3, s["thermique"].pk: 2},
+            )
+        )
+
+        self.assertEqual(nodes["Alpha › thermique"].count, 0)
+        self.assertEqual(nodes["Alpha › Mesures"].count, 1)
+        self.assertEqual(nodes["Alpha › Mesures › Détail"].count, 1)
+        self.assertNotIn("beta › Mesures", nodes)
+
+    def test_used_des_projets(self):
+        s = self.s
+        nodes = self.by_name(
+            path_tree(
+                {},
+                only_counted=True,
+                project_counts={},
+                project_used={s["beta"].pk: 4},
+                used={},
+            )
+        )
+
+        self.assertEqual(nodes["beta"].count, 0)
+        self.assertNotIn("Alpha", nodes)
+
+    def test_niveaux_marques_et_parents_ouverts_sans_les_cocher(self):
+        s = self.s
+        nodes = self.by_name(path_tree({}, marked={s["detail"].pk}))
+
+        detail = nodes["Alpha › Mesures › Détail"]
+        self.assertTrue(detail.marked)
+        self.assertFalse(detail.selected)
+        self.assertTrue(nodes["Alpha › Mesures"].open)
+        self.assertTrue(nodes["Alpha"].open)
+        self.assertFalse(nodes["Alpha › Mesures"].marked)
+
+    def render(self, nodes, **options):
+        request = RequestFactory().get("/")
+        template = Template(
+            "{% load ui %}{% path_tree nodes mode='checkbox' param='subjects' "
+            "project_param='projects' count_noun='passage' faceted=faceted %}"
+        )
+        return template.render(
+            RequestContext(request, {"nodes": nodes, "faceted": options.get("faceted")})
+        )
+
+    def test_compteur_dans_un_element_a_identifiant(self):
+        s = self.s
+        html = self.render(path_tree({s["thermique"].pk: 2}))
+
+        self.assertIn(f'id="path-{s["thermique"].pk}-facet"', html)
+
+    def test_niveau_a_zero_attenue_avec_facettes(self):
+        s = self.s
+        nodes = path_tree({}, only_counted=True, used={s["thermique"].pk: 2})
+
+        zero = r'<span id="[^"]*-facet"[^>]* data-zero'
+        self.assertRegex(self.render(nodes, faceted=True), zero)
+        self.assertNotRegex(self.render(nodes, faceted=False), zero)
+
+    def test_marque_chemin_affichee(self):
+        s = self.s
+        html = self.render(path_tree({}, marked={s["thermique"].pk}))
+
+        self.assertIn("chemin:", html)
