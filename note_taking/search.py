@@ -13,7 +13,8 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
   `LOWER` de SQLite ne replie que l'ASCII ;
 - `chemin:` suit les niveaux (« Réunion/Préparation ») à toute profondeur et dans tous
   les projets, et inclut les descendants (#365) ; ses noms de niveaux se comparent à
-  leur forme réduite, comme les mots (#372) ;
+  leur forme réduite, comme les mots (#372), et `chemin:réunion*` est un préfixe
+  (#368) : voir `search_paths.py` ;
 - les fautes de frappe (#200) : un mot libre sans résultat ou rare est élargi aux mots
   proches de l'index (`expand_query`), les résultats exacts passant avant les élargis.
 """
@@ -27,7 +28,7 @@ from django.urls import reverse
 from django.utils.safestring import SafeString, mark_safe
 
 from core.models import Project, Section, Tag
-from core.sections import split_path, with_descendants
+from core.sections import with_descendants
 from core.tables import fold
 from core.templatetags.ui import date_text
 
@@ -42,15 +43,16 @@ from .search_index import (
     similar_terms,
     snippets,
     term_documents,
+    tolerated_typos,
 )
+from .search_paths import section_ids_at
 from .search_query import SearchQuery, Term
 from .word_forms import reduce_text, written_forms
 
 # Un mot libre est élargi s'il est dans moins de RARE note parts. Au plus
-# MAX_ALTERNATIVES mots proches par mot, et aucun sous MIN_LENGTH lettres.
+# MAX_ALTERNATIVES mots proches par mot (fautes tolérées : `tolerated_typos`).
 RARE = 2
 MAX_ALTERNATIVES = 3
-MIN_LENGTH = 4
 
 
 @dataclass
@@ -61,13 +63,6 @@ class Expansion:
 
     def __bool__(self) -> bool:
         return bool(self.alternatives)
-
-
-def max_distance(word: str) -> int:
-    """Fautes tolérées : une pour 4 à 6 lettres, deux au-delà, aucune en dessous."""
-    if len(word) < MIN_LENGTH:
-        return 0
-    return 1 if len(word) <= 6 else 2
 
 
 def expand_query(query: SearchQuery) -> Expansion:
@@ -81,7 +76,7 @@ def expand_query(query: SearchQuery) -> Expansion:
     for term in query.terms:
         if term.negated or term.kind != "word" or not term.text.isalpha():
             continue
-        distance = max_distance(term.text)
+        distance = tolerated_typos(term.text)
         if not distance or term_documents(term.text) >= RARE:
             continue
         close = [word for word, _ in similar_terms(term.text, distance)]
@@ -230,42 +225,6 @@ def project_ids_named(names: list[str]) -> list[int]:
 def tag_ids_named(names: list[str]) -> list[int]:
     wanted = {fold(name) for name in names}
     return [t.pk for t in Tag.objects.all() if fold(t.name) in wanted]
-
-
-def section_ids_at(paths: list[str]) -> set[int]:
-    """Les niveaux dont le chemin (sous leur projet) s'écrit ainsi, et leurs descendants.
-
-    « Réunion/Préparation » désigne le niveau « Préparation » directement sous
-    « Réunion », à n'importe quelle profondeur et dans n'importe quel projet ;
-    `projet:` restreint à l'un d'eux. Les niveaux écrits se suivent sans trou :
-    « A/B » trouve A/B, A/B/C et C/A/B, pas A/C/B. Les noms se comparent à leur forme
-    réduite : « Calcul thermique » trouve « Calculs thermiques » (#372).
-    """
-    rows = list(Section.objects.values_list("pk", "parent_id", "name"))
-    parent = {pk: parent_id for pk, parent_id, _ in rows}
-    # Sans casse ni accents, au singulier : « Calculs thermiques » est « calcul
-    # thermique » (#372).
-    name = {pk: reduce_text(label) for pk, _, label in rows}
-
-    def chain(pk: int) -> tuple[str, ...]:
-        names: list[str] = []
-        current: int | None = pk
-        while current is not None:
-            names.append(name[current])
-            current = parent[current]
-        return tuple(reversed(names))
-
-    wanted = {tuple(reduce_text(level) for level in split_path(path)) for path in paths}
-    wanted.discard(())
-    # Un niveau convient si son chemin finit par les niveaux écrits : à n'importe
-    # quelle profondeur, dans n'importe quel projet ; les descendants s'ajoutent.
-    return with_descendants(
-        {
-            pk
-            for pk, _, _ in rows
-            if any(chain(pk)[-len(path) :] == path for path in wanted)
-        }
-    )
 
 
 # Présentation des résultats (#356) : les extraits (une carte par note part), ou le

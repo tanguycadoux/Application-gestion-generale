@@ -37,6 +37,7 @@ from .search import (
     search_note_parts,
     section_counts,
 )
+from .search_paths import PathReport, path_reports
 from .search_query import SearchQuery, parse_query
 from .services import (
     process_note_parts,
@@ -222,11 +223,14 @@ def notes_search(request):
     form = NoteSearchForm(request.GET or None)
     results = None
     query = SearchQuery()
+    reports: list[PathReport] = []
     sections: list[int] = []
     projects: list[int] = []
 
     if form.is_bound and form.is_valid():
         query = parse_query(form.cleaned_data["q"])
+        # Les niveaux retenus par chaque `chemin:`, ou de quoi corriger (#368).
+        reports = path_reports(form.cleaned_data["q"])
         sections = [section.pk for section in form.cleaned_data["subjects"]]
         projects = [project.pk for project in form.cleaned_data["projects"]]
         results = search_note_parts(
@@ -243,6 +247,7 @@ def notes_search(request):
         "results": results,
         "groups": group_by_note(query, results) if results and not as_document else [],
         "query": query,
+        "path_reports": reports,
         "note_count": len({part.note_id for part in results or []}),
         "view": view,
         "group": group,
