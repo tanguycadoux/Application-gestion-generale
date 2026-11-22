@@ -73,7 +73,7 @@ class MessageToastTests(SimpleTestCase):
     def test_message_echappe(self):
         html = render_toast("success", "<b>gras</b> & « test »")
 
-        self.assertIn("&lt;b&gt;gras&lt;/b&gt; &amp; « test »", html)
+        self.assertIn("&lt;b&gt;gras&lt;/b&gt; &amp; «\u00a0test\u00a0»", html)
         self.assertNotIn("<b>", html)
 
     def test_icone_selon_la_variante(self):

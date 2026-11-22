@@ -250,7 +250,9 @@ class ConfirmButtonTests(SimpleTestCase):
         self.assertIn(
             '<div id="delete-p1" popover class="confirm-popover min-w-48 max-w-80', html
         )
-        self.assertIn('<p class="mb-3 font-semibold">Supprimer « A » ?</p>', html)
+        self.assertIn(
+            '<p class="mb-3 font-semibold">Supprimer «\u00a0A\u00a0»\u00a0?</p>', html
+        )
         self.assertIn('<form method="post" action="/projects/1/delete/"', html)
         self.assertIn('name="csrfmiddlewaretoken"', html)
         self.assertNotIn("data-confirm", html)

@@ -7,7 +7,8 @@ Libellé sur la ligne de base du champ, sauf pour un champ haut (zone de texte, 
 haut de la cellule, décalé de la bordure et du rembourrage du champ (py-1), pour
 tomber sur sa première ligne (#379).
 {% endcomment %}
-{% if errors %}<div class="col-span-2">{{ errors }}</div>{% endif %}
+{% load ui %}
+{% if errors %}<div class="col-span-2">{{ errors|nbsp_punct }}</div>{% endif %}
 {% for field, errors in fields %}
     {% if field.use_fieldset %}
         <span id="{{ field.auto_id }}_label">{{ field.label }}&nbsp;:</span>
@@ -20,8 +21,8 @@ tomber sur sa première ligne (#379).
         <div class="min-w-0">
     {% endif %}
         {{ field }}
-        {{ field.errors }}
-        {% if field.help_text %}<div class="helptext text-sm text-slate-600"{% if field.auto_id %} id="{{ field.auto_id }}_helptext"{% endif %}>{{ field.help_text|safe }}</div>{% endif %}
+        {{ field.errors|nbsp_punct }}
+        {% if field.help_text %}<div class="helptext text-sm text-slate-600"{% if field.auto_id %} id="{{ field.auto_id }}_helptext"{% endif %}>{{ field.help_text|safe|nbsp_punct }}</div>{% endif %}
     </div>
 {% endfor %}
 {% for field in hidden_fields %}{{ field }}{% endfor %}
