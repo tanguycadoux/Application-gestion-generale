@@ -10,7 +10,7 @@ from django.urls import reverse
 from core.models import Project, Section
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.forms import TodoForm
+from todolist.forms import TaskForm
 from todolist.models import Task
 
 
@@ -19,19 +19,19 @@ class ProgressTests(TestCase):
         self.project = Project.objects.create(name="P")
 
     def test_avancement_nul_par_defaut(self):
-        todo = Task.objects.create(title="T", project=self.project)
+        task = Task.objects.create(title="T", project=self.project)
 
-        self.assertEqual(todo.progress, 0)
-        self.assertFalse(todo.completed)
+        self.assertEqual(task.progress, 0)
+        self.assertFalse(task.completed)
 
     def test_terminee_a_cent_pour_cent(self):
-        todo = Task.objects.create(title="T", project=self.project, progress=100)
+        task = Task.objects.create(title="T", project=self.project, progress=100)
 
-        self.assertTrue(todo.completed)
+        self.assertTrue(task.completed)
 
     def test_avancement_au_pourcent_pres(self):
         """76 % se saisit : le champ n'impose pas de pas de 5 %."""
-        form = TodoForm(
+        form = TaskForm(
             data={"title": "T", "project": self.project.pk, "priority": "medium"}
         )
 
@@ -43,16 +43,16 @@ class ProgressTests(TestCase):
                 Task(title="T", project=self.project, progress=value).full_clean()
 
     def test_case_de_la_liste(self):
-        todo = Task.objects.create(title="T", project=self.project, progress=40)
-        url = reverse("todolist:todo_toggle", args=[todo.pk])
+        task = Task.objects.create(title="T", project=self.project, progress=40)
+        url = reverse("todolist:task_toggle", args=[task.pk])
 
         self.client.post(url, {"completed": True}, content_type="application/json")
-        todo.refresh_from_db()
-        self.assertEqual(todo.progress, 100)
+        task.refresh_from_db()
+        self.assertEqual(task.progress, 100)
 
         self.client.post(url, {"completed": False}, content_type="application/json")
-        todo.refresh_from_db()
-        self.assertEqual(todo.progress, 40)
+        task.refresh_from_db()
+        self.assertEqual(task.progress, 40)
 
 
 class SectionAndProjectTests(TestCase):
@@ -62,20 +62,20 @@ class SectionAndProjectTests(TestCase):
     def test_sujet_facultatif(self):
         section = Section.objects.create(project=self.project, name="S")
 
-        todo = Task.objects.create(title="T", project=self.project, section=section)
+        task = Task.objects.create(title="T", project=self.project, section=section)
 
-        self.assertEqual(todo.section, section)
+        self.assertEqual(task.section, section)
         self.assertIsNone(Task.objects.create(title="U", project=self.project).section)
 
     def test_projet_obligatoire(self):
-        form = TodoForm(data={"title": "T", "priority": "medium", "progress": 0})
+        form = TaskForm(data={"title": "T", "priority": "medium", "progress": 0})
 
         self.assertFalse(form.is_valid())
         self.assertIn("project", form.errors)
 
     def test_champs_du_formulaire(self):
         self.assertEqual(
-            list(TodoForm().fields),
+            list(TaskForm().fields),
             [
                 "title",
                 "description",
@@ -114,7 +114,7 @@ class NoForcedInheritanceTests(TestCase):
 
     def test_formulaire_d_une_sous_tache_propose_projet_et_echeance(self):
         html = self.client.get(
-            reverse("todolist:todo_create") + f"?parent={self.parent.pk}"
+            reverse("todolist:task_create") + f"?parent={self.parent.pk}"
         ).content.decode()
 
         self.assertRegex(html, rf'<option value="{self.project.pk}" selected>')
@@ -135,12 +135,12 @@ class TaskFromNoteTests(TestCase):
         return Task.objects.get()
 
     def test_description_vide(self):
-        todo = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
+        task = self.process("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        self.assertEqual(todo.description, "")
+        self.assertEqual(task.description, "")
 
     def test_sans_chemin(self):
-        todo = self.process("# P\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
+        task = self.process("# P\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        self.assertIsNone(todo.section)
-        self.assertEqual(list(todo.tags.values_list("name", flat=True)), [])
+        self.assertIsNone(task.section)
+        self.assertEqual(list(task.tags.values_list("name", flat=True)), [])

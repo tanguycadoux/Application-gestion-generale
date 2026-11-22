@@ -55,7 +55,7 @@ class TaskListTestCase(TestCase):
             note_part_text="Écartée",
             note_state=Task.NoteState.DISMISSED,
         )
-        self.url = reverse("todolist:todo_list")
+        self.url = reverse("todolist:task_list")
 
     def get(self, **params):
         return self.client.get(self.url, params)
@@ -165,7 +165,7 @@ class StateFilterTests(TaskListTestCase):
         html = self.get(state="dismissed").content.decode()
 
         self.assertIn(f'popovertarget="restore-{self.ecartee.pk}"', html)
-        self.assertIn(reverse("todolist:todo_restore", args=[self.ecartee.pk]), html)
+        self.assertIn(reverse("todolist:task_restore", args=[self.ecartee.pk]), html)
 
 
 class TaskFilterTests(TaskListTestCase):
@@ -403,7 +403,7 @@ class TaskSortTests(TaskListTestCase):
         )
 
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.sans_date.pk])
+            reverse("todolist:task_detail", args=[self.sans_date.pk])
         ).content.decode()
 
         self.assertLess(html.index(">Tôt<"), html.index(">Tard<"))

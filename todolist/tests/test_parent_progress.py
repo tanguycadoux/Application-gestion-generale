@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.models import Project
-from todolist.forms import TodoForm
+from todolist.forms import TaskForm
 from todolist.models import Task
 
 
@@ -21,12 +21,12 @@ class ParentProgressTestCase(TestCase):
     def task(self, title: str, **fields) -> Task:
         return Task.objects.create(title=title, project=self.project, **fields)
 
-    def progress(self, *todos: Task) -> list[int]:
-        return [Task.objects.get(pk=todo.pk).progress for todo in todos]
+    def progress(self, *tasks: Task) -> list[int]:
+        return [Task.objects.get(pk=task.pk).progress for task in tasks]
 
-    def toggle(self, todo: Task, completed: bool):
+    def toggle(self, task: Task, completed: bool):
         return self.client.post(
-            reverse("todolist:todo_toggle", args=[todo.pk]),
+            reverse("todolist:task_toggle", args=[task.pk]),
             json.dumps({"completed": completed}),
             content_type="application/json",
         )
@@ -42,9 +42,9 @@ class ComputedProgressTests(ParentProgressTestCase):
 
     def test_parent_a_100_sans_etre_termine(self):
         """Un parent se valide à la main, même quand tous ses enfants sont finis."""
-        for todo in (self.grandchild, self.other):
-            todo.progress = 100
-            todo.save()
+        for task in (self.grandchild, self.other):
+            task.progress = 100
+            task.save()
 
         self.assertEqual(self.progress(self.child, self.parent), [100, 100])
         self.assertFalse(Task.objects.get(pk=self.parent.pk).completed)
@@ -95,18 +95,18 @@ class ComputedProgressTests(ParentProgressTestCase):
 
 class ParentFormTests(ParentProgressTestCase):
     def test_avancement_d_un_parent_non_modifiable(self):
-        form = TodoForm(instance=self.parent)
+        form = TaskForm(instance=self.parent)
 
         self.assertTrue(form.fields["progress"].disabled)
         self.assertIn("sous-tâches", str(form.fields["progress"].help_text))
 
     def test_avancement_d_une_tache_sans_sous_tache_modifiable(self):
-        self.assertFalse(TodoForm(instance=self.other).fields["progress"].disabled)
+        self.assertFalse(TaskForm(instance=self.other).fields["progress"].disabled)
 
     def test_case_terminee_seulement_pour_un_parent(self):
-        self.assertIn("done", TodoForm(instance=self.parent).fields)
-        self.assertNotIn("done", TodoForm(instance=self.other).fields)
-        self.assertNotIn("done", TodoForm().fields)
+        self.assertIn("done", TaskForm(instance=self.parent).fields)
+        self.assertNotIn("done", TaskForm(instance=self.other).fields)
+        self.assertNotIn("done", TaskForm().fields)
 
 
 class ToggleTests(ParentProgressTestCase):
@@ -132,7 +132,7 @@ class ToggleTests(ParentProgressTestCase):
         self.grandchild.progress = 100
         self.grandchild.save()
 
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(reverse("todolist:task_list")).content.decode()
 
         self.assertNotRegex(html, rf'data-id="{self.parent.pk}"[^>]*disabled')
         self.assertIn('aria-label="Avancement : 50 %"', html)
@@ -140,11 +140,11 @@ class ToggleTests(ParentProgressTestCase):
 
 class ParentValidationTests(ParentProgressTestCase):
     def finish_children(self):
-        for todo in (self.grandchild, self.other):
-            self.toggle(todo, completed=True)
+        for task in (self.grandchild, self.other):
+            self.toggle(task, completed=True)
 
-    def done(self, *todos: Task) -> list[bool]:
-        return [Task.objects.get(pk=todo.pk).completed for todo in todos]
+    def done(self, *tasks: Task) -> list[bool]:
+        return [Task.objects.get(pk=task.pk).completed for task in tasks]
 
     def test_tache_sans_sous_tache_terminee_a_100(self):
         self.other.progress = 100
@@ -158,7 +158,7 @@ class ParentValidationTests(ParentProgressTestCase):
     def test_parent_a_valider_dans_la_liste(self):
         self.finish_children()
 
-        response = self.client.get(reverse("todolist:todo_list"))
+        response = self.client.get(reverse("todolist:task_list"))
 
         self.assertIn(self.parent.pk, [g.root.pk for g in response.context["groups"]])
         self.assertContains(response, "· à valider")
@@ -168,7 +168,7 @@ class ParentValidationTests(ParentProgressTestCase):
         self.toggle(self.child, completed=True)
         self.toggle(self.parent, completed=True)
 
-        response = self.client.get(reverse("todolist:todo_list"), {"state": "done"})
+        response = self.client.get(reverse("todolist:task_list"), {"state": "done"})
 
         self.assertIn(self.parent.pk, [g.root.pk for g in response.context["groups"]])
 

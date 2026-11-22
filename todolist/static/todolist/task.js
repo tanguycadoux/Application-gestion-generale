@@ -13,7 +13,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-async function toggle_todo(url, completed, csrftoken){
+async function toggle_task(url, completed, csrftoken){
     return await fetch(url, {
         method: "POST",
         headers: {
@@ -45,13 +45,13 @@ const csrftoken = getCookie("csrftoken");
 // Délégation : les lignes remplacées gardent le comportement de leur case.
 document.addEventListener("change", async (event) => {
     const checkbox = event.target;
-    if (!checkbox.matches(".todo-toggle")) {
+    if (!checkbox.matches(".task-toggle")) {
         return;
     }
     checkbox.disabled = true;
     let response = null;
     try {
-        response = await toggle_todo(checkbox.dataset.url, checkbox.checked, csrftoken);
+        response = await toggle_task(checkbox.dataset.url, checkbox.checked, csrftoken);
     } catch {
         // Serveur injoignable : traité comme un échec.
     }

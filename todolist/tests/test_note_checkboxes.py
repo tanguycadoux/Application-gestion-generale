@@ -24,8 +24,8 @@ class CheckboxTestCase(TestCase):
 
     def tree(self) -> dict[str, str | None]:
         return {
-            todo.title: todo.parent.title if todo.parent else None
-            for todo in Task.objects.select_related("parent")
+            task.title: task.parent.title if task.parent else None
+            for task in Task.objects.select_related("parent")
         }
 
 
@@ -94,7 +94,7 @@ class NestingTests(CheckboxTestCase):
         self.assertEqual(self.tree(), {"A": None, "B": "A"})
 
 
-class TodoBranchTests(CheckboxTestCase):
+class TaskBranchTests(CheckboxTestCase):
     def test_chaque_element_est_une_tache(self):
         self.save_note("# P\n## S\n" + BLOCK + "- A\n- B")
 

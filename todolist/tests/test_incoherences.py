@@ -22,9 +22,9 @@ class IncoherenceTestCase(TestCase):
         fields.setdefault("project", self.project)
         return Task.objects.create(title=title, **fields)
 
-    def messages(self, todo: Task) -> list[tuple[str, int]]:
-        todo = Task.objects.get(pk=todo.pk)
-        return [(i.message, i.task.pk) for i in todo.incoherences()]
+    def messages(self, task: Task) -> list[tuple[str, int]]:
+        task = Task.objects.get(pk=task.pk)
+        return [(i.message, i.task.pk) for i in task.incoherences()]
 
 
 class DueDateTests(IncoherenceTestCase):
@@ -125,21 +125,21 @@ class DisplayTests(IncoherenceTestCase):
 
     def test_encadre_dans_le_detail(self):
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         ).content.decode()
 
         self.assertIn('<aside aria-labelledby="incoherences-title"', html)
         self.assertIn('<h2 id="incoherences-title"', html)
         self.assertIn("La sous-tâche « Enfant » a un autre projet (Autre).", html)
         self.assertIn(
-            f'href="{reverse("todolist:todo_detail", args=[self.child.pk])}"', html
+            f'href="{reverse("todolist:task_detail", args=[self.child.pk])}"', html
         )
 
     def test_pas_d_encadre_sans_incoherence(self):
         task = self.task("Seule")
 
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[task.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
         self.assertNotIn("incoherences-title", html)
@@ -147,7 +147,7 @@ class DisplayTests(IncoherenceTestCase):
     def test_indicateur_dans_la_liste(self):
         self.task("Seule")
 
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(reverse("todolist:task_list")).content.decode()
 
         # Le parent et l'enfant, pas la tâche « Seule ».
         self.assertEqual(html.count('aria-label="Incohérences à corriger"'), 2)

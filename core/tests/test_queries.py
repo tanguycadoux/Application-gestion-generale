@@ -42,7 +42,7 @@ class ListQueriesTests(TestCase):
             process_note_parts(note)
 
     def test_liste_des_taches(self):
-        url = reverse("todolist:todo_list")
+        url = reverse("todolist:task_list")
         self.add_tasks(2)
         few = self.queries(url)
         self.add_tasks(6)
@@ -52,7 +52,7 @@ class ListQueriesTests(TestCase):
     def test_detail_d_une_tache_parente(self):
         a = Project.objects.create(name="A")
         parent = Task.objects.create(title="Parent", project=a)
-        url = reverse("todolist:todo_detail", args=[parent.pk])
+        url = reverse("todolist:task_detail", args=[parent.pk])
         Task.objects.create(title="E0", project=a, parent=parent)
         few = self.queries(url)
         for i in range(1, 6):

@@ -39,9 +39,9 @@ class TaskDetailTests(TestCase):
         )
         self.task.tags.add(Tag.objects.create(name="urgent"))
 
-    def get(self, todo: Task) -> str:
+    def get(self, task: Task) -> str:
         return self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
     def test_fiche(self):
@@ -66,7 +66,7 @@ class TaskDetailTests(TestCase):
 
         self.assertIn("bg-teal-500", html)
         self.assertIn(
-            f'href="{reverse("todolist:todo_detail", args=[self.parent.pk])}"', html
+            f'href="{reverse("todolist:task_detail", args=[self.parent.pk])}"', html
         )
 
     def test_valeurs_absentes(self):
@@ -104,7 +104,7 @@ class TaskDetailTests(TestCase):
         assert section is not None
         self.assertIn("Relire", section.group())
         self.assertIn(
-            reverse("todolist:todo_create") + f"?parent={self.parent.pk}",
+            reverse("todolist:task_create") + f"?parent={self.parent.pk}",
             section.group(),
         )
 

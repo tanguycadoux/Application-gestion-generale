@@ -41,11 +41,11 @@ class ParentContext:
     # Chemin saisi qui n'existe pas encore : aucune tâche n'y est.
     unknown_path: bool = False
     show_done: bool = False
-    todo: Task | None = None
+    task: Task | None = None
     current_parent_id: int | None = None
 
     @classmethod
-    def from_data(cls, data: Mapping, todo: Task | None = None) -> ParentContext:
+    def from_data(cls, data: Mapping, task: Task | None = None) -> ParentContext:
         """D'après les valeurs d'un formulaire (envoyé, ou rechargé par htmx)."""
         project = _project(data.get("project"))
         names = split_path(data.get("section_path") or "")
@@ -55,7 +55,7 @@ class ParentContext:
             section=section,
             unknown_path=bool(project and names and section is None),
             show_done=data.get("parent_show_done") == "1",
-            todo=todo,
+            task=task,
             current_parent_id=_pk(data.get("parent")),
         )
 
@@ -76,11 +76,11 @@ def _project(value) -> Project | None:
     return Project.objects.filter(pk=pk).first() if pk else None
 
 
-def excluded_ids(todo: Task | None) -> set[int]:
+def excluded_ids(task: Task | None) -> set[int]:
     """La tâche et ses descendantes : en faire le parent créerait une boucle."""
-    if todo is None or todo.pk is None:
+    if task is None or task.pk is None:
         return set()
-    found, level = {todo.pk}, [todo.pk]
+    found, level = {task.pk}, [task.pk]
     while level:
         level = list(
             Task.objects.filter(parent_id__in=level).values_list("pk", flat=True)
@@ -99,7 +99,7 @@ class ParentChoices:
 
 def parent_choices(context: ParentContext) -> ParentChoices:
     tasks = Task.objects.select_related("project").exclude(
-        pk__in=excluded_ids(context.todo)
+        pk__in=excluded_ids(context.task)
     )
     if not context.show_done:
         kept = Q(done=False)

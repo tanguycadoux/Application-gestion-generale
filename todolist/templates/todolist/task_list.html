@@ -6,14 +6,14 @@
 {% block extra_head %}
     {{ block.super }}
     {% load static %}
-    <script src="{% static 'todolist/todo.js' %}"></script>
+    <script src="{% static 'todolist/task.js' %}"></script>
 {% endblock extra_head %}
 
 {% block content %}
     <header class="mb-4 flex items-start">
         <h1 class="flex-1">Liste des tâches</h1>
 
-        {% url 'todolist:todo_create' as url %}
+        {% url 'todolist:task_create' as url %}
         {% button "Créer une tâche" icon="add" href=url %}
     </header>
 
@@ -67,7 +67,7 @@
                                 {% endif %}
                             </td>
                             <td class="p-2 text-right">
-                                {% url 'todolist:todo_restore' row.task.pk as url %}
+                                {% url 'todolist:task_restore' row.task.pk as url %}
                                 {% with pk=row.task.pk|stringformat:"d" %}
                                     {% confirm_button "Rétablir" id="restore-"|add:pk icon="restore_from_trash" variant="ghost" message=row.confirm action=url confirm_label="Rétablir" confirm_icon="restore_from_trash" confirm_variant="primary" %}
                                 {% endwith %}

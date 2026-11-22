@@ -49,12 +49,12 @@ class DueTasksBlockTests(TestCase):
         self.assertIn("Aucune tâche en retard ni à échéance proche.", html)
 
     def test_lien_vers_la_tache_et_temps_restant(self):
-        todo = self.task("Relire", -2)
+        task = self.task("Relire", -2)
 
         response = self.client.get(reverse("core:index"))
 
         self.assertContains(
-            response, f'href="{reverse("todolist:todo_detail", args=[todo.pk])}"'
+            response, f'href="{reverse("todolist:task_detail", args=[task.pk])}"'
         )
         self.assertContains(response, "2 j de retard")
 
@@ -63,7 +63,7 @@ class DueTasksBlockTests(TestCase):
 
         response = self.client.get(reverse("core:index"))
 
-        self.assertContains(response, f'href="{reverse("todolist:todo_list")}"')
+        self.assertContains(response, f'href="{reverse("todolist:task_list")}"')
 
     def test_au_plus_dix_puis_le_nombre_des_autres(self):
         for number in range(12):

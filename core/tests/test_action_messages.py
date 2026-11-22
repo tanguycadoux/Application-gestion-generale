@@ -57,7 +57,7 @@ class ActionMessagesTests(TestCase):
 
     def test_tache_creee(self):
         self.assertEqual(
-            self.post("todolist:todo_create", data=self.task_data("Relire")),
+            self.post("todolist:task_create", data=self.task_data("Relire")),
             ["La tâche « Relire » est créée."],
         )
 
@@ -65,7 +65,7 @@ class ActionMessagesTests(TestCase):
         task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
-            self.post("todolist:todo_edit", task.pk, data=self.task_data("Relu")),
+            self.post("todolist:task_edit", task.pk, data=self.task_data("Relu")),
             ["La tâche « Relu » est modifiée."],
         )
 
@@ -73,7 +73,7 @@ class ActionMessagesTests(TestCase):
         task = Task.objects.create(title="Relire", project=self.project)
 
         self.assertEqual(
-            self.post("todolist:todo_delete", task.pk),
+            self.post("todolist:task_delete", task.pk),
             ["La tâche « Relire » est supprimée."],
         )
 
@@ -83,7 +83,7 @@ class ActionMessagesTests(TestCase):
         Task.objects.create(title="B", project=self.project, parent=task)
 
         self.assertEqual(
-            self.post("todolist:todo_delete", task.pk),
+            self.post("todolist:task_delete", task.pk),
             ["La tâche « Relire » et ses 2 sous-tâches sont supprimées."],
         )
 

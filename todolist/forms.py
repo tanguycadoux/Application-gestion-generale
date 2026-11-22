@@ -24,7 +24,7 @@ class ParentSelect(forms.Select):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parent_data: Mapping = {}
-        self.todo: Task | None = None
+        self.task: Task | None = None
         self.titles: dict[str, str] = {}
 
     def create_option(
@@ -39,13 +39,13 @@ class ParentSelect(forms.Select):
         return option
 
     def get_context(self, name, value, attrs):
-        result = parent_choices(ParentContext.from_data(self.parent_data, self.todo))
+        result = parent_choices(ParentContext.from_data(self.parent_data, self.task))
         self.choices, self.titles = result.choices, result.titles
         context = super().get_context(name, value, attrs)
         context["widget"]["show_done"] = self.parent_data.get("parent_show_done") == "1"
         url = reverse("todolist:parent_choices")
         context["widget"]["choices_url"] = (
-            f"{url}?todo={self.todo.pk}" if self.todo else url
+            f"{url}?task={self.task.pk}" if self.task else url
         )
         return context
 
@@ -62,17 +62,17 @@ class SectionPathForm(forms.ModelForm):
             self.initial["section_path"] = section_path_text(self.instance.section)
 
     def save(self, commit=True):
-        todo = super().save(commit=False)
-        todo.section = section_for(
+        task = super().save(commit=False)
+        task.section = section_for(
             self.cleaned_data["project"], self.cleaned_data["section_path"]
         )
         if commit:
-            todo.save()
+            task.save()
             self.save_m2m()
-        return todo
+        return task
 
 
-class TodoForm(SectionPathForm):
+class TaskForm(SectionPathForm):
     class Meta:
         model = Task
         fields = [
@@ -115,7 +115,7 @@ class TodoForm(SectionPathForm):
         saisi (#390). Seul l'affichage est trié : toute tâche reste acceptée, sauf
         une boucle (`Task.clean`)."""
         widget = self.fields["parent"].widget
-        widget.todo = self.instance if self.instance.pk else None
+        widget.task = self.instance if self.instance.pk else None
         if self.is_bound:
             widget.parent_data = self.data
         elif parent_data is not None:
@@ -171,8 +171,8 @@ class GoneLineForm(forms.ModelForm):
         if replacements is not None:
             self.fields["replacement"].queryset = replacements
         # Le titre seul est ambigu : le chemin dit où est la ligne dans la note.
-        self.fields["replacement"].label_from_instance = lambda todo: " › ".join(
-            part for part in (todo.note_path, todo.note_part_text) if part
+        self.fields["replacement"].label_from_instance = lambda task: " › ".join(
+            part for part in (task.note_path, task.note_part_text) if part
         )
 
     def clean(self):

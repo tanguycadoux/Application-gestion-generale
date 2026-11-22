@@ -86,9 +86,9 @@ class ApplyTests(ConvertTestCase):
         note.refresh_from_db()
         self.assertEqual(note.body, NEW)
         self.assertEqual(Task.objects.count(), 3)
-        for todo in (a, b, c):
-            todo.refresh_from_db()
-            self.assertEqual(todo.note_state, Task.NoteState.REVIEWED)
+        for task in (a, b, c):
+            task.refresh_from_db()
+            self.assertEqual(task.note_state, Task.NoteState.REVIEWED)
         b.refresh_from_db()
         self.assertEqual(b.parent, a)
         self.assertIn(
@@ -190,10 +190,10 @@ class MovedTasksTests(ConvertTestCase):
 
         self.run_command("--apply")
 
-        for todo, path in ((a, "P › S › Notes"), (b, "P › S › Notes › Détail")):
-            todo.refresh_from_db()
-            self.assertEqual(todo.note_path, path)
-            self.assertEqual(todo.note_state, Task.NoteState.REVIEWED)
+        for task, path in ((a, "P › S › Notes"), (b, "P › S › Notes › Détail")):
+            task.refresh_from_db()
+            self.assertEqual(task.note_path, path)
+            self.assertEqual(task.note_state, Task.NoteState.REVIEWED)
         a.refresh_from_db()
         self.assertEqual(a.progress, 40)
         self.assertEqual(Task.objects.count(), 2)

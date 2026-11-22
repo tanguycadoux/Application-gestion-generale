@@ -168,15 +168,15 @@ class HtmlValidationTests(TestCase):
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),
-            "taches_liste": reverse("todolist:todo_list"),
+            "taches_liste": reverse("todolist:task_list"),
             "taches_liste_filtres": (
-                reverse("todolist:todo_list")
+                reverse("todolist:task_list")
                 + "?state=all&title=e&sort=-due&project=ASTERICS&project=PDS1"
             ),
-            "taches_liste_ecartees": reverse("todolist:todo_list") + "?state=dismissed",
-            "tache": reverse("todolist:todo_detail", args=[parent]),
-            "tache_nouvelle": reverse("todolist:todo_create"),
-            "tache_modifier": reverse("todolist:todo_edit", args=[parent]),
+            "taches_liste_ecartees": reverse("todolist:task_list") + "?state=dismissed",
+            "tache": reverse("todolist:task_detail", args=[parent]),
+            "tache_nouvelle": reverse("todolist:task_create"),
+            "tache_modifier": reverse("todolist:task_edit", args=[parent]),
             "taches_bilan": self.note.follow_ups[0].url,
         }
 

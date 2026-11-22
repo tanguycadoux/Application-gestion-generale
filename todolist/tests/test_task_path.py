@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from core.models import Project, Section
 from core.sections import levels, section_for
-from todolist.forms import NoteReviewForm, TodoForm
+from todolist.forms import NoteReviewForm, TaskForm
 from todolist.models import Task
 
 
@@ -24,58 +24,58 @@ class PathTestCase(TestCase):
         }
 
     def save(self, **fields) -> Task:
-        form = TodoForm(data=self.data(**fields))
+        form = TaskForm(data=self.data(**fields))
         self.assertTrue(form.is_valid(), form.errors)
         return form.save()
 
 
 class PathFieldTests(PathTestCase):
     def test_champ_chemin_avec_son_libelle(self):
-        form = TodoForm()
+        form = TaskForm()
 
         self.assertEqual(form.fields["section_path"].label, "Chemin")
         self.assertNotIn("section", form.fields)
 
     def test_chemin_cree_sous_le_projet(self):
-        todo = self.save(section_path="Réunion/Préparation")
+        task = self.save(section_path="Réunion/Préparation")
 
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Réunion", "Préparation"])
-        self.assertEqual(todo.section.project, self.project)
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Réunion", "Préparation"])
+        self.assertEqual(task.section.project, self.project)
 
     def test_chemin_connu_repris_casse_ignoree(self):
         known = section_for(self.project, ["Réunion", "Préparation"])
 
-        todo = self.save(section_path="réunion / PRÉPARATION")
+        task = self.save(section_path="réunion / PRÉPARATION")
 
-        self.assertEqual(todo.section, known)
+        self.assertEqual(task.section, known)
         self.assertEqual(Section.objects.count(), 2)
 
     def test_sans_chemin(self):
-        todo = self.save(section_path="")
+        task = self.save(section_path="")
 
-        self.assertIsNone(todo.section)
+        self.assertIsNone(task.section)
 
     def test_double_barre_est_une_barre_litterale(self):
-        todo = self.save(section_path="Rapport RT17//A/Suite")
+        task = self.save(section_path="Rapport RT17//A/Suite")
 
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Rapport RT17/A", "Suite"])
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Rapport RT17/A", "Suite"])
 
     def test_espaces_et_niveaux_vides_ignores(self):
-        todo = self.save(section_path="  Réunion  / /  Suite / ")
+        task = self.save(section_path="  Réunion  / /  Suite / ")
 
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Réunion", "Suite"])
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Réunion", "Suite"])
 
     def test_niveau_trop_long_refuse(self):
-        form = TodoForm(data=self.data(section_path="A" * 201))
+        form = TaskForm(data=self.data(section_path="A" * 201))
 
         self.assertFalse(form.is_valid())
         self.assertIn("200 caractères", str(form.errors["section_path"]))
 
     def test_rien_n_est_cree_si_le_formulaire_est_invalide(self):
-        form = TodoForm(data=self.data(title="", section_path="Nouveau/Chemin"))
+        form = TaskForm(data=self.data(title="", section_path="Nouveau/Chemin"))
 
         self.assertFalse(form.is_valid())
         self.assertFalse(Section.objects.exists())
@@ -84,7 +84,7 @@ class PathFieldTests(PathTestCase):
         other = Project.objects.create(name="Q")
         first = self.save(section_path="Réunion")
 
-        form = TodoForm(data=self.data(project=other.pk, section_path="Réunion"))
+        form = TaskForm(data=self.data(project=other.pk, section_path="Réunion"))
         self.assertTrue(form.is_valid(), form.errors)
         second = form.save()
 
@@ -93,33 +93,33 @@ class PathFieldTests(PathTestCase):
         self.assertEqual(second.section.project, other)
 
     def test_changer_de_projet_replace_le_chemin(self):
-        todo = self.save(section_path="Réunion")
+        task = self.save(section_path="Réunion")
         other = Project.objects.create(name="Q")
 
-        form = TodoForm(
-            data=self.data(project=other.pk, section_path="Réunion"), instance=todo
+        form = TaskForm(
+            data=self.data(project=other.pk, section_path="Réunion"), instance=task
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
 
-        todo.refresh_from_db()
-        assert todo.section is not None
-        self.assertEqual(todo.section.project, other)
+        task.refresh_from_db()
+        assert task.section is not None
+        self.assertEqual(task.section.project, other)
 
     def test_enlever_le_chemin(self):
-        todo = self.save(section_path="Réunion")
+        task = self.save(section_path="Réunion")
 
-        form = TodoForm(data=self.data(section_path=""), instance=todo)
+        form = TaskForm(data=self.data(section_path=""), instance=task)
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
 
-        todo.refresh_from_db()
-        self.assertIsNone(todo.section)
+        task.refresh_from_db()
+        self.assertIsNone(task.section)
 
     def test_valeur_initiale_a_ressaisir_a_l_identique(self):
-        todo = self.save(section_path="Rapport RT17//A/Suite")
+        task = self.save(section_path="Rapport RT17//A/Suite")
 
-        form = TodoForm(instance=todo)
+        form = TaskForm(instance=task)
 
         self.assertEqual(form.initial["section_path"], "Rapport RT17//A/Suite")
 
@@ -128,16 +128,16 @@ class PathFieldTests(PathTestCase):
 
         tag = Tag.objects.create(name="urgent")
 
-        todo = self.save(section_path="Réunion", tags=[tag.pk])
+        task = self.save(section_path="Réunion", tags=[tag.pk])
 
-        self.assertEqual(list(todo.tags.all()), [tag])
+        self.assertEqual(list(task.tags.all()), [tag])
 
 
 class DatalistTests(PathTestCase):
     def test_autocompletion_par_une_liste_native(self):
         section_for(self.project, ["Réunion", "Préparation"])
 
-        html = str(TodoForm()["section_path"])
+        html = str(TaskForm()["section_path"])
 
         self.assertIn('list="id_section_path-chemins"', html)
         self.assertIn('<datalist id="id_section_path-chemins">', html)
@@ -149,7 +149,7 @@ class DatalistTests(PathTestCase):
         section_for(self.project, ["Réunion"])
         section_for(other, ["Réunion"])
 
-        html = str(TodoForm()["section_path"])
+        html = str(TaskForm()["section_path"])
 
         self.assertEqual(html.count('<option value="Réunion"'), 1)
         self.assertIn('label="P, Q"', html)
@@ -157,7 +157,7 @@ class DatalistTests(PathTestCase):
     def test_barre_litterale_echappee_dans_les_options(self):
         section_for(self.project, ["Rapport RT17/A"])
 
-        html = str(TodoForm()["section_path"])
+        html = str(TaskForm()["section_path"])
 
         self.assertIn('<option value="Rapport RT17//A"', html)
 
@@ -166,17 +166,17 @@ class DatalistTests(PathTestCase):
             section_for(self.project, [f"N{index}", "Sous"])
 
         with self.assertNumQueries(1):
-            str(TodoForm()["section_path"])
+            str(TaskForm()["section_path"])
 
     def test_sans_chemin_liste_vide(self):
-        html = str(TodoForm()["section_path"])
+        html = str(TaskForm()["section_path"])
 
         self.assertIn('<datalist id="id_section_path-chemins"></datalist>', html)
 
 
 class NoteReviewFormTests(PathTestCase):
     def test_le_bilan_saisit_le_chemin_aussi(self):
-        todo = Task.objects.create(title="T", project=self.project)
+        task = Task.objects.create(title="T", project=self.project)
         form = NoteReviewForm(
             data={
                 "due_date": "",
@@ -184,23 +184,23 @@ class NoteReviewFormTests(PathTestCase):
                 "project": self.project.pk,
                 "section_path": "Réunion/Suite",
             },
-            instance=todo,
+            instance=task,
         )
 
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
 
-        todo.refresh_from_db()
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Réunion", "Suite"])
+        task.refresh_from_db()
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Réunion", "Suite"])
 
 
 class PathDisplayTests(PathTestCase):
     def test_detail_affiche_le_chemin(self):
-        todo = self.save(section_path="Réunion/Préparation")
+        task = self.save(section_path="Réunion/Préparation")
 
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
         self.assertIn("<dt", html)
@@ -208,16 +208,16 @@ class PathDisplayTests(PathTestCase):
         self.assertNotIn(">Sujet<", html)
 
     def test_detail_sans_chemin(self):
-        todo = self.save(section_path="")
+        task = self.save(section_path="")
 
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
         self.assertRegex(html, r"<dt[^>]*>Chemin</dt>\s*<dd>Aucun</dd>")
 
     def test_formulaire_de_creation_a_le_champ_chemin(self):
-        html = self.client.get(reverse("todolist:todo_create")).content.decode()
+        html = self.client.get(reverse("todolist:task_create")).content.decode()
 
         self.assertIn(">Chemin", html)
         self.assertIn('name="section_path"', html)
@@ -225,13 +225,13 @@ class PathDisplayTests(PathTestCase):
 
     def test_creation_par_la_vue(self):
         response = self.client.post(
-            reverse("todolist:todo_create"), self.data(section_path="Réunion/Suite")
+            reverse("todolist:task_create"), self.data(section_path="Réunion/Suite")
         )
 
-        self.assertRedirects(response, reverse("todolist:todo_list"))
-        todo = Task.objects.get()
-        assert todo.section is not None
-        self.assertEqual(levels(todo.section), ["Réunion", "Suite"])
+        self.assertRedirects(response, reverse("todolist:task_list"))
+        task = Task.objects.get()
+        assert task.section is not None
+        self.assertEqual(levels(task.section), ["Réunion", "Suite"])
 
 
 class ListFilterTests(PathTestCase):
@@ -251,7 +251,7 @@ class ListFilterTests(PathTestCase):
         self.d = make(title="Sans chemin", project=self.project)
 
     def titles(self, **params) -> list[str]:
-        response = self.client.get(reverse("todolist:todo_list"), params)
+        response = self.client.get(reverse("todolist:task_list"), params)
         html = response.content.decode()
         return [
             title
@@ -284,7 +284,7 @@ class ListFilterTests(PathTestCase):
         Task.objects.filter(pk=self.b.pk).update(parent=self.c)
 
         response = self.client.get(
-            reverse("todolist:todo_list"), {"path": self.prep.pk}
+            reverse("todolist:task_list"), {"path": self.prep.pk}
         )
         html = response.content.decode()
 
@@ -298,7 +298,7 @@ class ListFilterTests(PathTestCase):
 
     def test_filtre_dans_le_panneau_de_la_colonne_tache(self):
         response = self.client.get(
-            reverse("todolist:todo_list"), {"path": self.prep.pk}
+            reverse("todolist:task_list"), {"path": self.prep.pk}
         )
         html = response.content.decode()
 
@@ -311,7 +311,7 @@ class ListFilterTests(PathTestCase):
         self.assertIn("Chemin : P › Réunion › Préparation", html)
 
     def test_pas_de_chip_sans_filtre(self):
-        html = self.client.get(reverse("todolist:todo_list")).content.decode()
+        html = self.client.get(reverse("todolist:task_list")).content.decode()
 
         self.assertNotIn("Filtres actifs", html)
         self.assertIn('name="path"', html)
@@ -319,6 +319,6 @@ class ListFilterTests(PathTestCase):
     def test_aucune_tache_pour_ce_niveau(self):
         empty = section_for(self.project, ["Vide"])
 
-        response = self.client.get(reverse("todolist:todo_list"), {"path": empty.pk})
+        response = self.client.get(reverse("todolist:task_list"), {"path": empty.pk})
 
         self.assertContains(response, "Aucune tâche ne répond aux filtres.")

@@ -1,4 +1,4 @@
-"""Tests du modèle Project partagé entre notes et TODO."""
+"""Tests du modèle Project partagé entre notes et tâches."""
 
 from django.db.models import ProtectedError
 from django.test import TestCase
@@ -24,7 +24,7 @@ class ProjectDeletionTests(TestCase):
         with self.assertRaises(ProtectedError):
             project.delete()
 
-    def test_projet_utilise_par_une_todo(self):
+    def test_projet_utilise_par_une_tache(self):
         project = Task.objects.get().project
         self.note.delete()
 

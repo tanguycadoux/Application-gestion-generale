@@ -18,7 +18,7 @@ class TodolistConfig(AppConfig):
         20,
         (
             NavItem("todolist:index", "Calendrier", "calendar_month"),
-            NavItem("todolist:todo_list", "Liste des tâches", "checklist"),
+            NavItem("todolist:task_list", "Liste des tâches", "checklist"),
         ),
     )
     project_usages = (

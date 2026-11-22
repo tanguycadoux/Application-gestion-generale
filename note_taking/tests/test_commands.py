@@ -79,13 +79,13 @@ class ReprocessNotesTests(TestCase):
         self.assertIn("1 note(s) recalculée(s), 1 erreur(s)", out)
         self.assertEqual(self.parts(self.note), [("P", [], "x")])
 
-    def test_todo_existante_non_recreee(self):
+    def test_tache_existante_non_recreee(self):
         self.note.body = "# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- Tâche"
         self.note.save()
         self.reprocess()
-        todo = Task.objects.get()
-        todo.progress = 100
-        todo.save()
+        task = Task.objects.get()
+        task.progress = 100
+        task.save()
 
         self.reprocess()
 

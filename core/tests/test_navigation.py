@@ -27,7 +27,7 @@ class NavigationTests(TestCase):
             nav = re.search(r"<nav .*?</nav>", html, re.S).group()
             return re.sub(r'\s*aria-current="page"|\s*bg-white', "", nav)
 
-        pages = ("/", reverse("note_taking:index"), reverse("todolist:todo_list"))
+        pages = ("/", reverse("note_taking:index"), reverse("todolist:task_list"))
         self.assertEqual(len({menu(url) for url in pages}), 1)
 
     def test_libelle_en_aria_label_et_infobulle(self):

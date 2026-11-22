@@ -4,7 +4,7 @@
     <div class="flex items-center">
         <time datetime="{{ day.date|date:'Y-m-d' }}" class="flex-1 {% calendar_number_classes day %}">{{ day.date.day }}</time>
         {% if day.can_create %}
-            {% url 'todolist:todo_create' as create_url %}
+            {% url 'todolist:task_create' as create_url %}
             <a class="rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-blue-50" href="{{ create_url }}?due={{ day.date|date:'Y-m-d' }}" aria-label="Créer une tâche pour le {{ day.date|date_text:"moyen" }}">
                 {% icon "add" class="inline-block size-4 align-middle text-blue-800" %}
             </a>
@@ -15,7 +15,7 @@
             {% for task in day.visible_tasks %}
                 <li class="flex min-w-0 items-center gap-1">
                     <span class="size-2 shrink-0 rounded-full {{ task.project|project_dot_class }}" aria-hidden="true"></span>
-                    <a class="truncate rounded px-0.5 hover:bg-slate-100 {% if task.done %}text-slate-500{% elif task.due_signal == 'overdue' %}text-red-800{% else %}text-slate-800{% endif %}" href="{% url 'todolist:todo_detail' task.pk %}">{{ task.title }}</a>
+                    <a class="truncate rounded px-0.5 hover:bg-slate-100 {% if task.done %}text-slate-500{% elif task.due_signal == 'overdue' %}text-red-800{% else %}text-slate-800{% endif %}" href="{% url 'todolist:task_detail' task.pk %}">{{ task.title }}</a>
                 </li>
             {% endfor %}
             {% if day.more %}

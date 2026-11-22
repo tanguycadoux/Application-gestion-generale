@@ -45,7 +45,7 @@ def moves_of(note: Note, found: Conversion) -> list[Move]:
     return moves
 
 
-def existing_todos(move: Move):
+def existing_tasks(move: Move):
     return Task.all_objects.filter(
         created_from_note=True,
         note_part_date=move.note.date,
@@ -134,7 +134,7 @@ class Command(BaseCommand):
         """Les tâches déjà créées dont le chemin change : elles gardent leur fiche
         (avancement, échéance, parent) et se rangent sous la section où leur liste
         se trouve une fois le titre `TODO` retiré."""
-        existing = [move for move in moves if existing_todos(move).exists()]
+        existing = [move for move in moves if existing_tasks(move).exists()]
         self.stdout.write(
             f"\n{len(existing)} tâche(s) déjà créée(s) changent de chemin (le titre "
             "TODO retiré, leur liste passe sous le titre qui le précédait) :"
@@ -180,7 +180,7 @@ class Command(BaseCommand):
                 )
             )
             for move in moves:
-                existing_todos(move).update(note_path=move.new_path)
+                existing_tasks(move).update(note_path=move.new_path)
             for note, found in concerned:
                 note.body = found.body
                 note.save()
@@ -191,8 +191,8 @@ class Command(BaseCommand):
                 raise CommandError(f"{error}. Rien n'a été modifié.") from error
 
             lost = [
-                todo
-                for todo in Task.all_objects.filter(
+                task
+                for task in Task.all_objects.filter(
                     pk__in=[
                         pk
                         for pk, state in known.items()
@@ -202,7 +202,7 @@ class Command(BaseCommand):
                 )
             ]
             if lost:
-                titles = ", ".join(f"« {todo.title} »" for todo in lost[:5])
+                titles = ", ".join(f"« {task.title} »" for task in lost[:5])
                 raise CommandError(
                     f"{len(lost)} tâche(s) déjà revue(s) perdraient leur ligne "
                     f"({titles}). Rien n'a été modifié."

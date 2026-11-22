@@ -12,7 +12,7 @@ from django.urls import reverse
 from core.models import Project
 from images.models import Image
 from note_taking.models import Note, NotePart
-from todolist.forms import TodoForm
+from todolist.forms import TaskForm
 from todolist.models import Task
 
 TITLE_REGEX = re.compile(r"<title>(?P<title>.*?)</title>", re.DOTALL)
@@ -35,12 +35,12 @@ class PageTitlesTests(TestCase):
             note=self.note, project=Project.objects.create(name="P"), content="x"
         )
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
-        self.todo = Task.objects.create(
+        self.task = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Relire"
         )
 
     def pages(self) -> dict[str, str]:
-        note, todo = self.note.date, self.todo.pk
+        note, task = self.note.date, self.task.pk
         return {
             "/": "Gestion générale",
             reverse("note_taking:index"): "Gestion des notes",
@@ -58,10 +58,10 @@ class PageTitlesTests(TestCase):
                 "Image banc.png · Notes"
             ),
             reverse("todolist:index"): "Gestion des tâches",
-            reverse("todolist:todo_list"): "Liste des tâches · Tâches",
-            reverse("todolist:todo_detail", args=[todo]): "Tâche « Relire » · Tâches",
-            reverse("todolist:todo_create"): "Nouvelle tâche · Tâches",
-            reverse("todolist:todo_edit", args=[todo]): (
+            reverse("todolist:task_list"): "Liste des tâches · Tâches",
+            reverse("todolist:task_detail", args=[task]): "Tâche « Relire » · Tâches",
+            reverse("todolist:task_create"): "Nouvelle tâche · Tâches",
+            reverse("todolist:task_edit", args=[task]): (
                 "Modifier la tâche « Relire » · Tâches"
             ),
         }
@@ -99,16 +99,16 @@ class PageTitlesTests(TestCase):
 
 class VocabularyTests(TestCase):
     def test_tache_et_pas_todo_dans_les_pages(self):
-        todo = Task.objects.create(
+        task = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Relire"
         )
         urls = [
             "/",
             reverse("todolist:index"),
-            reverse("todolist:todo_list"),
-            reverse("todolist:todo_detail", args=[todo.pk]),
-            reverse("todolist:todo_create"),
-            reverse("todolist:todo_edit", args=[todo.pk]),
+            reverse("todolist:task_list"),
+            reverse("todolist:task_detail", args=[task.pk]),
+            reverse("todolist:task_create"),
+            reverse("todolist:task_edit", args=[task.pk]),
         ]
         for url in urls:
             with self.subTest(url=url):
@@ -116,7 +116,7 @@ class VocabularyTests(TestCase):
                 self.assertNotRegex(text, r"\b(?:TODO|Todos?)\b")
 
     def test_libelles_du_formulaire_en_francais(self):
-        labels = {name: str(field.label) for name, field in TodoForm().fields.items()}
+        labels = {name: str(field.label) for name, field in TaskForm().fields.items()}
 
         self.assertEqual(
             labels,

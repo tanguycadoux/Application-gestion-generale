@@ -40,7 +40,7 @@ class IdentityTests(LifecycleTestCase):
         )
 
         relire = Task.objects.filter(title="Relire").select_related("parent")
-        self.assertEqual(sorted(todo.parent.title for todo in relire), ["A", "B"])
+        self.assertEqual(sorted(task.parent.title for task in relire), ["A", "B"])
 
     def test_chemin_retenu(self):
         self.save_note("# P\n## S\n::: {.metadata}\ntodo: true\n:::\n- A\n  - B")
@@ -66,8 +66,8 @@ class IdentityTests(LifecycleTestCase):
 
         self.save_note("# P\n## A\n::: {.metadata}\ntodo: true\n:::\n- Tâche")
 
-        todo = Task.objects.get()
-        self.assertEqual((todo.title, todo.note_path), ("Renommée", "P › A"))
+        task = Task.objects.get()
+        self.assertEqual((task.title, task.note_path), ("Renommée", "P › A"))
 
 
 def review_url(note_date: str = "2025-11-24") -> str:
@@ -83,17 +83,17 @@ def review_data(new=(), gone=()) -> dict:
         "gone-TOTAL_FORMS": str(len(gone)),
         "gone-INITIAL_FORMS": str(len(gone)),
     }
-    for i, todo in enumerate(new):
+    for i, task in enumerate(new):
         data |= {
-            f"new-{i}-id": todo.pk,
+            f"new-{i}-id": task.pk,
             f"new-{i}-due_date": "",
-            f"new-{i}-priority": todo.priority,
-            f"new-{i}-project": todo.project_id,
-            f"new-{i}-section_path": section_path_text(todo.section),
+            f"new-{i}-priority": task.priority,
+            f"new-{i}-project": task.project_id,
+            f"new-{i}-section_path": section_path_text(task.section),
         }
-    for i, (todo, action, replacement) in enumerate(gone):
+    for i, (task, action, replacement) in enumerate(gone):
         data |= {
-            f"gone-{i}-id": todo.pk,
+            f"gone-{i}-id": task.pk,
             f"gone-{i}-action": action,
             f"gone-{i}-replacement": replacement.pk if replacement else "",
         }
@@ -118,9 +118,9 @@ class ToReviewTests(LifecycleTestCase):
         )
 
     def test_tache_saisie_a_la_main_sans_etat(self):
-        todo = Task.objects.create(title="T", project=Project.objects.create(name="P"))
+        task = Task.objects.create(title="T", project=Project.objects.create(name="P"))
 
-        self.assertEqual(todo.note_state, "")
+        self.assertEqual(task.note_state, "")
 
     def test_plus_tard_le_bilan_revient(self):
         note = self.save_note(self.BODY)
@@ -146,8 +146,8 @@ class GoneLineTests(LifecycleTestCase):
         Task.objects.update(note_state=Task.NoteState.REVIEWED)
         self.a, self.b = Task.objects.order_by("pk")
 
-    def state(self, todo: Task) -> str:
-        return Task.all_objects.get(pk=todo.pk).note_state
+    def state(self, task: Task) -> str:
+        return Task.all_objects.get(pk=task.pk).note_state
 
     def test_ligne_retiree_a_revoir(self):
         self.prepare()
@@ -285,23 +285,23 @@ class GoneLineTests(LifecycleTestCase):
 
 
 class DeleteTests(LifecycleTestCase):
-    def delete(self, todo: Task):
-        return self.client.post(reverse("todolist:todo_delete", args=[todo.pk]))
+    def delete(self, task: Task):
+        return self.client.post(reverse("todolist:task_delete", args=[task.pk]))
 
     def test_supprimer_une_tache_de_note_l_ecarte(self):
         self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
-        todo = Task.objects.get()
+        task = Task.objects.get()
 
-        self.delete(todo)
+        self.delete(task)
         self.save_note("# P\n::: {.metadata}\ntodo: true\n:::\n- A")
 
         self.assertFalse(Task.objects.exists())
         self.assertEqual(Task.all_objects.get().note_state, Task.NoteState.DISMISSED)
 
     def test_supprimer_une_tache_saisie_a_la_main(self):
-        todo = Task.objects.create(title="T", project=Project.objects.create(name="P"))
+        task = Task.objects.create(title="T", project=Project.objects.create(name="P"))
 
-        self.delete(todo)
+        self.delete(task)
 
         self.assertFalse(Task.all_objects.exists())
 

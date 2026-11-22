@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from core.models import Project
 from todolist.models import Task
-from todolist.templatetags.todo_ui import progress_classes
+from todolist.templatetags.task_ui import progress_classes
 
 TODAY = timezone.localdate()
 
@@ -20,7 +20,7 @@ def days(n: int):
 
 class RemainingTests(SimpleTestCase):
     def remaining(self, offset: int | None, done: bool = False) -> tuple[str, str]:
-        from todolist.templatetags.todo_ui import remaining_class, remaining_text
+        from todolist.templatetags.task_ui import remaining_class, remaining_text
 
         task = Task(
             title="T", due_date=None if offset is None else days(offset), done=done
@@ -110,7 +110,7 @@ class TaskListPageTests(TestCase):
         )
 
     def html(self) -> str:
-        return self.client.get(reverse("todolist:todo_list")).content.decode()
+        return self.client.get(reverse("todolist:task_list")).content.decode()
 
     def test_tableau_avec_un_groupe_par_racine(self):
         html = self.html()
@@ -130,9 +130,9 @@ class TaskListPageTests(TestCase):
         assert row is not None
         row_html = row.group()
 
-        self.assertIn('class="todo-toggle"', row_html)
+        self.assertIn('class="task-toggle"', row_html)
         self.assertIn(
-            f'href="{reverse("todolist:todo_detail", args=[self.child.pk])}"', row_html
+            f'href="{reverse("todolist:task_detail", args=[self.child.pk])}"', row_html
         )
         self.assertIn("pl-6", row_html)
         self.assertIn("dans 2 j", row_html)
@@ -146,7 +146,7 @@ class TaskListPageTests(TestCase):
 
     def test_meme_tableau_dans_le_detail_d_un_parent(self):
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         ).content.decode()
 
         section = html[html.index('aria-labelledby="children-title"') :]
@@ -166,7 +166,7 @@ class ProgressBarTests(TestCase):
         )
 
     def html(self) -> str:
-        return self.client.get(reverse("todolist:todo_list")).content.decode()
+        return self.client.get(reverse("todolist:task_list")).content.decode()
 
     def test_colonne_avancement(self):
         self.assertRegex(

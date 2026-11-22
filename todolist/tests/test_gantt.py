@@ -86,9 +86,9 @@ class GanttChartTests(GanttTestCase):
 
 
 class GanttPageTests(GanttTestCase):
-    def html(self, todo: Task) -> str:
+    def html(self, task: Task) -> str:
         return self.client.get(
-            reverse("todolist:todo_detail", args=[todo.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
     def test_frise_dans_le_detail_d_un_parent(self):

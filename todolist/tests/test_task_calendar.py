@@ -105,7 +105,7 @@ class TaskCalendarTests(TestCase):
 
     def test_creation_d_une_tache_a_une_echeance(self):
         html = self.client.get(reverse("todolist:index")).content.decode()
-        url = reverse("todolist:todo_create") + f"?due={TODAY.isoformat()}"
+        url = reverse("todolist:task_create") + f"?due={TODAY.isoformat()}"
 
         self.assertIn(f'href="{url}"', html)
         form = self.client.get(url).content.decode()

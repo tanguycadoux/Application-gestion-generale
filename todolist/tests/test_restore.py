@@ -30,7 +30,7 @@ class RestoreTestCase(TestCase):
 
     def restore(self, title: str):
         return self.client.post(
-            reverse("todolist:todo_restore", args=[self.task(title).pk])
+            reverse("todolist:task_restore", args=[self.task(title).pk])
         )
 
     def message(self, response) -> str:
@@ -42,7 +42,7 @@ class DismissedListTests(RestoreTestCase):
         remove_task(self.task("A"))
 
         response = self.client.get(
-            reverse("todolist:todo_list"), {"state": "dismissed"}
+            reverse("todolist:task_list"), {"state": "dismissed"}
         )
 
         self.assertContains(response, "Écartées")
@@ -55,7 +55,7 @@ class DismissedListTests(RestoreTestCase):
         remove_task(self.task("A"))
 
         response = self.client.get(
-            reverse("todolist:todo_list"), {"state": "dismissed"}
+            reverse("todolist:task_list"), {"state": "dismissed"}
         )
 
         self.assertContains(response, "Rétablir la tâche et ses 2 sous-tâches ?")
@@ -67,7 +67,7 @@ class DismissedListTests(RestoreTestCase):
         pk = self.task("A").pk
 
         html = self.client.get(
-            reverse("todolist:todo_list"), {"state": "dismissed"}
+            reverse("todolist:task_list"), {"state": "dismissed"}
         ).content.decode()
 
         self.assertIn(f'popovertarget="restore-{pk}"', html)
@@ -80,7 +80,7 @@ class DismissedListTests(RestoreTestCase):
         self.assertIn("Rétablir la tâche et ses 2 sous-tâches ?", popover[1])
         form = re.search(r"<form .*?</form>", popover[1], re.DOTALL)
         assert form is not None
-        self.assertIn(reverse("todolist:todo_restore", args=[pk]), form[0])
+        self.assertIn(reverse("todolist:task_restore", args=[pk]), form[0])
         self.assertNotIn("data-confirm", form[0])
         self.assertLess(
             form[0].index('popovertargetaction="hide"'), form[0].index('type="submit"')
@@ -111,7 +111,7 @@ class MixedTreeTests(RestoreTestCase):
         remove_task(self.task("M"))
 
         response = self.client.get(
-            reverse("todolist:todo_list"), {"state": "dismissed"}
+            reverse("todolist:task_list"), {"state": "dismissed"}
         )
 
         self.assertContains(response, "Saisie à la main")
@@ -125,7 +125,7 @@ class RestoreTests(RestoreTestCase):
 
         response = self.restore("A")
 
-        self.assertRedirects(response, reverse("todolist:todo_list"))
+        self.assertRedirects(response, reverse("todolist:task_list"))
         self.assertEqual(
             sorted(Task.objects.values_list("title", flat=True)), ["A", "B", "C", "D"]
         )
@@ -192,7 +192,7 @@ class RestoreTests(RestoreTestCase):
         remove_task(self.task("A"))
 
         response = self.client.get(
-            reverse("todolist:todo_restore", args=[self.task("A").pk])
+            reverse("todolist:task_restore", args=[self.task("A").pk])
         )
 
         self.assertEqual(response.status_code, 405)

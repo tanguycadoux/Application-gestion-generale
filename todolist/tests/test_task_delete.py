@@ -26,14 +26,14 @@ CONFIRM_REGEX = re.compile(
 class DeleteTestCase(TestCase):
     def confirm(self, task: Task) -> str:
         html = self.client.get(
-            reverse("todolist:todo_detail", args=[task.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
         match = CONFIRM_REGEX.search(html)
         assert match is not None
         return unescape(match.group("message"))
 
     def delete(self, task: Task) -> list[str]:
-        response = self.client.post(reverse("todolist:todo_delete", args=[task.pk]))
+        response = self.client.post(reverse("todolist:task_delete", args=[task.pk]))
         return [str(m) for m in get_messages(response.wsgi_request)]
 
 
@@ -81,7 +81,7 @@ class ParentDeleteTests(DeleteTestCase):
 
     def test_bouton_supprimer(self):
         response = self.client.get(
-            reverse("todolist:todo_detail", args=[self.parent.pk])
+            reverse("todolist:task_detail", args=[self.parent.pk])
         )
 
         self.assertContains(response, "Supprimer la tâche")
@@ -107,7 +107,7 @@ class DismissTests(DeleteTestCase):
 
     def detail(self, task: Task) -> str:
         return self.client.get(
-            reverse("todolist:todo_detail", args=[task.pk])
+            reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
     def test_bouton_ecarter(self):

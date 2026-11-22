@@ -132,7 +132,7 @@ class SectionDeleteTests(SectionDeleteTestCase):
 
     def test_une_tache_ecartee_ne_retient_pas_le_niveau(self):
         section = self.level("A")
-        todo = Task.all_objects.create(
+        task = Task.all_objects.create(
             title="T",
             project=self.project,
             section=section,
@@ -143,8 +143,8 @@ class SectionDeleteTests(SectionDeleteTestCase):
         self.client.post(self.url(section))
 
         self.assertFalse(Section.objects.filter(pk=section.pk).exists())
-        todo.refresh_from_db()
-        self.assertIsNone(todo.section)
+        task.refresh_from_db()
+        self.assertIsNone(task.section)
 
     def test_pas_de_page_de_confirmation(self):
         section = self.level("A")

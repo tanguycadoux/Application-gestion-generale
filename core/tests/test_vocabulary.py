@@ -71,8 +71,8 @@ class VisiblePagesTests(TestCase):
             "recherche_aucun": f"{search}?q=introuvable",
             "note": reverse("note_taking:note_detail", args=[self.note.date]),
             "taches_bilan": reverse("todolist:note_review", args=[self.note.date]),
-            "taches_liste": reverse("todolist:todo_list"),
-            "tache": reverse("todolist:todo_detail", args=[task.pk]),
+            "taches_liste": reverse("todolist:task_list"),
+            "tache": reverse("todolist:task_detail", args=[task.pk]),
         }
 
     def test_pages_sans_note_part(self):

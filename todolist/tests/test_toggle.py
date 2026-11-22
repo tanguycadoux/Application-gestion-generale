@@ -9,7 +9,7 @@ from core.models import Project
 from todolist.models import Task
 
 
-class ToggleTodoTests(TestCase):
+class ToggleTaskTests(TestCase):
     def setUp(self):
         self.parent = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0], title="Parent"
@@ -25,19 +25,19 @@ class ToggleTodoTests(TestCase):
             parent=self.child,
         )
 
-    def toggle(self, todo: Task, **data):
+    def toggle(self, task: Task, **data):
         return self.client.post(
-            reverse("todolist:todo_toggle", args=[todo.pk]),
+            reverse("todolist:task_toggle", args=[task.pk]),
             json.dumps(data),
             content_type="application/json",
         )
 
-    def completed(self, *todos: Task) -> list[bool]:
-        return [Task.objects.get(pk=todo.pk).completed for todo in todos]
+    def completed(self, *tasks: Task) -> list[bool]:
+        return [Task.objects.get(pk=task.pk).completed for task in tasks]
 
     def test_methode_get_refusee(self):
         response = self.client.get(
-            reverse("todolist:todo_toggle", args=[self.parent.pk])
+            reverse("todolist:task_toggle", args=[self.parent.pk])
         )
 
         self.assertEqual(response.status_code, 405)
@@ -51,14 +51,14 @@ class ToggleTodoTests(TestCase):
             [self.grandchild.pk, self.child.pk, self.parent.pk],
         )
 
-    def test_todo_inexistante(self):
+    def test_tache_inexistante(self):
         response = self.toggle(Task(pk=999), completed=True)
 
         self.assertEqual(response.status_code, 404)
 
     def test_corps_invalide(self):
         response = self.client.post(
-            reverse("todolist:todo_toggle", args=[self.parent.pk]),
+            reverse("todolist:task_toggle", args=[self.parent.pk]),
             "pas du json",
             content_type="application/json",
         )
@@ -67,7 +67,7 @@ class ToggleTodoTests(TestCase):
 
     def test_json_qui_n_est_pas_un_objet(self):
         response = self.client.post(
-            reverse("todolist:todo_toggle", args=[self.parent.pk]),
+            reverse("todolist:task_toggle", args=[self.parent.pk]),
             "[]",
             content_type="application/json",
         )
@@ -79,7 +79,7 @@ class UncheckRestoresProgressTests(TestCase):
     """Décocher rend l'avancement d'avant la coche (#237)."""
 
     def setUp(self):
-        self.todo = Task.objects.create(
+        self.task = Task.objects.create(
             project=Project.objects.get_or_create(name="P")[0],
             title="Tâche",
             progress=60,
@@ -87,13 +87,13 @@ class UncheckRestoresProgressTests(TestCase):
 
     def toggle(self, completed: bool):
         return self.client.post(
-            reverse("todolist:todo_toggle", args=[self.todo.pk]),
+            reverse("todolist:task_toggle", args=[self.task.pk]),
             json.dumps({"completed": completed}),
             content_type="application/json",
         )
 
     def progress(self) -> int:
-        return Task.objects.get(pk=self.todo.pk).progress
+        return Task.objects.get(pk=self.task.pk).progress
 
     def test_cocher_puis_decocher(self):
         self.toggle(True)
@@ -102,14 +102,14 @@ class UncheckRestoresProgressTests(TestCase):
         self.assertEqual(self.progress(), 60)
 
     def test_avancement_porte_a_100_dans_le_formulaire_puis_decoche(self):
-        self.todo.progress = 100
-        self.todo.save()
+        self.task.progress = 100
+        self.task.save()
         self.toggle(False)
 
         self.assertEqual(self.progress(), 60)
 
     def test_creee_terminee_puis_decochee(self):
-        self.todo = Task.objects.create(
+        self.task = Task.objects.create(
             project=Project.objects.get(name="P"), title="Finie", progress=100
         )
         self.toggle(False)
@@ -119,9 +119,9 @@ class UncheckRestoresProgressTests(TestCase):
     def test_recocher_retient_le_dernier_avancement(self):
         self.toggle(True)
         self.toggle(False)
-        self.todo.refresh_from_db()
-        self.todo.progress = 30
-        self.todo.save()
+        self.task.refresh_from_db()
+        self.task.progress = 30
+        self.task.save()
         self.toggle(True)
         self.toggle(False)
 

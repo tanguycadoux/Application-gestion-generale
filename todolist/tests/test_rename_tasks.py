@@ -39,16 +39,16 @@ class RenameTasksTestCase(TestCase):
 class TasksFollowTests(RenameTasksTestCase):
     def test_la_tache_garde_sa_fiche_et_change_de_chemin(self):
         self.note("# P\n## Réunion\n- [ ] Relire")
-        todo = Task.objects.get()
-        Task.objects.filter(pk=todo.pk).update(
+        task = Task.objects.get()
+        Task.objects.filter(pk=task.pk).update(
             progress=40, note_state=Task.NoteState.REVIEWED
         )
 
         self.rename(["Réunion"], "Rencontre")
 
-        todo.refresh_from_db()
+        task.refresh_from_db()
         self.assertEqual(
-            (todo.note_path, todo.progress, todo.note_state),
+            (task.note_path, task.progress, task.note_state),
             ("P › Rencontre", 40, Task.NoteState.REVIEWED),
         )
         self.assertEqual(Task.objects.count(), 1)
@@ -118,8 +118,8 @@ class TasksFollowTests(RenameTasksTestCase):
         self.rename(["Réunion"], "Rencontre", only=1)
 
         by_date = {
-            todo.note_part_date.isoformat(): todo.note_path
-            for todo in Task.objects.all()
+            task.note_part_date.isoformat(): task.note_path
+            for task in Task.objects.all()
         }
         self.assertEqual(
             by_date, {"2025-11-24": "P › Réunion", "2025-11-25": "P › Rencontre"}
@@ -131,9 +131,9 @@ class TasksFollowTests(RenameTasksTestCase):
 
         self.rename(["Réunion"], "Rencontre")
 
-        todo = Task.all_objects.get()
+        task = Task.all_objects.get()
         self.assertEqual(
-            (todo.note_path, todo.note_state), ("P › Rencontre", "dismissed")
+            (task.note_path, task.note_state), ("P › Rencontre", "dismissed")
         )
 
     def test_tache_saisie_a_la_main_non_touchee(self):

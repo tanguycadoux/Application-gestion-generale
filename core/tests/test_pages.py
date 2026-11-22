@@ -13,7 +13,7 @@ class CommonPagesTests(TestCase):
             "/",
             reverse("note_taking:index"),
             reverse("todolist:index"),
-            reverse("todolist:todo_list"),
+            reverse("todolist:task_list"),
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
@@ -27,7 +27,7 @@ class CommonPagesTests(TestCase):
                     html.index(f'href="{reverse(name)}"')
                     for name in (
                         "note_taking:notes_list",
-                        "todolist:todo_list",
+                        "todolist:task_list",
                         "core:projects",
                     )
                 ]
@@ -46,7 +46,7 @@ class CommonPagesTests(TestCase):
                 self.assertIsNotNone(finders.find(name))
 
     def test_navigation_signale_la_page_courante(self):
-        for url in (reverse("note_taking:index"), reverse("todolist:todo_list")):
+        for url in (reverse("note_taking:index"), reverse("todolist:task_list")):
             with self.subTest(url=url):
                 response = self.client.get(url)
 

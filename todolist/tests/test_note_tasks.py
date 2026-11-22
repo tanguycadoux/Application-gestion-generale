@@ -4,11 +4,11 @@ from django.test import TestCase
 
 from note_taking.models import Note
 from note_taking.services import process_note_parts
-from todolist.forms import TodoForm
+from todolist.forms import TaskForm
 from todolist.models import Task
 
 
-class NoteTodoTitleTests(TestCase):
+class NoteTaskTitleTests(TestCase):
     def titles(self, *lines: str) -> list[str]:
         body = "# P\n::: {.metadata}\ntodo: true\n:::\n" + "\n".join(lines)
         note = Note.objects.create(date="2025-11-24", body=body)
@@ -58,17 +58,17 @@ class NoteTodoTitleTests(TestCase):
         """Une tâche de 300 caractères s'enregistre à nouveau sans modification."""
         line = "Tâche " + "x" * 294
         self.titles("- " + line)
-        todo = Task.objects.get()
+        task = Task.objects.get()
 
-        form = TodoForm(
+        form = TaskForm(
             data={
-                "title": todo.title,
-                "project": todo.project.pk,
-                "priority": todo.priority,
-                "progress": todo.progress,
+                "title": task.title,
+                "project": task.project.pk,
+                "priority": task.priority,
+                "progress": task.progress,
             },
-            instance=todo,
+            instance=task,
         )
 
-        self.assertEqual(todo.title, line)
+        self.assertEqual(task.title, line)
         self.assertTrue(form.is_valid(), form.errors)
