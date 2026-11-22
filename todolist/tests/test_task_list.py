@@ -454,10 +454,12 @@ class PathTreeFilterTests(TaskListTestCase):
 
         # ALPHA : 1 tâche en cours (la terminée et l'écartée ne comptent pas).
         self.assertRegex(
-            en_cours, r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*>\(1\)"
+            en_cours,
+            r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*-facet[^>]*>\s*<span[^>]*>\(1\)",
         )
         self.assertRegex(
-            terminees, r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*>\(1\)"
+            terminees,
+            r"ALPHA</span>\s*</span>\s*</label>\s*<span[^>]*-facet[^>]*>\s*<span[^>]*>\(1\)",
         )
         self.assertNotIn("Réunion", terminees)
 

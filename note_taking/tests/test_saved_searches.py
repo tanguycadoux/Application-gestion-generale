@@ -226,10 +226,13 @@ class SavedSearchPageTests(TestCase):
         self.assertContains(response, 'name="q" value="tag:urgent"')
         self.assertContains(response, 'name="name" value="tag:urgent"')
 
-    def test_pas_de_formulaire_sans_requete(self):
+    def test_formulaire_cache_sans_requete(self):
+        """Caché, pas absent : il apparaît quand on tape ou coche (#380)."""
         response = self.client.get(SEARCH)
 
-        self.assertNotContains(response, f'action="{CREATE}"')
+        self.assertRegex(
+            response.content.decode(), rf'<form [^>]*action="{CREATE}"[^>]* hidden'
+        )
         self.assertContains(response, "Lancer une recherche")
 
     def test_la_recherche_courante_est_marquee(self):

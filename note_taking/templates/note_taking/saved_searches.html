@@ -27,19 +27,22 @@
         <p class="mb-3 text-sm text-slate-600">Aucune recherche enregistrée.</p>
     {% endif %}
 
-    {% if q %}
-        <form method="post" action="{{ create_url }}" data-saved-search-form>
+    {# Caché sans rien à enregistrer ; `saved_searches.js` le montre dès qu'on tape ou coche (#380). #}
+    <form method="post" action="{{ create_url }}" data-saved-search-form{% if empty %} hidden{% endif %}>
             {% csrf_token %}
             <input type="hidden" name="q" value="{{ q }}">
+            {# Les cases cochées de l'arbre s'enregistrent avec le texte (#380). #}
+            <div data-saved-search-filters>
+                {% for pk in projects %}<input type="hidden" name="projects" value="{{ pk }}">{% endfor %}
+                {% for pk in subjects %}<input type="hidden" name="subjects" value="{{ pk }}">{% endfor %}
+            </div>
             <label for="saved-search-name" class="mb-1 block text-sm font-medium">Enregistrer cette recherche sous le nom</label>
             {# Le champ prend toute la place laissée par le bouton : le nom prérempli n'est pas tronqué (#370). #}
             <div class="flex items-center gap-2">
                 <input type="text" id="saved-search-name" name="name" value="{{ default_name }}" maxlength="{{ name_max_length }}" required class="min-w-0 flex-1">
                 {% button "Enregistrer" icon="save" icon_only=True %}
             </div>
-        </form>
-    {% else %}
-        <p class="text-sm text-slate-600">Lancer une recherche pour pouvoir l'enregistrer.</p>
-    {% endif %}
+    </form>
+    <p class="text-sm text-slate-600" data-saved-search-empty{% if not empty %} hidden{% endif %}>Lancer une recherche pour pouvoir l'enregistrer.</p>
     <script src="{% static 'note_taking/saved_searches.js' %}" defer></script>
 </section>

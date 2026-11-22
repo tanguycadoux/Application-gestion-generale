@@ -107,12 +107,19 @@ class NotePartImageLink(models.Model):
 class SavedSearch(models.Model):
     """Une requête de recherche gardée sous un nom (#203).
 
-    On garde le texte de la zone de recherche (`q`), rien d'autre : les cases de
-    projets et de chemins ne sont pas dans la requête.
+    On garde le texte de la zone de recherche (`q`), tel qu'écrit, et les cases
+    cochées de l'arbre « Projets et chemins » (#380). Un projet ou un niveau supprimé
+    quitte la recherche, sans laisser d'adresse invalide.
     """
 
     name = models.CharField("nom", max_length=100, unique=True)
-    q = models.TextField("requête")
+    q = models.TextField("requête", blank=True)
+    projects = models.ManyToManyField(
+        "core.Project", verbose_name="projets cochés", blank=True, related_name="+"
+    )
+    sections = models.ManyToManyField(
+        "core.Section", verbose_name="niveaux cochés", blank=True, related_name="+"
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

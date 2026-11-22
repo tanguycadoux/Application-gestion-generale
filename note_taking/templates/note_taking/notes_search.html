@@ -38,7 +38,7 @@
                 {% if path_nodes %}
                     <p class="mb-1 text-sm text-slate-600">Entre parenthèses : le nombre de passages, sous-niveaux compris.</p>
                 {% endif %}
-                {% path_tree path_nodes mode="checkbox" param="subjects" project_param="projects" label="Projets et chemins" count_noun="passage" %}
+                {% path_tree path_nodes mode="checkbox" param="subjects" project_param="projects" label="Projets et chemins" count_noun="passage" faceted=faceted %}
             </fieldset>
 
             <p class="mt-4">
@@ -53,4 +53,6 @@
     </div>
 </div>
 
+{% load static %}
+<script src="{% static 'note_taking/search_tree.js' %}" defer></script>
 {% endblock content %}

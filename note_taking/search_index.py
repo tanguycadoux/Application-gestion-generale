@@ -163,6 +163,17 @@ def unindex_deleted_part(sender, instance, **kwargs):
 VOCABULARY = "note_part_vocab"
 
 
+# Fautes tolérées (#200) : aucune sous TYPO_MIN_LENGTH lettres.
+TYPO_MIN_LENGTH = 4
+
+
+def tolerated_typos(word: str) -> int:
+    """Fautes tolérées : une pour 4 à 6 lettres, deux au-delà, aucune en dessous."""
+    if len(word) < TYPO_MIN_LENGTH:
+        return 0
+    return 1 if len(word) <= 6 else 2
+
+
 def edit_distance(a: str, b: str) -> int:
     """Distance de Damerau-Levenshtein (insertion, suppression, substitution, et
     échange de deux lettres voisines pour 1 : « thermqiue » est à 1 de « thermique »)."""
