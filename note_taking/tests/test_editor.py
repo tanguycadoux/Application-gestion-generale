@@ -65,7 +65,8 @@ class NoteEditorPageTests(TestCase):
         """Le clic droit ouvre le menu d'insertion ; Maj + clic droit, celui du
         navigateur (#400)."""
         html = self.client.get(reverse("note_taking:new_note")).content.decode()
-        help_line = re.search(r'<p id="editor-help"[^>]*>(.*?)</p>', html, re.S).group(1)
+        match = re.search(r'<p id="editor-help"[^>]*>(.*?)</p>', html, re.S)
+        help_line = match.group(1)
 
         self.assertIn("Clic droit ou Maj+F10", help_line)
         self.assertIn("Maj + clic droit : menu du navigateur", help_line)
