@@ -16,7 +16,7 @@ from django.views.generic import (
     UpdateView,
 )
 
-from core.dates import date_text
+from core.dates import date_text, parse_date_param
 from core.month_calendar import requested_month
 from note_taking.models import Note
 
@@ -47,14 +47,6 @@ def index(request):
         "todolist/index.html",
         {"calendar": task_calendar(year, month, today)},
     )
-
-
-def parse_date_param(value: str):
-    """Date au format AAAA-MM-JJ, ou None."""
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
 
 
 def task_list(request):

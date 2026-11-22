@@ -1,8 +1,6 @@
 """Aides partagées par les vues des notes : nom d'une note dans les messages,
 avertissements de l'analyse, page suivante, date lue dans l'adresse."""
 
-from datetime import date
-
 from django.urls import reverse
 
 from core.dates import date_text
@@ -31,11 +29,3 @@ def next_page(note: Note) -> str:
     if note.follow_ups:
         return note.follow_ups[0].url
     return reverse("note_taking:note_detail", args=[note.date])
-
-
-def parse_date_param(value: str) -> date | None:
-    """Date au format AAAA-MM-JJ, ou None si la valeur n'en est pas une."""
-    try:
-        return date.fromisoformat(value)
-    except ValueError:
-        return None
