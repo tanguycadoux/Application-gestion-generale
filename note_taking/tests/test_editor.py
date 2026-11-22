@@ -61,6 +61,24 @@ class NoteEditorPageTests(TestCase):
                 self.assertNotIn("aria-label", template.group("button"))
                 self.assertIn("data-editor-toolbar", html)
 
+    def test_aide_rappelle_le_menu_du_clic_droit(self):
+        """Le clic droit ouvre le menu d'insertion ; Maj + clic droit, celui du
+        navigateur (#400)."""
+        html = self.client.get(reverse("note_taking:new_note")).content.decode()
+        match = re.search(r'<p id="editor-help"[^>]*>(.*?)</p>', html, re.S)
+        help_line = match.group(1)
+
+        self.assertIn("Clic droit ou Maj+F10", help_line)
+        self.assertIn("Maj + clic droit : menu du navigateur", help_line)
+
+    def test_tableaux_et_menu_branches_dans_l_editeur(self):
+        """#400, #401, #402 : l'analyseur reconnaît les tableaux à barres."""
+        source = (STATIC_DIR / "editor.js").read_text()
+
+        self.assertIn("parser.configure([TaskList, Strikethrough, Table])", source)
+        for name in ("tableLines", "editorMenu(", "pandocListMarks"):
+            self.assertIn(name, source)
+
     def test_aide_de_l_editeur_cachee_sans_javascript(self):
         for page, url in self.pages().items():
             with self.subTest(page=page):

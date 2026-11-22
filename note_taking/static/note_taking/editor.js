@@ -13,17 +13,20 @@ import {
 } from "@codemirror/language";
 import { search, searchKeymap } from "@codemirror/search";
 import { tags } from "@lezer/highlight";
-import { Strikethrough, TaskList, parser } from "@lezer/markdown";
+import { Strikethrough, Table, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
-import { listKeymap } from "./lists.js";
+import { editorMenu } from "./editor_menu.js";
+import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
+import { tableLines } from "./tables.js";
 
 // Sans @codemirror/lang-markdown, qui fait charger l'analyseur HTML : seul l'analyseur
-// Markdown est embarqué. Les cases `- [ ]` et le barré `~~x~~` sont ceux de Pandoc.
+// Markdown est embarqué. Les cases `- [ ]`, le barré `~~x~~` et les tableaux à barres
+// (#401, #402) sont ceux de Pandoc.
 const markdown = new Language(
     defineLanguageFacet(),
-    parser.configure([TaskList, Strikethrough]),
+    parser.configure([TaskList, Strikethrough, Table]),
     [],
     "markdown",
 );
@@ -55,6 +58,11 @@ const theme = EditorView.theme({
     ".cm-content": { padding: "0.25rem 0.5rem" },
     // Où une image déposée s'insérera : un trait bleu bien visible.
     ".cm-dropCursor": { borderLeft: "2px solid var(--color-blue-700)" },
+    // Même couleur que les marqueurs connus de l'analyseur (`processingInstruction`).
+    ".cm-pandoc-list-mark": { color: "var(--color-amber-700)" },
+    // Une ligne de tableau ne revient pas à la ligne (#402) : l'éditeur défile
+    // horizontalement d'un seul tenant, les colonnes restent alignées.
+    ".cm-table-line": { whiteSpace: "pre", overflowWrap: "normal", wordBreak: "normal" },
 });
 
 // Textes du panneau de recherche (Ctrl+F), en anglais par défaut.
@@ -139,6 +147,17 @@ function mountEditor(textarea) {
                 markdown.extension,
                 suggest,
                 syntaxHighlighting(highlighting),
+                // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
+                pandocListMarks,
+                // Tableaux sans retour à la ligne (#402).
+                tableLines,
+                // Clic droit : insérer une image, un tableau ; formater un tableau (#400, #401).
+                editorMenu({
+                    images: Boolean(imagesUrl),
+                    importImages: textarea.form.dataset.captureUrl
+                        ? (editorView, files) => insertCaptures(editorView, files, textarea.form)
+                        : null,
+                }),
                 EditorView.lineWrapping,
                 search({ top: true }),
                 // Entrée continue les listes (lists.js) avant de passer à la ligne.
