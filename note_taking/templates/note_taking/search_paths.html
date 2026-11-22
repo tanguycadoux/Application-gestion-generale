@@ -1,0 +1,24 @@
+{% load search_tags %}
+{# Ce que chaque `chemin:` de la requête a retenu, ou de quoi le corriger (#368). #}
+{% if path_reports %}
+    <section aria-label="Chemins de la requête" class="mb-2 text-sm">
+        {% for report in path_reports %}
+            {% if report.levels %}
+                <p class="text-slate-700" role="status">
+                    <code>{% if report.negated %}-{% endif %}chemin:{{ report.written }}</code>
+                    {% if report.negated %}exclut{% else %}→{% endif %}
+                    {{ report.levels|length }} niveau{{ report.levels|length|pluralize:"x" }} :
+                    {% for label in report.levels %}{{ label }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+                </p>
+            {% else %}
+                <p class="text-amber-800" role="alert">
+                    {% if report.single_level %}Aucun niveau ne s'appelle « {{ report.written }} ».{% else %}Aucun chemin ne finit par « {{ report.written }} ».{% endif %}
+                    {% if report.suggestions %}
+                        Essayer :
+                        {% for suggestion in report.suggestions %}<a href="{% result_option_url q=suggestion.q %}"><code>{{ suggestion.label }}</code></a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+                    {% endif %}
+                </p>
+            {% endif %}
+        {% endfor %}
+    </section>
+{% endif %}

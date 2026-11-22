@@ -30,14 +30,18 @@ class PathNode:
     # « Projet › Réunion › Préparation » pour un niveau, le nom pour un projet.
     label: str
     depth: int
-    # Ce qui utilise ce niveau et ses descendants.
+    # Ce qui utilise ce niveau et ses descendants (le compteur affiché).
     count: int = 0
+    # Ce qui décide de garder le nœud avec `only_counted` : `count` par défaut.
+    used: int = 0
     selected: bool = False
+    # Désigné autrement que par sa case (`chemin:` dans la recherche, #380).
+    marked: bool = False
     # Valeur de la case d'un projet : son identifiant, ou ce que `project_key` donne.
     project_key: Any = None
     # Le projet d'un nœud de projet, pour sa pastille.
     project: Project | None = None
-    # Ouvert d'office : un de ses descendants est choisi.
+    # Ouvert d'office : un de ses descendants est choisi ou marqué.
     open: bool = False
     children: list[PathNode] = field(default_factory=list)
     # Adresse du nœud en mode lien, posée par le composant.
@@ -50,6 +54,11 @@ class PathNode:
     @property
     def is_project(self) -> bool:
         return self.pk is None
+
+    @property
+    def shows_inside(self) -> bool:
+        """Son parent s'ouvre : il est choisi, marqué, ou s'ouvre lui-même."""
+        return self.selected or self.marked or self.open
 
     @property
     def has_children(self) -> bool:
@@ -71,6 +80,9 @@ def path_tree(
     project_counts: Mapping[int, int] | None = None,
     selected_projects: Collection[Any] = (),
     project_key: Callable[[Project], Any] = attrgetter("pk"),
+    used: Mapping[int, int] | None = None,
+    project_used: Mapping[int, int] | None = None,
+    marked: Collection[int] = (),
 ) -> list[PathNode]:
     """Les nœuds à plat, parents d'abord, frères triés par nom sans casse.
 
@@ -86,7 +98,13 @@ def path_tree(
       se déduit plus des niveaux ;
     - `selected_projects` : projets choisis (cases de projets), par leur clé ;
     - `project_key` : la clé d'un projet dans l'adresse, son identifiant par défaut
-      (son nom pour la liste des tâches).
+      (son nom pour la liste des tâches) ;
+    - `used`, `project_used` : ce qui décide des nœuds gardés par `only_counted`,
+      quand le compteur affiché en diffère (#380 : la recherche affiche les
+      résultats de la requête, à 0 pour un niveau sans résultat, mais garde les
+      niveaux de toute la base) ; par défaut `counts` et `project_counts` ;
+    - `marked` : clés des niveaux désignés autrement que par leur case (`chemin:`) ;
+      leurs parents sont ouverts, eux ne sont pas cochés.
 
     Une requête, deux avec `project_counts`.
     """
@@ -102,6 +120,11 @@ def path_tree(
     if project_counts is not None and project is None:
         projects.update(Project.objects.in_bulk())
     chosen = set(selected)
+    pointed = set(marked)
+    if used is None:
+        used = counts
+    if project_used is None:
+        project_used = project_counts
 
     def build(section: Section, labels: list[str], depth: int) -> PathNode | None:
         names = [*labels, section.name]
@@ -112,15 +135,18 @@ def path_tree(
             LABEL_SEPARATOR.join(names),
             depth,
             count=counts.get(section.pk, 0),
+            used=used.get(section.pk, 0),
             selected=section.pk in chosen,
+            marked=section.pk in pointed,
         )
         for child in sorted_by_name(children[(section.project_id, section.pk)]):
             built = build(child, names, depth + 1)
             if built is not None:
                 node.children.append(built)
                 node.count += built.count
-                node.open = node.open or built.selected or built.open
-        keep = not only_counted or node.count or node.selected or node.children
+                node.used += built.used
+                node.open = node.open or built.shows_inside
+        keep = not only_counted or node.used or node.selected or node.children
         return node if keep else None
 
     roots: list[PathNode] = []
@@ -146,12 +172,15 @@ def path_tree(
                 if built is not None:
                     top.children.append(built)
                     top.count += built.count
-                    top.open = top.open or built.selected or built.open
+                    top.used += built.used
+                    top.open = top.open or built.shows_inside
             if project_counts is not None:
                 top.count = project_counts.get(owner.pk, 0)
+            if project_used is not None:
+                top.used = project_used.get(owner.pk, 0)
             keep = top.children or (
                 project_counts is not None
-                and (not only_counted or top.count or top.selected)
+                and (not only_counted or top.used or top.selected)
             )
             if keep:
                 roots.append(top)

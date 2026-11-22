@@ -430,6 +430,7 @@ def path_tree(
     label: str = "Chemins",
     project_param: str = "",
     count_noun: str = "",
+    faceted: bool = False,
 ) -> dict:
     """Arbre des chemins (#302) : `{% path_tree nodes mode="checkbox" param="path" %}`.
 
@@ -447,6 +448,12 @@ def path_tree(
     - `count_noun` : ce que compte le compteur, au singulier (« passage ») ; le
       compteur reste « (12) » à l'écran, et se lit « 12 passages » au survol et
       par un lecteur d'écran (#362). Sans lui, le nombre seul.
+    - `faceted` : les compteurs sont ceux d'un résultat (#380) ; un nœud à 0 reste
+      affiché, atténué (`data-zero`), au lieu de n'avoir aucun compteur.
+
+    Le compteur et la marque `chemin:` d'un nœud sont dans `#<clé>-facet`
+    (`path_tree_facet.html`) : une réponse htmx peut les remplacer seuls
+    (`hx-swap-oob`), sans toucher aux cases ni aux niveaux ouverts.
 
     Sans `project_param`, un projet n'est ni un lien ni une case.
     """
@@ -472,4 +479,5 @@ def path_tree(
         "label": label,
         "project_param": project_param if mode == "checkbox" else "",
         "count_noun": count_noun,
+        "faceted": faceted,
     }
