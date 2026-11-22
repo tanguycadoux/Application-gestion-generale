@@ -209,7 +209,12 @@ class NotesSearchTests(SearchTestCase):
         response = self.client.get(self.url)
 
         self.assertContains(response, 'method="get"')
-        self.assertNotContains(response, "csrfmiddlewaretoken")
+        # Le formulaire de recherche, pas celui d'enregistrement (POST, caché, #380).
+        html = response.content.decode()
+        start = html.index('<form\n        method="get"')
+        self.assertNotIn(
+            "csrfmiddlewaretoken", html[start : html.index("</form>", start)]
+        )
         self.assertEqual(self.client.post(self.url, {"q": "a1"}).status_code, 405)
 
     def test_la_zone_garde_la_requete(self):
