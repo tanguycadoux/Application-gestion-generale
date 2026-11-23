@@ -9,6 +9,8 @@
   un opérateur reste du texte (« Re:thinking »).
 - `date:` année, mois ou jour, ou une plage `a..b` (une borne peut manquer), bornes
   incluses : `date:2026-10` couvre tout octobre.
+- `sans:projet` : le texte sans projet, écrit avant le premier titre `#` (#385) ;
+  `-sans:projet` : le texte rangé sous un projet.
 - `"phrase exacte"`, `mot*` (préfixe), `-mot` ou `-"phrase"` (exclusion), `-tag:x`.
 - Une requête mal écrite ne lève jamais : la partie illisible est cherchée telle
   quelle, et signalée dans `errors`.
@@ -26,7 +28,10 @@ OPERATORS = {
     "tag": "tags",
     "chemin": "paths",
     "date": "date",
+    "sans": "without",
 }
+# Ce que `sans:` sait retirer : le projet seulement, pour l'instant (#385).
+WITHOUT_VALUES = {"projet"}
 NAME_REGEX = re.compile(r"(?P<name>[^\W\d_]+):")
 DATE_PART_REGEX = re.compile(r"^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$")
 DATE_RANGE_REGEX = re.compile(r"^(?P<start>[\d-]*)(?P<dots>\.\.)?(?P<end>[\d-]*)$")
@@ -53,6 +58,8 @@ class SearchQuery:
     not_paths: list[str] = field(default_factory=list)
     date_from: date | None = None
     date_to: date | None = None
+    # `sans:projet` : vrai (texte sans projet), faux (`-sans:projet`), ou pas de filtre.
+    no_project: bool | None = None
     errors: list[str] = field(default_factory=list)
     # Mots élargis par la recherche (#200) : (écrit, trouvé), rempli par `search_passages`.
     expansions: list[tuple[str, str]] = field(default_factory=list)
@@ -68,6 +75,7 @@ class SearchQuery:
             or self.not_paths
             or self.date_from
             or self.date_to
+            or self.no_project is not None
         )
 
 
@@ -140,6 +148,8 @@ def parse_query(text: str | None) -> SearchQuery:
             continue
         elif target == "date":
             add_date(query, token)
+        elif target == "without":
+            add_without(query, token)
         else:
             attribute = ("not_" if token.negated else "") + target
             getattr(query, attribute).append(token.value.strip())
@@ -175,6 +185,15 @@ def add_date(query: SearchQuery, token: Token) -> None:
         query.date_from = start
     if end and (query.date_to is None or end < query.date_to):
         query.date_to = end
+
+
+def add_without(query: SearchQuery, token: Token) -> None:
+    """`sans:projet` (le texte sans projet), `-sans:projet` (le texte rangé)."""
+    if fold_name(token.value.strip()) not in WITHOUT_VALUES:
+        query.errors.append(f"sans:{token.value} : seul sans:projet est connu.")
+        add_term(query, Term(f"sans:{token.value}", "word", token.negated))
+        return
+    query.no_project = not token.negated
 
 
 def read_dates(value: str) -> tuple[date | None, date | None]:

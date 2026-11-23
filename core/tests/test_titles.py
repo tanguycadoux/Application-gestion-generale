@@ -126,6 +126,7 @@ class VocabularyTests(TestCase):
                 "progress": "Avancement (%)",
                 "priority": "Priorité",
                 "due_date": "Échéance",
+                "no_due_date": "Pas d'échéance, c'est voulu",
                 "project": "Projet",
                 "section_path": "Chemin",
                 "tags": "Tags",

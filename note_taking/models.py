@@ -149,6 +149,8 @@ class SavedSearch(models.Model):
     sections = models.ManyToManyField(
         "core.Section", verbose_name="niveaux cochés", blank=True, related_name="+"
     )
+    # La case « Sans projet » de l'arbre (#385).
+    no_project = models.BooleanField("sans projet coché", default=False)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

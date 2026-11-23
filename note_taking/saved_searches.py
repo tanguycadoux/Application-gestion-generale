@@ -2,7 +2,8 @@
 
 Le nom est unique sans tenir compte de la casse ni des accents (comparé en Python
 avec `core.tables.fold` : le `LOWER` de SQLite ne replie que l'ASCII). On garde le
-texte de la zone de recherche, tel qu'écrit, et les cases cochées de l'arbre (#380).
+texte de la zone de recherche, tel qu'écrit, et les cases cochées de l'arbre (#380),
+« Sans projet » comprise (#385).
 """
 
 from __future__ import annotations
@@ -43,14 +44,16 @@ def clean_name(name: str, renaming: SavedSearch | None = None) -> str:
 
 @dataclass
 class Filters:
-    """Ce qui fait une recherche dans l'adresse : `?q=…&projects=…&subjects=…`."""
+    """Ce qui fait une recherche dans l'adresse : `?q=…&projects=…&subjects=…`, et
+    `no_project=on` pour la case « Sans projet » (#385)."""
 
     q: str = ""
     projects: list[int] = field(default_factory=list)
     subjects: list[int] = field(default_factory=list)
+    no_project: bool = False
 
     def __bool__(self) -> bool:
-        return bool(self.q or self.projects or self.subjects)
+        return bool(self.q or self.projects or self.subjects or self.no_project)
 
     @classmethod
     def read(cls, data: QueryDict) -> Filters:
@@ -60,6 +63,7 @@ class Filters:
             data.get("q", "").strip(),
             ids(data.getlist("projects")),
             ids(data.getlist("subjects")),
+            bool(data.get("no_project")),
         )
 
     def url(self) -> str:
@@ -67,6 +71,8 @@ class Filters:
         pairs = [("q", self.q)] if self.q else []
         pairs += [("projects", str(pk)) for pk in self.projects]
         pairs += [("subjects", str(pk)) for pk in self.subjects]
+        if self.no_project:
+            pairs.append(("no_project", "on"))
         url = reverse("note_taking:notes_search")
         return f"{url}?{urlencode(pairs)}" if pairs else url
 
@@ -77,19 +83,23 @@ def ids(values: Iterable[object]) -> list[int]:
 
 
 def save_search(
-    name: str, q: str, projects: Iterable[object] = (), sections: Iterable[object] = ()
+    name: str,
+    q: str,
+    projects: Iterable[object] = (),
+    sections: Iterable[object] = (),
+    no_project: bool = False,
 ) -> SavedSearch:
     """Enregistre le texte et les cases cochées ; une case inconnue est ignorée."""
     name = clean_name(name)
     q = q.strip()
     chosen_projects = list(Project.objects.filter(pk__in=ids(projects)))
     chosen_sections = list(Section.objects.filter(pk__in=ids(sections)))
-    if not (q or chosen_projects or chosen_sections):
+    if not (q or chosen_projects or chosen_sections or no_project):
         raise SavedSearchError(
             "Rien à enregistrer : la zone de recherche est vide et aucune case "
             "n'est cochée."
         )
-    saved = SavedSearch.objects.create(name=name, q=q)
+    saved = SavedSearch.objects.create(name=name, q=q, no_project=no_project)
     saved.projects.set(chosen_projects)
     saved.sections.set(chosen_sections)
     return saved
@@ -112,6 +122,7 @@ def filters_of(search: SavedSearch) -> Filters:
         search.q,
         ids(project.pk for project in search.projects.all()),
         ids(section.pk for section in search.sections.all()),
+        search.no_project,
     )
 
 

@@ -1,0 +1,70 @@
+{% load ui %}
+{% comment %}
+Bloc « À traiter » de l'accueil (#384) : un rappel de ce qu'on a noté vite, tant
+qu'on ne s'en est pas occupé. Une rubrique n'apparaît que si elle a quelque chose ;
+dix lignes au plus, puis « et N autres ».
+{% endcomment %}
+{% if empty %}
+    <p class="mb-3 text-slate-600">Rien à traiter.</p>
+{% else %}
+    <div class="space-y-4">
+        {% if review.total %}
+            <section aria-labelledby="pending-review">
+                <h3 id="pending-review" class="mb-1 font-medium">Tâches à revoir <span class="text-slate-600">({{ review_tasks }})</span></h3>
+                <ul class="space-y-1">
+                    {% for note in review.items %}
+                        <li>
+                            <a href="{% url 'todolist:note_review' note.date %}">Bilan de la note du {% date_time note.date "moyen" %}</a>
+                            <span class="text-sm text-slate-600">· {{ note.count }} tâche{{ note.count|pluralize }}{% if note.unfiled %}, <span class="text-amber-800">dont {{ note.unfiled }} sans projet</span>{% endif %}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if review.others %}<p class="text-sm text-slate-600">et {{ review.others }} autre{{ review.others|pluralize }} note{{ review.others|pluralize }}</p>{% endif %}
+            </section>
+        {% endif %}
+
+        {% if undated.total %}
+            <section aria-labelledby="pending-undated">
+                <h3 id="pending-undated" class="mb-1 font-medium">Tâches en cours sans échéance <span class="text-slate-600">({{ undated.total }})</span></h3>
+                <ul class="space-y-1">
+                    {% for task in undated.items %}
+                        <li>
+                            <span class="line-clamp-2 break-words"><a href="{% url 'todolist:task_detail' task.pk %}" title="{{ task.title }}">{{ task.title }}</a>
+                                {% if task.project %}<span class="ml-1">{% project_badge task.project %}</span>{% endif %}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if undated.others %}<p class="text-sm text-slate-600">et {{ undated.others }} autre{{ undated.others|pluralize }}</p>{% endif %}
+                {% url 'todolist:task_list' as list_url %}
+                {% button "Voir dans la liste" icon="checklist" href=list_url|add:"?due=none" variant="ghost" %}
+            </section>
+        {% endif %}
+
+        {% if unfiled_text.total %}
+            <section aria-labelledby="pending-unfiled-text">
+                <h3 id="pending-unfiled-text" class="mb-1 font-medium">Texte sans projet <span class="text-slate-600">({{ unfiled_text.total }} note{{ unfiled_text.total|pluralize }})</span></h3>
+                <ul class="space-y-1">
+                    {% for note in unfiled_text.items %}
+                        <li><a href="{% url 'note_taking:note_detail' note.date %}">Note du {% date_time note.date "moyen" %}</a></li>
+                    {% endfor %}
+                </ul>
+                {% if unfiled_text.others %}<p class="text-sm text-slate-600">et {{ unfiled_text.others }} autre{{ unfiled_text.others|pluralize }}</p>{% endif %}
+                {% url 'note_taking:notes_search' as search_url %}
+                {% button "Chercher le texte sans projet" icon="search" href=search_url|add:"?no_project=on" variant="ghost" %}
+            </section>
+        {% endif %}
+
+        {% if unfiled_tasks.total %}
+            <section aria-labelledby="pending-unfiled-tasks">
+                <h3 id="pending-unfiled-tasks" class="mb-1 font-medium">Tâches sans projet <span class="text-slate-600">({{ unfiled_tasks.total }})</span></h3>
+                <ul class="space-y-1">
+                    {% for task in unfiled_tasks.items %}
+                        <li><span class="line-clamp-2 break-words"><a href="{% url 'todolist:task_detail' task.pk %}" title="{{ task.title }}">{{ task.title }}</a></span></li>
+                    {% endfor %}
+                </ul>
+                {% if unfiled_tasks.others %}<p class="text-sm text-slate-600">et {{ unfiled_tasks.others }} autre{{ unfiled_tasks.others|pluralize }}</p>{% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endif %}

@@ -16,8 +16,11 @@
     const name = save.querySelector('input[name="name"]');
     const empty = document.querySelector("[data-saved-search-empty]");
     let proposed = name.value;
+    // Les cases de l'arbre, « Sans projet » comprise (#385).
+    const FILTERS = ["projects", "subjects", "no_project"];
 
-    // Le nom proposé sans texte : les projets et niveaux cochés, comme le serveur.
+    // Le nom proposé sans texte : les projets, niveaux et « Sans projet » cochés,
+    // comme le serveur.
     function checkedLabels(checked) {
         return checked.map((box) => {
             const label = searchForm.querySelector(`label[for="${box.id}"]`);
@@ -29,7 +32,7 @@
         hidden.value = search.value.trim();
         const checked = [
             ...searchForm.querySelectorAll('input[type="checkbox"]:checked'),
-        ].filter((box) => box.name === "projects" || box.name === "subjects");
+        ].filter((box) => FILTERS.includes(box.name));
         filters.replaceChildren(
             ...checked.map((box) => {
                 const input = document.createElement("input");
@@ -49,6 +52,7 @@
             const projectsFirst = [
                 ...checked.filter((box) => box.name === "projects"),
                 ...checked.filter((box) => box.name === "subjects"),
+                ...checked.filter((box) => box.name === "no_project"),
             ];
             proposed = (hidden.value || checkedLabels(projectsFirst).join(", "))
                 .slice(0, name.maxLength);

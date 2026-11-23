@@ -35,6 +35,7 @@
             <div data-saved-search-filters>
                 {% for pk in projects %}<input type="hidden" name="projects" value="{{ pk }}">{% endfor %}
                 {% for pk in subjects %}<input type="hidden" name="subjects" value="{{ pk }}">{% endfor %}
+                {% if no_project %}<input type="hidden" name="no_project" value="on">{% endif %}
             </div>
             <label for="saved-search-name" class="mb-1 block text-sm font-medium">Enregistrer cette recherche sous le nom</label>
             {# Le champ prend toute la place laissée par le bouton : le nom prérempli n'est pas tronqué (#370). #}

@@ -42,6 +42,7 @@ def saved_searches(context, current_q=None) -> dict:
         "q": current.q,
         "projects": current.projects,
         "subjects": current.subjects,
+        "no_project": current.no_project,
         "empty": not current,
         "default_name": default_name(current)[:NAME_MAX_LENGTH],
         "name_max_length": NAME_MAX_LENGTH,
@@ -60,6 +61,8 @@ def default_name(filters: Filters) -> str:
     labels = path_labels() if filters.subjects else {}
     chosen = [names[pk] for pk in filters.projects if pk in names]
     chosen += [labels[pk] for pk in filters.subjects if pk in labels]
+    if filters.no_project:
+        chosen.append("Sans projet")
     return ", ".join(chosen)
 
 
