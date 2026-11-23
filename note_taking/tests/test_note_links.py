@@ -171,3 +171,48 @@ class NoteLinksWarningTests(TestCase):
         process_passages(note)
 
         self.assertEqual(note.missing_links, ())
+
+
+class NoteSuggestionsTests(TestCase):
+    """Les notes proposées par l'éditeur après `](` (#206)."""
+
+    def results(self, **params) -> list[dict]:
+        response = self.client.get(reverse("note_taking:note_suggestions"), params)
+        self.assertEqual(response.status_code, 200)
+        return response.json()["results"]
+
+    def test_fichier_a_ecrire_et_date_en_texte(self):
+        Note.objects.create(date="2026-03-12", body="")
+
+        self.assertEqual(
+            self.results(),
+            [
+                {
+                    "date": "2026-03-12",
+                    "reference": "2026-03-12.qmd",
+                    "label": "jeudi 12 mars 2026",
+                }
+            ],
+        )
+
+    def test_plus_recentes_d_abord_filtrees_par_le_debut_de_la_date(self):
+        for day in ("2026-03-12", "2026-04-01", "2025-03-30"):
+            Note.objects.create(date=day, body="")
+
+        self.assertEqual(
+            [r["date"] for r in self.results()],
+            ["2026-04-01", "2026-03-12", "2025-03-30"],
+        )
+        self.assertEqual([r["date"] for r in self.results(q="2026-03")], ["2026-03-12"])
+
+    def test_lecture_seule(self):
+        response = self.client.post(reverse("note_taking:note_suggestions"))
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_adresse_sur_le_formulaire(self):
+        html = self.client.get(reverse("note_taking:new_note")).content.decode()
+
+        self.assertIn(
+            f'data-notes-url="{reverse("note_taking:note_suggestions")}"', html
+        )
