@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from core.models import Project
 from note_taking.models import Note
 from note_taking.services import process_passages
 
@@ -35,7 +36,10 @@ class MonthCalendarTests(TestCase):
         days = {day.date: day for week in self.build(2026, 10).weeks for day in week}
 
         self.assertEqual(days[date(2026, 10, 14)].note, note)
-        self.assertEqual(days[date(2026, 10, 14)].projects, ["Alpha", "Beta"])
+        self.assertEqual(
+            [project.name for project in days[date(2026, 10, 14)].projects],
+            ["Alpha", "Beta"],
+        )
         self.assertFalse(days[date(2026, 10, 14)].can_create)
         self.assertIsNone(days[date(2026, 10, 13)].note)
 
@@ -105,6 +109,41 @@ class IndexCalendarTests(TestCase):
         self.assertContains(response, 'id="calendar"')
         self.assertContains(response, 'data-hx-boost="true"')
         self.assertContains(response, 'data-hx-select="#calendar"')
+
+
+class CalendarProjectColorTests(TestCase):
+    """Étiquettes des projets d'un jour : la couleur du projet, par sa pastille
+    (#162, #378)."""
+
+    def cell(self, body: str) -> str:
+        note = Note.objects.create(date="2025-11-24", body=body)
+        process_passages(note)
+        url = reverse("note_taking:index") + "?month=2025-11"
+        html = self.client.get(url).content.decode()
+        href = reverse("note_taking:note_detail", args=[note.date])
+        cell = html[html.index(f'href="{href}"') :]
+        return cell[: cell.index("</a>")]
+
+    def test_etiquette_avec_la_couleur_du_projet(self):
+        cell = self.cell("# Chantier Nord\nx\n# Chantier Sud\ny")
+
+        items = re.findall(r"<li[^>]*>(.*?)</li>", cell, re.DOTALL)
+        self.assertEqual(len(items), 2)
+        for item, project in zip(items, Project.objects.order_by("name"), strict=True):
+            self.assertIn(f">{project.name}</span>", item)
+            self.assertIn(f"bg-{project.color}-500", item)
+
+    def test_texte_sans_projet_sans_etiquette_vide(self):
+        cell = self.cell("vite\n# Alpha\nx")
+
+        self.assertEqual(len(re.findall(r"<li", cell)), 1)
+        self.assertIn(">Alpha</span>", cell)
+
+    def test_note_sans_projet(self):
+        cell = self.cell("vite")
+
+        self.assertNotIn("<li", cell)
+        self.assertIn("Note", cell)
 
 
 class CalendarDayLinkTests(TestCase):

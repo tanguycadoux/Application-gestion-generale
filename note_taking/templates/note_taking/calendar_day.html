@@ -4,7 +4,12 @@
     <a class="{% calendar_cell_classes day %}" href="{% url 'note_taking:note_detail' day.note.date %}"{% if day.is_today %} aria-current="date"{% endif %}>
         <time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time>
         {% if day.projects %}
-            {% tag_list day.projects %}
+            {# Étiquettes des projets avec leur pastille de couleur (#162, #378). #}
+            <ul class="m-0 flex h-fit list-none flex-wrap gap-[.4rem] p-0">
+                {% for project in day.projects %}
+                    <li class="rounded-2xl border border-slate-300 bg-slate-200 px-[.4rem] py-[.1rem] text-[.8rem] font-semibold">{% project_badge project %}</li>
+                {% endfor %}
+            </ul>
         {% else %}
             <span class="text-sm">Note</span>
         {% endif %}
