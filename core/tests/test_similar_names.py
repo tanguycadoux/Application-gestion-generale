@@ -9,9 +9,10 @@ les niveaux frères proches, avec un lien vers leur fusion (#373).
 from importlib import import_module
 from urllib.parse import parse_qs, urlsplit
 
-from django.apps import apps
 from django.contrib.messages import get_messages
-from django.test import SimpleTestCase, TestCase
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
 from django.urls import reverse
 
 from core.forms import ProjectForm
@@ -19,7 +20,7 @@ from core.models import Project, Section
 from core.names import similar_key
 from core.projects import project_for
 from core.sections import section_for
-from note_taking.models import Note, Passage, SavedSearch
+from note_taking.models import Note, Passage
 from note_taking.renaming import find_headings
 from note_taking.services import process_passages
 from todolist.models import Task
@@ -101,88 +102,128 @@ class ProjectCaseTests(TestCase):
         )
 
 
-class ProjectMergeMigrationTests(TestCase):
-    """`0009_merge_projects_by_case` réunit les projets de même nom à la casse près."""
+class ProjectMergeMigrationTests(TransactionTestCase):
+    """`0009_merge_projects_by_case` réunit les projets de même nom à la casse près.
+
+    Sur le schéma d'avant (`0008`) : la contrainte de `0010` interdit ensuite deux
+    projets de même nom à la casse près."""
+
+    before = [
+        ("core", "0008_section_names_without_attributes"),
+        ("note_taking", "0042_passages"),
+        ("todolist", "0021_task_note_fields_project_optional"),
+    ]
+
+    def setUp(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate([self.before[0]])
+        self.apps = executor.loader.project_state(self.before).apps
+        self.Project = self.apps.get_model("core", "Project")
+        self.Section = self.apps.get_model("core", "Section")
+        self.Passage = self.apps.get_model("note_taking", "Passage")
+        self.Task = self.apps.get_model("todolist", "Task")
+        self.SavedSearch = self.apps.get_model("note_taking", "SavedSearch")
+        Note = self.apps.get_model("note_taking", "Note")
+        self.note = Note.objects.create(date="2026-11-23")
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(executor.loader.graph.leaf_nodes())
 
     def migrate(self) -> None:
         migration = import_module("core.migrations.0009_merge_projects_by_case")
-        migration.merge_projects(apps, None)
+        migration.merge_projects(self.apps, None)
 
-    def setUp(self):
-        self.note = Note.objects.create(date="2026-11-23")
+    def project(self, name: str, **fields):
+        return self.Project.objects.create(name=name, color="orange", **fields)
 
-    def passage(self, project, section=None) -> Passage:
-        return Passage.objects.create(note=self.note, project=project, section=section)
+    def section(self, project, *names: str):
+        parent = None
+        for name in names:
+            parent = self.Section.objects.get_or_create(
+                project=project, parent=parent, name=name
+            )[0]
+        return parent
+
+    def passage(self, project, section=None):
+        return self.Passage.objects.create(
+            note=self.note, project=project, section=section
+        )
 
     def test_le_plus_utilise_est_garde(self):
-        old = Project.objects.create(name="chantier nord")
-        used = Project.objects.create(name="Chantier Nord", description="")
-        old.description = "Le chantier"
-        old.save()
+        old = self.project("chantier nord", description="Le chantier")
+        used = self.project("Chantier Nord")
         self.passage(used)
         self.passage(used)
-        task = Task.objects.create(title="T", project=old)
-        search = SavedSearch.objects.create(name="S")
+        task = self.Task.objects.create(title="T", project=old)
+        search = self.SavedSearch.objects.create(name="S")
         search.projects.add(old)
 
         self.migrate()
 
-        self.assertEqual(list(Project.objects.values_list("pk", flat=True)), [used.pk])
+        self.assertEqual(
+            list(self.Project.objects.values_list("pk", flat=True)), [used.pk]
+        )
         task.refresh_from_db()
         self.assertEqual(task.project_id, used.pk)
-        self.assertEqual(list(search.projects.all()), [used])
+        self.assertEqual(list(search.projects.values_list("pk", flat=True)), [used.pk])
         used.refresh_from_db()
         self.assertEqual(used.name, "Chantier Nord")
         # Une description vide reprend celle du projet réuni.
         self.assertEqual(used.description, "Le chantier")
 
     def test_a_egalite_le_plus_ancien(self):
-        first = Project.objects.create(name="Alpha")
-        second = Project.objects.create(name="ALPHA")
+        first = self.project("Alpha")
+        second = self.project("ALPHA")
         self.passage(first)
         self.passage(second)
 
         self.migrate()
 
-        self.assertEqual(list(Project.objects.values_list("pk", flat=True)), [first.pk])
-        self.assertEqual(Passage.objects.filter(project=first).count(), 2)
+        self.assertEqual(
+            list(self.Project.objects.values_list("pk", flat=True)), [first.pk]
+        )
+        self.assertEqual(self.Passage.objects.filter(project=first).count(), 2)
 
     def test_les_chemins_sont_reunis(self):
-        kept = Project.objects.create(name="Nord")
-        gone = Project.objects.create(name="nord")
-        self.passage(kept)
-        kept_root = section_for(kept, ["Réunion", "Compte rendu"])
-        gone_root_child = section_for(gone, ["réunion", "compte rendu"])
-        gone_other = section_for(gone, ["Réunion", "Préparation"])
-        gone_alone = section_for(gone, ["Suivi", "Lot 2"])
-        moved = self.passage(gone, gone_root_child)
-        task = Task.objects.create(title="T", project=gone, section=gone_alone)
+        kept = self.project("Nord")
+        gone = self.project("nord")
+        for _ in range(3):
+            self.passage(kept)
+        kept_child = self.section(kept, "Réunion", "Compte rendu")
+        gone_child = self.section(gone, "réunion", "compte rendu")
+        gone_other = self.section(gone, "réunion", "Préparation")
+        gone_deep = self.section(gone, "Suivi", "Lot 2")
+        moved = self.passage(gone, gone_child)
+        task = self.Task.objects.create(title="T", project=gone, section=gone_deep)
 
         self.migrate()
 
         moved.refresh_from_db()
         task.refresh_from_db()
-        self.assertEqual((moved.project_id, moved.section_id), (kept.pk, kept_root.pk))
-        assert gone_other is not None and gone_alone is not None
         gone_other.refresh_from_db()
-        gone_alone.refresh_from_db()
+        gone_deep.refresh_from_db()
+        self.assertEqual((moved.project_id, moved.section_id), (kept.pk, kept_child.pk))
         self.assertEqual(gone_other.project_id, kept.pk)
-        self.assertEqual(gone_other.parent.name, "Réunion")
-        self.assertEqual(gone_alone.project_id, kept.pk)
-        self.assertEqual(gone_alone.parent.project_id, kept.pk)
-        self.assertEqual(task.project_id, kept.pk)
+        self.assertEqual(gone_other.parent_id, kept_child.parent_id)
+        self.assertEqual(gone_deep.project_id, kept.pk)
+        self.assertEqual(gone_deep.parent.project_id, kept.pk)
+        self.assertEqual((task.project_id, task.section_id), (kept.pk, gone_deep.pk))
         self.assertEqual(
-            sorted(Section.objects.filter(parent=None).values_list("name", flat=True)),
+            sorted(
+                self.Section.objects.filter(parent=None).values_list("name", flat=True)
+            ),
             ["Réunion", "Suivi"],
         )
 
     def test_projets_distincts_inchanges(self):
-        Project.objects.create(name="Nord")
-        Project.objects.create(name="Nörd")
+        self.project("Nord")
+        self.project("Nörd")
 
         self.migrate()
 
-        self.assertEqual(Project.objects.count(), 2)
+        self.assertEqual(self.Project.objects.count(), 2)
 
 
 class NoteWarningsTests(TestCase):
@@ -319,7 +360,7 @@ class PathsPageTests(TestCase):
             f'href="{url}?name=R%C3%A9union+de+chantier"',
             html,
         )
-        self.assertIn("Réunir avec « Réunion de chantier »", html)
+        self.assertIn("Réunir avec «\u00a0Réunion de chantier\u00a0»", html)
 
     def test_lien_mene_au_bilan_de_la_fusion(self):
         [row] = [r for r in self.page().context["rows"] if r.section == self.accents]

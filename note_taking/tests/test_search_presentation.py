@@ -258,7 +258,8 @@ class ExtraitsUnchangedTests(PresentationTestCase):
 
 
 # Le scénario de #369 : un même niveau écrit de plusieurs façons (casse, blancs), un
-# niveau voisin sans accents, et deux projets qui ne diffèrent que par la casse.
+# niveau voisin sans accents, et deux projets qui ne diffèrent que par la casse : un
+# seul projet depuis #374.
 NOTES_369 = {
     "2026-10-01": (
         "# Chantier Nord\n\n## Réunion de chantier\n\n### Préparation\n\nc0101prep\n\n"
@@ -330,6 +331,8 @@ class DocumentByLevelTests(TestCase):
             [
                 "h2 Chantier Nord",
                 "h3 Réunion de chantier",
+                "2026-10-15",
+                "c1015nord",
                 "h4 Compte rendu",
                 "2026-10-01",
                 "c0101cr",
@@ -346,10 +349,6 @@ class DocumentByLevelTests(TestCase):
                 "h4 Preparation",
                 "2026-10-05",
                 "c1005",
-                "h2 Chantier nord",
-                "h3 Réunion de chantier",
-                "2026-10-15",
-                "c1015nord",
                 "h2 Chantier Sud",
                 "h3 Réunion de chantier",
                 "2026-10-01",
@@ -362,11 +361,9 @@ class DocumentByLevelTests(TestCase):
             self.document("date"),
             [
                 note_title(15),
-                "h3 Chantier nord",
-                "h4 Réunion de chantier",
-                "c1015nord",
                 "h3 Chantier Nord",
                 "h4 Réunion de chantier",
+                "c1015nord",
                 "h5 Préparation",
                 "c1015maj",
                 "c1015min",
