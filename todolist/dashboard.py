@@ -33,7 +33,8 @@ def due_tasks() -> dict:
 class ReviewNote:
     """Une note qui a des tâches à revoir : son bilan les attend."""
 
-    date: date
+    # Jamais vide : la requête ne garde que les dates de notes existantes.
+    date: date | None
     count: int
     # Dont les cases du texte sans projet (#385), à rattacher à un projet.
     unfiled: int
