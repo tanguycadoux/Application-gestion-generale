@@ -5,6 +5,9 @@
     {% for node in path_nodes %}
         {% include "core/components/path_tree_facet.html" with oob=True count_noun="passage" %}
     {% endfor %}
+    {% if no_project_node.shown %}
+        {% include "core/components/path_tree_facet.html" with node=no_project_node oob=True count_noun="passage" %}
+    {% endif %}
 {% endif %}
 {% load ui search_tags %}
 {% for error in query.errors %}

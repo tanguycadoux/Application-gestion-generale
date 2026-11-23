@@ -35,10 +35,11 @@
             <fieldset class="mb-4">
                 <legend class="mb-1 font-medium">Projets et chemins</legend>
                 {# L'unité des compteurs, visible une fois, comme la page Chemins écrit le mot (#362). #}
-                {% if path_nodes %}
+                {% if path_nodes or no_project_node.shown %}
                     <p class="mb-1 text-sm text-slate-600">Entre parenthèses : le nombre de passages, sous-niveaux compris.</p>
                 {% endif %}
                 {% path_tree path_nodes mode="checkbox" param="subjects" project_param="projects" label="Projets et chemins" count_noun="passage" faceted=faceted %}
+                {% include "note_taking/search_no_project.html" %}
             </fieldset>
 
             <p class="mt-4">

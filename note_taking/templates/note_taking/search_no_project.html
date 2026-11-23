@@ -1,0 +1,12 @@
+{# La case « Sans projet » de l'arbre « Projets et chemins » (#385) : le texte écrit avant le premier titre « # ». Son compteur suit la requête comme ceux de l'arbre (#380). #}
+{% if no_project_node.shown %}
+    <ul class="text-sm" aria-label="Texte sans projet">
+        <li>
+            <div class="flex items-center gap-1 py-0.5 pl-5 [&:has(>[data-zero])]:text-slate-500">
+                <input type="checkbox" id="path-no-project" name="no_project" value="on"{% if no_project_node.selected %} checked{% endif %}>
+                <label for="path-no-project" title="Texte écrit avant le premier titre « # », à ranger sous un projet" class="font-semibold">Sans projet</label>
+                {% include "core/components/path_tree_facet.html" with node=no_project_node count_noun="passage" %}
+            </div>
+        </li>
+    </ul>
+{% endif %}
