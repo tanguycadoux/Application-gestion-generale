@@ -7,6 +7,8 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
   sont cherchées à passage et retirées, pour qu'`-mot` marche même seul ;
 - un mot est cherché à sa forme réduite (#372, `word_forms.py`) : le singulier trouve
   le pluriel, et l'inverse ; la phrase exacte et le préfixe restent tels qu'écrits ;
+- `sans:projet` et la case « Sans projet » gardent le texte sans projet, écrit avant
+  le premier titre `#` (#385) ; `-sans:projet` le retire ;
 - `projet:` et `chemin:` répétés se cumulent (un passage n'a qu'un projet et un
   chemin), `tag:` répété est exigé en entier (un passage a plusieurs tags) ;
 - les noms se comparent sans casse ni accents (`core.tables.fold`), en Python : le
@@ -90,6 +92,7 @@ def search_passages(
     project_ids: Iterable[int] = (),
     section_ids: Iterable[int] = (),
     expand: bool = True,
+    no_project: bool = False,
 ) -> list[Passage] | None:
     """Les passages qui répondent à la requête et aux filtres de la page.
 
@@ -100,10 +103,13 @@ def search_passages(
     `expand` (#200) élargit les mots sans résultat ou rares aux mots proches de
     l'index : ceux qui ont servi sont dans `query.expansions` (écrit, trouvé), et les
     résultats exacts passent avant les élargis.
+
+    `no_project` : la case « Sans projet » de l'arbre (#385), réunie aux projets et
+    aux niveaux cochés par « ou », comme eux.
     """
     project_ids = list(project_ids)
     section_ids = list(section_ids)
-    if not (query or project_ids or section_ids):
+    if not (query or project_ids or section_ids or no_project):
         return None
 
     passages: QuerySet[Passage] = Passage.objects.select_related(
@@ -117,7 +123,11 @@ def search_passages(
         chosen |= Q(project__in=project_ids)
     if section_ids:
         chosen |= Q(section_id__in=with_descendants(set(section_ids)))
+    if no_project:
+        chosen |= Q(project__isnull=True)
     passages = passages.filter(chosen)
+    if query.no_project is not None:
+        passages = passages.filter(project__isnull=query.no_project)
     passages = filter_projects(passages, query)
     passages = filter_tags(passages, query)
     passages = filter_paths(passages, query)
@@ -405,6 +415,14 @@ def facet_counts(passages: list[Passage]) -> tuple[dict[int, int], dict[int, int
         if passage.project_id is not None:
             projects[passage.project_id] = projects.get(passage.project_id, 0) + 1
     return sections, projects
+
+
+def no_project_count(passages: list[Passage] | None = None) -> int:
+    """Le texte sans projet (#385) : parmi ces passages, ou dans toute la base. Le
+    compteur de la case « Sans projet » de l'arbre des chemins."""
+    if passages is None:
+        return Passage.objects.filter(project__isnull=True).count()
+    return sum(1 for passage in passages if passage.project_id is None)
 
 
 def project_counts() -> dict[int, int]:

@@ -43,4 +43,10 @@ class TodolistConfig(AppConfig):
                 "todolist/dashboard_due.html",
                 dashboard.due_tasks,
             ),
+            DashboardBlock(
+                "À traiter",
+                30,
+                "todolist/dashboard_pending.html",
+                dashboard.pending,
+            ),
         )

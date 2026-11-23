@@ -125,6 +125,14 @@ class Task(models.Model):
     )
 
     due_date = models.DateField("échéance", null=True, blank=True)
+    # Sans échéance, et c'est voulu (#384) : la tâche sort du rappel « À traiter »
+    # de l'accueil. Donner une date annule ce choix.
+    no_due_date = models.BooleanField(
+        "pas d'échéance, c'est voulu",
+        default=False,
+        help_text="Elle ne sera plus rappelée dans « À traiter » sur l'accueil ; "
+        "donner une échéance annule ce choix.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -177,6 +185,8 @@ class Task(models.Model):
         # impose pas : les écarts sont signalés, pas empêchés. Seule la boucle
         # parent-enfant est refusée.
         self.clean()
+        if self.due_date:
+            self.no_due_date = False
 
         old_parent_id, old_progress, was_done = None, 0, False
         if self.pk:

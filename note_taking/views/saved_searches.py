@@ -28,6 +28,7 @@ def create_saved_search(request):
             filters.q,
             filters.projects,
             filters.subjects,
+            filters.no_project,
         )
     except AppError as e:
         messages.error(request, str(e))

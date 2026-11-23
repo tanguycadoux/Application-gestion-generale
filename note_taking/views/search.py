@@ -14,6 +14,7 @@ from ..search import (
     document_html,
     facet_counts,
     group_by_note,
+    no_project_count,
     project_counts,
     result_options,
     search_passages,
@@ -34,7 +35,8 @@ def notes_search(request):
 
     L'arbre suit la requête (#380) : ses compteurs sont ceux du résultat sans les
     cases de l'arbre (sinon cocher un niveau mettrait les autres à 0), et les niveaux
-    retenus par `chemin:` y sont marqués. Une réponse htmx ne remplace que les
+    retenus par `chemin:` y sont marqués. La case « Sans projet » (#385) a son
+    compteur, qui suit la requête de même. Une réponse htmx ne remplace que les
     résultats, et les compteurs de l'arbre hors bande.
     """
     form = NoteSearchForm(request.GET or None)
@@ -43,7 +45,9 @@ def notes_search(request):
     reports: list[PathReport] = []
     sections: list[int] = []
     projects: list[int] = []
+    no_project = False
     facets = None
+    unassigned = None
 
     if form.is_bound and form.is_valid():
         query = parse_query(form.cleaned_data["q"])
@@ -51,22 +55,25 @@ def notes_search(request):
         reports = path_reports(form.cleaned_data["q"])
         sections = [section.pk for section in form.cleaned_data["subjects"]]
         projects = [project.pk for project in form.cleaned_data["projects"]]
+        no_project = form.cleaned_data["no_project"]
         results = search_passages(
             query,
             projects,
             sections,
             expand=not request.GET.get("exact"),
+            no_project=no_project,
         )
         if query:
             unfiltered = (
                 results
-                if not (projects or sections)
+                if not (projects or sections or no_project)
                 else search_passages(
                     replace(query, expansions=[]),
                     expand=not request.GET.get("exact"),
                 )
             )
             facets = facet_counts(unfiltered or [])
+            unassigned = no_project_count(unfiltered or [])
 
     view, group = result_options(request.GET)
     as_document = bool(results) and view == "document"
@@ -94,6 +101,15 @@ def notes_search(request):
         project_used=project_used,
         marked={pk for r in reports if not r.negated for pk in r.section_ids},
     )
+    # La case « Sans projet » (#385), comme un nœud de l'arbre pour son compteur
+    # (`path_tree_facet.html`) ; montrée s'il y a du texte sans projet, ou cochée.
+    used_unassigned = no_project_count()
+    context["no_project_node"] = {
+        "key": "path-no-project",
+        "count": used_unassigned if unassigned is None else unassigned,
+        "selected": no_project,
+        "shown": bool(used_unassigned or no_project),
+    }
     if request.htmx:
         return HttpResponse(
             render_to_string("note_taking/notes_search_result.html", context, request)

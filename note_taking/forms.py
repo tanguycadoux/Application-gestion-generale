@@ -11,7 +11,8 @@ class NoteSearchForm(forms.Form):
     """Les champs de la page de recherche, lus dans l'adresse (#199).
 
     `subjects` vient des cases de l'arbre des chemins (#302) : le formulaire ne les
-    affiche pas, il valide les niveaux choisis.
+    affiche pas, il valide les niveaux choisis. `no_project` est la case « Sans
+    projet » de l'arbre (#385), affichée par la page.
     """
 
     q = forms.CharField(
@@ -33,6 +34,7 @@ class NoteSearchForm(forms.Form):
         required=False,
         label="Chemins",
     )
+    no_project = forms.BooleanField(required=False, label="Sans projet")
 
 
 class NewNoteForm(forms.ModelForm):

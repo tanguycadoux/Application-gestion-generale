@@ -60,7 +60,7 @@
             <dt class="font-semibold">Priorité</dt>
             <dd>{{ object.get_priority_display }}</dd>
             <dt class="font-semibold">Échéance</dt>
-            <dd>{% if object.due_date %}{% date_time object.due_date "moyen" %}{% else %}Aucune{% endif %}</dd>
+            <dd>{% if object.due_date %}{% date_time object.due_date "moyen" %}{% elif object.no_due_date %}Aucune, c'est voulu{% else %}Aucune{% endif %}</dd>
             <dt class="font-semibold">Avancement</dt>
             <dd>
                 {{ object.progress }} % · {% if object.done %}terminée{% elif object.to_validate %}à valider{% else %}en cours{% endif %}

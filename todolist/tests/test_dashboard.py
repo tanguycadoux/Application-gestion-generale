@@ -37,7 +37,8 @@ class DueTasksBlockTests(TestCase):
 
     def test_ni_lointaines_ni_sans_echeance_ni_terminees_ni_ecartees(self):
         self.task("Lointaine", SOON_DAYS + 1)
-        self.task("Sans date")
+        # Voulue sans échéance : sinon le bloc « À traiter » la rappelle (#384).
+        self.task("Sans date", no_due_date=True)
         self.task("Faite", -2, done=True, progress=100)
         self.task("Écartée", -2, note_state="dismissed")
 
