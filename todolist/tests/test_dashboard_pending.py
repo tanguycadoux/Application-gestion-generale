@@ -58,7 +58,9 @@ class PendingBlockTests(TestCase):
         self.to_review("Une", new)
         self.to_review("Deux", new, project=None)
         self.to_review("Trois", old)
-        self.task("Revue", note_state=Task.NoteState.REVIEWED, due_date=date.today())
+        self.task(
+            "Revue", note_state=Task.NoteState.REVIEWED, due_date=date(2030, 1, 1)
+        )
 
         response = self.client.get(INDEX)
         html = response.content.decode()
@@ -68,13 +70,15 @@ class PendingBlockTests(TestCase):
             self.assertIn(
                 f'href="{reverse("todolist:note_review", args=[note.date])}"', html
             )
-        self.assertIn("2 tâches, dont 1 sans projet", html)
+        self.assertRegex(html, r"2 tâches, <[^>]*>dont 1 sans projet")
         # La note qui attend depuis le plus longtemps d'abord.
         self.assertLess(
             html.index(reverse("todolist:note_review", args=[old.date])),
             html.index(reverse("todolist:note_review", args=[new.date])),
         )
         self.assertNotIn("Revue", html)
+        # Des notes sans aucun passage n'ont pas de texte sans projet.
+        self.assertNotIn("Texte sans projet", html)
 
     def test_sans_echeance_les_plus_anciennes_d_abord(self):
         first = self.task("Ancienne")
