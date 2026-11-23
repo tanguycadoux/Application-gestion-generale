@@ -58,9 +58,7 @@ class PassageNoteLinksTests(TestCase):
         call_command("reprocess_notes", stdout=StringIO())
 
         self.assertEqual(
-            list(
-                PassageNoteLink.objects.values_list("passage__note", "target_date")
-            ),
+            list(PassageNoteLink.objects.values_list("passage__note", "target_date")),
             [(source.pk, date(2026, 3, 12))],
         )
 

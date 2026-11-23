@@ -1,4 +1,4 @@
-"""Services de note : import, mise à jour, passages et images."""
+"""Services de note : import, mise à jour, passages, images et liens entre notes."""
 
 from datetime import date
 
@@ -15,8 +15,9 @@ from .exceptions import (
     NoteAlreadyExistsError,
     NoteParseError,
 )
-from .models import Note, Passage
+from .models import Note, Passage, PassageNoteLink
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
+from .qmd.links import note_links
 from .qmd.parser import HEADING_SEPARATOR, ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX, image_name, note_heading_ids
 from .signals import NoteFollowUp, passages_processed
@@ -96,6 +97,7 @@ def process_passages(
         *parsed_note.warnings,
         *similar_warnings(known_projects, known_sections),
     )
+    note.missing_links = missing_linked_notes(note, passages)
     # Les sections qu'aucun passage ni tâche n'utilise plus sont oubliées (#295).
     forget_unused_sections()
 
@@ -132,8 +134,25 @@ def insert_passages(note: Note, parsed_note: ParsedNote) -> list[Passage]:
             [Tag.objects.get_or_create(name=name)[0] for name in parsed.tags]
         )
         passage.images.set(images)
+        links = note_links(content)
+        if links:
+            PassageNoteLink.objects.bulk_create(
+                PassageNoteLink(
+                    passage=passage, target_date=link.date, anchor=link.anchor
+                )
+                for link in links
+            )
         passages.append(passage)
     return passages
+
+
+def missing_linked_notes(note: Note, passages: list[Passage]) -> tuple[date, ...]:
+    """Dates des notes absentes que ces passages citent (#206), dans l'ordre :
+    signalées, pas refusées. Un lien vers la note elle-même n'est jamais cassé."""
+    cited = {link.date for passage in passages for link in note_links(passage.content)}
+    cited.discard(note.date)
+    existing = set(Note.objects.filter(date__in=cited).values_list("date", flat=True))
+    return tuple(sorted(cited - existing))
 
 
 def replace_image_paths(content: str) -> tuple[str, list[Image]]:

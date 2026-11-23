@@ -10,6 +10,7 @@ Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
   rendus par `render_markdown` ;
 - `floats` : numéros des tableaux et figures, références croisées ;
 - `headings` : décalage et identifiants des titres ;
+- `note_links` : liens vers d'autres notes, `AAAA-MM-JJ.qmd` (#206) ;
 - `notes` : assemblage, pour une note (`render_note_body`) et un passage
   (`render_passage`).
 

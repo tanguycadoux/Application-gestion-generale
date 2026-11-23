@@ -122,12 +122,11 @@ class NoteLinksRenderingTests(TestCase):
         note = Note.objects.create(date="2026-03-14", body="# P\n[v](2026-03-12.qmd)")
         process_passages(note)
 
-        response = self.client.get(
-            reverse("note_taking:note_detail", args=[note.date])
-        )
+        response = self.client.get(reverse("note_taking:note_detail", args=[note.date]))
 
         self.assertContains(
-            response, f'href="{reverse("note_taking:note_detail", args=["2026-03-12"])}"'
+            response,
+            f'href="{reverse("note_taking:note_detail", args=["2026-03-12"])}"',
         )
 
 

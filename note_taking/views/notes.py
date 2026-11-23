@@ -17,10 +17,11 @@ from .. import note_table
 from ..forms import NewNoteForm
 from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
+from ..note_citations import citations
 from ..note_outline import outline_sections
 from ..rendering import render_note_body
 from ..services import process_passages
-from .common import next_page, note_name, warnings_message
+from .common import next_page, note_name, save_warnings
 
 
 def index(request):
@@ -49,6 +50,8 @@ class NoteDetail(DetailView):
         layout = outline_sections(render_note_body(self.object.body, heading_ids=True))
         context["content"] = layout.html
         context["outline"] = layout.entries
+        # Les notes qui citent celle-ci (#207).
+        context["citations"] = citations(self.object)
         return context
 
 
@@ -130,8 +133,7 @@ def save_passages(request, note: Note, done: str, *, stay: bool = False) -> str:
         )
     else:
         messages.success(request, f"{note_name(note)} est {done}.")
-        if note.warnings:
-            messages.warning(request, warnings_message(note.warnings))
+        save_warnings(request, note)
     if stay:
         for follow_up in note.follow_ups:
             messages.warning(
