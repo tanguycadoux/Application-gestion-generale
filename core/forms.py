@@ -2,6 +2,7 @@ from django import forms
 from django.forms.renderers import DjangoTemplates
 
 from .models import Project, Section
+from .projects import project_named
 from .sections import join_path, levels, path_labels, path_suggestions, split_path
 
 
@@ -99,11 +100,18 @@ class GridFormRenderer(DjangoTemplates):
 
 
 class ProjectForm(forms.ModelForm):
-    """Création d'un projet : nom, couleur, description."""
+    """Création d'un projet : nom, couleur, description. Un nom déjà pris à la casse
+    près est refusé (#374) : une note qui l'écrit retrouverait l'existant."""
 
     class Meta:
         model = Project
         fields = ["name", "color", "description"]
+
+    def clean_name(self):
+        name = " ".join(self.cleaned_data["name"].split())
+        if taken := project_named(name, exclude=self.instance.pk):
+            raise forms.ValidationError(f"Un projet « {taken.name} » existe déjà.")
+        return name
 
 
 class ProjectEditForm(forms.ModelForm):

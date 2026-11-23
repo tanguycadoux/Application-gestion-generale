@@ -35,7 +35,8 @@ def least_used_color() -> str:
 
 
 class Project(models.Model):
-    """Projet, partagé par les notes et les tâches."""
+    """Projet, partagé par les notes et les tâches. Son nom est unique, casse
+    ignorée (#374)."""
 
     name = models.CharField("nom", max_length=200, unique=True)
     color = models.CharField("couleur", max_length=20, choices=PROJECT_COLORS)
@@ -45,6 +46,12 @@ class Project(models.Model):
     class Meta:
         verbose_name = "projet"
         ordering = ["name"]
+        constraints = [
+            # Un nom de projet ignore la casse, comme un niveau (#374) : la
+            # comparaison complète se fait en Python (`core/projects.py`), le `LOWER`
+            # de SQLite ne repliant que l'ASCII ; la contrainte est un filet.
+            models.UniqueConstraint(Lower("name"), name="unique_project_name_ci"),
+        ]
 
     def __str__(self):
         return self.name

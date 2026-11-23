@@ -7,8 +7,10 @@ ce texte : les titres donnent directement les niveaux.
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 
 from .models import Project, Section
+from .names import similar_key
 
 INPUT_SEPARATOR = "/"
 LABEL_SEPARATOR = " › "
@@ -102,6 +104,56 @@ def existing_section(project: Project, names: Iterable[str]) -> Section | None:
     return section
 
 
+def similar_siblings(section: Section, siblings: Iterable[Section]) -> list[Section]:
+    """Les niveaux parmi `siblings` (même projet, même parent) dont le nom est proche
+    de celui de `section` (`similar_key` : casse, accents, ponctuation, pluriel
+    simple), `section` exceptée (#374)."""
+    key = similar_key(section.name)
+    return [
+        sibling
+        for sibling in siblings
+        if sibling.pk != section.pk and similar_key(sibling.name) == key
+    ]
+
+
+def similar_warnings(known_projects: set[int], known_sections: set[int]) -> list[str]:
+    """Les projets et niveaux créés depuis (absents de `known_projects` et
+    `known_sections`) alors qu'un existant en est proche (#374) : un avertissement
+    par nom, sans rien réécrire. Seul ce qui existait avant compte comme existant."""
+    warnings = []
+    projects = list(Project.objects.order_by("pk"))
+    old_projects = [project for project in projects if project.pk in known_projects]
+    for project in projects:
+        if project.pk in known_projects:
+            continue
+        key = similar_key(project.name)
+        if close := next((p for p in old_projects if similar_key(p.name) == key), None):
+            warnings.append(
+                f"Projet « {project.name} » créé : un projet proche, « {close.name} », "
+                "existe déjà."
+            )
+    sections = list(Section.objects.select_related("project").order_by("pk"))
+    for section in sections:
+        if section.pk in known_sections:
+            continue
+        old_siblings = [
+            other
+            for other in sections
+            if other.pk in known_sections
+            and other.project_id == section.project_id
+            and other.parent_id == section.parent_id
+        ]
+        if close_siblings := similar_siblings(section, old_siblings):
+            place = LABEL_SEPARATOR.join(
+                [section.project.name, *(levels(section)[:-1])]
+            )
+            warnings.append(
+                f"Niveau « {section.name} » créé : un niveau proche, "
+                f"« {close_siblings[0].name} », existe déjà au même endroit ({place})."
+            )
+    return warnings
+
+
 def subtree(section: Section) -> list[Section]:
     """La section et ses descendants, à tous les niveaux."""
     found, level = [section], [section]
@@ -123,8 +175,8 @@ def sibling_named(section: Section, name: str) -> Section | None:
 
 def check_new_name(section: Section, raw: str) -> tuple[str, str]:
     """(nom nettoyé, erreur) pour renommer ce niveau ; l'erreur est vide si le nom
-    convient. Un simple changement de casse est permis ; un nom déjà pris sous le
-    même parent est refusé (la fusion est un autre sujet)."""
+    convient. Un simple changement de casse est permis ; le nom d'un niveau frère
+    aussi : les deux niveaux sont alors réunis (`sibling_named`, #373)."""
     name = " ".join(raw.split())
     longest = Section._meta.get_field("name").max_length or 200
     if not name:
@@ -133,12 +185,73 @@ def check_new_name(section: Section, raw: str) -> tuple[str, str]:
         return name, f"Un niveau ne dépasse pas {longest} caractères."
     if name == section.name:
         return name, "C'est déjà son nom."
-    if sibling_named(section, name):
-        return name, (
-            f"Un niveau « {name} » existe déjà à cet endroit : la fusion de deux "
-            "niveaux n'est pas encore possible."
-        )
     return name, ""
+
+
+@dataclass
+class MergePlan:
+    """Ce que la réunion d'un niveau avec un frère entraîne dessous (#373), en
+    chemins relatifs au niveau gardé (« Préparation › Ordre du jour »)."""
+
+    # Sous-niveaux de même nom (casse ignorée) des deux côtés : réunis, sous le nom
+    # du niveau gardé.
+    joined: list[str] = field(default_factory=list)
+    # Sous-niveaux sans homonyme : ils passent sous le niveau gardé.
+    moved: list[str] = field(default_factory=list)
+    # Parmi ceux-là, ceux qui ont un nom proche à leur nouvelle place (#374) :
+    # (sous-niveau déplacé, niveau proche), à réunir ensuite.
+    close: list[tuple[str, str]] = field(default_factory=list)
+
+
+def merge_plan(gone: Section, keep: Section) -> MergePlan:
+    """Le bilan de `merge_section(gone, keep)`, sans rien écrire."""
+    plan = MergePlan()
+
+    def walk(gone: Section, keep: Section, prefix: list[str]) -> None:
+        keep_children = list(keep.children.all())
+        for child in gone.children.order_by("name"):
+            twin = _known_child(keep.project, keep, child.name)
+            if twin is not None:
+                plan.joined.append(LABEL_SEPARATOR.join([*prefix, twin.name]))
+                walk(child, twin, [*prefix, twin.name])
+                continue
+            plan.moved.append(LABEL_SEPARATOR.join([*prefix, child.name]))
+            plan.close += [
+                (
+                    LABEL_SEPARATOR.join([*prefix, child.name]),
+                    LABEL_SEPARATOR.join([*prefix, other.name]),
+                )
+                for other in similar_siblings(child, keep_children)
+            ]
+
+    walk(gone, keep, [])
+    return plan
+
+
+def merge_section(gone: Section, keep: Section) -> None:
+    """`gone` rejoint son frère `keep` (#373) : ce qui l'utilise (lu sur le modèle,
+    comme `forget_unused_sections`) passe à `keep`, ses sous-niveaux de même nom
+    (casse ignorée) sont réunis à leur tour, les autres passent sous `keep`. Le
+    niveau gardé garde son nom ; `gone` est supprimé."""
+    for child in list(gone.children.all()):
+        twin = _known_child(keep.project, keep, child.name)
+        if twin is None:
+            child.parent = keep
+            child.save(update_fields=["parent"])
+        else:
+            merge_section(child, twin)
+    for relation in Section._meta.related_objects:
+        if relation.related_model is Section:
+            continue
+        name = relation.field.name
+        related = relation.related_model._base_manager
+        if relation.one_to_many:
+            related.filter(**{name: gone}).update(**{name: keep})
+        elif relation.many_to_many:
+            for obj in related.filter(**{name: gone}):
+                getattr(obj, name).remove(gone)
+                getattr(obj, name).add(keep)
+    gone.delete()
 
 
 def parent_map() -> dict[int, int | None]:
