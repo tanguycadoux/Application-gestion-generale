@@ -21,7 +21,6 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
   proches de l'index (`expand_query`), les résultats exacts passant avant les élargis.
 """
 
-import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 
@@ -35,6 +34,7 @@ from core.sections import with_descendants
 from core.tables import fold
 
 from .models import Note, Passage
+from .qmd.parser import heading_name
 from .rendering import heading_anchor, render_passage
 from .search_document import GROUPS, DocPassage, Level, assemble, split_titles
 from .search_index import (
@@ -244,8 +244,6 @@ def tag_ids_named(names: list[str]) -> list[int]:
 VIEWS = ("extraits", "document")
 DEFAULT_VIEW = "extraits"
 DEFAULT_GROUP = "date"
-# `{#id}` ou `{.classe}` en fin de titre : une écriture, pas un texte à lire.
-TITLE_ATTRIBUTES_REGEX = re.compile(r"\s*\{[^}]*\}\s*$")
 
 
 def result_options(params: Mapping[str, str]) -> tuple[str, str]:
@@ -317,7 +315,7 @@ def group_by_note(query: SearchQuery, passages: list[Passage]) -> list[NoteResul
         titles = split_titles(passage.heading_path)
         anchors = passage_anchors(passage, titles)
         crumbs = [
-            Crumb(TITLE_ATTRIBUTES_REGEX.sub("", title), anchor)
+            Crumb(heading_name(title), anchor)
             for title, anchor in zip(titles, anchors, strict=True)
         ]
         group = groups.setdefault(passage.note_id, NoteResults(passage.note))

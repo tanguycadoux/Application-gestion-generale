@@ -86,8 +86,9 @@ class FindHeadingsTests(SimpleTestCase):
 
         self.assertEqual(self.numbers(body, ["S"], project="Q"), [4])
 
-    def test_nom_du_projet_a_la_casse_exacte(self):
-        self.assertEqual(self.numbers("# p\n## S", ["S"], project="P"), [])
+    def test_nom_du_projet_sans_la_casse(self):
+        """Un nom de projet ignore la casse, comme un niveau (#374)."""
+        self.assertEqual(self.numbers("# p\n## S", ["S"], project="P"), [2])
 
     def test_aucun_titre(self):
         self.assertEqual(self.numbers("# P\n## S", ["X"]), [])
@@ -111,10 +112,11 @@ class RewriteTitlesTests(SimpleTestCase):
             rewrite_titles("# P\n  ## Ancien", [2], "Nouveau"), "# P\n  ## Nouveau"
         )
 
-    def test_le_texte_entier_du_titre_est_remplace(self):
-        """Les attributs d'un titre en font partie : c'est le nom du niveau."""
+    def test_les_attributs_du_titre_sont_gardes(self):
+        """Les attributs ne font pas partie du nom du niveau (#367)."""
         self.assertEqual(
-            rewrite_titles("# P\n## Ancien {#id}", [2], "Nouveau"), "# P\n## Nouveau"
+            rewrite_titles("# P\n## Ancien {#id}", [2], "Nouveau"),
+            "# P\n## Nouveau {#id}",
         )
 
     def test_plusieurs_titres(self):
