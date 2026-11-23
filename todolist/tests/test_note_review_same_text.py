@@ -238,3 +238,30 @@ class PathsShownTests(SameTextTestCase):
             "Ancien chemin : Chantier Sud › Réunion de chantier › Préparation", text
         )
         self.assertNotIn("Nouveau chemin", text)
+
+
+class PathChangesTests(TestCase):
+    def test_meme_profondeur_niveau_par_niveau(self):
+        from todolist.forms import path_changes
+
+        old, new = path_changes("P › A › B › Ligne", "P › A2 › B › ligne")
+
+        self.assertEqual(
+            old, [("P", False), ("A", True), ("B", False), ("Ligne", True)]
+        )
+        self.assertEqual(
+            new, [("P", False), ("A2", True), ("B", False), ("ligne", True)]
+        )
+
+    def test_niveau_ajoute(self):
+        from todolist.forms import path_changes
+
+        old, new = path_changes("P › B", "P › A › B")
+
+        self.assertEqual(old, [("P", False), ("B", False)])
+        self.assertEqual(new, [("P", False), ("A", True), ("B", False)])
+
+    def test_sans_nouveau_chemin(self):
+        from todolist.forms import path_changes
+
+        self.assertEqual(path_changes("P › A", ""), ([("P", False), ("A", False)], []))
