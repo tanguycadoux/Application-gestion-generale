@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import date
 
+from core.models import Project
 from core.month_calendar import CalendarDay, MonthCalendar, month_grid, requested_month
 
 from .models import Note, Passage
@@ -11,7 +12,8 @@ from .models import Note, Passage
 @dataclass
 class NoteCalendarDay(CalendarDay):
     note: Note | None = None
-    projects: list[str] = field(default_factory=list)
+    # Projets des passages de la note, par nom ; le texte sans projet n'en a pas.
+    projects: list[Project] = field(default_factory=list)
 
     @property
     def can_create(self) -> bool:
@@ -25,14 +27,18 @@ def month_calendar(year: int, month: int, today: date) -> MonthCalendar:
     period = (calendar.first, calendar.last)
 
     notes = {note.date: note for note in Note.objects.filter(date__range=period)}
-    projects: dict[date, list[str]] = {}
-    for note_date, name in (
+    # Les projets eux-mêmes, pour leur couleur (#378) : une requête pour le mois.
+    projects: dict[date, list[Project]] = {}
+    seen: set[tuple[date, int]] = set()
+    for passage in (
         Passage.objects.filter(note__date__range=period, project__isnull=False)
-        .values_list("note__date", "project__name")
-        .distinct()
+        .select_related("note", "project")
         .order_by("note__date", "project__name")
     ):
-        projects.setdefault(note_date, []).append(name)
+        key = (passage.note.date, passage.project_id)
+        if key not in seen:
+            seen.add(key)
+            projects.setdefault(passage.note.date, []).append(passage.project)
 
     for day in calendar.days():
         day.note = notes.get(day.date)
