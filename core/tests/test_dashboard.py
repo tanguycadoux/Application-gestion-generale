@@ -10,14 +10,16 @@ class DashboardTests(TestCase):
     def test_blocs_ranges_par_ordre(self):
         titles = [block.title for block in dashboard_blocks()]
 
-        self.assertEqual(titles, ["Note du jour", "Tâches à échéance proche"])
+        self.assertEqual(
+            titles, ["Note du jour", "Tâches à échéance proche", "À traiter"]
+        )
 
     def test_accueil_affiche_un_bloc_par_titre(self):
         html = self.client.get(reverse("core:index")).content.decode()
 
         positions = [
             html.index(f">{title}</h2>")
-            for title in ("Note du jour", "Tâches à échéance proche")
+            for title in ("Note du jour", "Tâches à échéance proche", "À traiter")
         ]
         self.assertEqual(positions, sorted(positions))
 
