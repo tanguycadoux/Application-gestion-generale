@@ -2,8 +2,9 @@
 
 Les filtres s'appliquent à des listes de `Task` (toutes les tâches sont déjà
 chargées pour construire l'arbre) : ce qui répond aux filtres reste affiché, avec
-ses parents, atténués, pour garder l'arbre lisible (`tree.restrict_to`). Les quatre
-filtres sont dans le panneau de la colonne « Tâche ».
+ses parents, atténués, pour garder l'arbre lisible (`tree.restrict_to`). L'état,
+le titre et l'arbre des projets et chemins sont dans le panneau de la colonne
+« Tâche », l'absence d'échéance (#384) dans celui de la colonne « Échéance ».
 """
 
 from collections import Counter
@@ -54,6 +55,33 @@ def filter_tree(tasks: list[Task], chosen: tuple[tuple[str, ...], tuple[int, ...
     ]
 
 
+# Échéance (#384) : « à fixer » est la rubrique du bloc « À traiter » de l'accueil,
+# hors des tâches à revoir, dont le bilan règle l'échéance.
+DUE_NONE, DUE_DECLARED, DUE_SET = "none", "declared", "set"
+DUE_CHOICES = (
+    (DUE_NONE, "Sans échéance, à fixer"),
+    (DUE_DECLARED, "Sans échéance, c'est voulu"),
+    (DUE_SET, "Avec échéance"),
+)
+
+
+def undated(task: Task) -> bool:
+    """Sans échéance ni choix d'en rester là, et hors du bilan d'une note."""
+    return (
+        task.due_date is None
+        and not task.no_due_date
+        and task.note_state != Task.NoteState.TO_REVIEW
+    )
+
+
+def filter_due(tasks: list[Task], value: str) -> list[Task]:
+    if value == DUE_NONE:
+        return [task for task in tasks if undated(task)]
+    if value == DUE_DECLARED:
+        return [task for task in tasks if task.due_date is None and task.no_due_date]
+    return [task for task in tasks if task.due_date is not None]
+
+
 def read_state(data) -> str:
     """L'état demandé par `?state=` ; en cours si absent ou inconnu."""
     state = data.get("state", OPEN)
@@ -97,6 +125,7 @@ def task_filters(state: str = OPEN) -> Filters:
                 ChoiceFilter("state", "État", STATES, keep_all, default=OPEN),
                 TextFilter("title", "Titre", filter_title),
                 PathTreeFilter("path", "Projets et chemins", tree, filter_tree),
-            ]
+            ],
+            "due": [ChoiceFilter("due", "Échéance", DUE_CHOICES, filter_due)],
         }
     )
