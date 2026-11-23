@@ -1,0 +1,2 @@
+{# Chemin d'une ligne dans le bilan (#382) : `levels`, couples (niveau, changé), le niveau changé en gras. #}
+{% for level, changed in levels %}{% if not forloop.first %} › {% endif %}{% if changed %}<strong class="font-semibold text-slate-900">{{ level }}</strong>{% else %}{{ level }}{% endif %}{% endfor %}

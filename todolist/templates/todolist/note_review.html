@@ -77,6 +77,17 @@
                                 <th scope="row" class="p-2 font-normal">
                                     {{ form.id }}
                                     <a href="{% url 'todolist:task_detail' form.instance.pk %}">{{ form.instance.title }}</a>
+                                    {# Ancien chemin et, en face, celui de la nouvelle ligne de même texte ; les niveaux changés en gras (#382). #}
+                                    {% if form.old_path %}
+                                        <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-2 text-sm text-slate-600">
+                                            <dt>Ancien chemin :</dt>
+                                            <dd>{% include "todolist/review_path.html" with levels=form.old_path %}</dd>
+                                            {% if form.new_path %}
+                                                <dt>Nouveau chemin :</dt>
+                                                <dd>{% include "todolist/review_path.html" with levels=form.new_path %}</dd>
+                                            {% endif %}
+                                        </dl>
+                                    {% endif %}
                                     {{ form.non_field_errors }}
                                 </th>
                                 <td class="p-2">
