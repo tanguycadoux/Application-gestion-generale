@@ -118,8 +118,8 @@ class CalendarProjectColorTests(TestCase):
     def cell(self, body: str) -> str:
         note = Note.objects.create(date="2025-11-24", body=body)
         process_passages(note)
-        html = self.client.get(reverse("note_taking:index") + "?month=2025-11")
-        html = html.content.decode()
+        url = reverse("note_taking:index") + "?month=2025-11"
+        html = self.client.get(url).content.decode()
         href = reverse("note_taking:note_detail", args=[note.date])
         cell = html[html.index(f'href="{href}"') :]
         return cell[: cell.index("</a>")]

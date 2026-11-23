@@ -29,16 +29,14 @@ def month_calendar(year: int, month: int, today: date) -> MonthCalendar:
     notes = {note.date: note for note in Note.objects.filter(date__range=period)}
     # Les projets eux-mêmes, pour leur couleur (#378) : une requête pour le mois.
     projects: dict[date, list[Project]] = {}
-    seen: set[tuple[date, int]] = set()
     for passage in (
         Passage.objects.filter(note__date__range=period, project__isnull=False)
         .select_related("note", "project")
         .order_by("note__date", "project__name")
     ):
-        key = (passage.note.date, passage.project_id)
-        if key not in seen:
-            seen.add(key)
-            projects.setdefault(passage.note.date, []).append(passage.project)
+        day_projects = projects.setdefault(passage.note.date, [])
+        if passage.project is not None and passage.project not in day_projects:
+            day_projects.append(passage.project)
 
     for day in calendar.days():
         day.note = notes.get(day.date)
