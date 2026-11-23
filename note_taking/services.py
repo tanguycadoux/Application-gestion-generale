@@ -4,8 +4,9 @@ from datetime import date
 
 from django.db import transaction
 
-from core.models import Project, Tag
-from core.sections import forget_unused_sections, section_for
+from core.models import Project, Section, Tag
+from core.projects import project_for
+from core.sections import forget_unused_sections, section_for, similar_warnings
 from images.models import Image
 
 from .exceptions import (
@@ -75,6 +76,9 @@ def process_passages(
                 "à la date de la note."
             )
 
+    # Pour signaler un projet ou un niveau créé à côté d'un nom proche (#374).
+    known_projects = set(Project.objects.values_list("pk", flat=True))
+    known_sections = set(Section.objects.values_list("pk", flat=True))
     note.passages.all().delete()
     passages = insert_passages(note, parsed_note)
 
@@ -88,7 +92,10 @@ def process_passages(
     note.follow_ups = tuple(
         response for response in responses if isinstance(response, NoteFollowUp)
     )
-    note.warnings = tuple(parsed_note.warnings)
+    note.warnings = (
+        *parsed_note.warnings,
+        *similar_warnings(known_projects, known_sections),
+    )
     # Les sections qu'aucun passage ni tâche n'utilise plus sont oubliées (#295).
     forget_unused_sections()
 
@@ -104,11 +111,8 @@ def insert_passages(note: Note, parsed_note: ParsedNote) -> list[Passage]:
     for position, parsed in enumerate(parsed_note.passages):
         content, images = replace_image_paths("\n".join(parsed.lines))
 
-        project = (
-            Project.objects.get_or_create(name=parsed.project)[0]
-            if parsed.project is not None
-            else None
-        )
+        # Un projet connu, quelle que soit sa casse, est repris (#374).
+        project = project_for(parsed.project)[0] if parsed.project is not None else None
         section = section_for(project, parsed.path) if project else None
         anchors = [ids[number] for number in parsed.heading_numbers]
 

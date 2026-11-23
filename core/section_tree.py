@@ -7,12 +7,24 @@ sert, et à quoi.
 """
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from urllib.parse import urlencode
 
 from django.db.models import Count, Q
+from django.urls import reverse
 
 from .app_registry import SectionUsage, section_usages
 from .models import Project, Section
+from .sections import similar_siblings
+
+
+@dataclass(frozen=True)
+class Similar:
+    """Un niveau frère au nom proche (#374), et l'adresse du bilan qui réunit le
+    niveau de la ligne avec lui (#373)."""
+
+    name: str
+    merge_url: str
 
 
 @dataclass
@@ -25,6 +37,9 @@ class TreeRow:
     total: int
     # Nombre de niveaux en dessous, à tous les niveaux.
     descendants: int = 0
+    # Les frères qui ne diffèrent que par la casse, les accents, la ponctuation ou
+    # un pluriel simple (#374).
+    similar: list[Similar] = field(default_factory=list)
 
     @property
     def usage_id(self) -> str:
@@ -72,6 +87,11 @@ def section_tree(project: Project) -> list[TreeRow]:
         """Ajoute la ligne de ce niveau, puis celles de ses descendants ; renvoie ce
         qui utilise le niveau et ses descendants, par usage."""
         row = TreeRow(section, depth, "", 0)
+        rename_url = reverse("core:section_rename", args=[project.pk, section.pk])
+        row.similar = [
+            Similar(other.name, f"{rename_url}?{urlencode({'name': other.name})}")
+            for other in similar_siblings(section, children[section.parent_id])
+        ]
         rows.append(row)
         index = len(rows)
         totals = [getattr(section, f"usage_{index}") for index in range(len(usages))]

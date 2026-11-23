@@ -9,6 +9,7 @@ ce texte : les titres donnent directement les niveaux.
 from collections.abc import Iterable
 
 from .models import Project, Section
+from .names import similar_key
 
 INPUT_SEPARATOR = "/"
 LABEL_SEPARATOR = " › "
@@ -100,6 +101,56 @@ def existing_section(project: Project, names: Iterable[str]) -> Section | None:
             if section is None:
                 return None
     return section
+
+
+def similar_siblings(section: Section, siblings: Iterable[Section]) -> list[Section]:
+    """Les niveaux parmi `siblings` (même projet, même parent) dont le nom est proche
+    de celui de `section` (`similar_key` : casse, accents, ponctuation, pluriel
+    simple), `section` exceptée (#374)."""
+    key = similar_key(section.name)
+    return [
+        sibling
+        for sibling in siblings
+        if sibling.pk != section.pk and similar_key(sibling.name) == key
+    ]
+
+
+def similar_warnings(known_projects: set[int], known_sections: set[int]) -> list[str]:
+    """Les projets et niveaux créés depuis (absents de `known_projects` et
+    `known_sections`) alors qu'un existant en est proche (#374) : un avertissement
+    par nom, sans rien réécrire. Seul ce qui existait avant compte comme existant."""
+    warnings = []
+    projects = list(Project.objects.order_by("pk"))
+    old_projects = [project for project in projects if project.pk in known_projects]
+    for project in projects:
+        if project.pk in known_projects:
+            continue
+        key = similar_key(project.name)
+        if close := next((p for p in old_projects if similar_key(p.name) == key), None):
+            warnings.append(
+                f"Projet « {project.name} » créé : un projet proche, « {close.name} », "
+                "existe déjà."
+            )
+    sections = list(Section.objects.select_related("project").order_by("pk"))
+    for section in sections:
+        if section.pk in known_sections:
+            continue
+        old_siblings = [
+            other
+            for other in sections
+            if other.pk in known_sections
+            and other.project_id == section.project_id
+            and other.parent_id == section.parent_id
+        ]
+        if close_siblings := similar_siblings(section, old_siblings):
+            place = LABEL_SEPARATOR.join(
+                [section.project.name, *(levels(section)[:-1])]
+            )
+            warnings.append(
+                f"Niveau « {section.name} » créé : un niveau proche, "
+                f"« {close_siblings[0].name} », existe déjà au même endroit ({place})."
+            )
+    return warnings
 
 
 def subtree(section: Section) -> list[Section]:

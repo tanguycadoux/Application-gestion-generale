@@ -108,7 +108,9 @@ def find_headings(body: str, project: str, levels: list[str]) -> list[Heading]:
     return [
         heading
         for heading in headings(body)
-        if heading.project == project
+        # Un nom de projet ignore la casse, comme un niveau (#374).
+        if heading.project is not None
+        and normalized(heading.project) == normalized(project)
         and [normalized(heading_name(title)) for title in heading.path] == wanted
     ]
 

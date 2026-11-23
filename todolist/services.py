@@ -6,7 +6,8 @@ from datetime import date
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat
 
-from core.models import Project, Tag
+from core.models import Tag
+from core.projects import project_for
 from core.sections import levels, section_for
 from note_taking.exceptions import NoteRenameError
 from note_taking.models import Note, Passage
@@ -65,7 +66,7 @@ def create_task_from_dict(
 
     # Sans projet ni chemin : une case du texte avant le premier `#`, à ranger (#385).
     project = (
-        Project.objects.get_or_create(name=task_data["project"])[0]
+        project_for(task_data["project"])[0]
         if task_data["project"] is not None
         else None
     )
