@@ -185,3 +185,46 @@ class ReviewTests(InNoteRenameTestCase):
             reverse("note_taking:note_detail", args=["2025-11-24"]),
             fetch_redirect_response=False,
         )
+
+
+class CollisionTests(TestCase):
+    """Deux tâches pour une même ligne (#170) : l'une sous l'ancien chemin, restée
+    là, l'autre créée sous le nouveau. Revenir à l'ancien nom ne doit pas les faire
+    entrer en collision, ni laisser un déplacement à moitié fait."""
+
+    def test_retour_sur_un_chemin_deja_pris(self):
+        alpha = Project.objects.create(name="Alpha")
+        gamma = Project.objects.create(name="Gamma")
+        note = Note.objects.create(date="2025-11-24", body="# Gamma\n- [ ] Écrire")
+        stale = Task.objects.create(
+            title="Écrire",
+            project=alpha,
+            created_from_note=True,
+            note_date="2025-11-24",
+            note_path="Alpha",
+            note_line_text="Écrire",
+        )
+        moving = Task.objects.create(
+            title="Écrire",
+            project=gamma,
+            created_from_note=True,
+            note_date="2025-11-24",
+            note_path="Gamma",
+            note_line_text="Écrire",
+        )
+
+        response = self.client.post(
+            reverse("note_taking:edit_note", args=["2025-11-24"]),
+            {"date": "2025-11-24", "body": "# Alpha\n- [ ] Écrire"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        note.refresh_from_db()
+        self.assertEqual(note.body, "# Alpha\n- [ ] Écrire")
+        stale.refresh_from_db()
+        moving.refresh_from_db()
+        # La ligne retrouve la tâche qui portait déjà ce chemin ; l'autre reste à
+        # sa place, à revoir dans le bilan.
+        self.assertEqual(stale.note_path, "Alpha")
+        self.assertEqual(moving.note_path, "Gamma")
+        self.assertFalse(Task.all_objects.filter(note_path__startswith="\x1f").exists())
