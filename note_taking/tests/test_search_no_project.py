@@ -7,7 +7,8 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from core.models import Project, Section
-from note_taking.models import Note, Passage
+from note_taking.models import Note, Passage, SavedSearch
+from note_taking.saved_searches import save_search, search_url
 from note_taking.search import search_passages
 from note_taking.search_query import parse_query
 
@@ -156,3 +157,28 @@ class NoProjectPageTests(NoProjectFixture):
 
     def test_aide_de_syntaxe(self):
         self.assertContains(self.client.get(URL), "<code>sans:projet</code>")
+
+
+class SavedNoProjectTests(TestCase):
+    """La case « Sans projet » s'enregistre avec la recherche, comme les autres
+    cases de l'arbre (#380)."""
+
+    def test_case_seule_enregistree(self):
+        saved = save_search("À ranger", "", no_project=True)
+
+        self.assertTrue(saved.no_project)
+        self.assertIn("no_project=on", search_url(saved))
+
+    def test_creer_depuis_la_page(self):
+        self.client.post(
+            reverse("note_taking:saved_search_create"),
+            {"name": "À ranger", "q": "banc", "no_project": "on"},
+        )
+
+        self.assertTrue(SavedSearch.objects.get(name="À ranger").no_project)
+
+    def test_nom_propose(self):
+        response = self.client.get(URL, {"no_project": "on"})
+
+        self.assertContains(response, 'value="Sans projet"')
+        self.assertContains(response, '<input type="hidden" name="no_project"')
