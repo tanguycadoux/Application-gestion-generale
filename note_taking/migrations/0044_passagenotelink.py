@@ -15,7 +15,7 @@ from django.db import migrations, models
 
 # Copie figée de note_taking/qmd/links.py (#206).
 NOTE_LINK_REGEX = re.compile(
-    r"(?<!!)\[[^\]\n]*\]\((?P<date>\d{4}-\d{2}-\d{2})\.qmd"
+    r"(?<!!)\[[^\]\n]*\]\((?P<date>\d{4}-\d{2}-\d{2})(?:\.qmd)?"
     r"(?:#(?P<anchor>[^)\s\"]*))?(?:\s+\"[^\"\n]*\")?\)"
 )
 FENCE_REGEX = re.compile(r"^\s*(`{3,}|~{3,})")

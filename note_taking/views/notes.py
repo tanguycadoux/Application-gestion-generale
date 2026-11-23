@@ -235,7 +235,8 @@ def note_suggestions(request):
             "results": [
                 {
                     "date": day.isoformat(),
-                    "reference": f"{day.isoformat()}.qmd",
+                    # Sans extension : l'export l'ajoute pour Quarto (#206).
+                    "reference": day.isoformat(),
                     "label": date_text(day, "long"),
                 }
                 for day in days

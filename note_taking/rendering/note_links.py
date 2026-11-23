@@ -1,4 +1,5 @@
-"""Liens vers d'autres notes (#206) dans le HTML rendu : `AAAA-MM-JJ.qmd#ancre`
+"""Liens vers d'autres notes (#206) dans le HTML rendu : `AAAA-MM-JJ#ancre` (ou
+`AAAA-MM-JJ.qmd#ancre`)
 mène à la page de la note ; une note absente est signalée, pas refusée."""
 
 import re
@@ -11,7 +12,7 @@ from core.dates import date_text
 
 # Balise ouvrante d'un lien du HTML filtré, dont l'adresse est le fichier d'une note.
 NOTE_LINK_TAG_REGEX = re.compile(
-    r'<a\b(?P<before>[^>]*?)\shref="(?P<date>\d{4}-\d{2}-\d{2})\.qmd'
+    r'<a\b(?P<before>[^>]*?)\shref="(?P<date>\d{4}-\d{2}-\d{2})(?:\.qmd)?'
     r'(?P<anchor>#[^"]*)?"(?P<after>[^>]*)>'
 )
 # Titre et classes écrits, remplacés par ceux d'un lien cassé.
@@ -33,7 +34,7 @@ def parse_day(text: str) -> date | None:
 
 
 def resolve_note_links(html: str) -> str:
-    """Fait mener chaque lien `AAAA-MM-JJ.qmd` à la page de la note, à son ancre.
+    """Fait mener chaque lien `AAAA-MM-JJ` (ou `.qmd`) à la page de la note, à son ancre.
 
     Le HTML est filtré : `<a` n'y est que le début d'un lien (pas dans du code,
     échappé). Une note absente garde son texte, marqué comme lien cassé.

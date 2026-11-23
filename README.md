@@ -364,15 +364,15 @@ Chaque passage est lié aux images qu'il utilise (liens recalculés à chaque en
 
 ### Liens entre notes
 
-Une note en cite une autre par un lien Markdown ordinaire vers son fichier, comme dans Quarto (#206) :
+Une note en cite une autre par un lien Markdown ordinaire vers sa date (#206) :
 
 ```
-Voir [la réunion de lundi](2026-03-09.qmd), et son [ordre du jour](2026-03-09.qmd#ordre-du-jour).
+Voir [la réunion de lundi](2026-03-09), et son [ordre du jour](2026-03-09#ordre-du-jour).
 ```
 
-L'ancre est l'identifiant d'un titre de la note citée, celui de Quarto (minuscules, espaces en tirets : `#ordre-du-jour`) ; c'est aussi celui de son plan dans l'application. Une fois exportées, les notes sont côte à côte à la racine de l'archive : Quarto fait du lien un lien vers la page `.html` de la note, sans rien changer.
+L'ancre est l'identifiant d'un titre de la note citée, celui de Quarto (minuscules, espaces en tirets : `#ordre-du-jour`) ; c'est aussi celui de son plan dans l'application. Pour Pandoc, c'est un lien relatif valide ; mais Quarto ne reconnaît une autre page du projet qu'à son fichier. **L'export ajoute donc l'extension** : le lien devient `(2026-03-09.qmd#ordre-du-jour)`, les notes sont côte à côte à la racine de l'archive, et Quarto en fait un lien vers la page `.html` de la note. **L'import la retire** : une note exportée puis réimportée revient telle qu'elle était. La forme avec `.qmd` est aussi acceptée dans l'application.
 
-Dans l'application, le lien mène à la page de la note, à la section visée. Une note qui n'existe pas encore n'empêche pas l'enregistrement : le lien est signalé (souligné en pointillés, en rouge, avec une explication au survol) et mène à la création de la note à cette date ; l'enregistrement le rappelle. Un lien écrit dans du code n'est pas un lien. Dans l'éditeur, `](` propose les notes existantes, les plus récentes d'abord (`AAAA-MM-JJ.qmd`).
+Dans l'application, le lien mène à la page de la note, à la section visée. Une note qui n'existe pas encore n'empêche pas l'enregistrement : le lien est signalé (souligné en pointillés, en rouge, avec une explication au survol) et mène à la création de la note à cette date ; l'enregistrement le rappelle. Un lien écrit dans du code n'est pas un lien. Dans l'éditeur, `](` propose les notes existantes, les plus récentes d'abord (`AAAA-MM-JJ`).
 
 La page d'une note liste, sous son texte, les notes qui la **citent** (#207) : pour chaque passage qui contient un lien vers elle, la note, le projet et le chemin du passage, la ligne du lien, et un lien vers ce passage. Ces liens sont recalculés à chaque enregistrement (et par `reprocess_notes`) ; un lien vers une note à venir est gardé, et la note le voit dès sa création.
 

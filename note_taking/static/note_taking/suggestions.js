@@ -2,7 +2,7 @@
 //   `# `        -> les projets ;
 //   `## ` ...   -> les niveaux du chemin, sous le projet et les titres déjà écrits ;
 //   `![`        -> les images, avec leur vignette (insère `![](images/nom)`) ;
-//   `](`        -> les notes, les plus récentes d'abord (insère `AAAA-MM-JJ.qmd`, #206).
+//   `](`        -> les notes, les plus récentes d'abord (insère `AAAA-MM-JJ`, #206).
 // Les listes viennent des vues JSON de #90 (adresses sur le formulaire) ; rien n'est
 // créé ici : un nom nouveau se tape tel quel et se crée à l'enregistrement.
 import {
@@ -171,7 +171,7 @@ function noteSource(urls) {
         return {
             from: context.pos - typed[2].length,
             filter: false,
-            // AAAA-MM-JJ.qmd : le lien que Quarto suit aussi, une fois exporté.
+            // AAAA-MM-JJ : l'export en fait `AAAA-MM-JJ.qmd`, que Quarto suit.
             options: results.map((note) => ({
                 label: note.reference,
                 detail: note.label,

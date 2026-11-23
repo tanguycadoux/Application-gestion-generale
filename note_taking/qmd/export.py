@@ -13,6 +13,7 @@ from images.models import Image
 
 from ..models import Note
 from ..rendering import IMAGE_PATH_REGEX, image_name
+from .links import to_quarto
 from .parser import FRONT_MATTER_DELIMITER
 
 IMAGES_DIR = "images"
@@ -28,7 +29,8 @@ def note_to_qmd(note: Note) -> str:
     header = newline.join(
         [FRONT_MATTER_DELIMITER, f"date: {note.date}", FRONT_MATTER_DELIMITER, "", ""]
     )
-    return header + normalize_image_paths(note.body)
+    # Liens entre notes : `AAAA-MM-JJ.qmd`, le fichier que Quarto suit (#206).
+    return header + to_quarto(normalize_image_paths(note.body))
 
 
 def normalize_image_paths(body: str) -> str:

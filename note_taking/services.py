@@ -17,7 +17,7 @@ from .exceptions import (
 )
 from .models import Note, Passage, PassageNoteLink
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
-from .qmd.links import note_links
+from .qmd.links import from_quarto, note_links
 from .qmd.parser import HEADING_SEPARATOR, ParsedNote, parse_note
 from .rendering import IMAGE_PATH_REGEX, image_name, note_heading_ids
 from .signals import NoteFollowUp, passages_processed
@@ -27,6 +27,8 @@ from .signals import NoteFollowUp, passages_processed
 def update_note_from_source_file(note: Note, file) -> Note:
     note_date, content = read_note_file(file)
     metadata, body = split_front_matter(content)
+    # Les liens entre notes perdent l'extension du fichier exporté (#206).
+    body = from_quarto(body)
     check_metadata_date(note_date, metadata)
 
     if str(note.date) != note_date:
@@ -45,6 +47,8 @@ def update_note_from_source_file(note: Note, file) -> Note:
 def insert_note_in_table(file) -> Note:
     note_date, content = read_note_file(file)
     metadata, body = split_front_matter(content)
+    # Les liens entre notes perdent l'extension du fichier exporté (#206).
+    body = from_quarto(body)
     check_metadata_date(note_date, metadata)
 
     if Note.objects.filter(date=note_date).exists():
