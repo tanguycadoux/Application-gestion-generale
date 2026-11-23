@@ -209,8 +209,16 @@ def same_text_replacements(gone, new) -> dict[int, Task]:
 
 def path_changes(old: str, new: str) -> tuple[list, list]:
     """Niveaux de l'ancien et du nouveau chemin, chacun en couple (niveau, changé) :
-    ce qui reste commun au début et à la fin n'a pas changé (#382)."""
+    à même profondeur, niveau par niveau ; sinon, ce qui reste commun au début et à
+    la fin n'a pas changé (#382)."""
     old_levels, new_levels = path_levels(old), path_levels(new)
+    if not new_levels:
+        return [(level, False) for level in old_levels], []
+    if len(old_levels) == len(new_levels):
+        return (
+            [(o, o != n) for o, n in zip(old_levels, new_levels, strict=True)],
+            [(n, o != n) for o, n in zip(old_levels, new_levels, strict=True)],
+        )
     start, end = common_ends(old_levels, new_levels)
 
     def marked(levels: list[str]) -> list[tuple[str, bool]]:
@@ -242,6 +250,9 @@ class GoneLineForm(forms.ModelForm):
         queryset=Task.objects.none(),
         required=False,
         empty_label="—",
+        # Pleine largeur de sa colonne : un long chemin ne pousse pas le tableau
+        # hors de la page, l'option choisie est coupée (#382).
+        widget=forms.Select(attrs={"class": "w-full"}),
     )
 
     class Meta:

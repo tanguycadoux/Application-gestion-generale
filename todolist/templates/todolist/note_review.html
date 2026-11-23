@@ -66,9 +66,9 @@
                 <table class="w-full border-collapse text-left">
                     <thead>
                         <tr class="text-sm text-slate-600">
-                            <th scope="col" class="p-2 font-medium">Tâche</th>
+                            <th scope="col" class="w-2/5 p-2 font-medium">Tâche</th>
                             <th scope="col" class="p-2 font-medium">Que faire</th>
-                            <th scope="col" class="p-2 font-medium">Nouvelle ligne</th>
+                            <th scope="col" class="w-2/5 p-2 font-medium">Nouvelle ligne</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,10 +80,10 @@
                                     {# Ancien chemin et, en face, celui de la nouvelle ligne de même texte ; les niveaux changés en gras (#382). #}
                                     {% if form.old_path %}
                                         <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-2 text-sm text-slate-600">
-                                            <dt>Ancien chemin :</dt>
+                                            <dt class="whitespace-nowrap">Ancien chemin :</dt>
                                             <dd>{% include "todolist/review_path.html" with levels=form.old_path %}</dd>
                                             {% if form.new_path %}
-                                                <dt>Nouveau chemin :</dt>
+                                                <dt class="whitespace-nowrap">Nouveau chemin :</dt>
                                                 <dd>{% include "todolist/review_path.html" with levels=form.new_path %}</dd>
                                             {% endif %}
                                         </dl>
