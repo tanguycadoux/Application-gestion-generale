@@ -111,10 +111,11 @@ class RewriteTitlesTests(SimpleTestCase):
             rewrite_titles("# P\n  ## Ancien", [2], "Nouveau"), "# P\n  ## Nouveau"
         )
 
-    def test_le_texte_entier_du_titre_est_remplace(self):
-        """Les attributs d'un titre en font partie : c'est le nom du niveau."""
+    def test_les_attributs_du_titre_sont_gardes(self):
+        """Les attributs ne font pas partie du nom du niveau (#367)."""
         self.assertEqual(
-            rewrite_titles("# P\n## Ancien {#id}", [2], "Nouveau"), "# P\n## Nouveau"
+            rewrite_titles("# P\n## Ancien {#id}", [2], "Nouveau"),
+            "# P\n## Nouveau {#id}",
         )
 
     def test_plusieurs_titres(self):
