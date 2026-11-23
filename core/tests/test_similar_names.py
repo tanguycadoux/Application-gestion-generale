@@ -108,16 +108,16 @@ class ProjectMergeMigrationTests(TransactionTestCase):
     Sur le schéma d'avant (`0008`) : la contrainte de `0010` interdit ensuite deux
     projets de même nom à la casse près."""
 
-    before = [
-        ("core", "0008_section_names_without_attributes"),
-        ("note_taking", "0042_passages"),
-        ("todolist", "0021_task_note_fields_project_optional"),
-    ]
+    before = ("core", "0008_section_names_without_attributes")
 
     def setUp(self):
         executor = MigrationExecutor(connection)
-        executor.migrate([self.before[0]])
-        self.apps = executor.loader.project_state(self.before).apps
+        executor.migrate([self.before])
+        # Les autres apps restent à leur dernière migration : seul core recule.
+        nodes = [
+            node for node in executor.loader.graph.leaf_nodes() if node[0] != "core"
+        ]
+        self.apps = executor.loader.project_state([self.before, *nodes]).apps
         self.Project = self.apps.get_model("core", "Project")
         self.Section = self.apps.get_model("core", "Section")
         self.Passage = self.apps.get_model("note_taking", "Passage")
