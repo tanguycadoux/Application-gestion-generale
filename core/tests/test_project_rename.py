@@ -52,7 +52,7 @@ class NameTests(ProjectRenameTestCase):
 
         response = self.client.get(self.url(), {"name": "beta"})
 
-        self.assertContains(response, "Un projet « Beta » existe déjà")
+        self.assertContains(response, "Un projet «\xa0Beta\xa0» existe déjà")
         self.assertNotContains(response, "Bilan")
 
     def test_changer_la_casse_est_permis(self):
@@ -88,7 +88,9 @@ class OccurrenceTests(ProjectRenameTestCase):
 
         response = self.client.get(self.url(), {"name": "Gamma"})
 
-        self.assertContains(response, "Bilan : « Alpha » devient « Gamma »")
+        self.assertContains(
+            response, "Bilan\xa0: «\xa0Alpha\xa0» devient «\xa0Gamma\xa0»"
+        )
         self.assertContains(response, "1 titre à réécrire")
         self.assertContains(response, "Note du 24 novembre 2025, ligne 1")
 
@@ -115,7 +117,11 @@ class WriteTests(ProjectRenameTestCase):
         # Le même projet, avec ses passages, ses niveaux et ses tâches.
         self.assertFalse(Project.objects.filter(name__iexact="alpha").exists())
         self.assertEqual(
-            set(Passage.objects.filter(project=self.project).values_list("note", flat=True)),
+            set(
+                Passage.objects.filter(project=self.project).values_list(
+                    "note", flat=True
+                )
+            ),
             {note.pk, other.pk},
         )
         section.refresh_from_db()
@@ -134,7 +140,9 @@ class WriteTests(ProjectRenameTestCase):
 
         self.project.refresh_from_db()
         self.assertEqual(self.project.name, "Gamma")
-        self.assertIn("Le projet « Alpha » est renommé « Gamma ».", self.messages(response))
+        self.assertIn(
+            "Le projet « Alpha » est renommé « Gamma ».", self.messages(response)
+        )
 
     def test_changer_la_casse(self):
         note = self.note("# Alpha\nx")

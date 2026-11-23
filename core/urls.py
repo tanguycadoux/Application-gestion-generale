@@ -17,6 +17,7 @@ urlpatterns = [
         views.ProjectEditView.as_view(),
         name="project_edit",
     ),
+    path("projects/<int:pk>/rename/", views.rename_project, name="project_rename"),
     path("projects/<int:pk>/delete/", views.delete_project, name="project_delete"),
     path("projects/<int:pk>/paths/", views.project_paths, name="project_paths"),
     path(

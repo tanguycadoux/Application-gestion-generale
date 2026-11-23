@@ -1,0 +1,53 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}Renommer le projet « {{ project.name }} »{% endblock title %}
+
+{% block content %}
+    {% url 'core:project_edit' project.pk as back_url %}
+
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">{% filter nbsp_punct %}Renommer le projet « {{ project.name }} »{% endfilter %}</h1>
+        {% button "Retour au projet" icon="arrow_back" href=back_url variant="ghost" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">Le nom d'un projet est écrit dans les notes, en titre <code>#</code>. Le renommer réécrit ces titres, après un bilan ; ses passages, ses niveaux et ses tâches le suivent.</p>
+
+    <form method="get" action="{% url 'core:project_rename' project.pk %}" class="mb-4 flex flex-wrap items-center gap-2">
+        <label for="new-name" class="font-medium">Nouveau nom</label>
+        <input type="text" name="name" id="new-name" value="{{ new_name|default:project.name }}" required maxlength="200" class="w-80 max-w-full"{% if error %} aria-invalid="true" aria-describedby="new-name-error"{% endif %}>
+        {% button "Voir le bilan" icon="search" variant="ghost" %}
+    </form>
+    {% if error %}<p id="new-name-error" class="mb-4 text-red-800" role="alert">{{ error|nbsp_punct }}</p>{% endif %}
+
+    {% if new_name and not error %}
+        <form method="post" action="{% url 'core:project_rename' project.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="name" value="{{ new_name }}">
+
+            <section aria-labelledby="review-title" class="mb-4">
+                <h2 id="review-title" class="mb-2">{% filter nbsp_punct %}Bilan : « {{ project.name }} » devient « {{ new_name }} »{% endfilter %}</h2>
+
+                {% if occurrences %}
+                    <p class="mb-2 text-slate-600">{{ occurrences|length }} titre{{ occurrences|length|pluralize }} à réécrire dans les notes, tous : un titre gardé sous l'ancien nom recréerait l'ancien projet.</p>
+                    <ul class="divide-y divide-slate-200">
+                        {% for occurrence in occurrences %}
+                            <li class="py-2">
+                                <span class="font-medium">{{ occurrence.where }}</span>
+                                <code class="ml-2 text-sm text-slate-600"># {{ occurrence.chain }}</code>
+                                <a href="{{ occurrence.url }}" class="ml-2 text-sm">Voir la note</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Aucune note n'a de titre à ce nom : seul le projet est renommé.</p>
+                {% endif %}
+                {% if usage %}
+                    <p class="mt-2 text-slate-600">{% filter nbsp_punct %}Suivent le projet : {{ usage }}.{% endfilter %}</p>
+                {% endif %}
+            </section>
+
+            {% button "Renommer le projet" icon="edit" %}
+        </form>
+    {% endif %}
+{% endblock content %}

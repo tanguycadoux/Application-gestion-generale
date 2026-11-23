@@ -105,6 +105,17 @@ class SectionRenamer:
     rename: Callable[..., list[str]]
 
 
+@dataclass(frozen=True)
+class ProjectRenamer:
+    """Comment une app renomme un projet (#170) : `occurrences(projet)` liste ses
+    titres `#` écrits dans les notes, pour le bilan ; `rename(projet, ancien nom,
+    nouveau nom)` les réécrit tous et renvoie les phrases du compte rendu. Le projet
+    est déjà renommé en base quand `rename` est appelé."""
+
+    occurrences: Callable[..., list[HeadingOccurrence]]
+    rename: Callable[..., list[str]]
+
+
 DEBUG_SECTION_ORDER = 90
 
 
@@ -163,5 +174,12 @@ def section_usages() -> list[SectionUsage]:
 def section_renamers() -> list[SectionRenamer]:
     renamers = (
         getattr(config, "section_renamer", None) for config in apps.get_app_configs()
+    )
+    return [renamer for renamer in renamers if renamer]
+
+
+def project_renamers() -> list[ProjectRenamer]:
+    renamers = (
+        getattr(config, "project_renamer", None) for config in apps.get_app_configs()
     )
     return [renamer for renamer in renamers if renamer]

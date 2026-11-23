@@ -32,3 +32,24 @@ def project_for(name: str) -> tuple[Project, bool]:
     if found is not None:
         return found, False
     return Project.objects.create(name=clean_name(name)), True
+
+
+def check_new_project_name(project: Project, raw: str) -> tuple[str, str]:
+    """(nom nettoyé, erreur) pour renommer ce projet (#170) ; l'erreur est vide si
+    le nom convient. Un simple changement de casse est permis ; le nom d'un autre
+    projet ne l'est pas : réunir deux projets est un autre parcours."""
+    name = clean_name(raw)
+    longest = Project._meta.get_field("name").max_length or 200
+    if not name:
+        return name, "Écrivez le nouveau nom."
+    if len(name) > longest:
+        return name, f"Un nom de projet ne dépasse pas {longest} caractères."
+    if name == project.name:
+        return name, "C'est déjà son nom."
+    other = project_named(name, exclude=project.pk)
+    if other is not None:
+        return name, (
+            f"Un projet « {other.name} » existe déjà : renommer un projet avec le nom "
+            "d'un autre n'est pas possible depuis cette page."
+        )
+    return name, ""
