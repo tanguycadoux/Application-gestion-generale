@@ -175,7 +175,7 @@ Une note peut être :
 
 À chaque enregistrement, le contenu est analysé et découpé en *passages* (voir ci-dessous), et les tâches éventuelles sont générées.
 
-Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
+Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, liens vers des notes absentes, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
 
 ### Import de fichiers
 
@@ -362,10 +362,24 @@ Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages rest
 
 Chaque passage est lié aux images qu'il utilise (liens recalculés à chaque enregistrement de la note). Une image utilisée par une note ne peut pas être supprimée.
 
+### Liens entre notes
+
+Une note en cite une autre par un lien Markdown ordinaire vers son fichier, comme dans Quarto (#206) :
+
+```
+Voir [la réunion de lundi](2026-03-09.qmd), et son [ordre du jour](2026-03-09.qmd#ordre-du-jour).
+```
+
+L'ancre est l'identifiant d'un titre de la note citée, celui de Quarto (minuscules, espaces en tirets : `#ordre-du-jour`) ; c'est aussi celui de son plan dans l'application. Une fois exportées, les notes sont côte à côte à la racine de l'archive : Quarto fait du lien un lien vers la page `.html` de la note, sans rien changer.
+
+Dans l'application, le lien mène à la page de la note, à la section visée. Une note qui n'existe pas encore n'empêche pas l'enregistrement : le lien est signalé (souligné en pointillés, en rouge, avec une explication au survol) et mène à la création de la note à cette date ; l'enregistrement le rappelle. Un lien écrit dans du code n'est pas un lien. Dans l'éditeur, `](` propose les notes existantes, les plus récentes d'abord (`AAAA-MM-JJ.qmd`).
+
+La page d'une note liste, sous son texte, les notes qui la **citent** (#207) : pour chaque passage qui contient un lien vers elle, la note, le projet et le chemin du passage, la ligne du lien, et un lien vers ce passage. Ces liens sont recalculés à chaque enregistrement (et par `reprocess_notes`) ; un lien vers une note à venir est gardé, et la note le voit dès sa création.
+
 ### Fonctionnalités
 
 - liste des notes (`/notes/list/`), triable par date et filtrable par date ou par un ou plusieurs projets, cochés dans une liste repliable où l'on peut chercher (#178) : tri et filtres sont dans l'adresse (`?sort=-date&project=ASTERICS&project=PDS1&date_from=2025-11-01`) et s'ouvrent depuis les en-têtes de colonne, sans JavaScript ;
-- page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
+- page d'une note (`/notes/<AAAA-MM-JJ>/`) : le texte de la note **tel qu'écrit**, dans l'ordre, avec le texte placé avant le premier titre et les tags des blocs `{.metadata}` en pastilles (`todo: true` donne la pastille `TODO`), puis les notes qui la citent (#207) ; le résultat de l'analyse en JSON reste à `/notes/<AAAA-MM-JJ>/json/` (lien dans la section de debug, #235),
 - recherche des passages (`/notes/search/?q=…`, l'adresse se partage) dans une seule zone de texte : `banc thermique` (tous les mots, casse et accents ignorés, au singulier comme au pluriel pour un mot de 5 lettres ou plus : `thermique` trouve aussi « thermiques », mais `mot` ne trouve pas « mots », #372), `"phrase exacte"` (telle qu'écrite : le singulier ne trouve pas le pluriel), `therm*`, `-brouillon`, `projet:Alpha`, `chemin:Réunion/Préparation` (niveaux dessous compris, au singulier comme au pluriel : `chemin:"calcul thermique"` trouve « Calculs thermiques »), `tag:urgent`, `-tag:fini`, `date:2026-10` ou `date:2026-09..2026-10`, `sans:projet` (le texte sans projet, écrit avant le premier titre `#`, #385 ; `-sans:projet` le retire) ; une aide de syntaxe est sur la page ; elle dit ce qu'est un passage, et que tous les mots sont cherchés dans le même passage. Le décompte dit « 3 passages dans 2 notes » (#362). Les résultats sont groupés par note, avec l'extrait où les mots trouvés sont surlignés et un lien vers la section et le chemin au-dessus de chaque résultat. Une vue « Document » (`?view=document`) assemble les résultats en un texte rendu comme une note, regroupé par date ou par chemin (`?group=date` ou `path`). Ses titres sont ceux des niveaux, sous leur nom en base : un niveau écrit de plusieurs façons dans les notes (« Réunion de Chantier », « Réunion  de chantier ») ne fait qu'un groupe, et deux projets qui ne diffèrent que par la casse (« Chantier Nord », « Chantier nord ») restent deux groupes, jamais mêlés (#369). Les cases de projets et l'arbre des chemins (avec le nombre de passages par niveau, « (12) », qu'une ligne sous le titre « Projets et chemins » explique et qui se lit « 12 passages » au survol et avec un lecteur d'écran) s'ajoutent à la zone de texte ; sous l'arbre, une case « Sans projet » garde le texte sans projet, avec son compteur (#385),
 - recherches enregistrées (#203) : une requête gardée sous un nom (nom unique, casse et accents ignorés), relancée d'un clic, renommée ou supprimée depuis la page de recherche ; le texte de la zone est gardé avec les cases cochées de l'arbre (#380), « Sans projet » comprise (#385),
 - suppression d'une note.
