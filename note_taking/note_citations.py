@@ -9,6 +9,7 @@ from django.utils.text import Truncator
 
 from .models import Note, Passage, PassageNoteLink
 from .qmd.links import NOTE_LINK_REGEX, without_code
+from .qmd.parser import HEADING_SEPARATOR
 
 # Longueur de l'extrait, en caractères, points de suspension compris.
 EXCERPT_LENGTH = 160
@@ -26,6 +27,14 @@ class Citation:
     # Adresse du passage qui cite : la page de sa note, à l'ancre de son titre.
     url: str
     excerpt: str
+
+    @property
+    def path(self) -> str:
+        """Les titres du passage sous son projet, affiché à part : « Réunion ›
+        Ordre du jour »."""
+        return HEADING_SEPARATOR.join(
+            self.passage.heading_path.split(HEADING_SEPARATOR)[1:]
+        )
 
 
 def excerpt(content: str, day: str) -> str:

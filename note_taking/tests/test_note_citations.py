@@ -84,6 +84,7 @@ class CitationsTests(TestCase):
                 ("2026-03-13", "Alpha › Suivi", "Voir la veille."),
             ],
         )
+        self.assertEqual([c.path for c in found], ["", "Suivi"])
         self.assertEqual(
             found[1].url,
             reverse("note_taking:note_detail", args=["2026-03-13"]) + "#suivi",
@@ -123,7 +124,10 @@ class CitationsTests(TestCase):
 class CitationsPageTests(TestCase):
     def test_liste_sur_la_page(self):
         cited = note("2026-03-12", "# P\nx")
-        note("2026-03-13", "# Alpha\n## Suivi\nVoir [la veille](2026-03-12.qmd).")
+        note(
+            "2026-03-13",
+            "# Alpha\n## Suivi\n### Bilan\nVoir [la veille](2026-03-12.qmd).",
+        )
 
         response = self.client.get(
             reverse("note_taking:note_detail", args=[cited.date])
@@ -131,11 +135,24 @@ class CitationsPageTests(TestCase):
 
         self.assertContains(response, "Citée par")
         self.assertContains(response, "Voir la veille.")
-        self.assertContains(response, "Alpha › Suivi")
+        # Le projet en pastille, puis le chemin sous le projet.
+        self.assertContains(response, '<span class="self-baseline">Alpha</span>')
+        self.assertContains(response, "Suivi › Bilan")
+        self.assertNotContains(response, "Alpha › Suivi")
         self.assertContains(
             response,
-            f'href="{reverse("note_taking:note_detail", args=["2026-03-13"])}#suivi"',
+            f'href="{reverse("note_taking:note_detail", args=["2026-03-13"])}#bilan"',
         )
+
+    def test_texte_sans_projet(self):
+        cited = note("2026-03-12", "# P\nx")
+        note("2026-03-13", "[la veille](2026-03-12.qmd)")
+
+        response = self.client.get(
+            reverse("note_taking:note_detail", args=[cited.date])
+        )
+
+        self.assertContains(response, "Sans projet, début de la note")
 
     def test_rien_sans_citation(self):
         cited = note("2026-03-12", "# P\nx")
