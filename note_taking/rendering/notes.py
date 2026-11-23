@@ -15,11 +15,14 @@ from .images import (
     resolve_image_paths,
     resolve_image_refs,
 )
+from .note_links import resolve_note_links
 
 
 def render_passage(content: str) -> str:
-    return number_floats(
-        render_markdown(remote_images_as_links(resolve_image_refs(content)))
+    return resolve_note_links(
+        number_floats(
+            render_markdown(remote_images_as_links(resolve_image_refs(content)))
+        )
     )
 
 
@@ -28,12 +31,15 @@ def render_note_body(body: str, heading_ids: bool = False) -> str:
 
     Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
     a son propre h1. Les blocs `{.metadata}` s'affichent en pastilles ; les
-    tableaux et figures sont numérotés (`number_floats`). Avec `heading_ids`,
-    chaque titre reçoit son identifiant (`add_heading_ids`), pour qu'un lien
-    mène à sa section (#201).
+    tableaux et figures sont numérotés (`number_floats`), les liens vers
+    d'autres notes mènent à leur page (`resolve_note_links`, #206). Avec
+    `heading_ids`, chaque titre reçoit son identifiant (`add_heading_ids`), pour
+    qu'un lien mène à sa section (#201).
     """
-    html = number_floats(
-        render_markdown(remote_images_as_links(resolve_image_paths(body)))
+    html = resolve_note_links(
+        number_floats(
+            render_markdown(remote_images_as_links(resolve_image_paths(body)))
+        )
     )
     html = HEADING_TAG_REGEX.sub(shift_heading, html)
     return add_heading_ids(html) if heading_ids else html

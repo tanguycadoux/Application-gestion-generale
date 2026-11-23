@@ -3,24 +3,28 @@ et les anciennes adresses par id (#273)."""
 
 from django.contrib import messages
 from django.db.models import Prefetch
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
-from core.dates import parse_date_param
+from core.dates import date_text, parse_date_param
 from core.exceptions import AppError
 
 from .. import note_table
 from ..forms import NewNoteForm
 from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
+from ..note_citations import citations
 from ..note_outline import outline_sections
 from ..rendering import render_note_body
 from ..services import process_passages
-from .common import next_page, note_name, warnings_message
+from .common import next_page, note_name, save_warnings
+
+# Nombre de notes proposées par l'éditeur après `](` (#206).
+SUGGESTED_NOTES = 20
 
 
 def index(request):
@@ -49,6 +53,8 @@ class NoteDetail(DetailView):
         layout = outline_sections(render_note_body(self.object.body, heading_ids=True))
         context["content"] = layout.html
         context["outline"] = layout.entries
+        # Les notes qui citent celle-ci (#207).
+        context["citations"] = citations(self.object)
         return context
 
 
@@ -130,8 +136,7 @@ def save_passages(request, note: Note, done: str, *, stay: bool = False) -> str:
         )
     else:
         messages.success(request, f"{note_name(note)} est {done}.")
-        if note.warnings:
-            messages.warning(request, warnings_message(note.warnings))
+        save_warnings(request, note)
     if stay:
         for follow_up in note.follow_ups:
             messages.warning(
@@ -212,6 +217,32 @@ def edit_note(request, note_date):
         form = NewNoteForm(instance=note)
 
     return render(request, "note_taking/note_edit.html", {"form": form, "note": note})
+
+
+@require_GET
+def note_suggestions(request):
+    """Les notes, pour les liens de l'éditeur (#206) : le fichier à écrire après
+    `](` et la date en texte, les plus récentes d'abord ; `?q=` garde celles dont la
+    date commence ainsi (`2026-03`)."""
+    query = request.GET.get("q", "").strip()
+    days = [
+        day
+        for day in Note.objects.order_by("-date").values_list("date", flat=True)
+        if day.isoformat().startswith(query)
+    ][:SUGGESTED_NOTES]
+    return JsonResponse(
+        {
+            "results": [
+                {
+                    "date": day.isoformat(),
+                    # Sans extension : l'export l'ajoute pour Quarto (#206).
+                    "reference": day.isoformat(),
+                    "label": date_text(day, "long"),
+                }
+                for day in days
+            ]
+        }
+    )
 
 
 @require_POST

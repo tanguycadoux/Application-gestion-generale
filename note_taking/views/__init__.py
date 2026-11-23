@@ -27,6 +27,7 @@ from .notes import (
     index,
     new_note,
     note_by_id,
+    note_suggestions,
     note_today,
 )
 from .saved_searches import (
@@ -57,6 +58,7 @@ __all__ = [
     "new_note",
     "note_by_id",
     "note_json",
+    "note_suggestions",
     "note_today",
     "notes_search",
     "rename_saved_search",

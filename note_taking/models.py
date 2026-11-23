@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 
 from core.models import Project, Section, Tag
@@ -19,6 +21,8 @@ class Note(models.Model):
     # Avertissements de l'analyse au dernier recalcul : texte sans projet (#385),
     # titres qui sautent un niveau ou sans projet (#305).
     warnings: tuple[str, ...] = ()
+    # Dates des notes absentes que la note cite au dernier recalcul (#206).
+    missing_links: tuple[datetime.date, ...] = ()
 
     def __str__(self):
         return f"{self.date}"
@@ -131,6 +135,33 @@ class PassageImageLink(models.Model):
 
     def __str__(self):
         return f"{self.passage} → {self.image}"
+
+
+class PassageNoteLink(models.Model):
+    """Lien d'un passage vers une note (#207) : `[texte](AAAA-MM-JJ.qmd#ancre)`.
+
+    Recalculé avec les passages, comme les liens vers les images. La note citée est
+    désignée par sa date, pas par une clé : un lien vers une note qui n'existe pas
+    encore est gardé, et la note, une fois créée, voit qui la cite.
+    """
+
+    passage = models.ForeignKey(
+        Passage, on_delete=models.CASCADE, related_name="note_links"
+    )
+    target_date = models.DateField("date de la note citée", db_index=True)
+    # Identifiant d'un titre de la note citée ; vide pour la note entière.
+    anchor = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["passage", "target_date", "anchor"],
+                name="unique_passage_note_link",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.passage} → {self.target_date}"
 
 
 class SavedSearch(models.Model):

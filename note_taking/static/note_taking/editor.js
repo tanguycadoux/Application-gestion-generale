@@ -131,9 +131,14 @@ function mountEditor(textarea) {
     }
 
     // Adresses des listes de suggestions (#90), sur le formulaire.
-    const { projectsUrl, sectionsUrl, imagesUrl } = textarea.form.dataset;
+    const { projectsUrl, sectionsUrl, imagesUrl, notesUrl } = textarea.form.dataset;
     const suggest = projectsUrl && sectionsUrl && imagesUrl
-        ? suggestions({ projects: projectsUrl, sections: sectionsUrl, images: imagesUrl })
+        ? suggestions({
+            projects: projectsUrl,
+            sections: sectionsUrl,
+            images: imagesUrl,
+            notes: notesUrl,
+        })
         : [];
     let outline;
     const view = new EditorView({

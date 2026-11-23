@@ -16,7 +16,7 @@ from .. import importing
 from ..models import Note
 from ..qmd.export import write_note_archive, write_notes_archive
 from ..services import update_note_from_source_file
-from .common import next_page, note_name, warnings_message
+from .common import next_page, note_name, save_warnings
 
 
 @require_POST
@@ -43,8 +43,7 @@ def update_source_file(request, note_date):
             messages.error(request, f"Erreur lors de la mise à jour de la note : {e}")
         else:
             messages.success(request, f"{note_name(note)} est modifiée.")
-            if note.warnings:
-                messages.warning(request, warnings_message(note.warnings))
+            save_warnings(request, note)
     return redirect(next_page(note))
 
 
