@@ -3,14 +3,14 @@ et les anciennes adresses par id (#273)."""
 
 from django.contrib import messages
 from django.db.models import Prefetch
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
-from core.dates import parse_date_param
+from core.dates import date_text, parse_date_param
 from core.exceptions import AppError
 
 from .. import note_table
@@ -22,6 +22,9 @@ from ..note_outline import outline_sections
 from ..rendering import render_note_body
 from ..services import process_passages
 from .common import next_page, note_name, save_warnings
+
+# Nombre de notes proposées par l'éditeur après `](` (#206).
+SUGGESTED_NOTES = 20
 
 
 def index(request):
@@ -214,6 +217,31 @@ def edit_note(request, note_date):
         form = NewNoteForm(instance=note)
 
     return render(request, "note_taking/note_edit.html", {"form": form, "note": note})
+
+
+@require_GET
+def note_suggestions(request):
+    """Les notes, pour les liens de l'éditeur (#206) : le fichier à écrire après
+    `](` et la date en texte, les plus récentes d'abord ; `?q=` garde celles dont la
+    date commence ainsi (`2026-03`)."""
+    query = request.GET.get("q", "").strip()
+    days = [
+        day
+        for day in Note.objects.order_by("-date").values_list("date", flat=True)
+        if day.isoformat().startswith(query)
+    ][:SUGGESTED_NOTES]
+    return JsonResponse(
+        {
+            "results": [
+                {
+                    "date": day.isoformat(),
+                    "reference": f"{day.isoformat()}.qmd",
+                    "label": date_text(day, "long"),
+                }
+                for day in days
+            ]
+        }
+    )
 
 
 @require_POST

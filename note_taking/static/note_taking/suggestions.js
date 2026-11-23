@@ -1,7 +1,8 @@
 // Suggestions de l'éditeur (#91, #92) : en tapant, l'éditeur propose ce qui existe.
 //   `# `        -> les projets ;
 //   `## ` ...   -> les niveaux du chemin, sous le projet et les titres déjà écrits ;
-//   `![`        -> les images, avec leur vignette (insère `![](images/nom)`).
+//   `![`        -> les images, avec leur vignette (insère `![](images/nom)`) ;
+//   `](`        -> les notes, les plus récentes d'abord (insère `AAAA-MM-JJ.qmd`, #206).
 // Les listes viennent des vues JSON de #90 (adresses sur le formulaire) ; rien n'est
 // créé ici : un nom nouveau se tape tel quel et se crée à l'enregistrement.
 import {
@@ -152,6 +153,33 @@ function imageSource(urls) {
     };
 }
 
+// Lien vers une note (#206) en cours d'écriture : [texte](2026-03 ; pas une image.
+const NOTE_LINK_TRIGGER = /(!?)\[[^\]\n]*\]\(([\d-]*)$/;
+
+function noteSource(urls) {
+    return async (context) => {
+        if (!urls.notes) return null;
+        const before = context.state.sliceDoc(
+            context.state.doc.lineAt(context.pos).from,
+            context.pos,
+        );
+        const typed = NOTE_LINK_TRIGGER.exec(before);
+        if (!typed || typed[1]) return null;
+        const data = await fetchResults(urls.notes, { q: typed[2] }, context);
+        const results = data?.results;
+        if (!results?.length) return null;
+        return {
+            from: context.pos - typed[2].length,
+            filter: false,
+            // AAAA-MM-JJ.qmd : le lien que Quarto suit aussi, une fois exporté.
+            options: results.map((note) => ({
+                label: note.reference,
+                detail: note.label,
+            })),
+        };
+    };
+}
+
 function thumbnail(completion) {
     if (!completion.thumbnail) return null;
     const img = document.createElement("img");
@@ -170,13 +198,13 @@ function acceptWithTab(view) {
     return acceptCompletion(view);
 }
 
-/** Extensions de CodeMirror ; `urls` : adresses des trois listes (#90). */
+/** Extensions de CodeMirror ; `urls` : adresses des listes (#90, notes #206). */
 export function suggestions(urls) {
     return [
         EditorState.phrases.of(phrases),
         Prec.highest(keymap.of([{ key: "Tab", run: acceptWithTab }])),
         autocompletion({
-            override: [titleSource(urls), imageSource(urls)],
+            override: [titleSource(urls), imageSource(urls), noteSource(urls)],
             // Rien n'est choisi tant qu'on n'a pas pris les flèches : Entrée écrit un
             // nom nouveau en passant à la ligne, sans accepter une suggestion.
             selectOnOpen: false,
