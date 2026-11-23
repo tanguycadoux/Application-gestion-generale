@@ -86,8 +86,9 @@ class FindHeadingsTests(SimpleTestCase):
 
         self.assertEqual(self.numbers(body, ["S"], project="Q"), [4])
 
-    def test_nom_du_projet_a_la_casse_exacte(self):
-        self.assertEqual(self.numbers("# p\n## S", ["S"], project="P"), [])
+    def test_nom_du_projet_sans_la_casse(self):
+        """Un nom de projet ignore la casse, comme un niveau (#374)."""
+        self.assertEqual(self.numbers("# p\n## S", ["S"], project="P"), [2])
 
     def test_aucun_titre(self):
         self.assertEqual(self.numbers("# P\n## S", ["X"]), [])
