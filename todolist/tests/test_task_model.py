@@ -96,6 +96,7 @@ class SectionAndProjectTests(TestCase):
                 "progress",
                 "priority",
                 "due_date",
+                "no_due_date",
                 "project",
                 "section_path",
                 "tags",
