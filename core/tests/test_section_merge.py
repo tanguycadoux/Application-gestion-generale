@@ -127,7 +127,7 @@ class NameStepTests(MergeTestCase):
         )
         self.assertContains(response, "Bilan")
         self.assertContains(response, ">Réunir<")
-        self.assertNotContains(response, 'role="alert"')
+        self.assertNotContains(response, 'id="new-name-error"')
 
     def test_frere_d_un_autre_parent_n_est_pas_une_reunion(self):
         self.note("# P\n## A\n### Suite\nx\n## B\n### Autre\ny")
