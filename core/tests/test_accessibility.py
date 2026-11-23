@@ -34,10 +34,30 @@ class HomeTitleTests(TestCase):
 
     def test_titre_d_onglet_egal_au_titre_de_page(self):
         for name, title in (
-            ("note_taking:index", "Gestion des notes"),
-            ("todolist:index", "Gestion des tâches"),
+            ("note_taking:index", "Calendrier des notes"),
+            ("todolist:index", "Calendrier des tâches"),
         ):
             with self.subTest(page=name):
                 html = self.client.get(reverse(name)).content.decode()
                 self.assertIn(f"<title>{title}</title>", html)
                 self.assertRegex(html, rf"<h1[^>]*>{title}</h1>")
+
+    def test_titre_correspond_a_l_entree_du_menu_marquee(self):
+        """#378 : le titre dit ce que montre la page, et c'est l'entrée du menu
+        marquée `aria-current`, dans sa section (« Notes › Calendrier »)."""
+        for name, section, title in (
+            ("note_taking:index", "Notes", "Calendrier des notes"),
+            ("todolist:index", "Tâches", "Calendrier des tâches"),
+        ):
+            with self.subTest(page=name):
+                html = self.client.get(reverse(name)).content.decode()
+                nav = html[html.index('id="main-nav"') : html.index("</nav>")]
+                current = re.search(r'<a [^>]*aria-current="page"[^>]*>', nav)
+                assert current is not None
+                self.assertIn('aria-label="Calendrier"', current.group())
+                before = nav[: current.start()]
+                headings = re.findall(
+                    r'<p id="nav-section-\d+"[^>]*>([^<]*)</p>', before
+                )
+                self.assertEqual(headings[-1], section)
+                self.assertEqual(title, f"Calendrier des {section.lower()}")

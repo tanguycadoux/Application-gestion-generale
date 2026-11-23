@@ -43,13 +43,16 @@
                         {% date_time note.date "court" %}
                     </a></th>
                     <td class="px-[.2rem] py-[.4rem] first:pl-[.4rem] last:pr-[.4rem]">
-                        {% if note.projects %}
-                            <ul class="m-0 flex h-fit list-none gap-[.4rem] p-0">
-                                {% for project in note.projects %}
-                                    <li>{{ project }}</li>    
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                        {# Une pastille par projet, bien séparées (#378) ; le texte sans projet n'en a pas. #}
+                        {% with projects=note.projects %}
+                            {% if projects %}
+                                <ul class="m-0 flex h-fit list-none flex-wrap gap-x-3 gap-y-1 p-0">
+                                    {% for project in projects %}
+                                        <li>{% project_badge project %}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        {% endwith %}
                     </td>
                 </tr>
             {% empty %}

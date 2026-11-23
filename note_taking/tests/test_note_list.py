@@ -1,5 +1,7 @@
 """Le tableau des notes : tri et filtres dans l'URL, par les composants communs (#178)."""
 
+import re
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -246,3 +248,45 @@ class MultiProjectFilterTests(NoteListTestCase):
         response = self.get()
 
         self.assertContains(response, "core/table_filters.js")
+
+
+class NoteListProjectBadgesTests(TestCase):
+    """Colonne « Projets » : une pastille par projet, séparées (#378)."""
+
+    def cell(self, day: str) -> str:
+        html = self.client.get(reverse("note_taking:notes_list")).content.decode()
+        row = html[html.index(f'datetime="{day}"') :]
+        return row[row.index("<td") : row.index("</td>")]
+
+    def test_une_pastille_de_couleur_par_projet(self):
+        make_note("2025-11-25", "Chantier Nord", "Chantier Sud")
+        colors = dict(Project.objects.values_list("name", "color"))
+
+        cell = self.cell("2025-11-25")
+
+        items = re.findall(r"<li[^>]*>(.*?)</li>", cell, re.DOTALL)
+        self.assertEqual(len(items), 2)
+        for item, name in zip(items, ["Chantier Nord", "Chantier Sud"], strict=True):
+            self.assertIn(f">{name}</span>", item)
+            self.assertIn(f"bg-{colors[name]}-500", item)
+
+    def test_projets_separes_visiblement(self):
+        make_note("2025-11-25", "Chantier Nord", "Chantier Sud")
+
+        cell = self.cell("2025-11-25")
+
+        self.assertRegex(cell, r'<ul class="[^"]*\bgap-x-3\b')
+
+    def test_texte_sans_projet_sans_pastille_vide(self):
+        note = Note.objects.create(date="2025-11-25", body="vite\n# Alpha\ntexte")
+        process_passages(note)
+
+        cell = self.cell("2025-11-25")
+
+        self.assertEqual(len(re.findall(r"<li", cell)), 1)
+        self.assertIn(">Alpha</span>", cell)
+
+    def test_note_sans_projet_sans_liste(self):
+        make_note("2025-11-25")
+
+        self.assertNotIn("<li", self.cell("2025-11-25"))

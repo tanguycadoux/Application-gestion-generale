@@ -156,9 +156,87 @@ class NoteReviewForm(SectionPathForm):
 NoteReviewFormSet = modelformset_factory(Task, form=NoteReviewForm, extra=0)
 
 
+PATH_SEPARATOR = " › "
+
+
+def same_text(text: str) -> str:
+    """Texte d'une ligne comparé sans casse ni blancs en trop (#382)."""
+    return " ".join(text.split()).casefold()
+
+
+def path_levels(path: str) -> list[str]:
+    return path.split(PATH_SEPARATOR) if path else []
+
+
+def common_ends(old: list[str], new: list[str]) -> tuple[int, int]:
+    """Nombre de niveaux communs au début, puis à la fin, de deux chemins."""
+    shortest = min(len(old), len(new))
+    start = 0
+    while start < shortest and old[start] == new[start]:
+        start += 1
+    end = 0
+    while end < shortest - start and old[-1 - end] == new[-1 - end]:
+        end += 1
+    return start, end
+
+
+def same_text_replacements(gone, new) -> dict[int, Task]:
+    """Pour chaque tâche dont la ligne a disparu, la nouvelle tâche de même texte
+    à proposer en remplacement (#382), par clé de la tâche disparue.
+
+    Une nouvelle tâche n'est proposée qu'une fois. Entre plusieurs de même texte,
+    celle dont le chemin a le plus de niveaux communs avec l'ancien, à la fin
+    puis au début : un titre renommé au-dessus de deux lignes de même texte.
+    """
+    free = list(new)
+    proposals: dict[int, Task] = {}
+    for task in gone:
+        text = same_text(task.note_line_text)
+        candidates = [t for t in free if same_text(t.note_line_text) == text]
+        if not candidates:
+            continue
+        levels = path_levels(task.note_path)
+
+        def closeness(other: Task, levels=levels) -> tuple[int, int]:
+            start, end = common_ends(levels, path_levels(other.note_path))
+            return end, start
+
+        best = max(candidates, key=closeness)
+        proposals[task.pk] = best
+        free.remove(best)
+    return proposals
+
+
+def path_changes(old: str, new: str) -> tuple[list, list]:
+    """Niveaux de l'ancien et du nouveau chemin, chacun en couple (niveau, changé) :
+    à même profondeur, niveau par niveau ; sinon, ce qui reste commun au début et à
+    la fin n'a pas changé (#382)."""
+    old_levels, new_levels = path_levels(old), path_levels(new)
+    if not new_levels:
+        return [(level, False) for level in old_levels], []
+    if len(old_levels) == len(new_levels):
+        return (
+            [(o, o != n) for o, n in zip(old_levels, new_levels, strict=True)],
+            [(n, o != n) for o, n in zip(old_levels, new_levels, strict=True)],
+        )
+    start, end = common_ends(old_levels, new_levels)
+
+    def marked(levels: list[str]) -> list[tuple[str, bool]]:
+        return [
+            (level, start <= index < len(levels) - end)
+            for index, level in enumerate(levels)
+        ]
+
+    return marked(old_levels), marked(new_levels)
+
+
 class GoneLineForm(forms.ModelForm):
     """Ligne du bilan d'une tâche dont la ligne a disparu de la note (#240) : la
-    garder, l'écarter, ou la remplacer par la tâche d'une nouvelle ligne."""
+    garder, l'écarter, ou la remplacer par la tâche d'une nouvelle ligne.
+
+    Une nouvelle tâche de même texte (`proposed`, #382), le plus souvent après un
+    titre renommé au-dessus de la ligne, est choisie d'avance en remplacement.
+    """
 
     ACTIONS = [
         ("keep", "La garder"),
@@ -172,19 +250,28 @@ class GoneLineForm(forms.ModelForm):
         queryset=Task.objects.none(),
         required=False,
         empty_label="—",
+        # Pleine largeur de sa colonne : un long chemin ne pousse pas le tableau
+        # hors de la page, l'option choisie est coupée (#382).
+        widget=forms.Select(attrs={"class": "w-full"}),
     )
 
     class Meta:
         model = Task
         fields: list[str] = []
 
-    def __init__(self, *args, replacements=None, **kwargs):
+    def __init__(self, *args, replacements=None, proposed=None, **kwargs):
         super().__init__(*args, **kwargs)
         if replacements is not None:
             self.fields["replacement"].queryset = replacements
         # Le titre seul est ambigu : le chemin dit où est la ligne dans la note.
         self.fields["replacement"].label_from_instance = lambda task: " › ".join(
             part for part in (task.note_path, task.note_line_text) if part
+        )
+        if proposed is not None:
+            self.initial |= {"action": "replace", "replacement": proposed.pk}
+        # Ancien chemin, et en face celui de la tâche de même texte (#382).
+        self.old_path, self.new_path = path_changes(
+            self.instance.note_path, proposed.note_path if proposed else ""
         )
 
     def clean(self):
@@ -197,6 +284,20 @@ class GoneLineForm(forms.ModelForm):
 
 
 class BaseGoneLineFormSet(forms.BaseModelFormSet):
+    proposals: dict[int, Task] | None = None
+
+    def get_form_kwargs(self, index):
+        """Chaque tâche disparue reçoit la nouvelle tâche de même texte (#382)."""
+        kwargs = super().get_form_kwargs(index)
+        gone = self.get_queryset()
+        if index is not None and index < len(gone):
+            if self.proposals is None:
+                self.proposals = same_text_replacements(
+                    gone, kwargs.get("replacements") or []
+                )
+            kwargs["proposed"] = self.proposals.get(gone[index].pk)
+        return kwargs
+
     def clean(self):
         super().clean()
         chosen = [
