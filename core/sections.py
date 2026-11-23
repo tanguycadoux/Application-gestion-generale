@@ -7,6 +7,7 @@ ce texte : les titres donnent directement les niveaux.
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass, field
 
 from .models import Project, Section
 from .names import similar_key
@@ -174,8 +175,8 @@ def sibling_named(section: Section, name: str) -> Section | None:
 
 def check_new_name(section: Section, raw: str) -> tuple[str, str]:
     """(nom nettoyé, erreur) pour renommer ce niveau ; l'erreur est vide si le nom
-    convient. Un simple changement de casse est permis ; un nom déjà pris sous le
-    même parent est refusé (la fusion est un autre sujet)."""
+    convient. Un simple changement de casse est permis ; le nom d'un niveau frère
+    aussi : les deux niveaux sont alors réunis (`sibling_named`, #373)."""
     name = " ".join(raw.split())
     longest = Section._meta.get_field("name").max_length or 200
     if not name:
@@ -184,12 +185,73 @@ def check_new_name(section: Section, raw: str) -> tuple[str, str]:
         return name, f"Un niveau ne dépasse pas {longest} caractères."
     if name == section.name:
         return name, "C'est déjà son nom."
-    if sibling_named(section, name):
-        return name, (
-            f"Un niveau « {name} » existe déjà à cet endroit : la fusion de deux "
-            "niveaux n'est pas encore possible."
-        )
     return name, ""
+
+
+@dataclass
+class MergePlan:
+    """Ce que la réunion d'un niveau avec un frère entraîne dessous (#373), en
+    chemins relatifs au niveau gardé (« Préparation › Ordre du jour »)."""
+
+    # Sous-niveaux de même nom (casse ignorée) des deux côtés : réunis, sous le nom
+    # du niveau gardé.
+    joined: list[str] = field(default_factory=list)
+    # Sous-niveaux sans homonyme : ils passent sous le niveau gardé.
+    moved: list[str] = field(default_factory=list)
+    # Parmi ceux-là, ceux qui ont un nom proche à leur nouvelle place (#374) :
+    # (sous-niveau déplacé, niveau proche), à réunir ensuite.
+    close: list[tuple[str, str]] = field(default_factory=list)
+
+
+def merge_plan(gone: Section, keep: Section) -> MergePlan:
+    """Le bilan de `merge_section(gone, keep)`, sans rien écrire."""
+    plan = MergePlan()
+
+    def walk(gone: Section, keep: Section, prefix: list[str]) -> None:
+        keep_children = list(keep.children.all())
+        for child in gone.children.order_by("name"):
+            twin = _known_child(keep.project, keep, child.name)
+            if twin is not None:
+                plan.joined.append(LABEL_SEPARATOR.join([*prefix, twin.name]))
+                walk(child, twin, [*prefix, twin.name])
+                continue
+            plan.moved.append(LABEL_SEPARATOR.join([*prefix, child.name]))
+            plan.close += [
+                (
+                    LABEL_SEPARATOR.join([*prefix, child.name]),
+                    LABEL_SEPARATOR.join([*prefix, other.name]),
+                )
+                for other in similar_siblings(child, keep_children)
+            ]
+
+    walk(gone, keep, [])
+    return plan
+
+
+def merge_section(gone: Section, keep: Section) -> None:
+    """`gone` rejoint son frère `keep` (#373) : ce qui l'utilise (lu sur le modèle,
+    comme `forget_unused_sections`) passe à `keep`, ses sous-niveaux de même nom
+    (casse ignorée) sont réunis à leur tour, les autres passent sous `keep`. Le
+    niveau gardé garde son nom ; `gone` est supprimé."""
+    for child in list(gone.children.all()):
+        twin = _known_child(keep.project, keep, child.name)
+        if twin is None:
+            child.parent = keep
+            child.save(update_fields=["parent"])
+        else:
+            merge_section(child, twin)
+    for relation in Section._meta.related_objects:
+        if relation.related_model is Section:
+            continue
+        name = relation.field.name
+        related = relation.related_model._base_manager
+        if relation.one_to_many:
+            related.filter(**{name: gone}).update(**{name: keep})
+        elif relation.many_to_many:
+            for obj in related.filter(**{name: gone}):
+                getattr(obj, name).remove(gone)
+                getattr(obj, name).add(keep)
+    gone.delete()
 
 
 def parent_map() -> dict[int, int | None]:

@@ -18,7 +18,13 @@ from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
 from .section_tree import section_tree
-from .sections import check_new_name, levels
+from .sections import (
+    check_new_name,
+    levels,
+    merge_plan,
+    merge_section,
+    sibling_named,
+)
 from .suggestions import elsewhere_suggestions as find_elsewhere
 from .suggestions import project_suggestions as find_projects
 from .suggestions import section_suggestions as find_sections
@@ -171,6 +177,11 @@ def rename_section(request, pk, section_pk):
 
     Le niveau est renommé en place si tous ses titres le sont (ses descendants et les
     tâches qui le portent le suivent) ; sinon l'ancien et le nouveau coexistent.
+
+    Le nom d'un niveau frère (casse ignorée) **réunit** les deux niveaux (#373), dans
+    le même parcours : le niveau gardé est celui qui existait (son nom, sa casse),
+    les titres sont réécrits à son nom ; si tous le sont, le niveau renommé le
+    rejoint en base (`merge_section`) avec ce qui l'utilise et ses sous-niveaux.
     """
     project = get_object_or_404(Project, pk=pk)
     section = get_object_or_404(Section, pk=section_pk, project=project)
@@ -187,6 +198,8 @@ def rename_section(request, pk, section_pk):
     if not raw_name or error:
         return render(request, "core/section_rename.html", context)
 
+    target = sibling_named(section, new_name)
+    written_name = target.name if target else new_name
     renamers = section_renamers()
     path = levels(section)
     occurrences = [
@@ -195,20 +208,27 @@ def rename_section(request, pk, section_pk):
         for occurrence in renamer.occurrences(project, path)
     ]
     if request.method != "POST":
-        context.update(new_name=new_name, occurrences=occurrences)
+        context.update(new_name=new_name, occurrences=occurrences, target=target)
+        if target:
+            row = next(r for r in section_tree(project) if r.section.pk == section.pk)
+            context.update(plan=merge_plan(section, target), usage=row.usage)
         return render(request, "core/section_rename.html", context)
 
     chosen = request.POST.getlist("headings")
     try:
         with transaction.atomic():
             if {occurrence.key for occurrence in occurrences} <= set(chosen):
-                # Tous renommés : le niveau l'est en place, avec ce qui le porte.
-                section.name = new_name
-                section.save(update_fields=["name"])
+                if target:
+                    # Tous réécrits : le niveau rejoint son frère, avec ce qui le porte.
+                    merge_section(section, target)
+                else:
+                    # Tous renommés : le niveau l'est en place, avec ce qui le porte.
+                    section.name = new_name
+                    section.save(update_fields=["name"])
             report = [
                 sentence
                 for renamer in renamers
-                for sentence in renamer.rename(project, path, new_name, chosen)
+                for sentence in renamer.rename(project, path, written_name, chosen)
             ]
     except AppError as e:
         messages.error(request, str(e))
@@ -216,9 +236,13 @@ def rename_section(request, pk, section_pk):
             f"{reverse('core:section_rename', args=[pk, section_pk])}"
             f"?{urlencode({'name': new_name})}"
         )
+    done = (
+        f"est réuni avec « {written_name} »"
+        if target
+        else f"est renommé « {written_name} »"
+    )
     messages.success(
-        request,
-        f"Le niveau « {path[-1]} » est renommé « {new_name} ». {' '.join(report)}".strip(),
+        request, f"Le niveau « {path[-1]} » {done}. {' '.join(report)}".strip()
     )
     return redirect("core:project_paths", pk=pk)
 
