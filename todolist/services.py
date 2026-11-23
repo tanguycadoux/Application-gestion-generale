@@ -212,6 +212,36 @@ def renamed_identities(
     ]
 
 
+def follow_projects(note_date: date, old_body: str, new_body: str) -> None:
+    """Quand un titre `#` est réécrit, les tâches de ses passages passent au projet
+    du nouveau titre, et au niveau de même chemin sous ce projet (#170). Leur chemin
+    de ligne a déjà suivi (`move_tasks`). Un projet qui ne change que de casse est le
+    même (#374) : rien à faire."""
+    old = parse_note(str(note_date), old_body).passages
+    new = parse_note(str(note_date), new_body).passages
+    if len(old) != len(new):
+        return
+    for before, after in zip(old, new, strict=True):
+        if after.project is None or (
+            before.project is not None
+            and before.project.casefold() == after.project.casefold()
+        ):
+            continue
+        project = project_for(after.project)[0]
+        section = section_for(project, after.path)
+        paths = {
+            line.path
+            for line in lines_of(
+                HEADING_SEPARATOR.join(after.headings),
+                replace_image_paths("\n".join(after.lines))[0],
+                TODO_TAG in after.tags,
+            )
+        }
+        Task.all_objects.filter(
+            created_from_note=True, note_date=note_date, note_path__in=paths
+        ).update(project=project, section=section)
+
+
 def is_todo_passage(passage: Passage) -> bool:
     return any(tag.name == TODO_TAG for tag in passage.tags.all())
 

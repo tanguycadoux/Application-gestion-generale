@@ -12,6 +12,7 @@ from note_taking.signals import (
 from .models import Task
 from .services import (
     create_tasks_from_passage,
+    follow_projects,
     mark_gone_lines,
     move_tasks,
     note_lines,
@@ -44,3 +45,4 @@ def follow_renamed_headings(sender, note, old_body, new_body, **kwargs) -> None:
     ).exists():
         return
     move_tasks(note.date, renamed_identities(note.date, old_body, new_body))
+    follow_projects(note.date, old_body, new_body)

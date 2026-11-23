@@ -35,6 +35,11 @@ urlpatterns = [
     path("notes/<date:note_date>/", views.NoteDetail.as_view(), name="note_detail"),
     path("notes/<date:note_date>/export/", views.export_note, name="export_note"),
     path("notes/<date:note_date>/edit/", views.edit_note, name="edit_note"),
+    path(
+        "notes/<date:note_date>/project-rename/",
+        views.project_rename_review,
+        name="project_rename_review",
+    ),
     path("notes/<date:note_date>/delete/", views.delete_note, name="delete_note"),
     path(
         "notes/<date:note_date>/source/",

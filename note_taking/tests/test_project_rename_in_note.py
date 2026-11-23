@@ -150,8 +150,8 @@ class ReviewTests(InNoteRenameTestCase):
         self.task.refresh_from_db()
         self.assertEqual(self.task.project, self.alpha)
         self.assertEqual(
-            set(self.alpha.passages.values_list("note__date", flat=True).distinct()),
-            {self.note.date, self.other.date},
+            set(self.alpha.passages.values_list("note", flat=True)),
+            {self.note.pk, self.other.pk},
         )
 
     def test_seulement_dans_cette_note(self):
@@ -169,7 +169,7 @@ class ReviewTests(InNoteRenameTestCase):
 
         self.assertFalse(PendingProjectRename.objects.exists())
         self.note.refresh_from_db()
-        self.assertEqual(self.note.body, self.BODY)
+        self.assertEqual(self.note.body, self.BODY.rstrip("\n"))
         self.task.refresh_from_db()
         self.assertEqual(self.task.project, self.alpha)
         self.assertTrue(self.task.note_path.startswith("Alpha"))

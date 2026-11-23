@@ -6,6 +6,7 @@
 - `transfer` : import et export ;
 - `images` : pages et actions des images ;
 - `debug` : pages de développement (#235) ;
+- `project_renames` : bilan d'un titre de projet renommé dans une note (#170) ;
 - `common` : aides partagées (nom d'une note, avertissements, page suivante).
 
 Tout est réexporté ici : `urls.py` écrit `views.NoteDetail`.
@@ -30,6 +31,7 @@ from .notes import (
     note_suggestions,
     note_today,
 )
+from .project_renames import project_rename_review
 from .saved_searches import (
     create_saved_search,
     delete_saved_search,
@@ -61,6 +63,7 @@ __all__ = [
     "note_suggestions",
     "note_today",
     "notes_search",
+    "project_rename_review",
     "rename_saved_search",
     "update_source_file",
 ]

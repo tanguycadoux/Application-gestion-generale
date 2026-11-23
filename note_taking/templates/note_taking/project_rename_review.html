@@ -1,0 +1,55 @@
+{% extends "note_taking/base.html" %}
+{% load ui %}
+
+{% block title %}Projet renommé · Note du {{ note.date|date_text:"moyen" }}{% endblock title %}
+
+{% block content %}
+    {% url 'note_taking:note_detail' note.date as note_url %}
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">Projet renommé dans la note du {% date_time note.date "long" %}</h1>
+        {% button "Voir la note" icon="arrow_back" href=note_url variant="ghost" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">Un titre <code>#</code> de cette note a changé de nom. Le nom d'un projet est écrit dans chaque note qui en parle : choisir si le changement vaut pour toutes les notes, pour celle-ci seulement, ou pas du tout. Les tâches de la note ont suivi leur titre.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for row in rows %}
+            {% with item=row.pending %}
+                <fieldset class="mb-4 rounded-lg border border-slate-300 p-3">
+                    <legend class="px-1 font-medium">{% filter nbsp_punct %}« {{ item.old_name }} » devient « {{ item.new_name }} »{% endfilter %}</legend>
+                    <ul class="space-y-2">
+                        <li>
+                            <label class="flex items-start gap-2">
+                                <input type="radio" name="choice-{{ item.pk }}" value="everywhere" class="mt-1">
+                                <span>
+                                    <span class="font-medium">{% filter nbsp_punct %}Renommer le projet partout{% endfilter %}</span>
+                                    <span class="block text-sm text-slate-600">{% filter nbsp_punct %}« {{ item.old_name }} » prend le nom « {{ item.new_name }} », avec sa couleur, ses niveaux et ses tâches ; {% if row.others %}son titre est réécrit dans {{ row.others }} autre{{ row.others|pluralize }} note{{ row.others|pluralize }}.{% else %}aucune autre note ne l'écrit.{% endif %}{% endfilter %}</span>
+                                </span>
+                            </label>
+                        </li>
+                        <li>
+                            <label class="flex items-start gap-2">
+                                <input type="radio" name="choice-{{ item.pk }}" value="here" checked class="mt-1">
+                                <span>
+                                    <span class="font-medium">Seulement dans cette note</span>
+                                    <span class="block text-sm text-slate-600">{% filter nbsp_punct %}« {{ item.new_name }} » est un nouveau projet, pour cette note ; « {{ item.old_name }} » garde son nom et ses autres notes.{% endfilter %}</span>
+                                </span>
+                            </label>
+                        </li>
+                        <li>
+                            <label class="flex items-start gap-2">
+                                <input type="radio" name="choice-{{ item.pk }}" value="undo" class="mt-1">
+                                <span>
+                                    <span class="font-medium">Ne pas renommer</span>
+                                    <span class="block text-sm text-slate-600">{% filter nbsp_punct %}Le titre de cette note reprend « {{ item.old_name }} ».{% endfilter %}</span>
+                                </span>
+                            </label>
+                        </li>
+                    </ul>
+                </fieldset>
+            {% endwith %}
+        {% endfor %}
+        {% button "Appliquer" icon="save" %}
+    </form>
+{% endblock content %}
