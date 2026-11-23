@@ -10,6 +10,15 @@
         {% button "Enregistrer le projet" icon="save" variant="ghost" icon_only=True form="project-form" %}
     </header>
 
+    {% if object %}
+        {# Le nom se change par le renommage (#170) : il réécrit les titres des notes. #}
+        <p class="mb-4 flex flex-wrap items-center gap-2">
+            <span>Nom : <strong>{{ object.name }}</strong></span>
+            {% url 'core:project_rename' object.pk as rename_url %}
+            {% button "Renommer le projet" icon="edit" href=rename_url variant="ghost" %}
+        </p>
+    {% endif %}
+
     <form id="project-form" method="post" class="grid grid-cols-[max-content_1fr] items-baseline gap-x-3 gap-y-3">
         {% csrf_token %}
         {{ form }}

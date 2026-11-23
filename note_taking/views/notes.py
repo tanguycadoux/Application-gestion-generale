@@ -19,6 +19,8 @@ from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
 from ..note_citations import citations
 from ..note_outline import outline_sections
+from ..pending_renames import add_pending_follow_up
+from ..project_renaming import record_project_renames
 from ..rendering import render_note_body
 from ..services import process_passages
 from .common import next_page, note_name, save_warnings
@@ -129,6 +131,8 @@ def save_passages(request, note: Note, done: str, *, stay: bool = False) -> str:
     """
     try:
         process_passages(note)
+        # Un titre de projet renommé attend un choix (#170).
+        add_pending_follow_up(note)
     except AppError as e:
         messages.error(
             request,
@@ -200,9 +204,12 @@ def edit_note(request, note_date):
     if request.method == "POST":
         stay = stays_in_editor(request)
         in_place = stay and bool(request.htmx)
+        old_body = note.body
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save()
+            # Un titre de projet renommé : en attente du choix, tâches qui suivent (#170).
+            record_project_renames(note, old_body, note.body)
             url = save_passages(request, note, "modifiée", stay=stay)
             if in_place:
                 response = toasts_response(request)

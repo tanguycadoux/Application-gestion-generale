@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 
+from django.db import transaction
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat
 
@@ -212,14 +213,50 @@ def renamed_identities(
     ]
 
 
+def follow_projects(note_date: date, old_body: str, new_body: str) -> None:
+    """Quand un titre `#` est réécrit, les tâches de ses passages passent au projet
+    du nouveau titre, et au niveau de même chemin sous ce projet (#170). Leur chemin
+    de ligne a déjà suivi (`move_tasks`). Un projet qui ne change que de casse est le
+    même (#374) : rien à faire."""
+    old = parse_note(str(note_date), old_body).passages
+    new = parse_note(str(note_date), new_body).passages
+    if len(old) != len(new):
+        return
+    for before, after in zip(old, new, strict=True):
+        if after.project is None or (
+            before.project is not None
+            and before.project.casefold() == after.project.casefold()
+        ):
+            continue
+        project = project_for(after.project)[0]
+        section = section_for(project, after.path)
+        paths = {
+            line.path
+            for line in lines_of(
+                HEADING_SEPARATOR.join(after.headings),
+                replace_image_paths("\n".join(after.lines))[0],
+                TODO_TAG in after.tags,
+            )
+        }
+        Task.all_objects.filter(
+            created_from_note=True, note_date=note_date, note_path__in=paths
+        ).update(project=project, section=section)
+
+
 def is_todo_passage(passage: Passage) -> bool:
     return any(tag.name == TODO_TAG for tag in passage.tags.all())
 
 
+@transaction.atomic
 def move_tasks(note_date: date, moves: list[tuple[TaskLine, TaskLine]]) -> None:
     """Range les tâches déjà créées sous leur nouveau chemin : même fiche, seul le
     chemin de leur ligne change. En deux temps, pour qu'un chemin déjà pris par une
-    tâche qui part aussi ne fasse pas échouer la contrainte d'unicité."""
+    tâche qui part aussi ne fasse pas échouer la contrainte d'unicité ; en une
+    transaction, pour ne jamais laisser un déplacement à moitié fait.
+
+    Un chemin déjà pris par une tâche qui **ne part pas** (la même ligne a deux
+    tâches, l'une restée sous l'ancien chemin, #170) n'est pas pris : la ligne
+    retrouve cette tâche-là, et l'autre reste où elle est, à revoir dans le bilan."""
     found = []
     for before, after in moves:
         tasks = Task.all_objects.filter(
@@ -228,12 +265,25 @@ def move_tasks(note_date: date, moves: list[tuple[TaskLine, TaskLine]]) -> None:
             note_path=before.path,
             note_line_text=before.text,
         )
-        found.append((list(tasks.values_list("pk", flat=True)), after.path))
-    for pks, _ in found:
+        found.append((list(tasks.values_list("pk", flat=True)), after))
+    moving = {pk for pks, _ in found for pk in pks}
+    kept = [
+        (pks, after.path)
+        for pks, after in found
+        if not Task.all_objects.filter(
+            created_from_note=True,
+            note_date=note_date,
+            note_path=after.path,
+            note_line_text=after.text,
+        )
+        .exclude(pk__in=moving)
+        .exists()
+    ]
+    for pks, _ in kept:
         Task.all_objects.filter(pk__in=pks).update(
             note_path=Concat(Value("\x1f"), Cast("pk", CharField()))
         )
-    for pks, path in found:
+    for pks, path in kept:
         Task.all_objects.filter(pk__in=pks).update(note_path=path)
 
 

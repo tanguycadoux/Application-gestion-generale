@@ -4,6 +4,7 @@ from core.app_registry import (
     DashboardBlock,
     NavItem,
     NavSection,
+    ProjectRenamer,
     ProjectUsage,
     SectionRenamer,
     SectionUsage,
@@ -47,4 +48,8 @@ class NoteTakingConfig(AppConfig):
 
         self.section_renamer = SectionRenamer(
             occurrences=renaming.find_occurrences, rename=renaming.rename_titles
+        )
+        self.project_renamer = ProjectRenamer(
+            occurrences=renaming.project_occurrences,
+            rename=renaming.rename_project_titles,
         )

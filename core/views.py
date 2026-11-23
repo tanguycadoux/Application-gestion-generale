@@ -13,10 +13,16 @@ from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
-from .app_registry import dashboard_blocks, project_usages, section_renamers
+from .app_registry import (
+    dashboard_blocks,
+    project_renamers,
+    project_usages,
+    section_renamers,
+)
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
+from .projects import check_new_project_name
 from .section_tree import section_tree
 from .sections import (
     check_new_name,
@@ -136,6 +142,59 @@ def delete_project(request, pk):
     else:
         project.delete()
         messages.success(request, f"Le projet « {project.name} » est supprimé.")
+    return redirect("core:projects")
+
+
+def rename_project(request, pk):
+    """Renommer un projet (#170), en trois temps comme un niveau (#299) : le nouveau
+    nom, le bilan de ses titres `#` à réécrire dans les notes, puis l'écriture.
+
+    Le projet est renommé en place : ses passages, ses niveaux et ses tâches le
+    suivent. Tous ses titres sont réécrits : un titre gardé sous l'ancien nom
+    recréerait l'ancien projet. Le nom d'un autre projet est refusé.
+    """
+    project = get_object_or_404(with_usage(Project.objects.all()), pk=pk)
+    source = request.POST if request.method == "POST" else request.GET
+    raw_name = source.get("name", "")
+    new_name, error = (
+        check_new_project_name(project, raw_name) if raw_name else ("", "")
+    )
+    context = {"project": project, "new_name": raw_name, "error": error}
+    if not raw_name or error:
+        return render(request, "core/project_rename.html", context)
+
+    renamers = project_renamers()
+    if request.method != "POST":
+        context.update(
+            new_name=new_name,
+            occurrences=[
+                occurrence
+                for renamer in renamers
+                for occurrence in renamer.occurrences(project)
+            ],
+            usage=usage_text(project),
+        )
+        return render(request, "core/project_rename.html", context)
+
+    old_name = project.name
+    try:
+        with transaction.atomic():
+            project.name = new_name
+            project.save(update_fields=["name"])
+            report = [
+                sentence
+                for renamer in renamers
+                for sentence in renamer.rename(project, old_name, new_name)
+            ]
+    except AppError as e:
+        messages.error(request, str(e))
+        return redirect(
+            f"{reverse('core:project_rename', args=[pk])}?{urlencode({'name': new_name})}"
+        )
+    messages.success(
+        request,
+        f"Le projet « {old_name} » est renommé « {new_name} ». {' '.join(report)}".strip(),
+    )
     return redirect("core:projects")
 
 

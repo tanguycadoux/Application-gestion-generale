@@ -11,6 +11,11 @@ comptent pas, et le nom du niveau est le texte du titre sans ses attributs Pando
 
 `find_headings` et `rewrite_titles` ne travaillent que sur du texte ; le reste
 (`find_occurrences`, `rename_titles`) lit et écrit les notes, dans une transaction.
+
+Renommer un **projet** (#170) suit la même règle pour ses titres `#` : un titre de
+projet est repéré comme le parseur nomme le projet, texte entier compris (casse et
+espaces ignorés, #374), et réécrit en gardant dièses, espaces et fin de ligne
+(`project_occurrences`, `rename_project_titles`).
 """
 
 import re
@@ -201,3 +206,63 @@ def rename_titles(
     titles = "titres réécrits" if len(keys) > 1 else "titre réécrit"
     notes = "notes" if len(chosen) > 1 else "note"
     return [f"{len(keys)} {titles} dans {len(chosen)} {notes}."]
+
+
+def project_headings(body: str, name: str) -> list[Heading]:
+    """Les titres `#` de ce texte qui nomment ce projet, comme le parseur : le titre
+    entier, casse et espaces ignorés (#374)."""
+    return [
+        heading
+        for heading in headings(body)
+        if heading.level == 1 and normalized(heading.title) == normalized(name)
+    ]
+
+
+def located_projects(name: str) -> list[Located]:
+    return [
+        Located(note, heading)
+        for note in Note.objects.order_by("date")
+        for heading in project_headings(note.body, name)
+    ]
+
+
+def project_occurrences(project: Project) -> list[HeadingOccurrence]:
+    """Les titres `#` de ce projet dans les notes, pour le bilan du renommage."""
+    return [
+        HeadingOccurrence(
+            key=found.key,
+            where=(
+                f"Note du {date_text(found.note.date, 'moyen')}, "
+                f"ligne {found.heading.number}"
+            ),
+            url=reverse("note_taking:note_detail", args=[found.note.date]),
+            chain=found.heading.title,
+        )
+        for found in located_projects(project.name)
+    ]
+
+
+def rename_project_titles(project: Project, old_name: str, new_name: str) -> list[str]:
+    """Réécrit tous les titres `#` de l'ancien nom avec le nouveau, puis recalcule
+    les notes : leurs passages retrouvent le projet, renommé en base avant l'appel.
+    Les tâches suivent leurs titres (`note_headings_renamed`). Renvoie les phrases
+    du compte rendu."""
+    chosen: dict[Note, list[int]] = {}
+    for found in located_projects(old_name):
+        chosen.setdefault(found.note, []).append(found.heading.number)
+    with transaction.atomic():
+        for note, numbers in chosen.items():
+            old_body = note.body
+            new_body = rewrite_titles(old_body, numbers, new_name)
+            note.body = new_body
+            note.save()
+            note_headings_renamed.send(
+                sender=Note, note=note, old_body=old_body, new_body=new_body
+            )
+            process_passages(note)
+    count = sum(len(numbers) for numbers in chosen.values())
+    if not count:
+        return []
+    titles = "titres réécrits" if count > 1 else "titre réécrit"
+    notes = "notes" if len(chosen) > 1 else "note"
+    return [f"{count} {titles} dans {len(chosen)} {notes}."]

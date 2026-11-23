@@ -191,3 +191,29 @@ class SavedSearch(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PendingProjectRename(models.Model):
+    """Un titre de projet changé dans une note (#170), en attente du choix de
+    l'utilisateur : tout renommer, seulement dans cette note, ou rien.
+
+    Gardé en base : Ctrl+S reste dans l'éditeur (#389), et le bilan vient à la fin
+    de l'édition, plusieurs enregistrements plus tard. Les noms sont ceux écrits
+    dans les titres ; ce ne sont pas des clés, les projets pouvant changer entre
+    deux enregistrements.
+    """
+
+    note = models.ForeignKey(
+        Note, on_delete=models.CASCADE, related_name="pending_project_renames"
+    )
+    old_name = models.CharField("ancien nom", max_length=200)
+    new_name = models.CharField("nouveau nom", max_length=200)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created", "pk"]
+        verbose_name = "renommage de projet en attente"
+        verbose_name_plural = "renommages de projet en attente"
+
+    def __str__(self):
+        return f"{self.note} : {self.old_name} → {self.new_name}"
