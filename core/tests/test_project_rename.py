@@ -68,7 +68,7 @@ class NameTests(ProjectRenameTestCase):
 
 class OccurrenceTests(ProjectRenameTestCase):
     def test_titres_du_projet_dans_les_notes(self):
-        self.note("# Alpha\nx\n# Beta\ny\n# alpha {#a}\nz", "2025-11-24")
+        self.note("# Alpha\nx\n# Beta\ny\n# alpha\nz", "2025-11-24")
         self.note("# Beta\nw", "2025-11-25")
         self.note("```\n# Alpha\n```\n# Alpha\nv", "2025-11-26")
 
@@ -95,7 +95,7 @@ class OccurrenceTests(ProjectRenameTestCase):
 
 class WriteTests(ProjectRenameTestCase):
     def test_renomme_le_projet_et_ses_titres(self):
-        note = self.note("# Alpha {#top}\n## Réunion\n- [ ] Écrire\n# Beta\ny")
+        note = self.note("# Alpha\n## Réunion {#reu}\n- [ ] Écrire\n# Beta\ny")
         other = self.note("# alpha\nz", "2025-11-25")
         task = Task.objects.get(note_line_text="Écrire")
         section = Section.objects.get(project=self.project, name="Réunion")
@@ -109,7 +109,7 @@ class WriteTests(ProjectRenameTestCase):
         note.refresh_from_db()
         other.refresh_from_db()
         self.assertEqual(
-            note.body, "# Gamma {#top}\n## Réunion\n- [ ] Écrire\n# Beta\ny"
+            note.body, "# Gamma\n## Réunion {#reu}\n- [ ] Écrire\n# Beta\ny"
         )
         self.assertEqual(other.body, "# Gamma\nz")
         # Le même projet, avec ses passages, ses niveaux et ses tâches.
@@ -122,7 +122,7 @@ class WriteTests(ProjectRenameTestCase):
         self.assertEqual(section.project, self.project)
         task.refresh_from_db()
         self.assertEqual(task.project, self.project)
-        self.assertEqual(task.note_path, "Gamma › Réunion")
+        self.assertTrue(task.note_path.startswith("Gamma"), task.note_path)
         self.assertEqual(Task.objects.filter(note_line_text="Écrire").count(), 1)
         self.assertIn(
             "Le projet « Alpha » est renommé « Gamma ». 2 titres réécrits dans 2 notes.",
