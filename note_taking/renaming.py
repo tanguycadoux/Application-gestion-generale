@@ -6,8 +6,8 @@ compris, et pas par son niveau : `### Réunion` sans `##` au-dessus est le même
 niveau que `## Réunion` (un niveau sauté n'est pas réécrit, #305).
 
 Les titres suivent l'analyse du parseur : ceux d'un bloc de code ou d'un callout ne
-comptent pas, et le texte entier du titre, attributs compris, est le nom du niveau.
-La réécriture garde les fins de ligne.
+comptent pas, et le nom du niveau est le texte du titre sans ses attributs Pandoc
+(`{#id .classe}`, #367). La réécriture garde les attributs et les fins de ligne.
 
 `find_headings` et `rewrite_titles` ne travaillent que sur du texte ; le reste
 (`find_occurrences`, `rename_titles`) lit et écrit les notes, dans une transaction.
@@ -27,7 +27,15 @@ from core.sections import LABEL_SEPARATOR
 
 from .exceptions import NoteRenameError
 from .models import Note
-from .qmd.parser import BLOCK_END, CALLOUT_START, CODE_FENCE, MAX_LEVEL, TITLE_REGEX
+from .qmd.parser import (
+    BLOCK_END,
+    CALLOUT_START,
+    CODE_FENCE,
+    MAX_LEVEL,
+    TITLE_ATTRIBUTES_REGEX,
+    TITLE_REGEX,
+    heading_name,
+)
 from .services import process_passages
 from .signals import note_headings_renamed
 
@@ -101,20 +109,24 @@ def find_headings(body: str, project: str, levels: list[str]) -> list[Heading]:
         heading
         for heading in headings(body)
         if heading.project == project
-        and [normalized(title) for title in heading.path] == wanted
+        and [normalized(heading_name(title)) for title in heading.path] == wanted
     ]
 
 
 def rewrite_titles(body: str, numbers: Iterable[int], new_title: str) -> str:
     """Le texte dont les titres des lignes `numbers` (à partir de 1) portent
-    `new_title`. Dièses, espaces et fin de ligne sont gardés."""
+    `new_title`. Dièses, espaces, attributs (`{#id .classe}`, #367) et fin de ligne
+    sont gardés."""
     wanted = set(numbers)
     lines = body.split("\n")
     for number in wanted:
         match = HEADING_LINE_REGEX.match(lines[number - 1])
         if match is None:  # pragma: no cover - un titre repéré s'écrit toujours ainsi
             raise NoteRenameError(f"Ligne {number} : ce n'est pas un titre.")
-        lines[number - 1] = f"{match['before']}{new_title}{match['after']}"
+        title = match["title"]
+        attributes = TITLE_ATTRIBUTES_REGEX.search(title)
+        kept = attributes[0] if attributes and heading_name(title) != title else ""
+        lines[number - 1] = f"{match['before']}{new_title}{kept}{match['after']}"
     return "\n".join(lines)
 
 

@@ -39,13 +39,25 @@ CODE_FENCE = "```"
 HEADING_SEPARATOR = " › "
 # Tag des passages d'une branche `todo: true` (#297).
 TODO_TAG = "TODO"
+# Attributs Pandoc en fin de titre, `{#id .classe clé=valeur}` : une écriture, pas
+# un texte à lire (#356), ni une partie du nom du niveau (#367).
+TITLE_ATTRIBUTES_REGEX = re.compile(r"\s*\{[^}]*\}\s*$")
+
+
+def heading_name(title: str) -> str:
+    """Le texte d'un titre, sans ses attributs : « Réunion {#reu-12} » donne
+    « Réunion ». C'est le nom de son niveau (#367) et ce qu'affichent la note et les
+    résultats. Un titre fait d'attributs seulement reste tel quel : sans nom, son
+    niveau disparaîtrait du chemin."""
+    return TITLE_ATTRIBUTES_REGEX.sub("", title).strip() or title.strip()
 
 
 @dataclass
 class ParsedPassage:
     # None pour le texte avant le premier `#` (#385).
     project: str | None
-    # Titres de `##` à `######` : les niveaux sous le projet (#287).
+    # Titres de `##` à `######`, sans leurs attributs : les niveaux sous le projet
+    # (#287, #367).
     path: list[str]
     tags: list[str]
     lines: list[str]
@@ -265,8 +277,9 @@ class NoteParser:
     # Passages
 
     def current_path(self) -> list[str]:
+        """Les niveaux sous le projet : le texte des titres, sans attributs (#367)."""
         return [
-            state.title
+            heading_name(state.title)
             for level, state in self.levels.items()
             if level > 1 and state.title is not None
         ]
