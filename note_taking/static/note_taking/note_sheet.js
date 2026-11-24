@@ -23,5 +23,6 @@
     fit();
     // La place change avec la fenêtre, le plan et le menu ; la largeur du cadre ne dépend
     // pas de l'échelle (colonne de la grille, place de la barre de défilement réservée).
-    new ResizeObserver(fit).observe(frame);
+    // À l'image suivante : l'échelle change la hauteur du cadre, donc la mesure en cours.
+    new ResizeObserver(() => requestAnimationFrame(fit)).observe(frame);
 })();

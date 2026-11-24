@@ -31,7 +31,7 @@
     {% endif %}
 
     {% if content %}
-        {# Le plan à droite (#404), au-dessus du texte sur une fenêtre étroite ; il reste visible quand le texte défile. #}
+        {# Le plan à droite (#404), visible quand le texte défile ; sur une fenêtre étroite, note_reading.js l'ouvre par-dessus la feuille (sans lui, il est au-dessus du texte). #}
         <div class="grid grid-cols-[minmax(0,240mm)] justify-center gap-4 print:block{% if outline %} lg:grid-cols-[minmax(0,240mm)_16rem]{% endif %}" data-note-reading>
             {# 24 cm de large, 2,5 cm de marges. Quand la place manque, la feuille entière rétrécit (note_sheet.js), comme dans Word : mêmes lignes, texte plus petit ; sous un certain seuil, les marges puis les lignes se réduisent. Rien ne fait défiler la page de côté : un tableau, du code ou une formule trop larges défilent seuls (style.css). #}
             <div class="min-w-0" data-note-frame>

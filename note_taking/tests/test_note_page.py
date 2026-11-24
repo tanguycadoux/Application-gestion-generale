@@ -114,3 +114,12 @@ class NotePageTests(TestCase):
         assert isinstance(path, str)
         self.assertIn("(240 * 96) / 25.4", Path(path).read_text(encoding="utf-8"))
         self.assertIn("minmax(0,240mm)", self.html)
+
+    def test_plan_par_dessus_la_feuille_sur_une_fenetre_etroite(self):
+        """Le plan partage la case de la feuille, et reste visible quand on défile."""
+        path = finders.find("note_taking/note_reading.js")
+        assert isinstance(path, str)
+        script = Path(path).read_text(encoding="utf-8")
+
+        for name in ("max-lg:row-start-1", "max-lg:sticky", "max-lg:top-14"):
+            self.assertIn(f'"{name}"', script)
