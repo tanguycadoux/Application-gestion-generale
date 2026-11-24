@@ -245,6 +245,10 @@ VIEWS = ("extraits", "document")
 DEFAULT_VIEW = "extraits"
 DEFAULT_GROUP = "date"
 
+# Tri des résultats (#430).
+DATE_SORTS = ("newest", "oldest")
+SORTS = ("relevance", *DATE_SORTS)
+
 
 def result_options(params: Mapping[str, str]) -> tuple[str, str]:
     """La vue et le regroupement demandés (`?view=`, `?group=`) ; une valeur inconnue
@@ -254,6 +258,28 @@ def result_options(params: Mapping[str, str]) -> tuple[str, str]:
     return (
         view if view in VIEWS else DEFAULT_VIEW,
         group if group in GROUPS else DEFAULT_GROUP,
+    )
+
+
+def result_sort(params: Mapping[str, str], with_relevance: bool) -> str:
+    """Le tri demandé (`?sort=`, #430). Par défaut, et pour une valeur inconnue ou
+    impossible : la pertinence, ou les notes les plus récentes d'abord si elle ne
+    s'applique pas (filtres seuls, vue « Document »)."""
+    sort = params.get("sort", "")
+    if with_relevance:
+        return sort if sort in SORTS else "relevance"
+    return sort if sort in DATE_SORTS else "newest"
+
+
+def sort_passages(passages: list[Passage], sort: str) -> list[Passage]:
+    """Les passages par date de leur note (#430), chaque note dans l'ordre où elle est
+    écrite ; la pertinence est l'ordre de `search_passages`."""
+    if sort not in DATE_SORTS:
+        return passages
+    sign = -1 if sort == "newest" else 1
+    return sorted(
+        passages,
+        key=lambda p: (sign * p.note.date.toordinal(), p.position, p.pk),
     )
 
 
@@ -348,7 +374,9 @@ def passage_anchors(passage: Passage, titles: tuple[str, ...]) -> list[str | Non
 NO_PROJECT = Level(0, "Sans projet")
 
 
-def document_html(passages: list[Passage], group: str) -> SafeString:
+def document_html(
+    passages: list[Passage], group: str, oldest_first: bool = False
+) -> SafeString:
     """Les passages assemblés en un document, rendu comme une note (#356).
 
     Les numéros des tableaux et figures se calculent sur le texte assemblé. Dans une
@@ -374,7 +402,7 @@ def document_html(passages: list[Passage], group: str) -> SafeString:
                 content=passage.content,
             )
         )
-    return mark_safe(render_passage(assemble(pieces, group)))
+    return mark_safe(render_passage(assemble(pieces, group, oldest_first)))
 
 
 def levels_of(passages: list[Passage]) -> dict[int, tuple[Level, ...]]:
