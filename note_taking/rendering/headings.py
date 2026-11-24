@@ -6,6 +6,7 @@ import re
 from django.utils.html import escape
 
 from .markdown import render_plain_markdown
+from .new_tab import without_new_tab_marks
 
 # Balise de titre ouvrante ou fermante du HTML rendu : <h2 …> ou </h2>.
 HEADING_TAG_REGEX = re.compile(r"<(?P<slash>/?)h(?P<level>[1-6])\b")
@@ -60,7 +61,8 @@ def heading_texts(html: str) -> list[tuple[str, str]]:
     found = []
     for match in HEADING_BLOCK_REGEX.finditer(html):
         anchor = ANY_ID_REGEX.search(match["attrs"])
-        text = html_module.unescape(HTML_TAG_REGEX.sub("", match["inner"])).strip()
+        inner = without_new_tab_marks(match["inner"])
+        text = html_module.unescape(HTML_TAG_REGEX.sub("", inner)).strip()
         found.append((text, html_module.unescape(anchor["id"]) if anchor else ""))
     return found
 

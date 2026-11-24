@@ -67,6 +67,8 @@
 
     // --- Sections repliables ---
     const icon = document.getElementById("section-toggle-icon");
+    // Le texte d'un titre est celui du plan : sans la marque d'un lien (« nouvel onglet »).
+    const titles = new Map(links.map((link) => [targetOf(link.getAttribute("href")), link.textContent.trim()]));
 
     function setFolded(button, folded) {
         const body = document.getElementById(button.getAttribute("aria-controls"));
@@ -86,7 +88,7 @@
         button.className =
             "mr-1 inline-flex align-middle rounded text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-700";
         button.setAttribute("aria-controls", body.id);
-        button.dataset.title = heading.textContent.trim();
+        button.dataset.title = titles.get(heading) ?? heading.textContent.trim();
         if (icon) button.append(icon.content.firstElementChild.cloneNode(true));
         heading.prepend(button);
         setFolded(button, false);
