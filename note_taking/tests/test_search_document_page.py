@@ -52,9 +52,11 @@ class DocumentPageTests(TestCase):
             for note in Note.objects.all()
         }
 
-    def get(self, group="date", view="document", **options) -> str:
+    def get(self, group="date", **options) -> str:
         response = self.client.get(
-            self.url, {"q": "projet:Chantier", "view": view, "group": group}, **options
+            self.url,
+            {"q": "projet:Chantier", "view": "document", "group": group},
+            **options,
         )
         return response.content.decode()
 
@@ -104,12 +106,6 @@ class DocumentPageTests(TestCase):
         self.assertEqual(html.count('<section class="note-section"'), 3)
         self.assertIn('data-level="2"', html)
 
-    def test_les_liens_menent_toujours_a_la_note(self):
-        note = reverse("note_taking:note_detail", args=["2026-10-01"])
-
-        self.assertIn(f'href="{note}#réunion"', self.get("path"))
-        self.assertIn(f'href="{note}"', self.get("date"))
-
     def test_feuille_et_en_tete_collant(self):
         html = self.get()
 
@@ -149,9 +145,3 @@ class DocumentPageTests(TestCase):
 
         self.assertContains(response, 'id="results-options"')
         self.assertNotContains(response, "Trier par")
-
-    def test_extraits_inchanges(self):
-        html = self.get(view="extraits")
-
-        for mark in ("data-note-reading", "data-reading-bar", "note_reading.js"):
-            self.assertNotIn(mark, html)

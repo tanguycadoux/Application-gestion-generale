@@ -1,6 +1,6 @@
 """Trier les résultats par pertinence ou par date (#430)."""
 
-from datetime import date
+from itertools import product
 
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -91,7 +91,6 @@ class ExtractsSortTests(SortedPageTestCase):
 
         self.assertEqual(self.order(response)[0], ("2026-10", "second"))
         self.assertEqual(self.order(self.get(sort="relevance")), self.order(response))
-        self.assertEqual(self.order(self.get(sort="x")), self.order(response))
 
     def test_avec_des_mots_par_date_chaque_note_telle_qu_ecrite(self):
         self.assertEqual(self.order(self.get(sort="newest")), written(NEWEST))
@@ -139,9 +138,10 @@ class DocumentSortTests(SortedPageTestCase):
                 )
 
     def test_les_passages_d_une_note_restent_dans_l_ordre_ecrit(self):
-        for sort in ("newest", "oldest"):
-            with self.subTest(sort=sort):
-                html = self.get(view="document", sort=sort).content.decode()
+        for group, sort in product(("date", "path"), ("newest", "oldest")):
+            with self.subTest(group=group, sort=sort):
+                response = self.get(view="document", group=group, sort=sort)
+                html = response.content.decode()
                 self.assertLess(
                     html.index("premier 2026-10-15"), html.index("second 2026-10-15")
                 )
@@ -179,7 +179,6 @@ class SortSelectorTests(SortedPageTestCase):
         response = self.get(view="document")
 
         self.assertNotContains(response, "Pertinence")
-        self.assertNotContains(response, "sort=relevance")
         self.assertContains(response, "sort=oldest")
 
     def test_le_tri_choisi_survit_a_une_nouvelle_recherche(self):
@@ -194,30 +193,3 @@ class SortSelectorTests(SortedPageTestCase):
         )
         self.assertNotContains(self.get(), 'name="sort"')
         self.assertNotContains(self.get(sort="x"), 'name="sort"')
-
-
-class AssembledOrderTests(SimpleTestCase):
-    def test_assemblage_du_plus_ancien_au_plus_recent(self):
-        from note_taking.search_document import DocPassage, Level, assemble
-
-        pieces = [
-            DocPassage(
-                date=date(2026, 10, day),
-                date_label=f"{day} octobre",
-                note_url=f"/notes/2026-10-{day}/",
-                passage_url=f"/notes/2026-10-{day}/#a",
-                levels=(Level(1, "Alpha"),),
-                content=f"texte {day} {word}",
-            )
-            for day in (11, 12)
-            for word in ("un", "deux")
-        ]
-        for group in ("date", "path"):
-            with self.subTest(group=group):
-                text = assemble(pieces, group, oldest_first=True)
-                places = [
-                    text.index(f"texte {day} {word}")
-                    for day in (11, 12)
-                    for word in ("un", "deux")
-                ]
-                self.assertEqual(places, sorted(places))

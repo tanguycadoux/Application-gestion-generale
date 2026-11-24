@@ -178,7 +178,7 @@ class DocumentByDateTests(PresentationTestCase):
 
     def test_hierarchie_des_titres(self):
         # Les résultats s'insèrent sous le h1 de la page de recherche.
-        html = without_ids(self.get(view="document").content.decode())
+        html = self.get(view="document").content.decode()
         html = html.split('id="results"')[1]
 
         self.assertNotIn("<h1", html)
@@ -192,13 +192,13 @@ class DocumentByDateTests(PresentationTestCase):
         self.part(self.new, table % "un", "Alpha › Tableaux")
         self.part(self.old, table % "deux", "Alpha › Tableaux")
 
-        html = without_ids(self.get(q="Légende", view="document").content.decode())
+        html = self.get(q="Légende", view="document").content.decode()
 
         self.assertIn("Table\u00a01", html)
         self.assertIn("Table\u00a02", html)
 
     def test_pas_de_bloc_details(self):
-        html = without_ids(self.get(view="document").content.decode())
+        html = self.get(view="document").content.decode()
         results = html.split('id="results"')[1]
 
         # Le seul bloc replié des résultats est l'aide de syntaxe, après eux.
@@ -218,14 +218,14 @@ class DocumentByPathTests(PresentationTestCase):
         self.assertEqual(html.count("<h3>Réunion</h3>"), 1)
 
     def test_chaque_partie_precedee_de_sa_date_en_lien(self):
-        html = without_ids(self.get(view="document", group="path").content.decode())
+        html = self.get(view="document", group="path").content.decode()
         new_url = reverse("note_taking:note_detail", args=["2026-10-15"])
 
         self.assertIn(new_tab_link(f"{new_url}#réunion", "jeudi 15 octobre 2026"), html)
         self.assertIn("10 septembre 2026", html)
 
     def test_dates_les_plus_recentes_d_abord_sous_un_chemin(self):
-        html = without_ids(self.get(view="document", group="path").content.decode())
+        html = self.get(view="document", group="path").content.decode()
 
         self.assertLess(html.index("banc de test"), html.index("un banc ancien"))
 
@@ -239,7 +239,7 @@ class DocumentByPathTests(PresentationTestCase):
         self.assertLess(html.index("banc seul"), html.index("<h3>Réunion</h3>"))
 
     def test_regroupement_inconnu_retombe_sur_la_date(self):
-        html = without_ids(self.get(view="document", group="autre").content.decode())
+        html = self.get(view="document", group="autre").content.decode()
 
         self.assertIn("Note du jeudi 15 octobre 2026", html)
 
