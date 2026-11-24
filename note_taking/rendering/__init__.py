@@ -30,6 +30,7 @@ from .images import (
     remote_images_as_links,
     resolve_image_paths,
     resolve_image_refs,
+    with_path,
 )
 from .markdown import render_plain_markdown
 from .new_tab import without_new_tab_marks
@@ -55,5 +56,6 @@ __all__ = [
     "resolve_image_paths",
     "resolve_image_refs",
     "sanitize_html",
+    "with_path",
     "without_new_tab_marks",
 ]
