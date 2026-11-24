@@ -13,7 +13,7 @@
                 <tr class="hover:bg-slate-50">
                     <td class="p-2 align-baseline">
                         <span class="line-clamp-2 break-words"><a href="{% url 'todolist:task_detail' task.pk %}" title="{{ task.title }}">{{ task.title }}</a></span>
-                        {% if task.project %}<span class="ml-1">{% project_badge task.project %}</span>{% endif %}
+                        {% if task.project %}<span class="ml-1">{% project_badge task.project link=True %}</span>{% endif %}
                     </td>
                     <td class="w-28 whitespace-nowrap p-2 text-right align-baseline text-sm {{ task|remaining_class }}">{{ task|remaining_text }}</td>
                 </tr>

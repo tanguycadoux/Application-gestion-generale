@@ -20,7 +20,7 @@ Tableau arborescent des tâches (#166), partagé par la liste et le détail d'un
         <tbody class="border-t border-slate-200">
             {% if show_project %}
                 <tr>
-                    <th scope="rowgroup" colspan="5" class="px-2 pt-3 pb-1 text-left font-semibold">{% if group.root.project %}{% project_badge group.root.project %}{% else %}<span class="text-amber-800">Sans projet</span>{% endif %}</th>
+                    <th scope="rowgroup" colspan="5" class="px-2 pt-3 pb-1 text-left font-semibold">{% if group.root.project %}{% project_badge group.root.project link=True %}{% else %}<span class="text-amber-800">Sans projet</span>{% endif %}</th>
                 </tr>
             {% endif %}
             {% for row in group.rows %}

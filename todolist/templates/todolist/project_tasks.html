@@ -1,0 +1,19 @@
+{% load static ui %}
+<nav aria-label="État des tâches" class="mb-3 flex flex-wrap items-center gap-x-8 gap-y-1 text-sm">
+    <ul class="flex gap-3">
+        <li class="text-slate-600">État :</li>
+        {% for value, label in states %}
+            <li><a href="{% querystring state=value %}#{{ block.key }}"{% if value == state %} aria-current="true" class="font-semibold"{% endif %}>{{ label }}</a></li>
+        {% endfor %}
+    </ul>
+    <p><a href="{{ list_url }}">Ouvrir dans la liste des tâches</a></p>
+</nav>
+{% if groups %}
+    <p class="mb-2 text-sm text-slate-600">{{ count }} tâche{{ count|pluralize }}.</p>
+    {% include "todolist/task_table.html" with show_project=False %}
+    {# La fiche n'a pas de formulaire : le jeton pose le cookie que lit task.js. #}
+    {% csrf_token %}
+    <script src="{% static 'todolist/task.js' %}"></script>
+{% else %}
+    <p class="text-slate-600">{% if state == "done" %}Aucune tâche terminée.{% elif state == "all" %}Aucune tâche.{% else %}Aucune tâche en cours.{% endif %}</p>
+{% endif %}

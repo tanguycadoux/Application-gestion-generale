@@ -82,6 +82,20 @@ def usage_annotations(usages: list[SectionUsage]) -> dict[str, Count]:
     }
 
 
+def section_counts(project: Project) -> dict[int, int]:
+    """Par clé de niveau du projet, ce qui l'utilise lui-même, tous usages réunis :
+    les compteurs de l'arbre de sa fiche (`core.path_tree`, #205)."""
+    usages = section_usages()
+    return {
+        section.pk: sum(
+            getattr(section, f"usage_{index}") for index in range(len(usages))
+        )
+        for section in Section.objects.filter(project=project).annotate(
+            **usage_annotations(usages)
+        )
+    }
+
+
 def section_tree(project: Project) -> list[TreeRow]:
     """Les niveaux du projet, parents d'abord, frères triés par nom."""
     usages = section_usages()

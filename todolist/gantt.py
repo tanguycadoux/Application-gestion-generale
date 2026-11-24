@@ -1,4 +1,5 @@
-"""Frise de type Gantt d'une tâche et de ses sous-tâches (#168).
+"""Frise de type Gantt d'une tâche et de ses sous-tâches (#168), ou des tâches d'un
+projet (#205).
 
 La tâche observée en première ligne, puis une ligne par descendant, indentée,
 dans l'ordre du tableau des sous-tâches. Chaque barre
@@ -42,18 +43,31 @@ class GanttChart:
     rows: list[GanttRow]
     today: float
     parent_due: float | None
+    # La tâche observée ; aucune pour la frise d'un projet.
+    task: Task | None = None
     ticks: list[tuple[str, float]] = field(default_factory=list)
 
 
 def gantt_chart(task: Task, today: date | None = None) -> GanttChart | None:
     """Frise des descendants de `task` ; None s'il n'en a pas."""
-    today = today or timezone.localdate()
     descendants = descendant_rows(task)
     if not descendants:
         return None
     rows = [TaskRow(task, 0, True)] + [
         TaskRow(row.task, row.level + 1, row.has_children) for row in descendants
     ]
+    return rows_chart(rows, task, today)
+
+
+def rows_chart(
+    rows: list[TaskRow], task: Task | None = None, today: date | None = None
+) -> GanttChart | None:
+    """Frise de ces lignes ; avec `task`, celle de la tâche observée, dont l'échéance
+    est marquée. None sans ligne."""
+    if not rows:
+        return None
+    today = today or timezone.localdate()
+    due = task.due_date if task else None
 
     spans = []
     for row in rows:
@@ -62,7 +76,7 @@ def gantt_chart(task: Task, today: date | None = None) -> GanttChart | None:
         spans.append((row, min(begin, finish), max(begin, finish)))
 
     start = min(begin for _, begin, _ in spans)
-    end = max([finish for _, _, finish in spans] + [today, task.due_date or today])
+    end = max([finish for _, _, finish in spans] + [today, due or today])
     length = max((end - start).days, 1)
 
     def position(day: date) -> float:
@@ -88,7 +102,8 @@ def gantt_chart(task: Task, today: date | None = None) -> GanttChart | None:
         end=end,
         rows=gantt_rows,
         today=position(today),
-        parent_due=position(task.due_date) if task.due_date else None,
+        parent_due=position(due) if due else None,
+        task=task,
         ticks=month_ticks(start, end, position),
     )
 

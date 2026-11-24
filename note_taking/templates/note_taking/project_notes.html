@@ -1,0 +1,34 @@
+{% load ui %}
+{% if groups %}
+    {# Des liens, sans JavaScript, qui gardent le reste de l'adresse (niveau, état des tâches). #}
+    <nav aria-label="Présentation des passages" class="mb-3 flex flex-wrap items-center gap-x-8 gap-y-1 text-sm">
+        <ul class="flex gap-3">
+            <li class="text-slate-600">Regroupement :</li>
+            <li><a href="{% querystring group="date" %}#{{ block.key }}"{% if group == "date" %} aria-current="true" class="font-semibold"{% endif %}>Par note</a></li>
+            <li><a href="{% querystring group="path" %}#{{ block.key }}"{% if group == "path" %} aria-current="true" class="font-semibold"{% endif %}>Par chemin</a></li>
+        </ul>
+        <ul class="flex gap-3">
+            <li class="text-slate-600">Ordre :</li>
+            <li><a href="{% querystring order="desc" %}#{{ block.key }}"{% if order == "desc" %} aria-current="true" class="font-semibold"{% endif %}>Récents d'abord</a></li>
+            <li><a href="{% querystring order="asc" %}#{{ block.key }}"{% if order == "asc" %} aria-current="true" class="font-semibold"{% endif %}>Anciens d'abord</a></li>
+        </ul>
+        <p><a href="{{ document_url }}">Lire le texte entier</a></p>
+    </nav>
+    <p class="mb-2 text-sm text-slate-600">{{ total }} passage{{ total|pluralize }}.</p>
+
+    {% for passages in groups %}
+        <article class="mb-4">
+            <h3 class="mb-1 text-base">{% if passages.date %}<a href="{% url 'note_taking:note_detail' passages.date %}">Note du {% date_time passages.date "long" %}</a>{% else %}{{ passages.path|default:"Directement sous le projet" }}{% endif %}</h3>
+            <ul class="space-y-1 border-l border-slate-200 pl-3">
+                {% for item in passages.items %}
+                    <li>
+                        <a href="{{ item.url }}">{% if passages.date %}{{ item.path|default:"Directement sous le projet" }}{% else %}Note du {% date_time item.date "long" %}{% endif %}</a>
+                        {% if item.excerpt %}<p class="text-sm text-slate-600">{{ item.excerpt }}</p>{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </article>
+    {% endfor %}
+{% else %}
+    <p class="text-slate-600">Aucun passage.</p>
+{% endif %}

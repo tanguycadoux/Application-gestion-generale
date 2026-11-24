@@ -294,9 +294,13 @@ def date_time(value, style: str = "moyen") -> str:
 
 
 @register.inclusion_tag("core/components/project_badge.html")
-def project_badge(project) -> dict:
-    """Pastille d'un projet : un point de sa couleur devant son nom ; rien sans projet."""
+def project_badge(project, link: bool = False) -> dict:
+    """Pastille d'un projet : un point de sa couleur devant son nom ; rien sans projet.
+
+    `link` : le nom mène à la fiche du projet (#205) ; pas dans un lien ou un label.
+    """
     return {
+        "link": link,
         "project": project,
         "dot_class": project_dot_class(project),
     }

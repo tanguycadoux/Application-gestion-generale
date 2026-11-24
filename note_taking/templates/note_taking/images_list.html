@@ -11,22 +11,6 @@
         <p class="my-2 text-sm text-slate-600">Collez (Ctrl+V) ou déposez une image sur cette page pour l'importer.</p>
     </div>
 
-    {# role="list" : list-none retire la sémantique de liste dans certains navigateurs. #}
-    <ul role="list" class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
-        {% for img in images %}
-            <li>
-                <a class="block h-full rounded-lg p-2 hover:bg-blue-50" href="{% url 'note_taking:image_detail' img.pk %}">
-                    <figure>
-                        {% if img.file %}
-                            <img src="{{ img.file.url }}" alt="" loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-md bg-slate-100 object-contain">
-                        {% else %}
-                            <p class="text-red-800">Pas de fichier associé</p>
-                        {% endif %}
-                        <figcaption class="mt-1 break-all text-sm">{{ img.name }}</figcaption>
-                    </figure>
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% include "note_taking/image_grid.html" %}
     <script type="module" src="{% static 'note_taking/images_capture.js' %}"></script>
 {% endblock content %}

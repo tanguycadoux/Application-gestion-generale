@@ -267,7 +267,7 @@ class NoteListProjectBadgesTests(TestCase):
         items = re.findall(r"<li[^>]*>(.*?)</li>", cell, re.DOTALL)
         self.assertEqual(len(items), 2)
         for item, name in zip(items, ["Chantier Nord", "Chantier Sud"], strict=True):
-            self.assertIn(f">{name}</span>", item)
+            self.assertIn(f">{name}</a></span>", item)
             self.assertIn(f"bg-{colors[name]}-500", item)
 
     def test_projets_separes_visiblement(self):
@@ -284,7 +284,7 @@ class NoteListProjectBadgesTests(TestCase):
         cell = self.cell("2025-11-25")
 
         self.assertEqual(len(re.findall(r"<li", cell)), 1)
-        self.assertIn(">Alpha</span>", cell)
+        self.assertIn(">Alpha</a></span>", cell)
 
     def test_note_sans_projet_sans_liste(self):
         make_note("2025-11-25")

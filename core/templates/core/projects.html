@@ -16,7 +16,7 @@
             <li>
                 <article class="flex items-start gap-4 py-3">
                     <div class="min-w-0 flex-1">
-                        <h2 class="text-base">{% project_badge project %}</h2>
+                        <h2 class="text-base">{% project_badge project link=True %}</h2>
                         {% if project.description %}
                             <p>{{ project.description }}</p>
                         {% endif %}

@@ -19,6 +19,13 @@
         {% endwith %}{% endwith %}
     </header>
 
+    {% if projects %}
+        {# Les projets de la note, vers leur fiche (#205). #}
+        <ul aria-label="Projets de la note" class="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {% for project in projects %}<li>{% project_badge project link=True %}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
     {% if content %}
         {# Le plan à droite (#404), au-dessus du texte sur une fenêtre étroite ; il reste visible quand le texte défile. #}
         <div class="grid gap-4{% if outline %} lg:grid-cols-[minmax(0,1fr)_16rem]{% endif %}" data-note-reading>
@@ -54,7 +61,7 @@
                         <div class="flex flex-wrap items-baseline gap-x-3 text-sm">
                             <a href="{{ citation.url }}">Note du {% date_time citation.passage.note.date "long" %}</a>
                             {% if citation.passage.project %}
-                                {% project_badge citation.passage.project %}
+                                {% project_badge citation.passage.project link=True %}
                                 {% if citation.path %}<span class="text-slate-600">{{ citation.path }}</span>{% endif %}
                             {% else %}
                                 <span class="text-slate-600">Sans projet, début de la note</span>

@@ -4,6 +4,7 @@ from core.app_registry import (
     DashboardBlock,
     NavItem,
     NavSection,
+    ProjectBlock,
     ProjectRenamer,
     ProjectUsage,
     SectionRenamer,
@@ -46,7 +47,13 @@ class NoteTakingConfig(AppConfig):
     debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
 
     def ready(self):
-        from . import dashboard, renaming, search_index, week  # noqa: F401 (récepteurs)
+        from . import (  # noqa: F401 (récepteurs)
+            dashboard,
+            project_blocks,
+            renaming,
+            search_index,
+            week,
+        )
 
         self.dashboard_blocks = (
             DashboardBlock(
@@ -54,6 +61,23 @@ class NoteTakingConfig(AppConfig):
                 10,
                 "note_taking/dashboard_today.html",
                 dashboard.today_note,
+            ),
+        )
+
+        self.project_blocks = (
+            ProjectBlock(
+                "project-notes",
+                "Notes",
+                30,
+                "note_taking/project_notes.html",
+                project_blocks.notes_block,
+            ),
+            ProjectBlock(
+                "project-images",
+                "Images",
+                40,
+                "note_taking/project_images.html",
+                project_blocks.images_block,
             ),
         )
 

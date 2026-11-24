@@ -5,6 +5,7 @@ from core.app_registry import (
     DashboardBlock,
     NavItem,
     NavSection,
+    ProjectBlock,
     ProjectUsage,
     SectionUsage,
     WeekBlock,
@@ -41,10 +42,33 @@ class TodolistConfig(AppConfig):
     )
 
     def ready(self):
-        from . import dashboard, progress, receivers, week  # noqa: F401
+        from . import (  # noqa: F401 (récepteurs)
+            dashboard,
+            progress,
+            project_blocks,
+            receivers,
+            week,
+        )
 
         self.week_blocks = (
             WeekBlock("Tâches", 20, "todolist/week_tasks.html", week.week_tasks),
+        )
+
+        self.project_blocks = (
+            ProjectBlock(
+                "project-tasks",
+                "Tâches",
+                20,
+                "todolist/project_tasks.html",
+                project_blocks.tasks_block,
+            ),
+            ProjectBlock(
+                "project-timeline",
+                "Frise des tâches",
+                50,
+                "todolist/project_timeline.html",
+                project_blocks.timeline_block,
+            ),
         )
 
         self.dashboard_blocks = (

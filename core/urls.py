@@ -14,6 +14,7 @@ urlpatterns = [
     path(
         "projects/suggestions/", views.project_suggestions, name="project_suggestions"
     ),
+    path("projects/<int:pk>/", views.project_detail, name="project_detail"),
     path(
         "projects/<int:pk>/edit/",
         views.ProjectEditView.as_view(),
