@@ -72,7 +72,8 @@
     <script src="{% static 'core/nav.js' %}"></script>
     <script src="{% static 'core/search.js' %}" defer></script>
 
-    <main id="contenu" class="p-4 h-full box-border overflow-auto{% block main_class %}{% endblock main_class %}">
+    {# relative : un élément absolu (texte pour lecteurs d'écran) défile avec le contenu ; sinon il allonge la page entière (#432). #}
+    <main id="contenu" class="relative p-4 h-full box-border overflow-auto{% block main_class %}{% endblock main_class %}">
         {% block content %}{% endblock content %}
     </main>
 
