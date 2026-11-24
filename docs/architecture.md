@@ -126,6 +126,7 @@ Un seul mécanisme pour les tableaux de toutes les apps, calqué sur `research-p
 | `qmd/files.py` | lecture des fichiers `.qmd`, séparation du bloc d'en-tête (`split_front_matter`) |
 | `services.py` | import, mise à jour, génération des passages et de leurs liens vers les images et vers d'autres notes (accès à la base) |
 | `qmd/links.py` | liens d'un texte vers d'autres notes, `[texte](AAAA-MM-JJ.qmd#ancre)` (#206), hors code ; **sans accès à la base** |
+| `excerpts.py` | extraits de notes en texte : une ligne sans les marques du Markdown, premiers mots d'une section (#376) |
 | `note_citations.py` | les passages qui citent une note (#207), avec l'adresse de leur titre et un extrait, pour la page de la note |
 | `search_query.py` | analyse de la requête de recherche (`SearchQuery`, `Term`) : opérateurs, phrases, exclusions, plages de dates ; **sans accès à la base** |
 | `search.py` | la requête analysée appliquée aux passages (`search_passages`) : filtres, index plein texte, classement |
