@@ -25,6 +25,8 @@ ALLOWED_ATTRIBUTES = {
     "td": {"style", "colspan", "rowspan"},
 }
 IMG_TAG_REGEX = re.compile(r"<img\b")
+TABLE_START_REGEX = re.compile(r"<table\b")
+TABLE_END_REGEX = re.compile(r"</table>")
 IMG_PERCENT_WIDTH_REGEX = re.compile(
     r'(?<=<img )([^>]*?)width="(?P<width>\d+(?:\.\d+)?%)"'
 )
@@ -47,6 +49,17 @@ def sanitize_html(html: str) -> str:
         url_schemes=ALLOWED_URL_SCHEMES,
         filter_style_properties=ALLOWED_STYLE_PROPERTIES,
         link_rel=None,
+    )
+
+
+def scrollable_tables(html: str) -> str:
+    """Chaque tableau dans un bloc qui défile seul s'il est trop large (#421).
+
+    Appliqué au HTML filtré : `<table` n'y est que le début d'une balise, refermée.
+    """
+    return TABLE_END_REGEX.sub(
+        "</table></div>",
+        TABLE_START_REGEX.sub('<div class="table-scroll"><table', html),
     )
 
 

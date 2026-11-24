@@ -5,7 +5,7 @@ import markdown
 from .figures import ImplicitFiguresExtension
 from .inline import MathExtension, SuperscriptSubscriptExtension
 from .lists import PandocListsExtension, TaskListExtension, task_checkboxes
-from .sanitize import lazy_images, sanitize_html
+from .sanitize import lazy_images, sanitize_html, scrollable_tables
 from .tables import TableCaptionExtension
 
 
@@ -45,4 +45,4 @@ def render_plain_markdown(text: str) -> str:
     à partir de valeurs échappées ou contrôlées, et n'a pas à être filtré.
     """
     html = sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
-    return lazy_images(task_checkboxes(html))
+    return lazy_images(scrollable_tables(task_checkboxes(html)))

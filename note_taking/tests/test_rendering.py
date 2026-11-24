@@ -372,6 +372,27 @@ TABLE = "| a |\n|---|\n| 1 |"
 TABLE_BODY = "<thead><tr><th>a</th></tr></thead><tbody><tr><td>1</td></tr></tbody>"
 
 
+def scrollable(table: str) -> str:
+    """Un tableau défile seul s'il est trop large (#421)."""
+    return f'<div class="table-scroll">{table}</div>'
+
+
+class TableScrollRenderingTests(SimpleTestCase):
+    def test_tableau_dans_un_bloc_qui_defile(self):
+        self.assertHTMLEqual(
+            render_markdown(TABLE), scrollable(f"<table>{TABLE_BODY}</table>")
+        )
+
+    def test_tableau_ecrit_en_html(self):
+        html = render_markdown("<table><tr><td>a</td></tr></table>")
+
+        self.assertEqual(html.count('<div class="table-scroll"><table>'), 1)
+        self.assertEqual(html.count("</table></div>"), 1)
+
+    def test_tableau_dans_du_code_inchange(self):
+        self.assertNotIn("table-scroll", render_markdown("`<table></table>`"))
+
+
 class TableCaptionRenderingTests(SimpleTestCase):
     """Légendes de tableau « : Légende » comme dans Quarto (#230).
 
@@ -382,7 +403,9 @@ class TableCaptionRenderingTests(SimpleTestCase):
     def assertCaption(self, text: str, caption: str, attrs: str = ""):
         self.assertHTMLEqual(
             render_markdown(text),
-            f"<table{attrs}><caption>{caption}</caption>{TABLE_BODY}</table>",
+            scrollable(
+                f"<table{attrs}><caption>{caption}</caption>{TABLE_BODY}</table>"
+            ),
         )
 
     def test_legende_apres_le_tableau(self):
@@ -416,7 +439,8 @@ class TableCaptionRenderingTests(SimpleTestCase):
 
         self.assertHTMLEqual(
             html,
-            f"<table><caption>avant</caption>{TABLE_BODY}</table><p>: après</p>",
+            scrollable(f"<table><caption>avant</caption>{TABLE_BODY}</table>")
+            + "<p>: après</p>",
         )
 
     def test_legende_entre_deux_tableaux_au_premier(self):
@@ -424,8 +448,8 @@ class TableCaptionRenderingTests(SimpleTestCase):
 
         self.assertHTMLEqual(
             html,
-            f"<table><caption>L</caption>{TABLE_BODY}</table>"
-            f"<table>{TABLE_BODY}</table>",
+            scrollable(f"<table><caption>L</caption>{TABLE_BODY}</table>")
+            + scrollable(f"<table>{TABLE_BODY}</table>"),
         )
 
     def test_paragraphe_sans_tableau_voisin(self):

@@ -137,7 +137,9 @@ class DatesInPagesTests(TestCase):
             reverse("note_taking:note_detail", args=[self.note.date])
         ).content.decode()
 
-        self.assertInHTML(f"<h1 class='flex-1'>Note du {self.LONG}</h1>", html)
+        self.assertInHTML(
+            f"<h1 class='min-w-0 flex-1 truncate'>Note du {self.LONG}</h1>", html
+        )
         self.assertIn("Supprimer définitivement la note du 24", html)
 
     def test_tableau_des_notes_en_format_court(self):
