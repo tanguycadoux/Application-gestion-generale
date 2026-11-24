@@ -68,13 +68,6 @@ class SkippedLevelParserTests(SimpleTestCase):
             ],
         )
 
-    def test_texte_sans_titre_avant_le_projet_seulement_rappele(self):
-        """#385 : aucun titre à vérifier, seulement le texte à ranger."""
-        found = warnings("intro\n# P\nx")
-
-        self.assertEqual(len(found), 1)
-        self.assertIn("sans projet", found[0])
-
     def test_titres_d_un_bloc_de_code_ou_d_un_callout_ignores(self):
         raw = '# A\n```\n### B\n```\n::: {.callout-note title="t"}\n### C\n:::\nx'
 

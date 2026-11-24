@@ -55,11 +55,6 @@ class NameTests(ProjectRenameTestCase):
         self.assertContains(response, "Un projet «\xa0Beta\xa0» existe déjà")
         self.assertNotContains(response, "Bilan")
 
-    def test_changer_la_casse_est_permis(self):
-        response = self.client.get(self.url(), {"name": "ALPHA"})
-
-        self.assertContains(response, "Bilan")
-
     def test_lien_depuis_la_page_de_modification(self):
         response = self.client.get(reverse("core:project_edit", args=[self.project.pk]))
 

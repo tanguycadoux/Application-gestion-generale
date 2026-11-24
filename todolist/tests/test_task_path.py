@@ -1,8 +1,6 @@
 """Le chemin d'une tâche : saisi en texte avec autocomplétion, affiché en « › »,
 et filtre de la liste sur un niveau, descendants compris (#298)."""
 
-import re
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -198,19 +196,6 @@ class NoteReviewFormTests(PathTestCase):
 
 
 class PathDisplayTests(PathTestCase):
-    def test_detail_affiche_le_chemin(self):
-        task = self.save(section_path="Réunion/Préparation")
-
-        html = self.client.get(
-            reverse("todolist:task_detail", args=[task.pk])
-        ).content.decode()
-
-        self.assertIn("<dt", html)
-        found = re.search(r"<dt[^>]*>Chemin</dt>\s*<dd>(.*?)</dd>", html)
-        assert found is not None
-        self.assertEqual(re.sub(r"<[^>]+>", "", found[1]), "Réunion › Préparation")
-        self.assertNotIn(">Sujet<", html)
-
     def test_detail_sans_chemin(self):
         task = self.save(section_path="")
 

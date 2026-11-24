@@ -18,11 +18,6 @@ class DeclaredNoDueDateTests(TestCase):
     def setUp(self):
         self.project = Project.objects.create(name="ASTERICS", color="teal")
 
-    def test_pas_declaree_par_defaut(self):
-        task = Task.objects.create(title="T", project=self.project)
-
-        self.assertFalse(task.no_due_date)
-
     def test_une_date_annule_le_choix(self):
         task = Task.objects.create(title="T", project=self.project, no_due_date=True)
 

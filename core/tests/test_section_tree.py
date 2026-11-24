@@ -131,11 +131,6 @@ class TreePageTests(TreeTestCase):
         self.assertIn(f'href="{url}"', html)
         self.assertIn('aria-label="Renommer le niveau « A »"', html)
 
-    def test_inutilise(self):
-        section_for(self.project, ["A"])
-
-        self.assertContains(self.client.get(self.url()), "inutilisé")
-
     def test_compteurs_en_liens_vers_les_passages_et_les_taches(self):
         """#375 : la recherche et la liste des tâches filtrées sur le niveau. La liste
         montre aussi les tâches terminées, que le compteur compte."""
@@ -167,11 +162,12 @@ class TreePageTests(TreeTestCase):
         self.assertContains(passages, "2 passages dans 1 note")
         self.assertContains(tasks, ">Une</a>")
 
-    def test_niveau_inutilise_sans_lien(self):
+    def test_inutilise_sans_lien(self):
         section_for(self.project, ["A"])
 
         html = self.client.get(self.url()).content.decode()
 
+        self.assertIn("inutilisé", html)
         self.assertNotIn("?subjects=", html)
         self.assertNotIn("?path=", html)
 

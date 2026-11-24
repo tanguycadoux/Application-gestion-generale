@@ -18,7 +18,7 @@ from core import html_validator
 from core.models import Project, Section, Tag
 from core.sections import section_for
 from images.models import Image
-from note_taking.models import Note
+from note_taking.models import Note, PendingProjectRename
 from note_taking.services import process_passages
 from todolist.models import Task
 
@@ -105,8 +105,22 @@ class HtmlValidationTests(TestCase):
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
         self.note = Note.objects.create(date=TODAY, body=NOTE_BODY)
         process_passages(self.note)
+        # Une note qui cite celle du jour (#207) et une note absente (#206), avec du
+        # texte sans projet (#385), et un titre de projet renommé (#170).
+        self.citing = Note.objects.create(
+            date=TODAY - timedelta(days=7),
+            body=f"À ranger\n# ASTERICS\n[jour]({TODAY}) [plus tard](2999-01-01)",
+        )
+        process_passages(self.citing)
+        PendingProjectRename.objects.create(
+            note=self.citing, old_name="PDS1", new_name="ASTERICS"
+        )
+        # Après les notes, dont l'enregistrement oublie les niveaux inutilisés.
         # Niveau inutilisé avec un sous-niveau : bouton de suppression actif (#299).
         section_for(project, ["Inutilisé", "Sous-niveau"])
+        # Le même nom ailleurs (#376) et un niveau frère à réunir (#373, #374).
+        section_for(other, ["reunion"])
+        section_for(project, ["Réunions"])
         self.parent = Task.objects.create(
             title="Parent",
             project=project,
@@ -156,11 +170,16 @@ class HtmlValidationTests(TestCase):
                 reverse("core:project_detail", args=[project.pk])
                 + f"?path={section.pk}&group=path&order=asc&state=all"
             ),
+            "projet_renommer": reverse("core:project_rename", args=[project.pk]),
+            "projet_renommer_bilan": (
+                reverse("core:project_rename", args=[project.pk]) + "?name=Alpha"
+            ),
             "projet_nouveau": reverse("core:project_create"),
             "chemins": reverse("core:project_paths", args=[project.pk]),
             "chemin_renommer": rename,
             "chemin_bilan": f"{rename}?name=Rencontre",
             "chemin_nom_refuse": f"{rename}?name=Réunion",
+            "chemin_reunion": f"{rename}?name=Réunions",
             "notes_accueil": reverse("note_taking:index"),
             "notes_liste": reverse("note_taking:notes_list"),
             "notes_liste_filtres": (
@@ -168,9 +187,20 @@ class HtmlValidationTests(TestCase):
                 + "?sort=date&project=ASTERICS&project=PDS1&date_from=2000-01-01"
             ),
             "note": reverse("note_taking:note_detail", args=[note]),
+            "note_qui_cite": reverse(
+                "note_taking:note_detail", args=[self.citing.date]
+            ),
+            "note_projet_renomme": reverse(
+                "note_taking:project_rename_review", args=[self.citing.date]
+            ),
             "note_nouvelle": reverse("note_taking:new_note"),
             "note_modifier": reverse("note_taking:edit_note", args=[note]),
             "recherche": reverse("note_taking:notes_search"),
+            "recherche_resultats": reverse("note_taking:notes_search") + "?q=point",
+            "recherche_document": (
+                reverse("note_taking:notes_search")
+                + "?q=projet:ASTERICS&view=document&group=path"
+            ),
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),

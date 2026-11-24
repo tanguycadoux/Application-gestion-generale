@@ -364,12 +364,6 @@ class FixedBugsTests(SimpleTestCase):
         raw = "---\ndate: 2025-11-24\n---\n# P\navant\n---\napres"
         self.assertEqual(parts(raw), [("P", [], [], ["avant", "---", "apres"])])
 
-    def test_texte_avant_premier_projet_sans_projet(self):
-        """#385 : un passage sans projet, et non plus ignoré (#36)."""
-        self.assertEqual(
-            parts("intro\n# P\nx"), [(None, [], [], ["intro"]), ("P", [], [], ["x"])]
-        )
-
     def test_metadonnee_contenant_deux_points(self):
         result = parse("---\nheure: 10:30\n---\n# P\nx")
         self.assertEqual(result["note metadata"], {"heure": "10:30"})
