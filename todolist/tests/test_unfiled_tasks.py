@@ -5,8 +5,6 @@ tâches sans projet ni chemin, à revoir dans le bilan de la note, où l'on choi
 leur projet. Tant qu'aucun projet n'est choisi, la tâche reste à revoir.
 """
 
-from unittest import expectedFailure
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -123,7 +121,6 @@ class FiledInNoteTests(TestCase):
         process_passages(self.note)
         return Task.objects.get()
 
-    @expectedFailure
     def test_prend_le_projet_et_le_niveau(self):
         task = self.file()
 

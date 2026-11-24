@@ -5,12 +5,10 @@ identité (#240) change. Les tâches gardent leur fiche (avancement, échéance,
 état) et leur chemin suit.
 """
 
-from unittest import expectedFailure
-
 from django.test import TestCase
 
 from core.models import Project, Section
-from core.sections import label, levels
+from core.sections import levels
 from note_taking.exceptions import NoteRenameError
 from note_taking.models import Note
 from note_taking.renaming import find_occurrences, rename_titles
@@ -220,7 +218,7 @@ class PartialRenameTests(RenameTasksTestCase):
 
     def places(self) -> list[tuple[str, str]]:
         return sorted(
-            (task.title, f"{task.project} › {label(task.section)}")
+            (task.title, f"{task.project} › {task.section}")
             for task in Task.objects.exclude(section=None)
         )
 
@@ -229,7 +227,6 @@ class PartialRenameTests(RenameTasksTestCase):
         self.note(f"# P\n## A\n{under}- [ ] Deux", day="2025-11-25")
         Task.objects.update(note_state=Task.NoteState.REVIEWED)
 
-    @expectedFailure
     def test_seules_les_taches_des_titres_reecrits_suivent(self):
         self.start()
 
@@ -237,7 +234,6 @@ class PartialRenameTests(RenameTasksTestCase):
 
         self.assertEqual(self.places(), [("Deux", "P › B"), ("Un", "P › A")])
 
-    @expectedFailure
     def test_sous_niveaux_compris(self):
         self.start("### C\n")
 
@@ -245,7 +241,6 @@ class PartialRenameTests(RenameTasksTestCase):
 
         self.assertEqual(self.places(), [("Deux", "P › B › C"), ("Un", "P › A › C")])
 
-    @expectedFailure
     def test_tache_ecartee_aussi(self):
         self.start()
         Task.objects.filter(title="Deux").update(note_state=Task.NoteState.DISMISSED)
@@ -255,7 +250,6 @@ class PartialRenameTests(RenameTasksTestCase):
         task = Task.all_objects.get(title="Deux")
         self.assertEqual(str(task.section), "B")
 
-    @expectedFailure
     def test_vers_un_niveau_existant(self):
         """Une réunion partielle (#373)."""
         self.start()
@@ -297,7 +291,6 @@ class PartialRenameTests(RenameTasksTestCase):
 
         self.assertIn(("Main", "P › A"), self.places())
 
-    @expectedFailure
     def test_suit_encore_les_changements_suivants(self):
         """Son niveau est celui de sa ligne : `placed_by_note` le reconnaît."""
         self.start()
