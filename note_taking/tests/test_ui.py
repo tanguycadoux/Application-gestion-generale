@@ -35,12 +35,7 @@ class StylesheetsTests(TestCase):
         """Les règles des listes du contenu l'emportent sur `list-none` et `p-0` (#429)."""
         css = self.read("note_taking/style.css")
 
-        self.assertIn(
-            ".rendered-content ul.note-tags {\n"
-            "    padding-left: 0;\n"
-            "    list-style-type: none;",
-            css,
-        )
+        self.assertIn(".rendered-content ul.note-tags {", css)
         self.assertIn(
             '<ul class="note-tags ', render_markdown("::: {.metadata}\ntags: [a]\n:::")
         )

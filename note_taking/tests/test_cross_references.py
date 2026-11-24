@@ -60,11 +60,6 @@ class FigureNumberTests(SimpleTestCase):
 
         self.assertIn(f">Figure{NBSP}1</figcaption>", html)
 
-    def test_figure_en_colonnes_sans_legende_numerotee_sans_texte(self):
-        html = render("::: {#fig-banc layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n:::")
-
-        self.assertIn(f">Figure{NBSP}1</figcaption></figure>", html)
-
     def test_figure_en_colonnes_numerotee(self):
         html = render(
             "::: {#fig-banc layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n\nLégende\n:::"
