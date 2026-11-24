@@ -26,6 +26,7 @@ from .projects import check_new_project_name
 from .section_tree import section_tree
 from .sections import (
     check_new_name,
+    homonyms,
     levels,
     merge_plan,
     merge_section,
@@ -267,10 +268,27 @@ def rename_section(request, pk, section_pk):
         for occurrence in renamer.occurrences(project, path)
     ]
     if request.method != "POST":
-        context.update(new_name=new_name, occurrences=occurrences, target=target)
+        row = next(r for r in section_tree(project) if r.section.pk == section.pk)
+        query = urlencode({"name": new_name})
+        context.update(
+            new_name=new_name,
+            occurrences=occurrences,
+            target=target,
+            usage=row.usage,
+            # Le même nom ailleurs (#376), sauf là où le nouveau nom est déjà écrit et
+            # le frère que ce bilan réunit.
+            homonyms=[
+                (
+                    label,
+                    reverse("core:section_rename", args=[other.project_id, other.pk])
+                    + f"?{query}",
+                )
+                for other, label in homonyms(section)
+                if other != target and other.name != new_name
+            ],
+        )
         if target:
-            row = next(r for r in section_tree(project) if r.section.pk == section.pk)
-            context.update(plan=merge_plan(section, target), usage=row.usage)
+            context.update(plan=merge_plan(section, target))
         return render(request, "core/section_rename.html", context)
 
     chosen = request.POST.getlist("headings")

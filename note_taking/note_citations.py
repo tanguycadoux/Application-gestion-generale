@@ -1,24 +1,14 @@
 """Notes qui citent une note (#207) : les passages dont un lien
 `[texte](AAAA-MM-JJ.qmd)` mène à elle (`PassageNoteLink`), pour sa page."""
 
-import re
 from dataclasses import dataclass
 
 from django.urls import reverse
-from django.utils.text import Truncator
 
+from .excerpts import plain_line
 from .models import Note, Passage, PassageNoteLink
 from .qmd.links import NOTE_LINK_REGEX, without_code
 from .qmd.parser import HEADING_SEPARATOR
-
-# Longueur de l'extrait, en caractères, points de suspension compris.
-EXCERPT_LENGTH = 160
-
-# Ce qui ne se lit pas dans un extrait : marque de liste, de citation ou de titre
-# en début de ligne, case à cocher.
-LINE_MARKER_REGEX = re.compile(r"^\s*(?:[-*+>]|\d+[.)]|#+)\s+(?:\[[ xX]\]\s+)?")
-# Lien ou image : son texte seul.
-LINK_REGEX = re.compile(r"!?\[(?P<text>[^\]\n]*)\]\([^)\n]*\)(?:\{[^}\n]*\})?")
 
 
 @dataclass
@@ -49,8 +39,7 @@ def excerpt(content: str, day: str) -> str:
         ),
         "",
     )
-    text = LINK_REGEX.sub(lambda m: m["text"], LINE_MARKER_REGEX.sub("", line))
-    return Truncator(" ".join(text.split())).chars(EXCERPT_LENGTH)
+    return plain_line(line)
 
 
 def citations(note: Note) -> list[Citation]:

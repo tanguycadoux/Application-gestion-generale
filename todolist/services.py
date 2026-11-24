@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
@@ -22,6 +23,7 @@ from note_taking.qmd.parser import (
 )
 from note_taking.renaming import normalized
 from note_taking.services import replace_image_paths
+from note_taking.signals import ReviewedSection
 
 from .models import TASK_TEXT_MAX_LENGTH, Task
 from .progress import update_ancestors_progress
@@ -294,6 +296,39 @@ def note_lines(passages: Iterable[Passage]) -> set[tuple[str, str]]:
     return {
         (line.path, line.text) for passage in passages for line in task_lines(passage)
     }
+
+
+def section_task_titles(sections: list[ReviewedSection]) -> list[list[str]]:
+    """Les titres des tâches écrites dans chaque section de note, dans l'ordre des
+    lignes (#376), sans les écartées. Un nombre fixe de requêtes."""
+    notes = {section.note.pk: section.note for section in sections}
+    passages: dict[int, list[Passage]] = defaultdict(list)
+    for passage in (
+        Passage.objects.filter(note__in=notes)
+        .order_by("position")
+        .prefetch_related("tags")
+    ):
+        passages[passage.note_id].append(passage)
+    titles = {
+        (task.note_date, task.note_path, task.note_line_text): task.title
+        for task in Task.objects.filter(
+            created_from_note=True, note_date__in=[n.date for n in notes.values()]
+        )
+    }
+    return [
+        # Une ligne écrite deux fois au même chemin est une seule tâche.
+        [
+            titles[identity]
+            for identity in dict.fromkeys(
+                (section.note.date, line.path, line.text)
+                for passage in passages[section.note.pk]
+                if section.start_line <= passage.start_line <= section.end_line
+                for line in task_lines(passage)
+            )
+            if identity in titles
+        ]
+        for section in sections
+    ]
 
 
 def origin_anchor(task: Task, note: Note) -> str:
