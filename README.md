@@ -459,10 +459,18 @@ Milestones terminés :
 | M14 · Navigation et affichage des notes | adresses en anglais, une note par sa date (`/notes/AAAA-MM-JJ/`, l'adresse par id redirige) ; menu commun repliable en icônes, accueil en tableau de bord (note du jour, tâches en retard ou proches) ; page d'une note affichée telle qu'écrite, numéros des tableaux et figures comme Quarto ; confirmations en popover native et toasts rendus par le serveur ; calendrier de hauteur constante, navigable aux flèches du clavier ; tableaux triés et filtrés côté serveur (filtres à choix multiples avec recherche, filtre d'état de la liste des tâches) ; section de debug en `DEBUG` seulement, avec la galerie des alertes |
 | M15 · Recherche plein texte | index FTS5 du corps des notes ; une zone de recherche aux opérateurs en français (`projet:`, `chemin:`, `tag:`, `date:`, `"phrase exacte"`, préfixe, exclusion), tolérante aux fautes et au pluriel ; résultats groupés par note, en extraits ou en document ; arbre des projets et chemins ; barre de recherche Ctrl+K ; recherches enregistrées |
 | M16 · Projets et liens entre notes | passages à la place des note parts, texte sans projet gardé ; fiche d'un projet ; renommage d'un projet, réunion de deux niveaux, doublons signalés, bilans de renommage (extraits, tâches, homonymes) ; les tâches suivent les titres renommés ou déplacés ; liens entre notes compatibles Quarto et « Citée par » ; bloc « À traiter » et bilan de la semaine ; capture rapide, enregistrement sans quitter l'éditeur et note changée signalée |
+| M19 · Éditeur de notes : insertion et tableaux | menu du clic droit de l'éditeur : insérer une image ou un tableau, formater le tableau du curseur ; lignes de tableau sans retour à la ligne ; marqueurs des listes de Pandoc colorés |
+| M21 · Qualité du code (suite) | noms internes des tâches en « task », modules à plusieurs rôles découpés |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes |
-| M18 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet, questions sur les notes, correction orthographique, tâches suggérées |
+| M24 · Page d'une note : lecture et rendu | note présentée comme une feuille, actions toujours visibles, légende des images seules, tags sans puces, liens dans un nouvel onglet |
+| M25 · Recherche (suite) | tri des résultats, vue « Document » lue comme une note, filtres toujours visibles, arbre fidèle à ce qui est cherché |
+| M23 · Éditeur : listes et blocs | hiérarchie du menu du clic droit et formatage groupé des tableaux, listes imbriquées (retrait, coloration, Tab), insertion des blocs à syntaxe particulière, plan sans les titres de callout |
+| M26 · Éditeur : tableaux et mise en forme | lignes et colonnes d'un tableau au clic droit, édition dans une fenêtre à part, paires automatiques, Ctrl+B / I / U |
+| M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |
+| M22 · Import et export (suite) | import depuis la page d'une note, choix de la version à garder au réimport |
+| M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes, import depuis la liste, suppression des images inutilisées |
+| M18 · Assistant local | IA optionnelle et 100 % locale : résumé d'un projet et de la semaine, questions sur les notes, correction orthographique, tâches suggérées |
