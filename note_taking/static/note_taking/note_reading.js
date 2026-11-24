@@ -11,7 +11,7 @@
     "use strict";
 
     const STORAGE_KEY = "note-outline-hidden";
-    const GRID_CLASS = "lg:grid-cols-[minmax(0,210mm)_16rem]";
+    const GRID_CLASS = "lg:grid-cols-[minmax(0,240mm)_16rem]";
     // Un titre est « lu » quand il passe sous ce seuil, depuis le haut de la zone qui défile.
     const READING_OFFSET = 96;
 

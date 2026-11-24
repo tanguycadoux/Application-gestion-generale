@@ -75,15 +75,23 @@ class NotePageTests(TestCase):
         self.assertIn(reverse("note_taking:edit_note", args=[self.note.date]), header)
         self.assertIn("truncate", header[header.index("<h1") : header.index("</h1>")])
 
-    def test_feuille_a4(self):
+    def test_feuille(self):
         self.assertRegex(
             self.html, r'<div class="rendered-content [^"]*\bbg-white\b[^"]*"'
+        )
+        # La page ne défile pas de côté : les contenus larges défilent seuls.
+        css_path = finders.find("note_taking/style.css")
+        assert isinstance(css_path, str)
+        self.assertIn(
+            ".rendered-content :is(pre, .table-scroll, .katex-display) {\n"
+            "    overflow-x: auto;",
+            Path(css_path).read_text(encoding="utf-8"),
         )
         # La même largeur avec et sans plan, que `note_reading.js` affiche ou masque.
         path = finders.find("note_taking/note_reading.js")
         assert isinstance(path, str)
         script = Path(path).read_text(encoding="utf-8")
-        columns = "lg:grid-cols-[minmax(0,210mm)_16rem]"
+        columns = "lg:grid-cols-[minmax(0,240mm)_16rem]"
         self.assertIn(columns, self.html)
         self.assertIn(f'"{columns}"', script)
 

@@ -94,8 +94,28 @@
 }
 
 /* Espacement entre blocs, retiré lui aussi par le reset. */
-.rendered-content :is(p, pre, table, blockquote) {
+.rendered-content :is(p, pre, .table-scroll, blockquote) {
     margin: .5rem 0;
+}
+
+/* Contenus plus larges que leur place (#421) : chacun défile seul, la page jamais ; un mot
+   trop long se coupe. */
+.rendered-content {
+    overflow-wrap: break-word;
+}
+
+.rendered-content :is(pre, .table-scroll, .katex-display) {
+    overflow-x: auto;
+}
+
+.rendered-content .katex-display {
+    overflow-y: hidden;
+}
+
+@media print {
+    .rendered-content :is(pre, .table-scroll) {
+        overflow-x: visible;
+    }
 }
 
 /* Pas de marge au bord du conteneur ni à celui du corps d'un callout ; ni au-dessus du
