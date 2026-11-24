@@ -8,6 +8,7 @@ from core.app_registry import (
     ProjectUsage,
     SectionRenamer,
     SectionUsage,
+    WeekBlock,
 )
 
 
@@ -45,7 +46,7 @@ class NoteTakingConfig(AppConfig):
     debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
 
     def ready(self):
-        from . import dashboard, renaming, search_index  # noqa: F401 (récepteurs)
+        from . import dashboard, renaming, search_index, week  # noqa: F401 (récepteurs)
 
         self.dashboard_blocks = (
             DashboardBlock(
@@ -54,6 +55,10 @@ class NoteTakingConfig(AppConfig):
                 "note_taking/dashboard_today.html",
                 dashboard.today_note,
             ),
+        )
+
+        self.week_blocks = (
+            WeekBlock("Notes", 10, "note_taking/week_notes.html", week.week_notes),
         )
 
         self.section_renamer = SectionRenamer(

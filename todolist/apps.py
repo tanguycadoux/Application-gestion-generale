@@ -7,6 +7,7 @@ from core.app_registry import (
     NavSection,
     ProjectUsage,
     SectionUsage,
+    WeekBlock,
 )
 
 
@@ -40,7 +41,11 @@ class TodolistConfig(AppConfig):
     )
 
     def ready(self):
-        from . import dashboard, progress, receivers  # noqa: F401
+        from . import dashboard, progress, receivers, week  # noqa: F401
+
+        self.week_blocks = (
+            WeekBlock("Tâches", 20, "todolist/week_tasks.html", week.week_tasks),
+        )
 
         self.dashboard_blocks = (
             DashboardBlock(

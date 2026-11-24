@@ -5,6 +5,7 @@
   recherche du menu commun (#202) ;
 - `header_templates` : ses gabarits à droite de l'en-tête de toutes les pages (#386) ;
 - `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
+- `week_blocks` : ses blocs du bilan d'une semaine (#208) ;
 - `debug_pages` : ses pages réservées au mode DEBUG, réunies dans la section
   « Debug » du menu (#235) ;
 - `project_usages` : ce qui, chez elle, utilise un projet (pour l'afficher et
@@ -25,6 +26,8 @@ from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.text import Truncator
+
+from .weeks import Week
 
 # Les tâches citées sous un titre, dans le bilan d'un renommage (#376).
 TASKS_SHOWN = 3
@@ -60,6 +63,17 @@ class DashboardBlock:
     order: int
     template: str
     context: Callable[[], dict]
+
+
+@dataclass(frozen=True)
+class WeekBlock:
+    """Un bloc du bilan d'une semaine (#208), comme un bloc de l'accueil : son
+    contexte dépend de la semaine."""
+
+    title: str
+    order: int
+    template: str
+    context: Callable[[Week], dict]
 
 
 @dataclass(frozen=True)
@@ -192,6 +206,15 @@ def dashboard_blocks() -> list[DashboardBlock]:
         block
         for config in apps.get_app_configs()
         for block in getattr(config, "dashboard_blocks", ())
+    )
+    return sorted(blocks, key=lambda block: block.order)
+
+
+def week_blocks() -> list[WeekBlock]:
+    blocks = (
+        block
+        for config in apps.get_app_configs()
+        for block in getattr(config, "week_blocks", ())
     )
     return sorted(blocks, key=lambda block: block.order)
 
