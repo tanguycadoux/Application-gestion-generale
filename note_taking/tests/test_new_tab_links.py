@@ -20,7 +20,6 @@ class NewTabLinksTests(TestCase):
                 "<strong>gras</strong> et <code>code</code>",
             ),
             ("[écrire](mailto:a@b.fr)", "mailto:a@b.fr", "écrire"),
-            ("![Logo](https://exemple.org/a.png)", "https://exemple.org/a.png", "Logo"),
         ):
             with self.subTest(text=text):
                 self.assertIn(new_tab_link(href, label), render_note_body(text))

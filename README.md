@@ -463,12 +463,12 @@ Milestones terminés :
 | M16 · Projets et liens entre notes | passages à la place des note parts, texte sans projet gardé ; fiche d'un projet ; renommage d'un projet, réunion de deux niveaux, doublons signalés, bilans de renommage (extraits, tâches, homonymes) ; les tâches suivent les titres renommés ou déplacés ; liens entre notes compatibles Quarto et « Citée par » ; bloc « À traiter » et bilan de la semaine ; capture rapide, enregistrement sans quitter l'éditeur et note changée signalée |
 | M19 · Éditeur de notes : insertion et tableaux | menu du clic droit de l'éditeur : insérer une image ou un tableau, formater le tableau du curseur ; lignes de tableau sans retour à la ligne ; marqueurs des listes de Pandoc colorés |
 | M21 · Qualité du code (suite) | noms internes des tâches en « task », modules à plusieurs rôles découpés |
+| M24 · Page d'une note : lecture et rendu | note présentée comme une feuille, à l'échelle quand la place manque ; titre et actions toujours visibles, plan par-dessus la feuille sur une fenêtre étroite ; tableaux larges qui défilent seuls ; légende des images seules, comme Pandoc ; tags sans puces ; liens dans un nouvel onglet |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M24 · Page d'une note : lecture et rendu | note présentée comme une feuille, actions toujours visibles, légende des images seules, tags sans puces, liens dans un nouvel onglet |
 | M25 · Recherche (suite) | tri des résultats, vue « Document » lue comme une note, filtres toujours visibles, arbre fidèle à ce qui est cherché |
 | M23 · Éditeur : listes et blocs | hiérarchie du menu du clic droit et formatage groupé des tableaux, listes imbriquées (retrait, coloration, Tab), insertion des blocs à syntaxe particulière, plan sans les titres de callout |
 | M26 · Éditeur : tableaux et mise en forme | lignes et colonnes d'un tableau au clic droit, édition dans une fenêtre à part, paires automatiques, Ctrl+B / I / U |

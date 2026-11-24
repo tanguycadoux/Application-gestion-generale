@@ -61,6 +61,14 @@ Droite
 Légende commune
 :::
 
+![Vue **seule**, H<sub>2</sub>O et $x^2$](images/banc.png){width=50% fig-alt="Banc"}
+
+Dans une ligne ![icône](images/banc.png), en lien
+[![vue](images/banc.png)](https://exemple.org), distante
+![logo](https://exemple.org/logo.png), [gras **ici**](mailto:a@exemple.org).
+
+### Voir [le site](https://exemple.org)
+
 ```python
 print("<b>")
 ```
