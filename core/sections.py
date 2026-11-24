@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from .models import Project, Section
 from .names import similar_key
+from .tables import fold
 
 INPUT_SEPARATOR = "/"
 LABEL_SEPARATOR = " › "
@@ -305,6 +306,19 @@ def path_labels(with_project: bool = True) -> dict[int, str]:
             names.insert(0, section.project.name)
         labels[pk] = LABEL_SEPARATOR.join(names)
     return labels
+
+
+def homonyms(section: Section) -> list[tuple[Section, str]]:
+    """Les autres niveaux de même nom (casse et accents ignorés), sous un autre parent
+    ou dans un autre projet, avec leur chemin entier, triés par ce chemin (#376)."""
+    labels = path_labels()
+    name = fold(section.name)
+    found = [
+        (other, labels[other.pk])
+        for other in Section.objects.exclude(pk=section.pk)
+        if fold(other.name) == name
+    ]
+    return sorted(found, key=lambda pair: fold(pair[1]))
 
 
 def path_suggestions() -> list[tuple[str, str]]:

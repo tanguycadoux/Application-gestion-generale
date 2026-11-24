@@ -2,7 +2,6 @@
 où le même nom existe ailleurs (#376)."""
 
 import re
-from unittest import expectedFailure
 
 from django.db import connection
 from django.test import SimpleTestCase, TestCase
@@ -45,48 +44,41 @@ class ExcerptTests(ReviewTestCase):
         self.note(body)
         return [found.excerpt for found in find_occurrences(self.project, ["A"])]
 
-    @expectedFailure
     def test_premiers_mots_de_chaque_section(self):
         self.assertEqual(
             self.excerpts("# P\n## A\n\nPremier texte\nsuite\n## A\nSecond texte"),
             ["Premier texte", "Second texte"],
         )
 
-    @expectedFailure
     def test_texte_sans_marques(self):
         self.assertEqual(
             self.excerpts("# P\n## A\n- [ ] Voir [le plan](https://x.fr/a)"),
             ["Voir le plan"],
         )
 
-    @expectedFailure
     def test_blocs_et_lignes_sans_texte_passes(self):
         body = (
-            "# P\n## A\n::: {.metadata}\ntags: [x]\n:::\n---\n![](image.png)\n"
+            "# P\n## A\n::: {.metadata}\ntags: [x]\n:::\n---\n![](https://x.fr/a.png)\n"
             "::: {.callout-note}\nDans l'encadré\n:::"
         )
         self.assertEqual(self.excerpts(body), ["Dans l'encadré"])
 
-    @expectedFailure
     def test_section_de_sous_titres_seulement(self):
         self.assertEqual(
             self.excerpts("# P\n## A\n### B\nTexte de B\n## C\nAilleurs"),
             ["Texte de B"],
         )
 
-    @expectedFailure
     def test_section_vide(self):
         """Le texte de la section suivante n'est pas le sien."""
         self.assertEqual(self.excerpts("# P\n## A\n## C\nAilleurs"), [""])
 
-    @expectedFailure
     def test_raccourci(self):
         [excerpt] = self.excerpts("# P\n## A\n" + "mot " * 100)
 
         self.assertLess(len(excerpt), 170)
         self.assertTrue(excerpt.endswith("…"))
 
-    @expectedFailure
     def test_affiche_et_echappe(self):
         self.note("# P\n## A\nUn <b>texte</b>")
 
@@ -97,7 +89,6 @@ class OccurrenceTasksTests(ReviewTestCase):
     def tasks(self) -> list[tuple[str, ...]]:
         return [found.tasks for found in find_occurrences(self.project, ["A"])]
 
-    @expectedFailure
     def test_taches_de_chaque_titre_sous_titres_compris(self):
         self.note(
             "# P\n## A\n- [ ] Une\n### B\n- [ ] Deux\n## C\n- [ ] Trois\n"
@@ -107,27 +98,23 @@ class OccurrenceTasksTests(ReviewTestCase):
 
         self.assertEqual(self.tasks(), [("Une", "Deux"), ("Quatre",), ()])
 
-    @expectedFailure
     def test_titre_de_la_tache_et_non_sa_ligne(self):
         self.note("# P\n## A\n- [ ] Une")
         Task.objects.update(title="Renommée")
 
         self.assertEqual(self.tasks(), [("Renommée",)])
 
-    @expectedFailure
     def test_tache_ecartee_absente(self):
         self.note("# P\n## A\n- [ ] Une")
         Task.objects.update(note_state=Task.NoteState.DISMISSED)
 
         self.assertEqual(self.tasks(), [()])
 
-    @expectedFailure
     def test_affichees_sous_leur_titre(self):
         self.note("# P\n## A\n- [ ] Une\n- [ ] Deux")
 
         self.assertIn("2 tâches : Une, Deux", self.review("A"))
 
-    @expectedFailure
     def test_nombre_de_requetes_constant(self):
         def count() -> int:
             with CaptureQueriesContext(connection) as captured:
@@ -147,7 +134,6 @@ class TasksTextTests(SimpleTestCase):
     def text(self, *tasks: str) -> str:
         return app_registry.HeadingOccurrence("", "", "", "", tasks=tasks).tasks_text
 
-    @expectedFailure
     def test_texte(self):
         self.assertEqual(self.text(), "")
         self.assertEqual(self.text("Une"), "1 tâche : Une")
@@ -155,20 +141,17 @@ class TasksTextTests(SimpleTestCase):
             self.text("Une", "Deux", "Trois"), "3 tâches : Une, Deux, Trois"
         )
 
-    @expectedFailure
     def test_au_dela_de_trois(self):
         self.assertEqual(self.text("1", "2", "3", "4"), "4 tâches : 1, 2, 3 et 1 autre")
         self.assertEqual(
             self.text("1", "2", "3", "4", "5"), "5 tâches : 1, 2, 3 et 2 autres"
         )
 
-    @expectedFailure
     def test_titre_long_raccourci(self):
         self.assertLess(len(self.text("x" * 300)), 90)
 
 
 class FollowersTests(ReviewTestCase):
-    @expectedFailure
     def test_ce_qui_suit_le_nouveau_chemin(self):
         """Comme la page Chemins : sous-niveaux et tâches saisies à la main compris."""
         self.note("# P\n## A\n- [ ] Une\n### B\n- [ ] Deux")
@@ -192,9 +175,10 @@ class HomonymTests(ReviewTestCase):
         found = re.search(r'aria-labelledby="homonyms-title".*?</section>', html, re.S)
         if found is None:
             return []
-        return re.findall(r'<li[^>]*>\s*(.*?)\s*<a[^>]*href="([^"]*)"', found[0], re.S)
+        return re.findall(
+            r'<li[^>]*>\s*(.*?)\s*<span[^>]*><a[^>]*href="([^"]*)"', found[0], re.S
+        )
 
-    @expectedFailure
     def test_autres_parents_et_autres_projets_casse_et_accents_ignores(self):
         other = Project.objects.create(name="Q")
         under = self.section("Suivi", "Reunion")
@@ -209,7 +193,6 @@ class HomonymTests(ReviewTestCase):
             ],
         )
 
-    @expectedFailure
     def test_nouveau_nom_encode(self):
         under = self.section("Suivi", "A")
 
@@ -235,7 +218,6 @@ class HomonymTests(ReviewTestCase):
 
 
 class HeaderTests(ReviewTestCase):
-    @expectedFailure
     def test_separateur_entre_le_projet_et_le_chemin(self):
         section = self.section("A", "B")
 

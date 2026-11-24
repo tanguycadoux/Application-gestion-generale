@@ -21,6 +21,7 @@ espaces ignorés, #374), et réécrit en gardant dièses, espaces et fin de lign
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Any
 
 from django.db import transaction
 from django.urls import reverse
@@ -31,6 +32,7 @@ from core.models import Project
 from core.sections import LABEL_SEPARATOR
 
 from .exceptions import NoteRenameError
+from .excerpts import first_words
 from .models import Note
 from .qmd.parser import (
     BLOCK_END,
@@ -42,7 +44,7 @@ from .qmd.parser import (
     heading_name,
 )
 from .services import process_passages
-from .signals import note_headings_renamed
+from .signals import ReviewedSection, note_headings_renamed, sections_reviewed
 
 # Un titre, ligne entière : indentation, dièses, espaces, texte, espaces de fin (et
 # le retour chariot d'une fin de ligne Windows).
@@ -156,7 +158,18 @@ def located(project: Project, levels: list[str]) -> list[Located]:
 
 
 def find_occurrences(project: Project, levels: list[str]) -> list[HeadingOccurrence]:
-    """Les titres à réécrire pour renommer ce niveau, pour le bilan."""
+    """Les titres à réécrire pour renommer ce niveau, pour le bilan, avec les premiers
+    mots et les tâches de leur section, sous-titres compris (#376)."""
+    all_found = located(project, levels)
+    sections = [
+        ReviewedSection(
+            found.note,
+            found.heading.number,
+            section_end(found.note.body, found.heading),
+        )
+        for found in all_found
+    ]
+    tasks = section_tasks(sections)
     return [
         HeadingOccurrence(
             key=found.key,
@@ -166,8 +179,39 @@ def find_occurrences(project: Project, levels: list[str]) -> list[HeadingOccurre
             ),
             url=reverse("note_taking:note_detail", args=[found.note.date]),
             chain=LABEL_SEPARATOR.join([project.name, *found.heading.path]),
+            excerpt=first_words(
+                found.note.body.split("\n")[section.start_line : section.end_line]
+            ),
+            tasks=titles,
         )
-        for found in located(project, levels)
+        for found, section, titles in zip(all_found, sections, tasks, strict=True)
+    ]
+
+
+def section_end(body: str, heading: Heading) -> int:
+    """La dernière ligne de la section d'un titre, sous-titres compris : celle qui
+    précède le prochain titre de même niveau ou au-dessus."""
+    return next(
+        (
+            other.number - 1
+            for other in headings(body)
+            if other.number > heading.number and other.level <= heading.level
+        ),
+        len(body.split("\n")),
+    )
+
+
+def section_tasks(sections: list[ReviewedSection]) -> list[tuple[str, ...]]:
+    """Les titres des tâches de chaque section, demandés aux apps qui en tirent des
+    notes (`sections_reviewed`)."""
+    # Les stubs de Django typent les réponses en `str | None` : ce sont des listes.
+    responses: list[Any] = [
+        response
+        for _, response in sections_reviewed.send(sender=Note, sections=sections)
+    ]
+    return [
+        tuple(title for response in responses for title in response[index])
+        for index in range(len(sections))
     ]
 
 
