@@ -1,0 +1,47 @@
+{% load static ui %}
+{# Capture rapide (#386), dans l'en-tête de toutes les pages. Sans JavaScript, un lien vers le formulaire de la note du jour ; quick_capture.js ouvre le dialogue à la place. Le plan de la note n'est lu qu'à l'ouverture. #}
+{% url 'note_taking:quick_capture' as capture_url %}
+<a href="{{ capture_url }}" data-quick-capture title="Capture rapide (Ctrl+Maj+K)" aria-label="Capture rapide" aria-keyshortcuts="Control+Shift+K Meta+Shift+K" class="inline-flex items-center gap-2 rounded-xl p-1.5 font-semibold hover:bg-slate-200">{% icon "bolt" %}</a>
+
+<dialog id="quick-capture" aria-labelledby="quick-capture-title" class="m-auto max-h-[calc(100dvh-4rem)] w-[calc(100%-2rem)] max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-lg backdrop:bg-slate-900/30">
+    <form method="post" action="{{ capture_url }}" autocomplete="off" class="flex flex-col gap-3">
+        {% csrf_token %}
+        <h2 id="quick-capture-title">Ajouter à la note du jour</h2>
+
+        {# Montré par le script quand l'éditeur de la note du jour est ouvert dans la page : la ligne ajoutée à côté rendrait son texte périmé. #}
+        <p data-capture-open-editor hidden class="text-amber-800">La note du jour est ouverte dans cet éditeur : écrivez-y directement.</p>
+
+        <div data-capture-fields class="flex flex-col gap-3">
+            <div>
+                <label for="quick-capture-text" class="sr-only">Texte à ajouter</label>
+                <textarea id="quick-capture-text" name="text" rows="3" required class="w-full" aria-describedby="quick-capture-help"></textarea>
+                <p id="quick-capture-help" class="mt-1 text-sm text-slate-600">{% kbd "Entrée" %} : ajouter · {% kbd "Maj+Entrée" %} : aller à la ligne · {% kbd "Échap" %} : fermer</p>
+            </div>
+
+            <label class="flex items-center gap-2"><input type="checkbox" name="is_task"> C'est une tâche</label>
+
+            <fieldset class="flex flex-col gap-1">
+                <legend class="mb-1 font-medium">Où l'écrire</legend>
+                <div class="max-h-60 overflow-auto rounded-lg border border-slate-200 p-1">
+                    <label class="flex items-start gap-2 rounded px-1 py-0.5 hover:bg-slate-100">
+                        <input type="radio" name="target" value="" checked class="mt-1">
+                        <span>En tête de la note, sans projet</span>
+                    </label>
+                    <div data-capture-plan></div>
+                </div>
+            </fieldset>
+
+            <div>
+                <label for="quick-capture-new-title" data-capture-new-label class="font-medium">Nouveau projet (facultatif)</label>
+                <input type="text" id="quick-capture-new-title" name="new_title" maxlength="200" list="quick-capture-titles" class="w-full" data-projects-url="{% url 'core:project_suggestions' %}" data-sections-url="{% url 'core:section_suggestions' %}">
+                <datalist id="quick-capture-titles"></datalist>
+            </div>
+        </div>
+
+        <div class="flex gap-2">
+            {% button "Ajouter" icon="add" %}
+            {% button "Fermer" icon="close" variant="ghost" type="button" name="close" value="1" %}
+        </div>
+    </form>
+</dialog>
+<script src="{% static 'note_taking/quick_capture.js' %}" defer></script>

@@ -2,7 +2,6 @@
 n'importe quelle page."""
 
 import re
-from unittest import expectedFailure
 
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -31,7 +30,6 @@ def add(body: str, text: str, target: str = "", **options) -> str:
 
 
 class PlanTests(SimpleTestCase):
-    @expectedFailure
     def test_titres_de_la_note_avec_leur_profondeur(self):
         from note_taking.quick_capture import targets
 
@@ -39,28 +37,24 @@ class PlanTests(SimpleTestCase):
 
         self.assertEqual(
             [(t.title, t.depth, t.project, t.path) for t in targets(body)],
-            [("P", 0, "P", ()), ("A", 1, "P", ("A",)), ("Q", 0, "Q", ())],
+            [("P", 0, "P {#p}", ()), ("A", 1, "P {#p}", ("A",)), ("Q", 0, "Q", ())],
         )
 
-    @expectedFailure
     def test_titres_repetes_distingues(self):
         body = "# P\n## A\nx\n## A\ny"
 
         self.assertNotEqual(key_of(body, "A"), key_of(body, "A", 1))
 
-    @expectedFailure
     def test_cle_stable_quand_la_note_change_ailleurs(self):
         self.assertEqual(key_of("# P\n## A\nx", "A"), key_of("y\n# P\nz\n## A\nx", "A"))
 
 
 class PlaceTests(SimpleTestCase):
-    @expectedFailure
     def test_en_tete_sans_projet(self):
         self.assertEqual(add("", "Idée"), "Idée\n")
         self.assertEqual(add("# P\nx", "Idée"), "Idée\n\n# P\nx")
         self.assertEqual(add("a\n\n# P\nx", "Idée"), "a\n\nIdée\n\n# P\nx")
 
-    @expectedFailure
     def test_en_fin_de_section_avant_les_sous_titres(self):
         self.assertEqual(
             add("# P\na\n\n## A\nb\n# Q", "Idée", "P"),
@@ -71,25 +65,21 @@ class PlaceTests(SimpleTestCase):
             "# P\na\n## A\nb\n\nIdée\n\n# Q",
         )
 
-    @expectedFailure
     def test_en_fin_de_note(self):
         self.assertEqual(add("# P\na", "Idée", "P"), "# P\na\n\nIdée")
         self.assertEqual(add("# P\na\n", "Idée", "P"), "# P\na\n\nIdée\n")
 
-    @expectedFailure
     def test_jamais_colle_a_un_titre(self):
         self.assertEqual(
             add("# P\n## A\n## B", "Idée", "A"), "# P\n## A\n\nIdée\n\n## B"
         )
 
-    @expectedFailure
     def test_titre_repete(self):
         self.assertEqual(
             add("# P\n## A\nx\n## A\ny", "Idée", "A", occurrence=1),
             "# P\n## A\nx\n## A\ny\n\nIdée",
         )
 
-    @expectedFailure
     def test_apres_un_bloc_et_pas_dedans(self):
         blocks = (
             "```python\n# x\n```",
@@ -105,14 +95,12 @@ class PlaceTests(SimpleTestCase):
                     f"# P\n{block}\n\nIdée\n\n# Q",
                 )
 
-    @expectedFailure
     def test_bloc_jamais_ferme_la_ligne_est_avant(self):
         self.assertEqual(
             add("# P\na\n::: {.callout-note}\nb", "Idée", "P"),
             "# P\na\n\nIdée\n\n::: {.callout-note}\nb",
         )
 
-    @expectedFailure
     def test_titre_dans_une_colonne(self):
         """La section s'arrête à la fin de la colonne qui contient le titre."""
         self.assertEqual(
@@ -120,7 +108,6 @@ class PlaceTests(SimpleTestCase):
             "# P\n::: {.column}\n## A\na\n\nIdée\n:::\nz",
         )
 
-    @expectedFailure
     def test_fins_de_ligne_gardees(self):
         self.assertEqual(
             add("# P\r\na\r\n# Q\r\nb", "Un\nDeux", "P"),
@@ -130,30 +117,25 @@ class PlaceTests(SimpleTestCase):
 
 
 class TextTests(SimpleTestCase):
-    @expectedFailure
     def test_tache(self):
         self.assertEqual(
             add("# P", "Relancer", "P", is_task=True), "# P\n\n- [ ] Relancer"
         )
 
-    @expectedFailure
     def test_tache_deja_ecrite_comme_telle(self):
         for text in ("- Relancer", "- [ ] Relancer", "* [x] Relancer"):
             with self.subTest(text=text):
                 self.assertEqual(add("", text, is_task=True), "- [ ] Relancer\n")
 
-    @expectedFailure
     def test_suite_d_une_tache_dans_son_element(self):
         self.assertEqual(add("", "Un\r\nDeux", is_task=True), "- [ ] Un\n  Deux\n")
 
-    @expectedFailure
     def test_tache_a_la_suite_d_une_liste(self):
         self.assertEqual(
             add("# P\n- [ ] a\n    - b\n# Q", "c", "P", is_task=True),
             "# P\n- [ ] a\n    - b\n- [ ] c\n\n# Q",
         )
 
-    @expectedFailure
     def test_texte_apres_une_liste_et_tache_apres_un_texte(self):
         self.assertEqual(add("# P\n- a", "b", "P"), "# P\n- a\n\nb")
         self.assertEqual(add("# P\na", "b", "P", is_task=True), "# P\na\n\n- [ ] b")
@@ -161,7 +143,6 @@ class TextTests(SimpleTestCase):
             add("# P\n1. a", "b", "P", is_task=True), "# P\n1. a\n\n- [ ] b"
         )
 
-    @expectedFailure
     def test_texte_vide_refuse(self):
         from note_taking.exceptions import QuickCaptureError
 
@@ -169,7 +150,6 @@ class TextTests(SimpleTestCase):
             with self.assertRaises(QuickCaptureError):
                 add("# P", text)
 
-    @expectedFailure
     def test_texte_qui_changerait_la_structure_refuse(self):
         from note_taking.exceptions import QuickCaptureError
 
@@ -186,13 +166,11 @@ class TextTests(SimpleTestCase):
             with self.subTest(text=text), self.assertRaises(QuickCaptureError):
                 add("# P", text, "P")
 
-    @expectedFailure
     def test_diese_dans_le_texte_permis(self):
         self.assertEqual(add("", "Voir #386 et C# 14"), "Voir #386 et C# 14\n")
 
 
 class NewTitleTests(SimpleTestCase):
-    @expectedFailure
     def test_nouveau_projet_en_fin_de_note(self):
         self.assertEqual(add("", "x", new_title="P"), "# P\n\nx\n")
         self.assertEqual(
@@ -200,14 +178,12 @@ class NewTitleTests(SimpleTestCase):
             "a\n# P\nb\n\n# Nouveau projet\n\nx",
         )
 
-    @expectedFailure
     def test_nouveau_niveau_apres_les_sous_titres(self):
         self.assertEqual(
             add("# P\na\n## A\nb\n# Q", "x", "P", new_title="B"),
             "# P\na\n## A\nb\n\n## B\n\nx\n\n# Q",
         )
 
-    @expectedFailure
     def test_titre_deja_ecrit_repris_casse_ignoree(self):
         body = "# P\n## Réunion\na\n# Q"
 
@@ -217,14 +193,25 @@ class NewTitleTests(SimpleTestCase):
         )
         self.assertEqual(add(body, "x", new_title="q"), body + "\n\nx")
 
-    @expectedFailure
+    def test_titre_de_niveau_avec_attributs_repris(self):
+        self.assertEqual(
+            add("# P\n## A {#a}\nb", "x", "P", new_title="A"),
+            "# P\n## A {#a}\nb\n\nx",
+        )
+
+    def test_meme_nom_sous_un_autre_titre_de_meme_chemin(self):
+        """Le niveau se crée sous le titre choisi, pas sous son homonyme."""
+        self.assertEqual(
+            add("# P\n# Q\n# P\n## A\nb", "x", "P", new_title="A"),
+            "# P\n\n## A\n\nx\n\n# Q\n# P\n## A\nb",
+        )
+
     def test_sous_un_dernier_niveau_refuse(self):
         from note_taking.exceptions import QuickCaptureError
 
         with self.assertRaises(QuickCaptureError):
             add("# P\n###### F", "x", "F", new_title="G")
 
-    @expectedFailure
     def test_bloc_jamais_ferme_refuse(self):
         """Le titre y serait perdu, ou prendrait la suite de la note."""
         from note_taking.exceptions import QuickCaptureError
@@ -233,7 +220,6 @@ class NewTitleTests(SimpleTestCase):
             with self.subTest(body=body), self.assertRaises(QuickCaptureError):
                 add(body, "x", new_title="Q")
 
-    @expectedFailure
     def test_titre_trop_long_refuse(self):
         from note_taking.exceptions import QuickCaptureError
 
@@ -261,14 +247,12 @@ class CaptureTestCase(TestCase):
 
 
 class CaptureViewTests(CaptureTestCase):
-    @expectedFailure
     def test_note_absente_creee_avec_la_ligne(self):
         response = self.post("Idée")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Note.objects.get(date=self.today).body, "Idée\n")
 
-    @expectedFailure
     def test_ajout_a_la_note_du_jour(self):
         note = self.note("# P\na")
 
@@ -278,7 +262,6 @@ class CaptureViewTests(CaptureTestCase):
         self.assertEqual(note.body, "# P\na\n\nIdée")
         self.assertIn("Idée", note.passages.get().content)
 
-    @expectedFailure
     def test_toast_avec_un_lien_vers_la_note(self):
         html = self.post("Idée").content.decode()
 
@@ -286,7 +269,6 @@ class CaptureViewTests(CaptureTestCase):
         url = reverse("note_taking:note_detail", args=[self.today])
         self.assertIn(f'<a href="{url}">note du jour</a>', html)
 
-    @expectedFailure
     def test_tache_a_revoir_avec_un_lien_vers_le_bilan(self):
         html = self.post("Relancer", is_task="on").content.decode()
 
@@ -297,7 +279,6 @@ class CaptureViewTests(CaptureTestCase):
         url = reverse("todolist:note_review", args=[self.today])
         self.assertIn(f'<a href="{url}">1 tâche à revoir</a>', html)
 
-    @expectedFailure
     def test_nouveau_titre_projet_et_niveau_crees(self):
         note = self.note("# P\na")
 
@@ -309,7 +290,16 @@ class CaptureViewTests(CaptureTestCase):
             sorted(Project.objects.values_list("name", flat=True)), ["P", "Q"]
         )
 
-    @expectedFailure
+    def test_avertissements_de_la_note_non_repetes(self):
+        """Un nom proche est signalé (#374), pas le texte sans projet déjà là."""
+        self.note("ancienne ligne\n# Réunions\na\n#### Saut\nb")
+
+        html = self.post("x", new_title="Reunion").content.decode()
+
+        self.assertIn("un projet proche", html)
+        self.assertNotIn("sans projet", html)
+        self.assertNotIn("saute un niveau", html)
+
     def test_titre_disparu_rien_n_est_ecrit(self):
         note = self.note("# P\n## A\na")
         key = key_of(note.body, "A")
@@ -321,7 +311,6 @@ class CaptureViewTests(CaptureTestCase):
         self.assertIn("a changé", response.content.decode())
         self.assertEqual(Note.objects.get().body, "# P\na")
 
-    @expectedFailure
     def test_texte_refuse(self):
         response = self.post("# Titre")
 
@@ -329,7 +318,6 @@ class CaptureViewTests(CaptureTestCase):
         self.assertIn("data-toast", response.content.decode())
         self.assertFalse(Note.objects.exists())
 
-    @expectedFailure
     def test_erreur_d_analyse_rien_n_est_ecrit(self):
         note = self.note("# P\na")
 
@@ -340,7 +328,6 @@ class CaptureViewTests(CaptureTestCase):
         self.assertEqual(note.body, "# P\na")
         self.assertEqual(note.passages.count(), 1)
 
-    @expectedFailure
     def test_titre_echappe_dans_le_plan(self):
         self.note("# <b>P</b>\na")
 
@@ -351,7 +338,6 @@ class CaptureViewTests(CaptureTestCase):
         self.assertIn("&lt;b&gt;P&lt;/b&gt;", html)
         self.assertNotIn("<b>P</b>", html)
 
-    @expectedFailure
     def test_plan_de_la_note_du_jour(self):
         note = self.note("# P\n## A\na")
 
@@ -363,13 +349,11 @@ class CaptureViewTests(CaptureTestCase):
             self.assertIn(f'value="{key_of(note.body, title)}"', html)
         self.assertRegex(html, r'data-project="P"[^>]*data-path="A"')
 
-    @expectedFailure
     def test_plan_sans_note_du_jour(self):
         response = self.client.get(self.url, headers={"HX-Request": "true"})
 
         self.assertContains(response, "sera créée")
 
-    @expectedFailure
     def test_sans_javascript_le_formulaire_de_la_note_du_jour(self):
         self.assertRedirects(
             self.client.get(self.url),
@@ -385,7 +369,6 @@ class CaptureViewTests(CaptureTestCase):
 class HeaderTests(CaptureTestCase):
     PAGES = ("core:index", "core:projects", "note_taking:index", "todolist:task_list")
 
-    @expectedFailure
     def test_bouton_et_dialogue_sur_toutes_les_pages(self):
         for name in self.PAGES:
             with self.subTest(page=name):
@@ -400,7 +383,6 @@ class HeaderTests(CaptureTestCase):
                 self.assertIn("<dialog", end)
                 self.assertIn("quick_capture.js", html)
 
-    @expectedFailure
     def test_choix_par_defaut_en_tete_sans_projet(self):
         html = self.client.get(reverse("core:index")).content.decode()
 
@@ -408,7 +390,6 @@ class HeaderTests(CaptureTestCase):
             html, r'<input type="radio" name="target" value=""[^>]*checked'
         )
 
-    @expectedFailure
     def test_le_plan_n_est_pas_lu_a_chaque_page(self):
         """Une page quelconque ne lit pas la note du jour pour le dialogue."""
         self.note("# PlanDuJour\na")

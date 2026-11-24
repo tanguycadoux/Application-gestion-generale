@@ -2,7 +2,6 @@
 saisi (#386)."""
 
 import re
-from unittest import expectedFailure
 
 from django.test import TestCase
 from django.urls import reverse
@@ -44,13 +43,11 @@ class EditConflictTests(TestCase):
     def body(self) -> str:
         return Note.objects.get().body
 
-    @expectedFailure
     def test_version_dans_le_formulaire(self):
         self.assertTrue(self.opened)
         self.change()
         self.assertNotEqual(self.version(), self.opened)
 
-    @expectedFailure
     def test_note_inchangee_enregistree(self):
         self.assertTrue(self.opened)
 
@@ -58,7 +55,6 @@ class EditConflictTests(TestCase):
 
         self.assertEqual(self.body(), "# P\nmon texte")
 
-    @expectedFailure
     def test_note_changee_rien_n_est_ecrit_et_le_texte_revient(self):
         self.change()
 
@@ -73,7 +69,6 @@ class EditConflictTests(TestCase):
         # La version enregistrée s'ouvre à côté.
         self.assertIn('target="_blank"', html)
 
-    @expectedFailure
     def test_enregistrer_de_nouveau_reste_refuse(self):
         self.change()
         found = VERSION_REGEX.search(self.save().content.decode())
@@ -83,7 +78,6 @@ class EditConflictTests(TestCase):
 
         self.assertEqual(response.status_code, 409)
 
-    @expectedFailure
     def test_remplacer_expres(self):
         self.change()
         value = self.overwrite_value(self.save().content.decode())
@@ -93,7 +87,6 @@ class EditConflictTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.body(), "# P\nmon texte")
 
-    @expectedFailure
     def test_remplacer_refuse_si_la_note_change_encore(self):
         self.change()
         value = self.overwrite_value(self.save().content.decode())
@@ -105,7 +98,6 @@ class EditConflictTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(self.body(), "# P\nencore autre")
 
-    @expectedFailure
     def test_sur_place(self):
         self.change()
 
@@ -122,7 +114,6 @@ class EditConflictTests(TestCase):
         self.assertEqual(replaced.status_code, 200)
         self.assertEqual(self.body(), "# P\nmon texte")
 
-    @expectedFailure
     def test_sur_place_deux_fois_de_suite(self):
         """Chaque enregistrement renvoie la version à garder pour le suivant."""
         first = self.save("# P\nun", in_place=True)
@@ -135,7 +126,6 @@ class EditConflictTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(self.body(), "# P\ndeux")
 
-    @expectedFailure
     def test_titre_de_projet_renomme_version_a_jour(self):
         """Les suites de l'enregistrement ne rendent pas la version périmée."""
         first = self.save("# Q\nun", in_place=True)

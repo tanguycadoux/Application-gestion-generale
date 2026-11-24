@@ -175,6 +175,10 @@ Une note peut être :
 
 À chaque enregistrement, le contenu est analysé et découpé en *passages* (voir ci-dessous), et les tâches éventuelles sont générées.
 
+**Capture rapide** (#386) : depuis n'importe quelle page, Ctrl+Maj+K (⌘⇧K sur un Mac) ou l'éclair de l'en-tête ajoute une ligne, ou une tâche, à la note du jour, créée au besoin. Entrée l'enregistre ; par défaut en tête de note, sans projet, ou en fin de la section choisie dans le plan, ou sous un nouveau titre. La page en cours ne bouge pas.
+
+Si une note a changé depuis l'ouverture de son éditeur, l'enregistrement est refusé et le texte saisi gardé : on peut voir la version enregistrée, puis la remplacer.
+
 Dans l'éditeur, **« Enregistrer la note »** (et Ctrl+S) enregistre **sans quitter l'éditeur** (#389) : la page ne bouge pas, et le résultat s'affiche en toasts (note modifiée, titres à vérifier, liens vers des notes absentes, tâches à revoir). **« Terminer l'édition »** enregistre puis affiche la note, ou le bilan des tâches à revoir. Le premier enregistrement d'une nouvelle note mène à son éditeur.
 
 ### Import de fichiers

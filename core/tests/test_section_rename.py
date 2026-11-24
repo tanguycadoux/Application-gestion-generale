@@ -125,7 +125,8 @@ class ReviewTests(RenameTestCase):
         self.assertContains(response, "2 titres à réécrire")
         self.assertContains(response, "Note du 24 novembre 2025, ligne 2")
         self.assertContains(response, "Note du 25 novembre 2025, ligne 2")
-        html = response.content.decode()
+        # L'en-tête a son propre formulaire, celui de la capture rapide (#386).
+        html = response.content.decode().split("<main")[1]
         self.assertEqual(html.count('name="headings"'), 2)
         self.assertEqual(html.count("checked"), 2)
 

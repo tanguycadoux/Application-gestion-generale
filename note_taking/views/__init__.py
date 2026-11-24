@@ -1,6 +1,7 @@
 """Vues de `note_taking`, par domaine (#190).
 
 - `notes` : pages des notes (accueil, tableau, note, création, édition, suppression) ;
+- `capture` : capture rapide dans la note du jour (#386) ;
 - `search` : page de recherche ;
 - `saved_searches` : recherches enregistrées (#203) ;
 - `transfer` : import et export ;
@@ -12,6 +13,7 @@
 Tout est réexporté ici : `urls.py` écrit `views.NoteDetail`.
 """
 
+from .capture import quick_capture
 from .debug import debug_note_json, note_json
 from .images import (
     ImageDetail,
@@ -64,6 +66,7 @@ __all__ = [
     "note_today",
     "notes_search",
     "project_rename_review",
+    "quick_capture",
     "rename_saved_search",
     "update_source_file",
 ]
