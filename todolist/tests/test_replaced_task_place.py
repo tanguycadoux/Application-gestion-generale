@@ -1,8 +1,6 @@
 """Une tâche remplacée dans le bilan suit la nouvelle ligne : son projet et son niveau,
 pas seulement le chemin de sa ligne (#382)."""
 
-from unittest import expectedFailure
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -42,7 +40,6 @@ class ReplacedTaskPlaceTests(TestCase):
         task.refresh_from_db()
         return str(task.project), label(task.section) if task.section else ""
 
-    @expectedFailure
     def test_titre_renomme_dans_l_editeur(self):
         task = self.start("# P\n## Réunion\n### Préparation\n- [ ] Une")
 
@@ -51,7 +48,6 @@ class ReplacedTaskPlaceTests(TestCase):
         self.assertEqual(self.place(task), ("P", "Réunion › Préparations"))
         self.assertEqual(Task.objects.count(), 1)
 
-    @expectedFailure
     def test_ancien_niveau_inutilise_oublie(self):
         self.start("# P\n## Préparation\n- [ ] Une")
 
@@ -61,7 +57,6 @@ class ReplacedTaskPlaceTests(TestCase):
             list(Section.objects.values_list("name", flat=True)), ["Préparations"]
         )
 
-    @expectedFailure
     def test_niveau_parent_renomme(self):
         task = self.start("# P\n## Réunion\n### Préparation\n- [ ] Une")
 
@@ -69,7 +64,6 @@ class ReplacedTaskPlaceTests(TestCase):
 
         self.assertEqual(self.place(task), ("P", "Rencontre › Préparation"))
 
-    @expectedFailure
     def test_ligne_deplacee_dans_un_autre_projet(self):
         task = self.start("# P\n## A\n- [ ] Une\n# Q\n## B\nx")
 
@@ -77,7 +71,6 @@ class ReplacedTaskPlaceTests(TestCase):
 
         self.assertEqual(self.place(task), ("Q", "B"))
 
-    @expectedFailure
     def test_ligne_sous_un_element_parent(self):
         """Le chemin de la ligne compte aussi ses éléments parents."""
         task = self.start("# P\n## A\n- Un point\n    - [ ] Une")
@@ -86,7 +79,6 @@ class ReplacedTaskPlaceTests(TestCase):
 
         self.assertEqual(self.place(task), ("P", "B"))
 
-    @expectedFailure
     def test_titre_avec_attributs(self):
         task = self.start("# P\n## A {#a}\n- [ ] Une")
 
@@ -94,11 +86,10 @@ class ReplacedTaskPlaceTests(TestCase):
 
         self.assertEqual(self.place(task), ("P", "B"))
 
-    @expectedFailure
     def test_texte_sans_projet_range(self):
-        task = self.start("- [ ] Une")
+        task = self.start("- Un point\n    - [ ] Une")
 
-        self.rewrite("- [ ] Une", "# P\n## A\n- [ ] Une")
+        self.rewrite("- Un point", "# P\n## A\n- Un point")
 
         self.assertEqual(self.place(task), ("P", "A"))
 

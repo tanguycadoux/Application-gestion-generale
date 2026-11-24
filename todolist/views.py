@@ -18,7 +18,7 @@ from django.views.generic import (
 
 from core.dates import date_text, parse_date_param
 from core.month_calendar import requested_month
-from core.sections import ancestors_and_self
+from core.sections import ancestors_and_self, forget_unused_sections
 from note_taking.models import Note
 
 from . import task_table, tree
@@ -339,3 +339,5 @@ def save_gone_lines(formset) -> None:
             remove_task(task)
         else:
             replace_task(task, form.cleaned_data["replacement"])
+    # L'ancien niveau d'une tâche remplacée peut ne plus servir (#382).
+    forget_unused_sections()
