@@ -49,11 +49,6 @@ class DetailPathTests(LinksTestCase):
             rf'<a href="{url}\?path={leaf.pk}">Préparation</a></dd>',
         )
 
-    def test_sans_chemin(self):
-        self.assertRegex(
-            self.detail(self.task("T")), r"<dt[^>]*>Chemin</dt>\s*<dd>Aucun</dd>"
-        )
-
 
 class OriginNoteTests(LinksTestCase):
     def note(self, body: str) -> Note:

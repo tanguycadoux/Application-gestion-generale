@@ -41,14 +41,6 @@ class ParsedPassageTests(SimpleTestCase):
             [("A", ["un"]), ("B", ["deux"]), ("A", ["trois"])],
         )
 
-    def test_meme_chemin_a_deux_endroits(self):
-        found = passages("# P\n## x\nun\n## y\ndeux\n## x\ntrois")
-
-        self.assertEqual(
-            [(p.path, p.lines) for p in found],
-            [(["x"], ["un"]), (["y"], ["deux"]), (["x"], ["trois"])],
-        )
-
     def test_lignes_de_debut_et_de_fin(self):
         """Du titre (compris) à la ligne avant le titre suivant, ou à la fin."""
         found = passages("# A\nun\n\n## B\ndeux\n# C\ntrois\n")

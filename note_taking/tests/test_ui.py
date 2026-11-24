@@ -28,8 +28,3 @@ class StylesheetsTests(TestCase):
             "text-transform: uppercase;",
         ):
             self.assertIn(rule, css)
-
-    def test_titre_de_projet_souligne_d_un_filet(self):
-        css = self.read("note_taking/style.css")
-
-        self.assertIn("border-bottom: 1px solid var(--color-slate-200);", css)

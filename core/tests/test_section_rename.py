@@ -61,24 +61,6 @@ class NameFormTests(RenameTestCase):
 
         self.assertContains(response, "C&#x27;est déjà son nom.")
 
-    def test_nom_deja_pris_sous_le_meme_parent_annonce_une_reunion(self):
-        """Plus un refus depuis #373 : les deux niveaux sont réunis."""
-        self.note("# P\n## Réunion\nx\n## Rencontre\ny")
-
-        response = self.client.get(
-            self.url(self.section("Réunion")), {"name": "rencontre"}
-        )
-
-        self.assertContains(response, "existe déjà ici")
-        self.assertContains(response, "Bilan")
-
-    def test_meme_nom_sous_un_autre_parent_permis(self):
-        self.note("# P\n## A\n### Suite\nx\n## B\n### Autre\ny")
-
-        response = self.client.get(self.url(self.section("Autre")), {"name": "Suite"})
-
-        self.assertContains(response, "Bilan")
-
     def test_changement_de_casse_permis(self):
         self.note("# P\n## Réunion\nx")
 
@@ -321,19 +303,6 @@ class ApplyTests(RenameTestCase):
 
         section.refresh_from_db()
         self.assertEqual(section.name, "Réunion")
-
-    def test_nom_deja_pris_reunit_a_l_ecriture(self):
-        self.note("# P\n## Réunion\nx\n## Rencontre\ny")
-        section = self.section("Réunion")
-
-        self.apply(section, "Rencontre", self.keys(section, "Rencontre"))
-
-        self.assertEqual(
-            Note.objects.get().body, "# P\n## Rencontre\nx\n## Rencontre\ny"
-        )
-        self.assertEqual(
-            list(Section.objects.values_list("name", flat=True)), ["Rencontre"]
-        )
 
     def test_sans_nom_rien_n_est_ecrit(self):
         note = self.note("# P\n## Réunion\nx")

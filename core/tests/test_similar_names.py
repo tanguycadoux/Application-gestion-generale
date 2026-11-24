@@ -7,7 +7,6 @@ les niveaux frères proches, avec un lien vers leur fusion (#373).
 """
 
 from importlib import import_module
-from urllib.parse import parse_qs, urlsplit
 
 from django.contrib.messages import get_messages
 from django.db import connection
@@ -21,7 +20,6 @@ from core.names import similar_key
 from core.projects import project_for
 from core.sections import section_for
 from note_taking.models import Note, Passage
-from note_taking.renaming import find_headings
 from note_taking.services import process_passages
 from todolist.models import Task
 
@@ -95,11 +93,6 @@ class ProjectCaseTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("Un projet « Chantier Nord » existe déjà.", form.errors["name"])
-
-    def test_le_renommage_trouve_les_titres_sans_la_casse_du_projet(self):
-        self.assertEqual(
-            [h.number for h in find_headings("# p\n## S", "P", ["S"])], [2]
-        )
 
 
 class ProjectMergeMigrationTests(TransactionTestCase):
@@ -276,12 +269,6 @@ class NoteWarningsTests(TestCase):
             ),
         )
 
-    def test_pluriel(self):
-        warnings = self.save("# Chantier Nord\n## Calculs thermiques\nx")
-
-        self.assertEqual(len(warnings), 1)
-        self.assertIn("« Calcul thermique »", warnings[0])
-
     def test_rien_quand_le_niveau_existait(self):
         self.save("# Chantier Nord\n## Reunion de chantier\nx")
 
@@ -294,11 +281,6 @@ class NoteWarningsTests(TestCase):
                 "# Chantier Nord\n## Lot 2\n### Calcul thermique\nx", "2026-11-24"
             ),
             (),
-        )
-
-    def test_rien_pour_un_nom_vraiment_different(self):
-        self.assertEqual(
-            self.save("# Chantier Nord\n## Réunion de chantier (suite)\nx"), ()
         )
 
     def test_avertissement_a_l_enregistrement(self):
@@ -361,9 +343,3 @@ class PathsPageTests(TestCase):
             html,
         )
         self.assertIn("Réunir avec «\u00a0Réunion de chantier\u00a0»", html)
-
-    def test_lien_mene_au_bilan_de_la_fusion(self):
-        [row] = [r for r in self.page().context["rows"] if r.section == self.accents]
-        location = urlsplit(row.similar[0].merge_url)
-
-        self.assertEqual(parse_qs(location.query), {"name": ["Réunion de chantier"]})

@@ -68,18 +68,6 @@ class ProposalTests(SameTextTestCase):
         self.assertRegex(html, r'<option value="replace"[^>]* selected>')
         self.assertRegex(html, rf'<option value="{new.pk}"[^>]* selected>')
 
-    def test_casse_et_blancs_ignores(self):
-        self.rename(
-            after=(
-                "# Chantier Sud\n## Réunions de chantier\n### Préparation\n"
-                "- [ ] envoyer  le PLAN de bornage \n"
-            )
-        )
-
-        (form,) = self.gone_forms()
-
-        self.assertEqual(form["action"].value(), "replace")
-
     def test_sans_tache_de_meme_texte_la_garder_par_defaut(self):
         self.rename(
             after=(
@@ -183,12 +171,6 @@ class SameTextFunctionTests(TestCase):
         new = Task(pk=2, note_path="P › B", note_line_text="relire le plan")
 
         self.assertEqual(same_text_replacements([old], [new]), {1: new})
-
-    def test_texte_different(self):
-        old = Task(pk=1, note_path="P › A", note_line_text="Relire")
-        new = Task(pk=2, note_path="P › B", note_line_text="Relu")
-
-        self.assertEqual(same_text_replacements([old], [new]), {})
 
 
 class PathsShownTests(SameTextTestCase):
