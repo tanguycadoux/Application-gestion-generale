@@ -3,9 +3,13 @@
 
 {% block title %}Note du {{ object.date|date_text:"moyen" }}{% endblock title %}
 
+{# La note est une feuille sur un fond plus foncé (#421). scroll-pt : une ancre s'arrête sous l'en-tête collant. #}
+{% block main_class %} scroll-pt-18 bg-slate-100 print:bg-white{% endblock main_class %}
+
 {% block content %}
-    <header class="flex items-start mb-4">
-        <h1 class="flex-1">Note du {% date_time object.date "long" %}</h1>
+    {# En-tête collant : il couvre la marge de <main>, qui défile (le décalage de sticky part de cette marge). #}
+    <header class="sticky -top-4 z-10 -mx-4 -mt-4 mb-4 flex items-center border-b border-slate-300 bg-slate-100 px-4 py-2 print:static print:bg-white">
+        <h1 class="min-w-0 flex-1 truncate">Note du {% date_time object.date "long" %}</h1>
 
         {% url 'note_taking:export_note' note.date as url %}
         {% button "Exporter la note" icon="download" href=url variant="ghost" icon_only=True %}
@@ -28,12 +32,13 @@
 
     {% if content %}
         {# Le plan à droite (#404), au-dessus du texte sur une fenêtre étroite ; il reste visible quand le texte défile. #}
-        <div class="grid gap-4{% if outline %} lg:grid-cols-[minmax(0,1fr)_16rem]{% endif %}" data-note-reading>
-            <div class="rendered-content min-w-0" data-note-content>{{ content|safe }}</div>
+        <div class="grid grid-cols-[minmax(0,210mm)] justify-center gap-4 print:block{% if outline %} lg:grid-cols-[minmax(0,210mm)_16rem]{% endif %}" data-note-reading>
+            {# Une page A4 : 21 cm de large, 2,5 cm de marges, réduites quand la place manque pour garder 16 cm de texte. #}
+            <div class="rendered-content min-w-0 overflow-x-auto overflow-y-hidden rounded-sm bg-white px-[clamp(1rem,calc((100%-160mm)/2),25mm)] py-12 shadow-md print:overflow-visible print:p-0 print:shadow-none" data-note-content>{{ content|safe }}</div>
             {% if outline %}
-                <nav id="note-outline" aria-label="Plan de la note" class="order-first self-start overflow-hidden rounded-lg border border-slate-300 bg-white lg:sticky lg:top-0 lg:order-none">
+                <nav id="note-outline" aria-label="Plan de la note" class="order-first self-start overflow-hidden rounded-lg border border-slate-300 bg-white lg:sticky lg:top-14 lg:order-none print:hidden">
                     <h2 class="border-b border-slate-300 px-3 py-2 text-sm font-semibold">Plan</h2>
-                    <ul class="max-h-64 overflow-y-auto p-1 lg:max-h-[calc(100dvh-10rem)]">
+                    <ul class="max-h-64 overflow-y-auto p-1 lg:max-h-[calc(100dvh-12rem)]">
                         {% for entry in outline %}
                             <li><a href="#{{ entry.id }}" title="{{ entry.text }}" class="block truncate rounded px-2 py-1 text-sm hover:bg-slate-100 aria-[current]:bg-blue-100 aria-[current]:font-semibold {{ entry.indent }}">{{ entry.text }}</a></li>
                         {% endfor %}

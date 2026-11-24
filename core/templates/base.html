@@ -72,7 +72,7 @@
     <script src="{% static 'core/nav.js' %}"></script>
     <script src="{% static 'core/search.js' %}" defer></script>
 
-    <main id="contenu" class="p-4 h-full box-border overflow-auto">
+    <main id="contenu" class="p-4 h-full box-border overflow-auto{% block main_class %}{% endblock main_class %}">
         {% block content %}{% endblock content %}
     </main>
 
