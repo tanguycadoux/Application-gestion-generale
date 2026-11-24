@@ -136,6 +136,45 @@ class TreePageTests(TreeTestCase):
 
         self.assertContains(self.client.get(self.url()), "inutilisé")
 
+    def test_compteurs_en_liens_vers_les_passages_et_les_taches(self):
+        """#375 : la recherche et la liste des tâches filtrées sur le niveau. La liste
+        montre aussi les tâches terminées, que le compteur compte."""
+        section = section_for(self.project, ["A"])
+        assert section is not None
+        self.note("# P\n## A\n- [ ] Une\n- [ ] Deux")
+
+        html = self.client.get(self.url()).content.decode()
+
+        self.assertInHTML(
+            f'<a href="{reverse("note_taking:notes_search")}?subjects={section.pk}"'
+            ' aria-label="1 passage du niveau « A »">1 passage</a>',
+            html,
+        )
+        self.assertInHTML(
+            f'<a href="{reverse("todolist:task_list")}?path={section.pk}&amp;state=all"'
+            ' aria-label="2 tâches du niveau « A »">2 tâches</a>',
+            html,
+        )
+
+    def test_la_cible_d_un_compteur_montre_ce_qu_il_compte(self):
+        """#375 : descendants compris, tâches terminées comprises."""
+        self.note("# P\n## A\nx\n### B\n- [ ] Une")
+        Task.objects.filter(title="Une").update(done=True, progress=100)
+        row = section_tree(self.project)[0]
+
+        passages, tasks = [self.client.get(link.url) for link in row.usages]
+
+        self.assertContains(passages, "2 passages dans 1 note")
+        self.assertContains(tasks, ">Une</a>")
+
+    def test_niveau_inutilise_sans_lien(self):
+        section_for(self.project, ["A"])
+
+        html = self.client.get(self.url()).content.decode()
+
+        self.assertNotIn("?subjects=", html)
+        self.assertNotIn("?path=", html)
+
     def test_projet_sans_niveau(self):
         self.assertContains(self.client.get(self.url()), "Aucun niveau")
 

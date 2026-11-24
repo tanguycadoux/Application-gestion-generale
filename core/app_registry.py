@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from django.apps import apps
 from django.conf import settings
 from django.db.models import Q
+from django.urls import reverse
 
 
 @dataclass(frozen=True)
@@ -72,12 +73,20 @@ class ProjectUsage:
 @dataclass(frozen=True)
 class SectionUsage:
     """Objets qui utilisent un niveau de chemin, comptés par `lookup` depuis
-    Section, sauf ceux qui répondent à `exclude` (tâches écartées)."""
+    Section, sauf ceux qui répondent à `exclude` (tâches écartées).
+
+    `url_name` et `query` (« subjects={pk} ») donnent la page qui les liste, filtrée
+    sur un niveau, descendants compris : elle doit montrer ce qui est compté (#375)."""
 
     lookup: str
     singular: str
     plural: str
+    url_name: str
+    query: str
     exclude: Q | None = None
+
+    def url(self, section_pk: int) -> str:
+        return f"{reverse(self.url_name)}?{self.query.format(pk=section_pk)}"
 
     def text(self, count: int) -> str:
         return f"{count} {self.singular if count == 1 else self.plural}"

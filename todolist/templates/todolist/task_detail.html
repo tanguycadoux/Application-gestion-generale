@@ -52,7 +52,7 @@
                 {% endif %}
             </dd>
             <dt class="font-semibold">Chemin</dt>
-            <dd>{{ object.section|default:"Aucun" }}</dd>
+            <dd>{% for level in path %}{% if not forloop.first %} › {% endif %}<a href="{% url 'todolist:task_list' %}?path={{ level.pk }}">{{ level.name }}</a>{% empty %}Aucun{% endfor %}</dd>
             {% if object.tags.all %}
                 <dt class="font-semibold">Tags</dt>
                 <dd>{% tag_list object.tags.all %}</dd>
@@ -74,7 +74,7 @@
             {% endif %}
             {% if origin_note %}
                 <dt class="font-semibold">Note d'origine</dt>
-                <dd><a href="{% url 'note_taking:note_detail' origin_note.date %}">Note du {% date_time origin_note.date "long" %}</a></dd>
+                <dd><a href="{% url 'note_taking:note_detail' origin_note.date %}{% if origin_anchor %}#{{ origin_anchor }}{% endif %}">Note du {% date_time origin_note.date "long" %}</a></dd>
             {% endif %}
         </dl>
 

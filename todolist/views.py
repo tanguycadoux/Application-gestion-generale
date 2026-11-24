@@ -18,6 +18,7 @@ from django.views.generic import (
 
 from core.dates import date_text, parse_date_param
 from core.month_calendar import requested_month
+from core.sections import ancestors_and_self
 from note_taking.models import Note
 
 from . import task_table, tree
@@ -29,6 +30,7 @@ from .services import (
     dismissed_subtree,
     note_lines,
     note_tasks_to_review,
+    origin_anchor,
     removal_dismisses,
     remove_task,
     replace_task,
@@ -134,11 +136,15 @@ class TaskDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         task = self.object
-        context["origin_note"] = (
+        context["path"] = ancestors_and_self(task.section) if task.section else []
+        origin_note = (
             Note.objects.filter(date=task.note_date).first()
             if task.created_from_note
             else None
         )
+        context["origin_note"] = origin_note
+        if origin_note:
+            context["origin_anchor"] = origin_anchor(task, origin_note)
         context["children_groups"] = [TaskGroup(task, descendant_rows(task))]
         context["children"] = context["children_groups"][0].rows
         context["gantt"] = gantt_chart(task)

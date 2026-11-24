@@ -11,7 +11,7 @@
         {% button "Retour aux projets" icon="arrow_back" href=url variant="ghost" %}
     </header>
 
-    <p class="mb-4 text-slate-600">Les niveaux viennent des titres des notes (<code>##</code> à <code>######</code>) et des chemins saisis pour les tâches. Chacun compte ce qui l'utilise, descendants compris. Renommer un niveau réécrit ses titres dans les notes, après un bilan ; le renommer comme un niveau frère les réunit. Seul un niveau inutilisé se supprime. Les niveaux frères aux noms proches (accents, ponctuation, pluriel) sont signalés.</p>
+    <p class="mb-4 text-slate-600">Les niveaux viennent des titres des notes (<code>##</code> à <code>######</code>) et des chemins saisis pour les tâches. Chacun compte ce qui l'utilise, descendants compris : un clic sur un compteur le montre. Renommer un niveau réécrit ses titres dans les notes, après un bilan ; le renommer comme un niveau frère les réunit. Seul un niveau inutilisé se supprime. Les niveaux frères aux noms proches (accents, ponctuation, pluriel) sont signalés.</p>
 
     {% if rows %}
         <ul class="divide-y divide-slate-200">
@@ -19,7 +19,7 @@
                 <li class="flex items-center gap-2 py-1 {{ row.depth|indent_class }}">
                     <span class="min-w-0 flex-1">
                         {{ row.section.name }}
-                        <span id="{{ row.usage_id }}" class="text-sm text-slate-600">· {% if row.usage %}{{ row.usage }}{% else %}inutilisé{% endif %}</span>
+                        <span id="{{ row.usage_id }}" class="text-sm text-slate-600">· {% for link in row.usages %}{% if not forloop.first %} et {% endif %}<a href="{{ link.url }}" aria-label="{{ link.text }} du niveau « {{ row.section.name }} »">{{ link.text }}</a>{% empty %}inutilisé{% endfor %}</span>
                         {% for other in row.similar %}
                             <span class="block text-sm text-amber-800">{% filter nbsp_punct %}Nom proche de « {{ other.name }} » : {% endfilter %}<a href="{{ other.merge_url }}">{% filter nbsp_punct %}Réunir avec « {{ other.name }} »{% endfilter %}</a></span>
                         {% endfor %}

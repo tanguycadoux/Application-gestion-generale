@@ -30,7 +30,15 @@ class NoteTakingConfig(AppConfig):
     )
     project_usages = (ProjectUsage("passages__note", "note", "notes"),)
     # Un niveau compte ses passages (#362, #387).
-    section_usages = (SectionUsage("passages", "passage", "passages"),)
+    section_usages = (
+        SectionUsage(
+            "passages",
+            "passage",
+            "passages",
+            url_name="note_taking:notes_search",
+            query="subjects={pk}",
+        ),
+    )
 
     debug_pages = (NavItem("note_taking:debug_note_json", "Analyse JSON", "toc"),)
 

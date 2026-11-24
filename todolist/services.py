@@ -294,6 +294,30 @@ def note_lines(passages: Iterable[Passage]) -> set[tuple[str, str]]:
     }
 
 
+def origin_anchor(task: Task, note: Note) -> str:
+    """L'identifiant du titre de la section où la tâche est écrite, dans la page de sa
+    note d'origine (#375) ; vide pour ouvrir la note en haut.
+
+    Le passage qui a sa ligne, donc la bonne occurrence d'un titre répété ; à défaut
+    (ligne cochée ou retirée dans la note), le passage le plus profond parmi les titres
+    de son chemin.
+    """
+    passages = list(note.passages.order_by("position").prefetch_related("tags"))
+    for passage in passages:
+        if (task.note_path, task.note_line_text) in note_lines([passage]):
+            return passage.heading_id
+    above = [
+        passage
+        for passage in passages
+        if passage.heading_path
+        and f"{task.note_path}{HEADING_SEPARATOR}".startswith(
+            f"{passage.heading_path}{HEADING_SEPARATOR}"
+        )
+    ]
+    closest = max(above, key=lambda passage: len(passage.heading_path), default=None)
+    return closest.heading_id if closest else ""
+
+
 def note_tasks_to_review(note_date: date):
     return Task.objects.filter(
         created_from_note=True,
