@@ -41,9 +41,9 @@
             {% endif %}
         {% endblock menu_search %}
 
-        {# Emplacement réservé à droite : compte, notifications… #}
+        {# À droite : ce que les apps y déclarent (`header_templates`, #386). #}
         <div id="header-end" class="col-start-3 flex items-center justify-end gap-2">
-            {% block header_end %}{% endblock header_end %}
+            {% block header_end %}{% for template in header_templates %}{% include template %}{% endfor %}{% endblock header_end %}
         </div>
     </header>
 
