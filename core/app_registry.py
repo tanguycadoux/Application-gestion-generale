@@ -3,6 +3,7 @@
 - `nav_section` : sa section du menu commun (#232) ;
 - `search_page` : sa page de recherche (un `NavItem`), vers laquelle mène la barre de
   recherche du menu commun (#202) ;
+- `header_templates` : ses gabarits à droite de l'en-tête de toutes les pages (#386) ;
 - `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
 - `week_blocks` : ses blocs du bilan d'une semaine (#208) ;
 - `debug_pages` : ses pages réservées au mode DEBUG, réunies dans la section
@@ -189,6 +190,15 @@ def search_page() -> NavItem | None:
         if page := getattr(config, "search_page", None):
             return page
     return None
+
+
+def header_templates() -> list[str]:
+    """Les gabarits que les apps placent à droite de l'en-tête (#355, #386)."""
+    return [
+        template
+        for config in apps.get_app_configs()
+        for template in getattr(config, "header_templates", ())
+    ]
 
 
 def dashboard_blocks() -> list[DashboardBlock]:

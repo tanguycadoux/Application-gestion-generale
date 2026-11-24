@@ -31,6 +31,7 @@ urlpatterns = [
     path("notes/import/", views.import_files, name="import_files"),
     path("notes/new/", views.new_note, name="new_note"),
     path("notes/today/", views.note_today, name="note_today"),
+    path("notes/capture/", views.quick_capture, name="quick_capture"),
     path("notes/suggestions/", views.note_suggestions, name="note_suggestions"),
     path("notes/<date:note_date>/", views.NoteDetail.as_view(), name="note_detail"),
     path("notes/<date:note_date>/export/", views.export_note, name="export_note"),

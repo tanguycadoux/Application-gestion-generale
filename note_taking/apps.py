@@ -29,6 +29,8 @@ class NoteTakingConfig(AppConfig):
     search_page = NavItem(
         "note_taking:notes_search", "Rechercher dans les notes", "search"
     )
+    # Capture rapide dans la note du jour (#386).
+    header_templates = ("note_taking/quick_capture.html",)
     project_usages = (ProjectUsage("passages__note", "note", "notes"),)
     # Un niveau compte ses passages (#362, #387).
     section_usages = (

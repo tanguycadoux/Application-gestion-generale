@@ -1,0 +1,13 @@
+{% load ui %}
+{# Le plan de la note du jour, chargé à l'ouverture du dialogue de capture (#386). #}
+<div data-today="{{ today|date:'Y-m-d' }}">
+    {% if not note %}<p class="text-sm text-slate-600">La note du jour n'existe pas encore : elle sera créée.</p>{% endif %}
+    {% for target in targets %}
+        <div class="{{ target.depth|indent_class }}">
+            <label class="flex items-start gap-2 rounded px-1 py-0.5 hover:bg-slate-100">
+                <input type="radio" name="target" value="{{ target.key }}" data-title="{{ target.title }}" data-project="{{ target.project }}" data-path="{{ target.saved_path }}" class="mt-1">
+                <span class="min-w-0 [overflow-wrap:anywhere]">{{ target.title }}</span>
+            </label>
+        </div>
+    {% endfor %}
+</div>

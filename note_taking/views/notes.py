@@ -1,6 +1,8 @@
 """Pages des notes : accueil, tableau, note, création, édition, suppression,
 et les anciennes adresses par id (#273)."""
 
+import copy
+
 from django.contrib import messages
 from django.db.models import Prefetch
 from django.http import Http404, HttpResponse, JsonResponse
@@ -173,6 +175,50 @@ def form_errors_response(request, form) -> HttpResponse:
     return toasts_response(request, status=422)
 
 
+def note_version(note: Note) -> str:
+    """Ce que l'éditeur renvoie pour dire quelle version de la note il a ouverte
+    (#386) : sa date de modification, relue en base."""
+    updated = Note.objects.values_list("updated", flat=True).get(pk=note.pk)
+    return updated.isoformat()
+
+
+def changed_since_opened(request, note: Note) -> bool:
+    """La note a changé depuis l'ouverture de l'éditeur (capture rapide, niveau
+    renommé, autre onglet), et remplacer **cette** version n'a pas été demandé."""
+    opened = request.POST.get("version")
+    if not opened:
+        return False
+    return note_version(note) not in (opened, request.POST.get("overwrite"))
+
+
+def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
+    """Rien n'est enregistré : l'éditeur garde le texte saisi et propose de voir la
+    version enregistrée, ou de la remplacer."""
+    current = note_version(note)
+    if in_place:
+        messages.error(
+            request,
+            "La note n'est pas enregistrée : elle a changé depuis l'ouverture de "
+            "l'éditeur.",
+        )
+        response = toasts_response(request, status=409)
+        response["X-Note-Version"] = current
+        return response
+    return render(
+        request,
+        "note_taking/note_edit.html",
+        {
+            # Une copie : la validation écrit le texte saisi dans l'instance.
+            "form": NewNoteForm(request.POST, instance=copy.copy(note)),
+            "note": note,
+            "version": request.POST["version"],
+            "current_version": current,
+            "conflict": True,
+        },
+        status=409,
+    )
+
+
 def new_note(request):
     if request.method == "POST":
         form = NewNoteForm(request.POST)
@@ -204,6 +250,9 @@ def edit_note(request, note_date):
     if request.method == "POST":
         stay = stays_in_editor(request)
         in_place = stay and bool(request.htmx)
+        if changed_since_opened(request, note):
+            return conflict_response(request, note, in_place)
+        version = note_version(note)
         old_body = note.body
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
@@ -213,6 +262,7 @@ def edit_note(request, note_date):
             url = save_passages(request, note, "modifiée", stay=stay)
             if in_place:
                 response = toasts_response(request)
+                response["X-Note-Version"] = note_version(note)
                 if str(note.date) != str(note_date):
                     # L'adresse de l'éditeur suit la date : note_form.js y va.
                     response["HX-Redirect"] = url
@@ -221,9 +271,14 @@ def edit_note(request, note_date):
         if in_place:
             return form_errors_response(request, form)
     else:
+        version = note_version(note)
         form = NewNoteForm(instance=note)
 
-    return render(request, "note_taking/note_edit.html", {"form": form, "note": note})
+    return render(
+        request,
+        "note_taking/note_edit.html",
+        {"form": form, "note": note, "version": version},
+    )
 
 
 @require_GET

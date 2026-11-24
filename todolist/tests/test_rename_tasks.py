@@ -14,7 +14,7 @@ from note_taking.models import Note
 from note_taking.renaming import find_occurrences, rename_titles
 from note_taking.services import process_passages
 from todolist.models import Task
-from todolist.services import renamed_identities
+from todolist.services import placed_by_note, renamed_identities
 
 
 class RenameTasksTestCase(TestCase):
@@ -210,3 +210,91 @@ class RenamedIdentitiesTests(RenameTasksTestCase):
         body = "# P\n## A\n- [ ] T"
 
         self.assertEqual(renamed_identities("2025-11-24", body, body), [])  # type: ignore[arg-type]
+
+
+class PartialRenameTests(RenameTasksTestCase):
+    """Un renommage partiel : les tâches des titres réécrits passent au nouveau niveau,
+    les autres restent (#443)."""
+
+    def places(self) -> list[tuple[str, str]]:
+        return sorted(
+            (task.title, f"{task.project} › {task.section}")
+            for task in Task.objects.exclude(section=None)
+        )
+
+    def start(self, under: str = "") -> None:
+        self.note(f"# P\n## A\n{under}- [ ] Un")
+        self.note(f"# P\n## A\n{under}- [ ] Deux", day="2025-11-25")
+        Task.objects.update(note_state=Task.NoteState.REVIEWED)
+
+    def test_seules_les_taches_des_titres_reecrits_suivent(self):
+        self.start()
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertEqual(self.places(), [("Deux", "P › B"), ("Un", "P › A")])
+
+    def test_sous_niveaux_compris(self):
+        self.start("### C\n")
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertEqual(self.places(), [("Deux", "P › B › C"), ("Un", "P › A › C")])
+
+    def test_tache_ecartee_aussi(self):
+        self.start()
+        Task.objects.filter(title="Deux").update(note_state=Task.NoteState.DISMISSED)
+
+        self.rename(["A"], "B", only=1)
+
+        task = Task.all_objects.get(title="Deux")
+        self.assertEqual(str(task.section), "B")
+
+    def test_vers_un_niveau_existant(self):
+        """Une réunion partielle (#373)."""
+        self.start()
+        self.note("# P\n## B\n- [ ] Trois", day="2025-11-26")
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertEqual(
+            self.places(), [("Deux", "P › B"), ("Trois", "P › B"), ("Un", "P › A")]
+        )
+        self.assertEqual(Section.objects.filter(name="B").count(), 1)
+
+    def test_niveau_choisi_a_la_main_garde(self):
+        self.start()
+        other = Section.objects.create(project=self.project, name="Ailleurs")
+        Task.objects.filter(title="Deux").update(section=other)
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertEqual(self.places(), [("Deux", "P › Ailleurs"), ("Un", "P › A")])
+
+    def test_projet_choisi_a_la_main_garde(self):
+        self.start()
+        other = Project.objects.create(name="Q")
+        Task.objects.filter(title="Deux").update(project=other, section=None)
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertEqual(Task.objects.get(title="Deux").project, other)
+        self.assertEqual(self.places(), [("Un", "P › A")])
+
+    def test_tache_saisie_a_la_main_reste(self):
+        self.start()
+        Task.objects.create(
+            title="Main", project=self.project, section=Section.objects.get(name="A")
+        )
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertIn(("Main", "P › A"), self.places())
+
+    def test_suit_encore_les_changements_suivants(self):
+        """Son niveau est celui de sa ligne : `placed_by_note` le reconnaît."""
+        self.start()
+
+        self.rename(["A"], "B", only=1)
+
+        self.assertTrue(all(placed_by_note(task) for task in Task.objects.all()))

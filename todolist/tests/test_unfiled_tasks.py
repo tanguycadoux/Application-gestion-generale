@@ -105,3 +105,35 @@ class UnfiledTaskTests(TestCase):
         response = self.client.get(reverse("todolist:index"), {"month": "2026-11"})
 
         self.assertContains(response, "appeler Paul")
+
+
+class FiledInNoteTests(TestCase):
+    """La ligne est rangée sous un titre dans la note : la tâche aussi (#442)."""
+
+    def setUp(self):
+        self.note = Note.objects.create(date="2025-11-24", body="- [ ] Une")
+        process_passages(self.note)
+        self.task = Task.objects.get()
+
+    def file(self) -> Task:
+        self.note.body = "# P\n## A\n- [ ] Une"
+        self.note.save()
+        process_passages(self.note)
+        return Task.objects.get()
+
+    def test_prend_le_projet_et_le_niveau(self):
+        task = self.file()
+
+        self.assertEqual(task.pk, self.task.pk)
+        self.assertEqual((str(task.project), str(task.section)), ("P", "A"))
+
+    def test_reste_a_revoir(self):
+        self.assertEqual(self.file().note_state, Task.NoteState.TO_REVIEW)
+
+    def test_projet_deja_choisi_garde(self):
+        self.task.project = Project.objects.create(name="Q")
+        self.task.save()
+
+        task = self.file()
+
+        self.assertEqual((str(task.project), task.section), ("Q", None))
