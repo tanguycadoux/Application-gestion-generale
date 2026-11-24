@@ -3,6 +3,7 @@
 //
 // - Bouton « Plan » (cloné du gabarit) : affiche ou masque le plan ; l'état est celui du
 //   plan de l'éditeur (#314, même clé de `localStorage`), affiché si rien n'est gardé.
+//   Sur une fenêtre étroite, il s'ouvre par-dessus la note et n'est pas gardé.
 // - Chaque titre de section reçoit un bouton qui la replie, comme un <details> : le
 //   contenu passe en `hidden`, le titre reste. Aller à un titre (plan, lien, adresse)
 //   déplie les sections qui le cachent.
@@ -47,21 +48,64 @@
         toggle?.setAttribute("aria-expanded", String(!hidden));
     }
 
+    // Fenêtre étroite : le plan n'a pas de colonne. Posé sur la feuille, en haut à droite, il
+    // s'ouvre depuis le bouton où qu'on soit dans la note, et se referme une fois le titre
+    // choisi. Feuille et plan partagent une case de la grille : rien ne bouge à l'ouverture.
+    const FRAME_CLASSES = ["max-lg:col-start-1", "max-lg:row-start-1"];
+    const FLOATING_CLASSES = [
+        ...FRAME_CLASSES,
+        "max-lg:sticky",
+        "max-lg:top-14",
+        "max-lg:z-5",
+        "max-lg:w-72",
+        "max-lg:max-w-full",
+        "max-lg:justify-self-end",
+        "max-lg:shadow-xl",
+    ];
+    const wide = window.matchMedia("(min-width: 64rem)");
     const template = document.getElementById("outline-toggle");
     const header = document.querySelector("main header");
     if (template && header) {
         const toggle = template.content.firstElementChild.cloneNode(true);
         toggle.setAttribute("aria-controls", nav.id);
         header.querySelector("h1")?.after(toggle);
-        setHidden(storedHidden(), toggle);
+        nav.classList.add(...FLOATING_CLASSES);
+        list?.classList.add("max-lg:max-h-[calc(100dvh-12rem)]");
+        layout.querySelector("[data-note-frame]")?.classList.add(...FRAME_CLASSES);
+
+        const reset = () => setHidden(wide.matches ? storedHidden() : true, toggle);
+        reset();
+        wide.addEventListener("change", reset);
         toggle.addEventListener("click", () => {
             const hidden = !nav.hidden;
             setHidden(hidden, toggle);
+            if (!wide.matches) {
+                // Dans la page, le plan vient après la note : le clavier y va directement.
+                if (!hidden) {
+                    highlight();
+                    showCurrent();
+                    (current ?? links[0])?.focus({ preventScroll: true });
+                }
+                return;
+            }
             try {
                 localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0");
             } catch {
                 // Un réglage non gardé n'empêche pas de lire.
             }
+        });
+
+        const floating = () => !wide.matches && !nav.hidden;
+        nav.addEventListener("click", (event) => {
+            if (floating() && event.target.closest("a")) setHidden(true, toggle);
+        });
+        document.addEventListener("pointerdown", (event) => {
+            if (floating() && !nav.contains(event.target) && !toggle.contains(event.target)) setHidden(true, toggle);
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape" || !floating()) return;
+            setHidden(true, toggle);
+            toggle.focus({ preventScroll: true });
         });
     }
 
@@ -126,6 +170,16 @@
     const headings = links.map((link) => targetOf(link.getAttribute("href")));
     let current = null;
 
+    /** Le titre lu reste visible dans la liste du plan, sans faire défiler la page. */
+    function showCurrent() {
+        if (!current || !list || nav.hidden) return;
+        const linkTop = current.offsetTop - list.offsetTop;
+        if (linkTop < list.scrollTop) list.scrollTop = linkTop;
+        else if (linkTop + current.offsetHeight > list.scrollTop + list.clientHeight) {
+            list.scrollTop = linkTop + current.offsetHeight - list.clientHeight;
+        }
+    }
+
     function highlight() {
         const top = (scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top) + READING_OFFSET;
         // Un titre caché par une section repliée n'a pas de boîte : il ne compte pas.
@@ -146,14 +200,7 @@
         current?.removeAttribute("aria-current");
         link?.setAttribute("aria-current", "location");
         current = link;
-        // Le titre lu reste visible dans la liste du plan, sans faire défiler la page.
-        if (link && list) {
-            const linkTop = link.offsetTop - list.offsetTop;
-            if (linkTop < list.scrollTop) list.scrollTop = linkTop;
-            else if (linkTop + link.offsetHeight > list.scrollTop + list.clientHeight) {
-                list.scrollTop = linkTop + link.offsetHeight - list.clientHeight;
-            }
-        }
+        showCurrent();
     }
 
     let pending = false;
