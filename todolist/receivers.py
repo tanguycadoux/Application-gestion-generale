@@ -14,12 +14,14 @@ from .models import Task
 from .services import (
     create_tasks_from_passage,
     follow_projects,
+    follow_sections,
     mark_gone_lines,
     move_tasks,
     note_lines,
     note_tasks_to_review,
     renamed_identities,
     section_task_titles,
+    tasks_placed_by_note,
 )
 
 
@@ -47,10 +49,12 @@ def tasks_of_sections(sender, sections, **kwargs) -> list[list[str]]:
 @receiver(note_headings_renamed)
 def follow_renamed_headings(sender, note, old_body, new_body, **kwargs) -> None:
     """Les tâches issues d'une note suivent ses titres réécrits : leur chemin de
-    ligne change, pas leur fiche (#299). Une note sans tâche n'a rien à suivre."""
+    ligne change et leur niveau le suit (#443), pas le reste de leur fiche (#299). Une note sans tâche n'a rien à suivre."""
     if not Task.all_objects.filter(
         created_from_note=True, note_date=note.date
     ).exists():
         return
+    placed = tasks_placed_by_note(note.date)
     move_tasks(note.date, renamed_identities(note.date, old_body, new_body))
+    follow_sections(note.date, old_body, new_body, placed)
     follow_projects(note.date, old_body, new_body)

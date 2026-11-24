@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models import CharField, Value
 from django.db.models.functions import Cast, Concat
 
-from core.models import Tag
+from core.models import Project, Section, Tag
 from core.projects import project_for
 from core.sections import levels, section_for
 from note_taking.exceptions import NoteRenameError
@@ -50,7 +50,9 @@ def create_task_from_dict(
     Elle est identifiée par la date de la note, son chemin et son texte (#240),
     écartée comprise : une tâche écartée n'est pas recréée. Une tâche créée avant
     #240, sans chemin, est reprise par sa date et son texte : elle reçoit le
-    chemin. Une tâche créée est à revoir. Le parent n'est posé qu'à la création (#238) :
+    chemin ; de même une tâche du texte sans projet dont la ligne a été rangée sous
+    un titre (#442), qui prend aussi le projet et le niveau de sa ligne si elle est
+    encore sans projet. Une tâche créée est à revoir. Le parent n'est posé qu'à la création (#238) :
     une tâche existante garde le sien, qui a pu être choisi à la main. Pas
     d'échéance (#239) : elle se choisit dans le bilan qui suit l'enregistrement
     de la note. Renvoie la tâche, et si elle vient d'être créée.
@@ -66,16 +68,12 @@ def create_task_from_dict(
     task = Task.all_objects.filter(**identity, note_path="").first()
     if task is not None:
         task.note_path = task_data["path"]
-        task.save(update_fields=["note_path"])
+        if task.project is None:
+            task.project, task.section = line_place(task_data)
+        task.save(update_fields=["note_path", "project", "section"])
         return task, False
 
-    # Sans projet ni chemin : une case du texte avant le premier `#`, à ranger (#385).
-    project = (
-        project_for(task_data["project"])[0]
-        if task_data["project"] is not None
-        else None
-    )
-    section = section_for(project, task_data.get("sections", [])) if project else None
+    project, section = line_place(task_data)
     task = Task.objects.create(
         **identity,
         note_path=task_data["path"],
@@ -89,6 +87,15 @@ def create_task_from_dict(
     if tag_names:
         task.tags.add(*[Tag.objects.get_or_create(name=name)[0] for name in tag_names])
     return task, True
+
+
+def line_place(task_data: dict) -> tuple[Project | None, Section | None]:
+    """Le projet et le niveau d'une ligne de note. Sans projet ni chemin : une case du
+    texte avant le premier `#`, à ranger (#385)."""
+    if task_data["project"] is None:
+        return None, None
+    project = project_for(task_data["project"])[0]
+    return project, section_for(project, task_data.get("sections", []))
 
 
 def task_text(line: str) -> str:
@@ -245,6 +252,53 @@ def follow_projects(note_date: date, old_body: str, new_body: str) -> None:
         Task.all_objects.filter(
             created_from_note=True, note_date=note_date, note_path__in=paths
         ).update(project=project, section=section)
+
+
+def tasks_placed_by_note(note_date: date) -> set[int]:
+    """Les tâches de la note, écartées comprises, rangées là où leur ligne les met."""
+    return {
+        task.pk
+        for task in Task.all_objects.filter(
+            created_from_note=True, note_date=note_date
+        ).select_related("project", "section")
+        if placed_by_note(task)
+    }
+
+
+def follow_sections(
+    note_date: date, old_body: str, new_body: str, placed: set[int]
+) -> None:
+    """Quand un titre `##` à `######` est réécrit, les tâches de ses passages passent
+    au niveau du nouveau chemin (#443). Seulement celles de `placed`, rangées là où
+    leur ligne les mettait avant : un niveau choisi à la main est gardé. Leur chemin
+    de ligne a déjà suivi (`move_tasks`). Un changement de projet est l'affaire de
+    `follow_projects` ; un niveau renommé en place, ou qui ne change que de casse, est
+    le même."""
+    old = parse_note(str(note_date), old_body).passages
+    new = parse_note(str(note_date), new_body).passages
+    if not placed or len(old) != len(new):
+        return
+    for before, after in zip(old, new, strict=True):
+        if (
+            before.project is None
+            or after.project is None
+            or normalized(before.project) != normalized(after.project)
+            or list(map(normalized, before.path)) == list(map(normalized, after.path))
+        ):
+            continue
+        section = section_for(project_for(after.project)[0], after.path)
+        for line in lines_of(
+            HEADING_SEPARATOR.join(after.headings),
+            replace_image_paths("\n".join(after.lines))[0],
+            TODO_TAG in after.tags,
+        ):
+            Task.all_objects.filter(
+                pk__in=placed,
+                created_from_note=True,
+                note_date=note_date,
+                note_path=line.path,
+                note_line_text=line.text,
+            ).update(section=section)
 
 
 def is_todo_passage(passage: Passage) -> bool:
