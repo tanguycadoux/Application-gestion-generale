@@ -1,10 +1,10 @@
 {% extends "note_taking/base.html" %}
-{% load ui %}
+{% load static ui %}
 
 {% block title %}Note du {{ object.date|date_text:"moyen" }}{% endblock title %}
 
 {# La note est une feuille sur un fond plus foncé (#421). scroll-pt : une ancre s'arrête sous l'en-tête collant. #}
-{% block main_class %} scroll-pt-18 bg-slate-100 print:bg-white{% endblock main_class %}
+{% block main_class %} scroll-pt-18 [scrollbar-gutter:stable] bg-slate-100 print:bg-white{% endblock main_class %}
 
 {% block content %}
     {# En-tête collant : il couvre la marge de <main>, qui défile (le décalage de sticky part de cette marge). #}
@@ -33,8 +33,12 @@
     {% if content %}
         {# Le plan à droite (#404), au-dessus du texte sur une fenêtre étroite ; il reste visible quand le texte défile. #}
         <div class="grid grid-cols-[minmax(0,240mm)] justify-center gap-4 print:block{% if outline %} lg:grid-cols-[minmax(0,240mm)_16rem]{% endif %}" data-note-reading>
-            {# 24 cm de large, 2,5 cm de marges, réduites quand la place manque. Rien ne fait défiler la page de côté : un tableau, du code ou une formule trop larges défilent seuls (style.css). #}
-            <div class="rendered-content min-w-0 overflow-x-clip bg-white px-[clamp(1rem,calc((100%-170mm)/2),25mm)] py-12 shadow-xl print:overflow-visible print:p-0 print:shadow-none" data-note-content>{{ content|safe }}</div>
+            {# 24 cm de large, 2,5 cm de marges. Quand la place manque, la feuille entière rétrécit (note_sheet.js), comme dans Word : mêmes lignes, texte plus petit ; sous un certain seuil, les marges puis les lignes se réduisent. Rien ne fait défiler la page de côté : un tableau, du code ou une formule trop larges défilent seuls (style.css). #}
+            <div class="min-w-0" data-note-frame>
+                <div class="rendered-content [zoom:var(--note-zoom,1)] overflow-x-clip print:[zoom:1] bg-white px-[clamp(1rem,calc((100%-170mm)/2),25mm)] py-12 shadow-xl print:overflow-visible print:p-0 print:shadow-none" data-note-content>{{ content|safe }}</div>
+                {# Sans defer : l'échelle est posée avant le premier affichage. #}
+                <script src="{% static 'note_taking/note_sheet.js' %}"></script>
+            </div>
             {% if outline %}
                 <nav id="note-outline" aria-label="Plan de la note" class="order-first self-start overflow-hidden rounded-lg border border-slate-300 bg-white lg:sticky lg:top-14 lg:order-none print:hidden">
                     <h2 class="border-b border-slate-300 px-3 py-2 text-sm font-semibold">Plan</h2>
@@ -50,7 +54,6 @@
                 <template id="section-toggle-icon">{% icon "chevron_right" class="size-5 transition-transform [[aria-expanded=true]>&]:rotate-90" %}</template>
             {% endif %}
         </div>
-        {% load static %}
         <script src="{% static 'note_taking/note_reading.js' %}" defer></script>
     {% else %}
         <p class="text-slate-600">Cette note est vide.</p>

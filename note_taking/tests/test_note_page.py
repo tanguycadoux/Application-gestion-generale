@@ -100,3 +100,17 @@ class NotePageTests(TestCase):
         main = html[html.index('<main id="contenu"') :]
 
         self.assertNotIn("bg-slate-100", main[: main.index(">")])
+
+    def test_feuille_a_l_echelle(self):
+        """Quand la place manque, la feuille rétrécit en entier (#421)."""
+        self.assertIn("data-note-frame", self.html)
+        self.assertIn("[zoom:var(--note-zoom,1)]", self.html)
+        self.assertIn("note_taking/note_sheet.js", self.html)
+        # Sans place réservée, la barre de défilement changerait l'échelle, qui la
+        # ferait disparaître, et ainsi de suite.
+        self.assertIn("[scrollbar-gutter:stable]", self.html)
+        # La largeur du script est celle de la colonne du gabarit.
+        path = finders.find("note_taking/note_sheet.js")
+        assert isinstance(path, str)
+        self.assertIn("(240 * 96) / 25.4", Path(path).read_text(encoding="utf-8"))
+        self.assertIn("minmax(0,240mm)", self.html)
