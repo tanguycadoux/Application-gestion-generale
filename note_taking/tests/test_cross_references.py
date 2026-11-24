@@ -54,12 +54,6 @@ class FigureNumberTests(SimpleTestCase):
             f"Figure{NBSP}1: Banc de mesure</figcaption></figure>",
         )
 
-    def test_image_sans_identifiant_inchangee(self):
-        html = render("![Banc](banc.png)")
-
-        self.assertNotIn("<figure", html)
-        self.assertIn('alt="Banc"', html)
-
     def test_image_a_identifiant_sans_legende_numerotee_sans_texte(self):
         """Quarto : « Figure 1 », sans deux-points."""
         html = render("![](banc.png){#fig-banc}")
@@ -79,13 +73,22 @@ class FigureNumberTests(SimpleTestCase):
         self.assertIn(f"Figure{NBSP}1: ", html)
         self.assertIn("Légende", html)
 
-    def test_images_d_une_figure_en_colonnes_restent_des_images(self):
+    def test_images_d_une_figure_en_colonnes_sans_numero(self):
+        """Leur légende s'affiche (#422), mais seule la figure entière est numérotée."""
         html = render(
             "::: {#fig-banc layout-ncol=2}\n![A](a.png){#fig-a}\n\n![B](b.png)\n\nLégende\n:::"
+            "\n\n![C](c.png){#fig-c}"
         )
 
-        self.assertEqual(html.count("<figure"), 1)
-        self.assertEqual(html.count("<figcaption"), 1)
+        for caption in (">A<", ">B<", f"Figure{NBSP}1: Légende", f"Figure{NBSP}2: C"):
+            self.assertIn(caption, html)
+        self.assertEqual(html.count(f"Figure{NBSP}"), 2)
+
+    def test_sans_legende_le_numero_suit_les_images_d_une_figure_en_colonnes(self):
+        html = render("::: {#fig-banc layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n:::")
+
+        self.assertIn(">A</figcaption>", html)
+        self.assertIn(f">Figure{NBSP}1</figcaption></figure>", html)
 
     def test_figures_et_tableaux_comptes_separement(self):
         html = render(
