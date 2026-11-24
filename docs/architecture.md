@@ -315,6 +315,8 @@ Dans l'interface, une image se supprime depuis sa page de détail (#85) : le bou
 
 Le HTML qu'écrit l'utilisateur, directement ou par le Markdown, passe par une liste blanche (`nh3`, dans `render_plain_markdown`) : balises d'un document (texte, titres, listes, tableaux, images, liens, code, `details`…), attributs `class`, `id`, `title`, `href`, `src`, `alt`, `width`, `height`, `style` limité à `text-align` sur les cellules, et URL en `http`, `https`, `mailto` ou relatives. Un script, un gestionnaire `on…`, un cadre ou un lien `javascript:` est retiré : il s'exécuterait dans la page et pourrait envoyer les notes ailleurs. Le HTML des blocs Quarto (callouts, grilles, colonnes, icônes) est construit autour, à partir de valeurs échappées ou contrôlées, et n'est pas filtré.
 
+**Aucune image d'un autre serveur** (#220, #458) : le navigateur la chargerait en ouvrant la note. `![…](https://…)` devient un lien dès le Markdown ; toute autre écriture (référence, titre entre apostrophes, adresse sans schéma, `<img>` en HTML) l'est à la fin du filtrage (`remote_images_as_text`), où l'adresse est jugée comme le navigateur la lit (`is_remote`). Dans un lien, il ne reste que le texte de l'image. En seconde barrière, `SECURE_CSP` (en-tête `Content-Security-Policy: img-src 'self' data:`) fait refuser par le navigateur une image qui passerait quand même ; les autres ressources n'y sont pas limitées.
+
 Après le filtrage, chaque image du contenu reçoit `loading="lazy"` et `decoding="async"` (#225) : une note longue ne charge que les images proches de l'écran. La liste des images fait de même.
 
 ### Rendu fidèle à Quarto (M11)
