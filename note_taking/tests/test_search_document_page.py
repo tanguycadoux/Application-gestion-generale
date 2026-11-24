@@ -110,14 +110,21 @@ class DocumentPageTests(TestCase):
         self.assertIn(f'href="{note}#réunion"', self.get("path"))
         self.assertIn(f'href="{note}"', self.get("date"))
 
-    def test_feuille_et_barre_collante(self):
+    def test_feuille_et_en_tete_collant(self):
         html = self.get()
 
         for mark in ("data-note-reading", "data-note-frame", "data-note-content"):
             self.assertIn(mark, html)
         bar = html[html.index("data-reading-bar") :]
-        bar = bar[: bar.index("data-note-reading")]
-        for label in ("Affichage", "Regroupement", "Trier par", "data-outline-slot"):
+        bar = bar[: bar.index("</header>")]
+        for label in (
+            "<h1",
+            "4 passages",
+            "Affichage",
+            "Regroupement",
+            "Trier par",
+            "data-outline-slot",
+        ):
             self.assertIn(label, bar)
         self.assertIn("note_taking/note_sheet.js", html)
         self.assertIn("note_taking/note_reading.js", html)
@@ -128,6 +135,20 @@ class DocumentPageTests(TestCase):
         self.assertTrue(self.plan(html))
         self.assertIn("data-note-frame", html)
         self.assertNotIn("<script", html)
+        # L'en-tête, hors des résultats, est mis à jour avec eux.
+        options = html[html.index('id="results-options" data-hx-swap-oob') :]
+        self.assertIn("4 passages", options[: options.index("</nav>")])
+        self.assertEqual(html.count("Trier par"), 1)
+
+    def test_sans_resultat_l_en_tete_est_vide(self):
+        response = self.client.get(
+            self.url,
+            {"q": "introuvable", "view": "document"},
+            headers={"HX-Request": "true"},
+        )
+
+        self.assertContains(response, 'id="results-options"')
+        self.assertNotContains(response, "Trier par")
 
     def test_extraits_inchanges(self):
         html = self.get(view="extraits")

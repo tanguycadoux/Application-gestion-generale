@@ -81,6 +81,7 @@
             toggle.setAttribute("aria-controls", nav.id);
             // Remplacé : htmx garde le bouton posé dans une page où l'on revient.
             slot.replaceChildren(toggle);
+            signal.addEventListener("abort", () => toggle.remove());
             nav.classList.add(...classes(floatingCell), ...classes(floatingPlan));
             list?.classList.add(...classes(floatingList));
             layout.querySelector("[data-note-frame]")?.classList.add(...classes(floatingCell));
@@ -233,13 +234,11 @@
         );
         highlight();
 
-        // Barre collante dont la hauteur change avec la largeur (recherche) : le plan et les
+        // En-tête collant dont la hauteur change avec la largeur (recherche) : le plan et les
         // ancres se placent dessous.
         const bar = document.querySelector("[data-reading-bar]");
         if (bar) {
             const observer = new ResizeObserver(() => {
-                // Rien à mesurer une fois la barre remplacée ou retirée.
-                if (!bar.offsetHeight) return;
                 scroller.style.setProperty("--reading-top", `${bar.offsetHeight}px`);
             });
             observer.observe(bar);
