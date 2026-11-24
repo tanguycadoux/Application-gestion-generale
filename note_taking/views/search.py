@@ -11,14 +11,17 @@ from core.path_tree import path_tree
 
 from ..forms import NoteSearchForm
 from ..search import (
+    SORTS,
     document_html,
     facet_counts,
     group_by_note,
     no_project_count,
     project_counts,
     result_options,
+    result_sort,
     search_passages,
     section_counts,
+    sort_passages,
 )
 from ..search_paths import PathReport, path_reports
 from ..search_query import SearchQuery, parse_query
@@ -77,6 +80,11 @@ def notes_search(request):
 
     view, group = result_options(request.GET)
     as_document = bool(results) and view == "document"
+    # La pertinence classe ce qui répond à des mots ; un document se lit dans l'ordre.
+    with_relevance = query.has_words and not as_document
+    sort = result_sort(request.GET, with_relevance)
+    results = sort_passages(results, sort) if results else results
+    asked_sort = request.GET.get("sort", "")
     context = {
         "form": form,
         "results": results,
@@ -86,7 +94,16 @@ def notes_search(request):
         "note_count": len({passage.note_id for passage in results or []}),
         "view": view,
         "group": group,
-        "document": document_html(results, group) if as_document else None,
+        "document": (
+            document_html(results, group, oldest_first=sort == "oldest")
+            if as_document
+            else None
+        ),
+        "sort": sort,
+        "with_relevance": with_relevance,
+        # Le tri choisi dans l'adresse, gardé par le formulaire même quand il ne
+        # s'applique pas à cette recherche.
+        "asked_sort": asked_sort if asked_sort in SORTS else "",
         "faceted": facets is not None,
     }
     used, project_used = section_counts(), project_counts()

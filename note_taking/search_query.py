@@ -78,6 +78,11 @@ class SearchQuery:
             or self.no_project is not None
         )
 
+    @property
+    def has_words(self) -> bool:
+        """Des termes à chercher, et pas seulement des filtres ou des exclusions."""
+        return any(not term.negated for term in self.terms)
+
 
 @dataclass
 class Token:

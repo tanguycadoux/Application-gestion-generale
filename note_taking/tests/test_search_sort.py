@@ -1,6 +1,5 @@
 """Trier les résultats par pertinence ou par date (#430)."""
 
-import unittest
 from datetime import date
 
 from django.test import SimpleTestCase, TestCase
@@ -14,12 +13,10 @@ from note_taking.models import Note, Passage
 class ResultSortTests(SimpleTestCase):
     """Le tri lu dans l'adresse ; `with_relevance` : la pertinence est possible."""
 
-    @unittest.expectedFailure
     def test_defaut(self):
         self.assertEqual(search.result_sort({}, with_relevance=True), "relevance")
         self.assertEqual(search.result_sort({}, with_relevance=False), "newest")
 
-    @unittest.expectedFailure
     def test_tri_choisi(self):
         for sort in ("newest", "oldest"):
             for possible in (True, False):
@@ -29,7 +26,6 @@ class ResultSortTests(SimpleTestCase):
                         sort,
                     )
 
-    @unittest.expectedFailure
     def test_pertinence_impossible_ou_valeur_inconnue(self):
         self.assertEqual(
             search.result_sort({"sort": "relevance"}, with_relevance=False), "newest"
@@ -97,12 +93,10 @@ class ExtractsSortTests(SortedPageTestCase):
         self.assertEqual(self.order(self.get(sort="relevance")), self.order(response))
         self.assertEqual(self.order(self.get(sort="x")), self.order(response))
 
-    @unittest.expectedFailure
     def test_avec_des_mots_par_date_chaque_note_telle_qu_ecrite(self):
         self.assertEqual(self.order(self.get(sort="newest")), written(NEWEST))
         self.assertEqual(self.order(self.get(sort="oldest")), written(NEWEST[::-1]))
 
-    @unittest.expectedFailure
     def test_filtres_seuls(self):
         self.assertEqual(self.order(self.get("projet:Alpha")), written(NEWEST))
         self.assertEqual(
@@ -132,7 +126,6 @@ class DocumentSortTests(SortedPageTestCase):
         }
         return sorted(places, key=lambda month: places[month])
 
-    @unittest.expectedFailure
     def test_le_tri_choisit_le_sens_des_dates(self):
         for group in ("date", "path"):
             with self.subTest(group=group):
@@ -154,7 +147,6 @@ class DocumentSortTests(SortedPageTestCase):
                 )
 
 
-@unittest.expectedFailure
 class SortSelectorTests(SortedPageTestCase):
     WHY = "La pertinence demande des mots cherchés"
 
@@ -170,10 +162,10 @@ class SortSelectorTests(SortedPageTestCase):
     def test_tri_courant_marque(self):
         for params, label in (
             ({}, "Pertinence"),
-            ({"sort": "oldest"}, "Plus anciennes d’abord"),
+            ({"sort": "oldest"}, "Plus anciennes d'abord"),
         ):
             with self.subTest(params=params):
-                html = self.get(**params).content.decode().replace("'", "’")
+                html = self.get(**params).content.decode()
                 self.assertRegex(html, rf'aria-current="true"[^>]*>{label}</a>')
 
     def test_pertinence_grisee_sans_mot(self):
@@ -205,7 +197,6 @@ class SortSelectorTests(SortedPageTestCase):
 
 
 class AssembledOrderTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_assemblage_du_plus_ancien_au_plus_recent(self):
         from note_taking.search_document import DocPassage, Level, assemble
 

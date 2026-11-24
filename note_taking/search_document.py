@@ -15,12 +15,12 @@ accents (projets « Chantier Nord » et « Chantier nord »).
 Deux regroupements, au choix :
 
 - `date` : un titre par note (`##`, avec un lien vers la note), les notes les plus
-  récentes d'abord ; dessous, le projet (`###`) puis les niveaux, dans l'ordre où
+  récentes d'abord (ou les plus anciennes, `oldest_first`, #430) ; dessous, le projet (`###`) puis les niveaux, dans l'ordre où
   l'appelant a donné les passages ;
 - `path` : l'arbre Projet › niveaux (`##` pour le projet), trié sans casse ni
   accents, puis par identité à nom égal : un niveau et ses descendants se suivent,
   sans s'entrelacer avec un autre ; sous chaque niveau, ses passages de toutes les
-  notes, le plus récent d'abord, chacun précédé de sa date en lien vers sa section.
+  notes, dans le même sens, chacun précédé de sa date en lien vers sa section.
 
 Un titre déjà ouvert n'est pas répété : on n'écrit que les niveaux qui changent
 depuis le passage précédent. Les niveaux vont de `##` à `######` ; au-delà, le
@@ -67,12 +67,14 @@ def split_titles(heading_path: str) -> tuple[str, ...]:
     return tuple(heading_path.split(HEADING_SEPARATOR))
 
 
-def assemble(passages: Sequence[DocPassage], group: str) -> str:
+def assemble(
+    passages: Sequence[DocPassage], group: str, oldest_first: bool = False
+) -> str:
     """Le Markdown des passages, regroupées par `group` (`date` ou `path`)."""
     if group == "date":
-        return by_date(passages)
+        return by_date(passages, oldest_first)
     if group == "path":
-        return by_path(passages)
+        return by_path(passages, oldest_first)
     raise ValueError(f"Regroupement inconnu : {group}")
 
 
@@ -103,12 +105,12 @@ def opened(
     ]
 
 
-def by_date(passages: Sequence[DocPassage]) -> str:
+def by_date(passages: Sequence[DocPassage], oldest_first: bool = False) -> str:
     notes: dict[date, list[DocPassage]] = {}
     for item in passages:
         notes.setdefault(item.date, []).append(item)
     blocks: list[str] = []
-    for day in sorted(notes, reverse=True):
+    for day in sorted(notes, reverse=not oldest_first):
         first = notes[day][0]
         blocks.append(heading(2, f"[Note du {first.date_label}]({first.note_url})"))
         previous: tuple[Level, ...] = ()
@@ -126,12 +128,13 @@ def tree_order(levels: tuple[Level, ...]) -> tuple[tuple[str, int], ...]:
     return tuple((fold(level.name), level.key) for level in levels)
 
 
-def by_path(passages: Sequence[DocPassage]) -> str:
+def by_path(passages: Sequence[DocPassage], oldest_first: bool = False) -> str:
+    sign = 1 if oldest_first else -1
     order = sorted(
         enumerate(passages),
         key=lambda pair: (
             tree_order(pair[1].levels),
-            -pair[1].date.toordinal(),
+            sign * pair[1].date.toordinal(),
             pair[0],
         ),
     )
