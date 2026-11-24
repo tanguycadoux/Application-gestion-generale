@@ -209,6 +209,21 @@ class HtmlValidationTests(TestCase):
                 reverse("note_taking:notes_search")
                 + "?q=projet:ASTERICS&view=document&group=path"
             ),
+            # Triée, par date, avec un niveau compris dans un projet coché (#430, #433).
+            "recherche_document_par_date": (
+                reverse("note_taking:notes_search")
+                + f"?projects={project.pk}&subjects={section.pk}"
+                + "&view=document&group=date&sort=oldest"
+            ),
+            "recherche_triee": (
+                reverse("note_taking:notes_search") + "?q=point&sort=oldest"
+            ),
+            "recherche_filtres_seuls": (
+                reverse("note_taking:notes_search") + "?q=projet:ASTERICS"
+            ),
+            "recherche_document_vide": (
+                reverse("note_taking:notes_search") + "?q=introuvable&view=document"
+            ),
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),
