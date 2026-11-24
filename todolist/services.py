@@ -18,8 +18,10 @@ from note_taking.qmd.parser import (
     CODE_FENCE,
     HEADING_SEPARATOR,
     TODO_TAG,
+    heading_name,
     parse_note,
 )
+from note_taking.renaming import normalized
 from note_taking.services import replace_image_paths
 from note_taking.signals import ReviewedSection
 
@@ -497,11 +499,28 @@ def restore_task(task: Task) -> Task | None:
     return dismissed_parent
 
 
+def placed_by_note(task: Task) -> bool:
+    """Si le projet et le niveau de la tâche sont ceux des titres de sa ligne, et non
+    un choix fait à la main. Les éléments parents d'une ligne suivent ses titres dans
+    son chemin : on en compare le début (un niveau remonté à la main dans le même
+    chemin ne s'en distingue pas)."""
+    place = [task.project.name] if task.project else []
+    place += levels(task.section) if task.section else []
+    titles = [
+        heading_name(title)
+        for title in task.note_path.split(HEADING_SEPARATOR)[: len(place)]
+    ]
+    return [normalized(name) for name in place] == [normalized(t) for t in titles]
+
+
 def replace_task(old: Task, new: Task) -> None:
     """L'ancienne tâche, dont la ligne a disparu, prend la place de la tâche de
     la nouvelle ligne (#240) : elle garde avancement, échéance et sous-tâches, et
     reçoit celles de la nouvelle. Son titre suit la ligne, sauf s'il a été
-    renommé à la main."""
+    renommé à la main ; son projet et son niveau aussi (#382), sauf s'ils ont été
+    choisis à la main, ou si la nouvelle ligne est dans le texte sans projet."""
+    if new.project and placed_by_note(old):
+        old.project, old.section = new.project, new.section
     if old.title == old.note_line_text:
         old.title = new.title
     Task.all_objects.filter(parent=new).update(parent=old)
