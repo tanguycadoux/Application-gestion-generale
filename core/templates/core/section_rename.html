@@ -40,7 +40,7 @@
 
                 {% if occurrences %}
                     <fieldset>
-                        <legend class="mb-2 text-slate-600">{{ occurrences|length }} titre{{ occurrences|length|pluralize }} à réécrire dans les notes. Décocher un titre lui garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes.</legend>
+                        <legend class="mb-2 text-slate-600">{{ occurrences|length }} titre{{ occurrences|length|pluralize }} à réécrire dans les notes. Décocher un titre lui garde son ancien nom : l'ancien et le nouveau niveau coexistent alors, chacun avec ses notes et leurs tâches.</legend>
                         <ul class="divide-y divide-slate-200">
                             {% for occurrence in occurrences %}
                                 <li class="py-2">

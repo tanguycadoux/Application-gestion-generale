@@ -368,7 +368,8 @@ class PathTreeTests(SearchTestCase):
         self.assertContains(
             response, f'name="subjects" value="{self.s_detail.pk}"', html=False
         )
-        self.assertNotContains(response, "checked")
+        # L'en-tête a son propre formulaire, celui de la capture rapide (#386).
+        self.assertNotIn("checked", response.content.decode().split("<main")[1])
 
     def test_niveau_choisi_est_coche_et_ses_parents_ouverts(self):
         response = self.client.get(self.url, {"subjects": [self.s_detail.pk]})
@@ -401,7 +402,7 @@ class PathTreeTests(SearchTestCase):
                 self.assertNotRegex(html, rf"<summary[^>]*>\s*{title}\s*</summary>")
 
     def test_projets_en_cases_dans_l_arbre_un_seul_groupe(self):
-        html = self.client.get(self.url).content.decode()
+        html = self.client.get(self.url).content.decode().split("<main")[1]
 
         self.assertEqual(html.count("<legend"), 1)
         self.assertIn(

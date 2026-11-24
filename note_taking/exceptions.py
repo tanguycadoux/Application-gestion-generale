@@ -27,6 +27,10 @@ class NoteRenameError(NoteError):
     """Renommage d'un niveau de chemin impossible dans une note (#299)."""
 
 
+class QuickCaptureError(NoteError):
+    """Capture rapide refusée (#386) : texte vide, titre disparu, bloc non fermé."""
+
+
 class InvalidArchiveError(NoteError):
     """Fichier qui n'est pas une archive zip de notes lisible."""
 

@@ -10,6 +10,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
@@ -20,6 +21,7 @@ from .app_registry import (
     project_renamers,
     project_usages,
     section_renamers,
+    week_blocks,
 )
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
@@ -40,6 +42,7 @@ from .sections import (
 from .suggestions import elsewhere_suggestions as find_elsewhere
 from .suggestions import project_suggestions as find_projects
 from .suggestions import section_suggestions as find_sections
+from .weeks import Week
 
 
 def index(request):
@@ -52,6 +55,20 @@ def index(request):
         for block in dashboard_blocks()
     ]
     return render(request, "core/index.html", {"blocks": blocks})
+
+
+def week(request, week: Week | None = None):
+    """Bilan d'une semaine (#208), celle en cours sans adresse : les blocs que chaque
+    app déclare."""
+    week = week or Week.of(timezone.localdate())
+    blocks = [
+        {
+            "title": block.title,
+            "html": render_to_string(block.template, block.context(week), request),
+        }
+        for block in week_blocks()
+    ]
+    return render(request, "core/week.html", {"week": week, "blocks": blocks})
 
 
 GALLERY_MESSAGES = (

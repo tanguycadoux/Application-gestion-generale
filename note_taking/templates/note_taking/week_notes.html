@@ -1,0 +1,27 @@
+{% load ui %}
+{# Notes de la semaine, par projet (#208). #}
+{% if groups %}
+    <div class="space-y-4">
+        {% for group in groups %}
+            <section>
+                <h3 class="mb-1 font-medium">{% if group.project %}{% project_badge group.project %}{% else %}<span class="text-amber-800">Sans projet</span>{% endif %}</h3>
+                <ul class="space-y-1">
+                    {% for entry in group.notes %}
+                        <li>
+                            <a href="{{ entry.url }}">{% date_time entry.note.date "long" %}</a>
+                            {% if entry.paths %}
+                                <ul class="pl-6 text-sm">
+                                    {% for path, url in entry.paths.items %}
+                                        <li><a href="{{ url }}">{{ path }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="text-slate-600">Aucune note cette semaine.</p>
+{% endif %}

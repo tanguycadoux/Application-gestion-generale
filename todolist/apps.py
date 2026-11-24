@@ -8,6 +8,7 @@ from core.app_registry import (
     ProjectBlock,
     ProjectUsage,
     SectionUsage,
+    WeekBlock,
 )
 
 
@@ -46,6 +47,11 @@ class TodolistConfig(AppConfig):
             progress,
             project_blocks,
             receivers,
+            week,
+        )
+
+        self.week_blocks = (
+            WeekBlock("Tâches", 20, "todolist/week_tasks.html", week.week_tasks),
         )
 
         self.project_blocks = (

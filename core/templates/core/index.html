@@ -4,7 +4,12 @@
 {% block title %}Gestion générale{% endblock title %}
 
 {% block content %}
-    <h1 class="mb-4">Application de gestion générale</h1>
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">Application de gestion générale</h1>
+
+        {% url 'core:week_current' as week_url %}
+        {% button "Bilan de la semaine" icon="calendar_month" href=week_url variant="ghost" %}
+    </header>
 
     {# Un bloc par entrée déclarée par les apps (`dashboard_blocks` de leur AppConfig, #233). #}
     <div class="grid gap-6 lg:grid-cols-2">

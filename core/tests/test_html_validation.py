@@ -149,6 +149,7 @@ class HtmlValidationTests(TestCase):
         rename = reverse("core:section_rename", args=[project.pk, section.pk])
         return {
             "accueil": reverse("core:index"),
+            "semaine": reverse("core:week_current"),
             "projets": reverse("core:projects"),
             "projet": reverse("core:project_detail", args=[project.pk]),
             "projet_niveau": (

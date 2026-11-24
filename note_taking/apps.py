@@ -9,6 +9,7 @@ from core.app_registry import (
     ProjectUsage,
     SectionRenamer,
     SectionUsage,
+    WeekBlock,
 )
 
 
@@ -29,6 +30,8 @@ class NoteTakingConfig(AppConfig):
     search_page = NavItem(
         "note_taking:notes_search", "Rechercher dans les notes", "search"
     )
+    # Capture rapide dans la note du jour (#386).
+    header_templates = ("note_taking/quick_capture.html",)
     project_usages = (ProjectUsage("passages__note", "note", "notes"),)
     # Un niveau compte ses passages (#362, #387).
     section_usages = (
@@ -49,6 +52,7 @@ class NoteTakingConfig(AppConfig):
             project_blocks,
             renaming,
             search_index,
+            week,
         )
 
         self.dashboard_blocks = (
@@ -75,6 +79,10 @@ class NoteTakingConfig(AppConfig):
                 "note_taking/project_images.html",
                 project_blocks.images_block,
             ),
+        )
+
+        self.week_blocks = (
+            WeekBlock("Notes", 10, "note_taking/week_notes.html", week.week_notes),
         )
 
         self.section_renamer = SectionRenamer(
