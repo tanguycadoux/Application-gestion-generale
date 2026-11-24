@@ -420,3 +420,52 @@ class FacetTreeTests(TestCase):
         html = self.render(path_tree({}, marked={s["thermique"].pk}))
 
         self.assertIn("chemin:", html)
+
+
+class CoveredTests(TestCase):
+    """Un niveau compris dans un niveau coché (#433) : il n'est pas coché lui-même ;
+    `path_tree.js` grise sa case."""
+
+    def setUp(self):
+        self.s = make_sections()
+
+    def selected(self, sections=(), projects=()) -> list[str]:
+        nodes = path_tree(
+            {},
+            selected=[self.s[name].pk for name in sections],
+            project_counts={},
+            selected_projects=[self.s[name].pk for name in projects],
+        )
+        return [node.label for node in nodes if node.selected]
+
+    def test_sous_un_projet_coche(self):
+        self.assertEqual(
+            self.selected(["mesures", "detail", "beta_mesures"], ["alpha"]),
+            ["Alpha", "beta › Mesures"],
+        )
+
+    def test_sous_un_niveau_coche(self):
+        self.assertEqual(
+            self.selected(["mesures", "detail", "thermique"]),
+            ["Alpha › Mesures", "Alpha › thermique"],
+        )
+
+    def test_un_niveau_compris_n_ouvre_pas_l_arbre(self):
+        nodes = path_tree(
+            {},
+            selected=[self.s["detail"].pk],
+            project_counts={},
+            selected_projects=[self.s["alpha"].pk],
+        )
+
+        self.assertEqual([node.name for node in nodes if node.open], [])
+
+    def test_un_arbre_en_cases_est_suivi_par_le_script(self):
+        template = Template("{% load ui %}{% path_tree nodes mode=mode param='path' %}")
+        request = RequestFactory().get("/")
+        for mode, count in (("checkbox", 1), ("link", 0)):
+            with self.subTest(mode=mode):
+                html = template.render(
+                    RequestContext(request, {"nodes": path_tree({}), "mode": mode})
+                )
+                self.assertEqual(html.count("data-path-tree"), count)

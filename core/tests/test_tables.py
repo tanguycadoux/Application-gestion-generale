@@ -584,18 +584,26 @@ class PathTreeFilterTests(TestCase):
         )
 
     def test_lit_projets_et_chemins_sans_valeur_inconnue(self):
-        data = {
-            "project": ["Alpha", "Zeta"],
-            "path": [str(self.mesures.pk), "999", "x"],
-        }
+        self.assertEqual(
+            self.filter.read({"project": ["Alpha", "Zeta"]}, []), (("Alpha",), ())
+        )
+        self.assertEqual(
+            self.filter.read({"path": [str(self.mesures.pk), "999", "x"]}, []),
+            ((), (self.mesures.pk,)),
+        )
 
-        self.assertEqual(self.filter.read(data, []), (("Alpha",), (self.mesures.pk,)))
+    def test_un_niveau_compris_dans_un_projet_coche_est_ignore(self):
+        data = {"project": ["Alpha"], "path": [str(self.mesures.pk)]}
+
+        self.assertEqual(self.filter.read(data, []), (("Alpha",), ()))
 
     def test_rien_de_coche_n_est_pas_un_filtre(self):
         self.assertIsNone(self.filter.read({}, []))
         self.assertIsNone(self.filter.read({"project": ["Zeta"]}, []))
 
     def test_description_des_choix(self):
-        value = (("Alpha",), (self.mesures.pk,))
+        beta = Project.objects.create(name="Beta")
+        Section.objects.create(project=beta, name="Essais")
+        value = (("Beta",), (self.mesures.pk,))
 
-        self.assertEqual(self.filter.describe(value), "Alpha, Alpha › Mesures")
+        self.assertEqual(self.filter.describe(value), "Beta, Alpha › Mesures")

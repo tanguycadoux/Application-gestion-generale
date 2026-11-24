@@ -88,7 +88,8 @@ def path_tree(
 
     - `counts` : par clé de niveau, ce qui l'utilise lui-même ; le compteur d'un
       nœud ajoute ceux de ses descendants ;
-    - `selected` : clés des niveaux choisis ;
+    - `selected` : clés des niveaux choisis ; un niveau compris dans un niveau ou un
+      projet choisi l'est déjà, il n'est pas choisi lui-même (#433) ;
     - `project` : seulement ses niveaux, sans nœud de projet au sommet ; sinon
       chaque projet qui a des niveaux est un nœud de profondeur 0 ;
     - `only_counted` : ne garde que les niveaux utilisés ou choisis, avec leurs
@@ -126,7 +127,9 @@ def path_tree(
     if project_used is None:
         project_used = project_counts
 
-    def build(section: Section, labels: list[str], depth: int) -> PathNode | None:
+    def build(
+        section: Section, labels: list[str], depth: int, covered: bool
+    ) -> PathNode | None:
         names = [*labels, section.name]
         node = PathNode(
             section.pk,
@@ -136,11 +139,11 @@ def path_tree(
             depth,
             count=counts.get(section.pk, 0),
             used=used.get(section.pk, 0),
-            selected=section.pk in chosen,
+            selected=section.pk in chosen and not covered,
             marked=section.pk in pointed,
         )
         for child in sorted_by_name(children[(section.project_id, section.pk)]):
-            built = build(child, names, depth + 1)
+            built = build(child, names, depth + 1, covered or node.selected)
             if built is not None:
                 node.children.append(built)
                 node.count += built.count
@@ -152,7 +155,7 @@ def path_tree(
     roots: list[PathNode] = []
     if project is not None:
         for section in sorted_by_name(children[(project.pk, None)]):
-            built = build(section, [project.name], 0)
+            built = build(section, [project.name], 0, False)
             if built is not None:
                 roots.append(built)
     else:
@@ -168,7 +171,7 @@ def path_tree(
                 project=owner,
             )
             for section in sorted_by_name(children[(owner.pk, None)]):
-                built = build(section, [owner.name], 1)
+                built = build(section, [owner.name], 1, top.selected)
                 if built is not None:
                     top.children.append(built)
                     top.count += built.count
