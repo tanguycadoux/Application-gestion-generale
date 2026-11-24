@@ -16,7 +16,8 @@
     const name = save.querySelector('input[name="name"]');
     const empty = document.querySelector("[data-saved-search-empty]");
     let proposed = name.value;
-    // Les cases de l'arbre, « Sans projet » comprise (#385).
+    // Les cases de l'arbre, « Sans projet » comprise (#385) ; une case grisée est comprise
+    // dans une autre (#433, path_tree.js) et ne compte pas.
     const FILTERS = ["projects", "subjects", "no_project"];
 
     // Le nom proposé sans texte : les projets, niveaux et « Sans projet » cochés,
@@ -31,7 +32,7 @@
     function follow() {
         hidden.value = search.value.trim();
         const checked = [
-            ...searchForm.querySelectorAll('input[type="checkbox"]:checked'),
+            ...searchForm.querySelectorAll('input[type="checkbox"]:checked:enabled'),
         ].filter((box) => FILTERS.includes(box.name));
         filters.replaceChildren(
             ...checked.map((box) => {

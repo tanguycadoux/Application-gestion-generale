@@ -1,6 +1,5 @@
 """L'arbre des chemins réutilisable (#302) : construction des nœuds et composant."""
 
-import unittest
 from typing import Any
 
 from django.template import RequestContext, Template
@@ -439,21 +438,18 @@ class CoveredTests(TestCase):
         )
         return [node.label for node in nodes if node.selected]
 
-    @unittest.expectedFailure
     def test_sous_un_projet_coche(self):
         self.assertEqual(
             self.selected(["mesures", "detail", "beta_mesures"], ["alpha"]),
             ["Alpha", "beta › Mesures"],
         )
 
-    @unittest.expectedFailure
     def test_sous_un_niveau_coche(self):
         self.assertEqual(
             self.selected(["mesures", "detail", "thermique"]),
             ["Alpha › Mesures", "Alpha › thermique"],
         )
 
-    @unittest.expectedFailure
     def test_un_niveau_compris_n_ouvre_pas_l_arbre(self):
         nodes = path_tree(
             {},
@@ -464,7 +460,6 @@ class CoveredTests(TestCase):
 
         self.assertEqual([node.name for node in nodes if node.open], [])
 
-    @unittest.expectedFailure
     def test_un_arbre_en_cases_est_suivi_par_le_script(self):
         template = Template("{% load ui %}{% path_tree nodes mode=mode param='path' %}")
         request = RequestFactory().get("/")

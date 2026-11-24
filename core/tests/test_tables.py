@@ -1,6 +1,5 @@
 """Tri et filtres des tableaux, dans l'URL (#178) : le module `core.tables`."""
 
-import unittest
 from datetime import date
 
 from django.contrib.staticfiles import finders
@@ -593,7 +592,6 @@ class PathTreeFilterTests(TestCase):
             ((), (self.mesures.pk,)),
         )
 
-    @unittest.expectedFailure
     def test_un_niveau_compris_dans_un_projet_coche_est_ignore(self):
         data = {"project": ["Alpha"], "path": [str(self.mesures.pk)]}
 
