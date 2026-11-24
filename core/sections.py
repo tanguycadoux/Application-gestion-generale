@@ -287,11 +287,13 @@ def with_descendants(pks: Iterable[int]) -> set[int]:
     return found
 
 
-def path_labels() -> dict[int, str]:
-    """« Projet › Réunion › Préparation » pour chaque section, en deux requêtes."""
-    sections = {
-        section.pk: section for section in Section.objects.select_related("project")
-    }
+def path_labels(with_project: bool = True) -> dict[int, str]:
+    """« Projet › Réunion › Préparation » pour chaque section, en une requête ; sans
+    le projet si `with_project` est faux."""
+    found = Section.objects.all()
+    if with_project:
+        found = found.select_related("project")
+    sections = {section.pk: section for section in found}
     labels = {}
     for pk, section in sections.items():
         names = [section.name]
@@ -299,7 +301,9 @@ def path_labels() -> dict[int, str]:
         while parent is not None:
             names.insert(0, sections[parent].name)
             parent = sections[parent].parent_id
-        labels[pk] = LABEL_SEPARATOR.join([section.project.name, *names])
+        if with_project:
+            names.insert(0, section.project.name)
+        labels[pk] = LABEL_SEPARATOR.join(names)
     return labels
 
 

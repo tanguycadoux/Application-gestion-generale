@@ -27,19 +27,32 @@ class Similar:
     merge_url: str
 
 
+@dataclass(frozen=True)
+class UsageLink:
+    """« 3 passages », et l'adresse de la page qui les liste (#375)."""
+
+    text: str
+    url: str
+
+
 @dataclass
 class TreeRow:
     section: Section
     depth: int
-    # « 3 passages et 2 tâches », vide si rien n'utilise ce niveau ni ses
-    # descendants.
-    usage: str
-    total: int
+    # Ce qui utilise le niveau et ses descendants, par usage déclaré ; vide s'il est
+    # inutilisé.
+    usages: list[UsageLink] = field(default_factory=list)
+    total: int = 0
     # Nombre de niveaux en dessous, à tous les niveaux.
     descendants: int = 0
     # Les frères qui ne diffèrent que par la casse, les accents, la ponctuation ou
     # un pluriel simple (#374).
     similar: list[Similar] = field(default_factory=list)
+
+    @property
+    def usage(self) -> str:
+        """« 3 passages et 2 tâches », vide pour un niveau inutilisé."""
+        return " et ".join(link.text for link in self.usages)
 
     @property
     def usage_id(self) -> str:
@@ -86,7 +99,7 @@ def section_tree(project: Project) -> list[TreeRow]:
     def walk(section: Section, depth: int) -> list[int]:
         """Ajoute la ligne de ce niveau, puis celles de ses descendants ; renvoie ce
         qui utilise le niveau et ses descendants, par usage."""
-        row = TreeRow(section, depth, "", 0)
+        row = TreeRow(section, depth)
         rename_url = reverse("core:section_rename", args=[project.pk, section.pk])
         row.similar = [
             Similar(other.name, f"{rename_url}?{urlencode({'name': other.name})}")
@@ -102,11 +115,11 @@ def section_tree(project: Project) -> list[TreeRow]:
             ]
         row.descendants = len(rows) - index
         row.total = sum(totals)
-        row.usage = " et ".join(
-            usage.text(count)
+        row.usages = [
+            UsageLink(usage.text(count), usage.url(section.pk))
             for usage, count in zip(usages, totals, strict=True)
             if count
-        )
+        ]
         return totals
 
     for root in children.get(None, []):

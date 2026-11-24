@@ -1,7 +1,6 @@
 """L'arbre des chemins d'un projet : niveaux, indentation, compteurs (#299)."""
 
 import re
-from unittest import expectedFailure
 
 from django.test import TestCase
 from django.urls import reverse
@@ -137,7 +136,6 @@ class TreePageTests(TreeTestCase):
 
         self.assertContains(self.client.get(self.url()), "inutilisé")
 
-    @expectedFailure
     def test_compteurs_en_liens_vers_les_passages_et_les_taches(self):
         """#375 : la recherche et la liste des tâches filtrées sur le niveau. La liste
         montre aussi les tâches terminées, que le compteur compte."""
@@ -158,7 +156,6 @@ class TreePageTests(TreeTestCase):
             html,
         )
 
-    @expectedFailure
     def test_la_cible_d_un_compteur_montre_ce_qu_il_compte(self):
         """#375 : descendants compris, tâches terminées comprises."""
         self.note("# P\n## A\nx\n### B\n- [ ] Une")

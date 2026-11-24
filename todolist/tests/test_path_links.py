@@ -3,7 +3,6 @@ et la liste des tâches montre les chemins (#375)."""
 
 import json
 import re
-from unittest import expectedFailure
 
 from django.db import connection
 from django.test import TestCase
@@ -36,7 +35,6 @@ class LinksTestCase(TestCase):
 
 
 class DetailPathTests(LinksTestCase):
-    @expectedFailure
     def test_chaque_niveau_mene_a_ses_taches(self):
         leaf = self.section("Réunion", "Préparation")
         task = self.task("T", section=leaf)
@@ -78,26 +76,22 @@ class OriginNoteTests(LinksTestCase):
     def url(self, anchor: str = "") -> str:
         return reverse("note_taking:note_detail", args=["2025-11-24"]) + anchor
 
-    @expectedFailure
     def test_ouverte_au_titre_de_la_section(self):
         self.note("# P\n## Réunion\n### Suite\n- [ ] Une")
 
         self.assertEqual(self.origin("Une"), self.url("#suite"))
 
-    @expectedFailure
     def test_titre_repete_sa_propre_occurrence(self):
         self.note("# P\n## A\n- [ ] Une\n## B\nx\n## A\n- [ ] Deux")
 
         self.assertEqual(self.origin("Une"), self.url("#a"))
         self.assertEqual(self.origin("Deux"), self.url("#a-1"))
 
-    @expectedFailure
     def test_sous_tache_et_case_imbriquee(self):
         self.note("# P\n## A\n- un point\n    - [ ] Une")
 
         self.assertEqual(self.origin("Une"), self.url("#a"))
 
-    @expectedFailure
     def test_case_cochee_dans_la_note(self):
         """La ligne n'est plus une tâche : la section reste la bonne."""
         note = self.note("# P\n## A\n- [ ] Une")
@@ -105,7 +99,6 @@ class OriginNoteTests(LinksTestCase):
 
         self.assertEqual(self.origin("Une"), self.url("#a"))
 
-    @expectedFailure
     def test_section_disparue_le_niveau_au_dessus(self):
         note = self.note("# P\nx\n## A\n- [ ] Une")
         self.rewrite(note, "# P\nx")
@@ -127,7 +120,6 @@ class ListPathTests(LinksTestCase):
         found = re.search(r"<p[^>]*>(.*?)</p>", row, re.DOTALL)
         return found[1] if found else ""
 
-    @expectedFailure
     def test_chemin_sous_le_titre(self):
         task = self.task("T", section=self.section("Réunion", "Préparation"))
 
@@ -136,7 +128,6 @@ class ListPathTests(LinksTestCase):
     def test_sans_chemin(self):
         self.assertEqual(self.path_of(self.task("T")), "")
 
-    @expectedFailure
     def test_sous_tache_seulement_si_le_chemin_differe_du_parent(self):
         section = self.section("A")
         parent = self.task("Parent", section=section)
@@ -151,7 +142,6 @@ class ListPathTests(LinksTestCase):
         self.assertEqual(self.path_of(other, html), "A › B")
         self.assertEqual(self.path_of(none, html), "")
 
-    @expectedFailure
     def test_sous_taches_du_detail(self):
         section = self.section("A")
         parent = self.task("Parent", section=section)
@@ -163,7 +153,6 @@ class ListPathTests(LinksTestCase):
         self.assertEqual(self.path_of(same, html), "")
         self.assertEqual(self.path_of(other, html), "B")
 
-    @expectedFailure
     def test_ligne_remplacee_apres_une_case_cochee(self):
         task = self.task("T", section=self.section("A"))
 
@@ -175,7 +164,6 @@ class ListPathTests(LinksTestCase):
 
         self.assertEqual(self.path_of(task, response.json()["rows"][str(task.pk)]), "A")
 
-    @expectedFailure
     def test_chemin_echappe(self):
         task = self.task("T", section=self.section("<b>R&D</b>"))
 
@@ -196,7 +184,6 @@ class ListPathTests(LinksTestCase):
 
 
 class PathLabelsTests(LinksTestCase):
-    @expectedFailure
     def test_sans_le_projet(self):
         leaf = self.section("A", "B")
 

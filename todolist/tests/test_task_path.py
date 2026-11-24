@@ -1,6 +1,8 @@
 """Le chemin d'une tâche : saisi en texte avec autocomplétion, affiché en « › »,
 et filtre de la liste sur un niveau, descendants compris (#298)."""
 
+import re
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -204,7 +206,9 @@ class PathDisplayTests(PathTestCase):
         ).content.decode()
 
         self.assertIn("<dt", html)
-        self.assertRegex(html, r"<dt[^>]*>Chemin</dt>\s*<dd>Réunion › Préparation</dd>")
+        found = re.search(r"<dt[^>]*>Chemin</dt>\s*<dd>(.*?)</dd>", html)
+        assert found is not None
+        self.assertEqual(re.sub(r"<[^>]+>", "", found[1]), "Réunion › Préparation")
         self.assertNotIn(">Sujet<", html)
 
     def test_detail_sans_chemin(self):

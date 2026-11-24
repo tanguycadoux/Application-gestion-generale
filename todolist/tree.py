@@ -11,6 +11,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
 
+from core.sections import path_labels
 from core.tables import Column, Sort, Sorting, fold
 
 from .models import Task
@@ -34,6 +35,8 @@ class TaskRow:
     has_children: bool
     # Gardée pour le contexte d'un filtre sans y répondre : affichée atténuée.
     muted: bool = False
+    # Chemin affiché sous le titre (#375), vide s'il est celui du parent (au-dessus).
+    path: str = ""
 
 
 @dataclass
@@ -73,6 +76,20 @@ def children_map(
         parent = tasks_by_id[task.parent_id] if task.parent_id else None
         task.tree = (parent, children.get(task.pk, []))
     return children
+
+
+def fill_paths(rows: list[TaskRow]) -> None:
+    """Le chemin de chaque ligne, sauf si c'est celui de son parent, affiché au-dessus
+    (#375) ; une requête pour toutes, aucune sans chemin. Les tâches viennent de
+    `children_map` : leur parent est déjà chargé."""
+    if not any(row.task.section_id for row in rows):
+        return
+    labels = path_labels(with_project=False)
+    for row in rows:
+        parent = row.task.tree[0] if row.task.tree else None
+        section_id = row.task.section_id
+        if section_id and not (parent and parent.section_id == section_id):
+            row.path = labels[section_id]
 
 
 def subtree_rows(
@@ -146,6 +163,7 @@ def task_groups(
         for root in children.get(None, [])
         if done is None or root.done == done
     ]
+    fill_paths([row for group in groups for row in group.rows])
     return SORTING.sort_items(
         groups, sort, tie=lambda g: tie(g.root), key=group_key(sort)
     )
@@ -163,6 +181,7 @@ def task_rows(ids: list[int]) -> dict[int, TaskRow]:
                     level += 1
                     parent = parent.tree[0] if parent.tree else None
                 rows[task.pk] = TaskRow(task, level, bool(children.get(task.pk)))
+    fill_paths(list(rows.values()))
     return rows
 
 
@@ -180,4 +199,5 @@ def descendant_rows(task: Task) -> list[TaskRow]:
     rows = []
     for child in children.get(task.pk, []):
         rows += subtree_rows(child, children, 0)
+    fill_paths(rows)
     return rows

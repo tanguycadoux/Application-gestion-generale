@@ -11,9 +11,10 @@ todolist.tree.TaskRow). Renvoyée aussi par la case à cocher (#189).
                 <a href="{% url 'todolist:task_detail' task.pk %}">{{ task.title }}</a>
                 {% if task.to_validate %}<span class="text-sm text-slate-600">· à valider</span>{% endif %}
                 {% include "todolist/incoherence_flag.html" %}
+                {% if row.path %}<p class="text-sm{% if not task.done and not row.muted %} text-slate-600{% endif %}">{{ row.path }}</p>{% endif %}
             </div>
         </td>
-        <td class="p-2 align-middle">
+        <td class="px-2 pt-4.25 pb-2 align-top">
             <progress value="{{ task.progress }}" max="100" class="{{ task|progress_classes }}" aria-label="Avancement : {{ task.progress }} %">{{ task.progress }} %</progress>
         </td>
         <td class="whitespace-nowrap p-2 align-baseline text-sm {{ task|remaining_class }}">{{ task|remaining_text }}</td>

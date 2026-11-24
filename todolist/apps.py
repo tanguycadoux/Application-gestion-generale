@@ -28,8 +28,14 @@ class TodolistConfig(AppConfig):
     )
 
     section_usages = (
+        # Les tâches terminées sont comptées : la liste les montre aussi (`state=all`).
         SectionUsage(
-            "tasks", "tâche", "tâches", exclude=Q(tasks__note_state="dismissed")
+            "tasks",
+            "tâche",
+            "tâches",
+            url_name="todolist:task_list",
+            query="path={pk}&state=all",
+            exclude=Q(tasks__note_state="dismissed"),
         ),
     )
 
