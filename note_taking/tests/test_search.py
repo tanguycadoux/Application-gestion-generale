@@ -235,8 +235,8 @@ class NotesSearchTests(SearchTestCase):
         zone devient plus étroite qu'avant (#370)."""
         html = self.client.get(self.url).content.decode()
 
-        grid = re.search(r'<div class="([^"]*)">\s*<search>', html).group(1).split()
-        self.assertIn("grid-cols-[minmax(16rem,1fr)_3fr]", grid)
+        grid = re.search(r'<div class="([^"]*)">\s*<search', html).group(1).split()
+        self.assertIn("lg:grid-cols-[minmax(16rem,1fr)_3fr]", grid)
 
     def test_syntaxe_dans_la_zone(self):
         response = self.search(q="projet:beta -b2")
