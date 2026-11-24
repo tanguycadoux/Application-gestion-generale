@@ -1,7 +1,6 @@
 """La vue « Document » de la recherche, présentée comme la page d'une note (#431)."""
 
 import re
-import unittest
 
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -34,7 +33,6 @@ Point deux.
 
 
 class HeadingPrefixTests(SimpleTestCase):
-    @unittest.expectedFailure
     def test_prefixe_des_identifiants(self):
         self.assertEqual(
             add_heading_ids("<h2>Notes</h2><h3>Notes</h3>", prefix="doc-"),
@@ -50,7 +48,7 @@ class DocumentPageTests(TestCase):
         for day, body in NOTES.items():
             process_passages(Note.objects.create(date=day, body=body))
         cls.titles = {
-            note.date.isoformat(): f"Note du {date_text(note.date, 'long')}"
+            note.date.isoformat(): date_text(note.date, "long")
             for note in Note.objects.all()
         }
 
@@ -68,7 +66,6 @@ class DocumentPageTests(TestCase):
         assert nav is not None
         return re.findall(r'<a href="#([^"]+)"[^>]*>([^<]*)</a>', nav[0])
 
-    @unittest.expectedFailure
     def test_plan_par_date(self):
         plan = self.plan(self.get("date"))
 
@@ -85,13 +82,11 @@ class DocumentPageTests(TestCase):
             ],
         )
 
-    @unittest.expectedFailure
     def test_plan_par_chemin(self):
         plan = self.plan(self.get("path"))
 
         self.assertEqual([text for _, text in plan], ["Chantier", "Results", "Réunion"])
 
-    @unittest.expectedFailure
     def test_identifiants_uniques_dans_toute_la_page(self):
         """Un titre répété d'une note à l'autre, ou du nom d'un élément de la page
         (`results`)."""
@@ -103,7 +98,6 @@ class DocumentPageTests(TestCase):
                 for target, _ in self.plan(html):
                     self.assertIn(target, ids)
 
-    @unittest.expectedFailure
     def test_sections_repliables(self):
         html = self.get("path")
 
@@ -116,7 +110,6 @@ class DocumentPageTests(TestCase):
         self.assertIn(f'href="{note}#réunion"', self.get("path"))
         self.assertIn(f'href="{note}"', self.get("date"))
 
-    @unittest.expectedFailure
     def test_feuille_et_barre_collante(self):
         html = self.get()
 
@@ -129,7 +122,6 @@ class DocumentPageTests(TestCase):
         self.assertIn("note_taking/note_sheet.js", html)
         self.assertIn("note_taking/note_reading.js", html)
 
-    @unittest.expectedFailure
     def test_htmx_remplace_le_document_sans_recharger_les_scripts(self):
         html = self.get(headers={"HX-Request": "true"})
 

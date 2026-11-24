@@ -19,7 +19,7 @@ from images.services import import_image
 from images.tests.files import image_file
 from note_taking.models import Note, Passage
 from note_taking.qmd.parser import parse_note
-from note_taking.search import document_html, group_by_note, search_passages
+from note_taking.search import document_layout, group_by_note, search_passages
 from note_taking.search_query import parse_query
 from note_taking.services import process_passages
 
@@ -254,7 +254,7 @@ class PassageSearchTests(TestCase):
         qu'un passage plus haut."""
         self.process("# A\nmot premier\n# B\nmot milieu\n# A\nmot dernier")
 
-        html = document_html(self.search("mot"), "date")
+        html = document_layout(self.search("mot"), "date").html
 
         self.assertLess(html.index("premier"), html.index("milieu"))
         self.assertLess(html.index("milieu"), html.index("dernier"))
@@ -262,7 +262,7 @@ class PassageSearchTests(TestCase):
     def test_document_texte_sans_projet(self):
         self.process("mot libre\n# P\nmot rangé")
 
-        html = document_html(self.search("mot"), "date")
+        html = document_layout(self.search("mot"), "date").html
 
         self.assertIn("Sans projet", html)
         self.assertLess(html.index("libre"), html.index("rangé"))

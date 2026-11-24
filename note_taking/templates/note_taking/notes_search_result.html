@@ -19,40 +19,44 @@
     {% include "note_taking/search_help.html" with open=True %}
 {% elif results %}
     {# Un résultat est un passage (`Passage`, #362, #387). #}
-    <p class="mb-2 text-sm text-slate-600">{{ results|length }} passage{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
+    {# Vue « Document » : la barre colle en haut, comme l'en-tête d'une note (#431). #}
+    <div{% if document %} class="sticky -top-4 z-10 mb-4 flex items-center gap-x-4 rounded-b-lg border border-slate-300 bg-white px-3 py-2 print:hidden" data-reading-bar{% endif %}>
+        <div{% if document %} class="flex min-w-0 flex-1 flex-wrap items-center gap-x-8 gap-y-1"{% endif %}>
+            <p class="{% if not document %}mb-2 {% endif %}text-sm text-slate-600">{{ results|length }} passage{{ results|length|pluralize }} dans {{ note_count }} note{{ note_count|pluralize }}.</p>
 
-    {# Présentation (#356) : des liens, sans JavaScript, qui gardent le reste de l'adresse. #}
-    <nav aria-label="Présentation des résultats" class="mb-4 flex flex-wrap gap-x-8 gap-y-1 text-sm">
-        <ul class="flex gap-3">
-            <li class="text-slate-600">Affichage :</li>
-            <li><a href="{% result_option_url view="extraits" %}"{% if view == "extraits" %} aria-current="true" class="font-semibold"{% endif %}>Extraits</a></li>
-            <li><a href="{% result_option_url view="document" %}"{% if view == "document" %} aria-current="true" class="font-semibold"{% endif %}>Document</a></li>
-        </ul>
-        {% if view == "document" %}
-            <ul class="flex gap-3">
-                <li class="text-slate-600">Regroupement :</li>
-                <li><a href="{% result_option_url group="date" %}"{% if group == "date" %} aria-current="true" class="font-semibold"{% endif %}>Par date</a></li>
-                <li><a href="{% result_option_url group="path" %}"{% if group == "path" %} aria-current="true" class="font-semibold"{% endif %}>Par chemin</a></li>
-            </ul>
-        {% endif %}
-        <ul class="flex flex-wrap gap-x-3">
-            <li class="text-slate-600">Trier par :</li>
-            {# La pertinence (#430) n'a pas de sens pour un document, qui se lit dans l'ordre. #}
-            {% if with_relevance %}
-                <li><a href="{% result_option_url sort="relevance" %}"{% if sort == "relevance" %} aria-current="true" class="font-semibold"{% endif %}>Pertinence</a></li>
-            {% elif view != "document" %}
-                <li><span role="link" aria-disabled="true" tabindex="0" title="La pertinence demande des mots cherchés : avec des filtres seuls, aucun passage n'est plus pertinent qu'un autre." class="cursor-not-allowed text-slate-500">Pertinence</span></li>
-            {% endif %}
-            <li><a href="{% result_option_url sort="newest" %}"{% if sort == "newest" %} aria-current="true" class="font-semibold"{% endif %}>Plus récentes d'abord</a></li>
-            <li><a href="{% result_option_url sort="oldest" %}"{% if sort == "oldest" %} aria-current="true" class="font-semibold"{% endif %}>Plus anciennes d'abord</a></li>
-        </ul>
-    </nav>
+            {# Présentation (#356) : des liens, sans JavaScript, qui gardent le reste de l'adresse. #}
+            <nav aria-label="Présentation des résultats" class="{% if not document %}mb-4 {% endif %}flex flex-wrap gap-x-8 gap-y-1 text-sm">
+                <ul class="flex gap-3">
+                    <li class="text-slate-600">Affichage :</li>
+                    <li><a href="{% result_option_url view="extraits" %}"{% if view == "extraits" %} aria-current="true" class="font-semibold"{% endif %}>Extraits</a></li>
+                    <li><a href="{% result_option_url view="document" %}"{% if view == "document" %} aria-current="true" class="font-semibold"{% endif %}>Document</a></li>
+                </ul>
+                {% if view == "document" %}
+                    <ul class="flex gap-3">
+                        <li class="text-slate-600">Regroupement :</li>
+                        <li><a href="{% result_option_url group="date" %}"{% if group == "date" %} aria-current="true" class="font-semibold"{% endif %}>Par date</a></li>
+                        <li><a href="{% result_option_url group="path" %}"{% if group == "path" %} aria-current="true" class="font-semibold"{% endif %}>Par chemin</a></li>
+                    </ul>
+                {% endif %}
+                <ul class="flex flex-wrap gap-x-3">
+                    <li class="text-slate-600">Trier par :</li>
+                    {# La pertinence (#430) n'a pas de sens pour un document, qui se lit dans l'ordre. #}
+                    {% if with_relevance %}
+                        <li><a href="{% result_option_url sort="relevance" %}"{% if sort == "relevance" %} aria-current="true" class="font-semibold"{% endif %}>Pertinence</a></li>
+                    {% elif view != "document" %}
+                        <li><span role="link" aria-disabled="true" tabindex="0" title="La pertinence demande des mots cherchés : avec des filtres seuls, aucun passage n'est plus pertinent qu'un autre." class="cursor-not-allowed text-slate-500">Pertinence</span></li>
+                    {% endif %}
+                    <li><a href="{% result_option_url sort="newest" %}"{% if sort == "newest" %} aria-current="true" class="font-semibold"{% endif %}>Plus récentes d'abord</a></li>
+                    <li><a href="{% result_option_url sort="oldest" %}"{% if sort == "oldest" %} aria-current="true" class="font-semibold"{% endif %}>Plus anciennes d'abord</a></li>
+                </ul>
+            </nav>
+        </div>
+        {% if document %}<div class="shrink-0" data-outline-slot></div>{% endif %}
+    </div>
 
     {% if document %}
         {# Les passages assemblés, rendus comme une note : h2 = un groupe. #}
-        <div class="rendered-content">
-            {{ document }}
-        </div>
+        {% include "note_taking/reading.html" with content=document label="Plan du document" beside=True %}
     {% else %}
         {% for group in groups %}
             <article class="mb-6">

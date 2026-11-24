@@ -12,7 +12,7 @@ from core.path_tree import path_tree
 from ..forms import NoteSearchForm
 from ..search import (
     SORTS,
-    document_html,
+    document_layout,
     facet_counts,
     group_by_note,
     no_project_count,
@@ -85,6 +85,11 @@ def notes_search(request):
     sort = result_sort(request.GET, with_relevance)
     results = sort_passages(results, sort) if results else results
     asked_sort = request.GET.get("sort", "")
+    document = (
+        document_layout(results, group, oldest_first=sort == "oldest")
+        if results and as_document
+        else None
+    )
     context = {
         "form": form,
         "results": results,
@@ -94,11 +99,8 @@ def notes_search(request):
         "note_count": len({passage.note_id for passage in results or []}),
         "view": view,
         "group": group,
-        "document": (
-            document_html(results, group, oldest_first=sort == "oldest")
-            if as_document
-            else None
-        ),
+        "document": document.html if document else None,
+        "outline": document.entries if document else [],
         "sort": sort,
         "with_relevance": with_relevance,
         # Le tri choisi dans l'adresse, gardé par le formulaire même quand il ne

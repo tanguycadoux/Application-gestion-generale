@@ -37,6 +37,8 @@ from .qmd.parser import HEADING_SEPARATOR
 
 GROUPS = ("date", "path")
 MAX_LEVEL = 6
+# Le début du titre d'une note, suivi de sa date.
+NOTE_TITLE = "Note du "
 
 
 @dataclass(frozen=True)
@@ -112,7 +114,7 @@ def by_date(passages: Sequence[DocPassage], oldest_first: bool = False) -> str:
     blocks: list[str] = []
     for day in sorted(notes, reverse=not oldest_first):
         first = notes[day][0]
-        blocks.append(heading(2, f"[Note du {first.date_label}]({first.note_url})"))
+        blocks.append(heading(2, f"[{NOTE_TITLE}{first.date_label}]({first.note_url})"))
         previous: tuple[Level, ...] = ()
         for item in notes[day]:
             blocks.extend(opened(previous, item.levels, 3))

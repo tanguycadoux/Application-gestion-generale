@@ -76,13 +76,12 @@ class NotePageTests(TestCase):
         self.assertIn("truncate", header[header.index("<h1") : header.index("</h1>")])
 
     def test_feuille_et_scripts_de_meme_largeur(self):
-        """Les scripts reprennent la largeur de la feuille écrite dans le gabarit (#421) :
-        `note_reading.js` (plan affiché ou masqué), `note_sheet.js` (échelle)."""
+        """Le gabarit et `note_sheet.js` (échelle) ont la même largeur de feuille (#421) ;
+        `note_reading.js` lit les colonnes dans le gabarit (#431)."""
         columns = "lg:grid-cols-[minmax(0,240mm)_16rem]"
 
-        self.assertIn(columns, self.html)
+        self.assertIn(f'data-wide-grid="{columns}"', self.html)
         self.assertIn("grid-cols-[minmax(0,240mm)]", self.html)
-        self.assertIn(f'"{columns}"', self.script("note_reading.js"))
         self.assertIn("(240 * 96) / 25.4", self.script("note_sheet.js"))
 
     def test_echelle_de_la_feuille(self):
