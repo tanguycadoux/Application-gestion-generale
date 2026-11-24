@@ -3,6 +3,8 @@
 from django.contrib.staticfiles import finders
 from django.test import TestCase
 
+from note_taking.rendering import render_markdown
+
 
 class StylesheetsTests(TestCase):
     def read(self, name: str) -> str:
@@ -28,3 +30,17 @@ class StylesheetsTests(TestCase):
             "text-transform: uppercase;",
         ):
             self.assertIn(rule, css)
+
+    def test_tags_sans_puce_ni_retrait(self):
+        """Les règles des listes du contenu l'emportent sur `list-none` et `p-0` (#429)."""
+        css = self.read("note_taking/style.css")
+
+        self.assertIn(
+            ".rendered-content ul.note-tags {\n"
+            "    padding-left: 0;\n"
+            "    list-style-type: none;",
+            css,
+        )
+        self.assertIn(
+            '<ul class="note-tags ', render_markdown("::: {.metadata}\ntags: [a]\n:::")
+        )

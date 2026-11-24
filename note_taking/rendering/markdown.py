@@ -2,6 +2,7 @@
 
 import markdown
 
+from .figures import ImplicitFiguresExtension
 from .inline import MathExtension, SuperscriptSubscriptExtension
 from .lists import PandocListsExtension, TaskListExtension, task_checkboxes
 from .sanitize import lazy_images, sanitize_html
@@ -33,6 +34,7 @@ MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     TableCaptionExtension(),
     SuperscriptSubscriptExtension(),
     MathExtension(),
+    ImplicitFiguresExtension(),
 ]
 
 
