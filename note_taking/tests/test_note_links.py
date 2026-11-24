@@ -16,6 +16,7 @@ from note_taking.services import (
     process_passages,
     update_note_from_source_file,
 )
+from note_taking.tests.links import new_tab_link
 
 
 class NoteLinksParsingTests(SimpleTestCase):
@@ -82,13 +83,13 @@ class NoteLinksRenderingTests(TestCase):
         html = render_note_body("[la veille](2026-03-12.qmd)")
 
         url = reverse("note_taking:note_detail", args=["2026-03-12"])
-        self.assertInHTML(f'<a href="{url}">la veille</a>', html)
+        self.assertIn(new_tab_link(url, "la veille"), html)
 
     def test_lien_vers_la_section(self):
         html = render_note_body("[réunion](2026-03-12.qmd#reunion)")
 
         url = reverse("note_taking:note_detail", args=["2026-03-12"])
-        self.assertInHTML(f'<a href="{url}#reunion">réunion</a>', html)
+        self.assertIn(new_tab_link(f"{url}#reunion", "réunion"), html)
 
     def test_dans_un_passage(self):
         from note_taking.rendering import render_passage
@@ -108,7 +109,8 @@ class NoteLinksRenderingTests(TestCase):
         self.assertIn(f'href="{reverse("note_taking:new_note")}?date=2026-03-13"', html)
         # Un seul titre : l'explication remplace celui écrit.
         self.assertEqual(html.count("title="), 1)
-        self.assertIn(">demain</a>", html)
+        self.assertIn(">demain<", html)
+        self.assertIn('target="_blank"', html)
 
     def test_autres_liens_inchanges(self):
         html = render_note_body("[a](https://exemple.fr) [b](autre.qmd)")

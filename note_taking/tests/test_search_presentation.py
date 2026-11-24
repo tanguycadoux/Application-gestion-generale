@@ -11,6 +11,7 @@ from core.dates import date_text
 from core.models import Project
 from core.sections import section_for
 from note_taking.models import Note, Passage
+from note_taking.rendering import without_new_tab_marks
 from note_taking.search import (
     DEFAULT_GROUP,
     DEFAULT_VIEW,
@@ -21,6 +22,7 @@ from note_taking.search import (
 from note_taking.search_document import split_titles
 from note_taking.search_query import parse_query
 from note_taking.services import process_passages
+from note_taking.tests.links import new_tab_link
 
 
 class PresentationTestCase(TestCase):
@@ -156,7 +158,7 @@ class DocumentByDateTests(PresentationTestCase):
         new_url = reverse("note_taking:note_detail", args=["2026-10-15"])
 
         self.assertIn(
-            f'<h2><a href="{new_url}">Note du jeudi 15 octobre 2026</a></h2>', html
+            f"<h2>{new_tab_link(new_url, 'Note du jeudi 15 octobre 2026')}</h2>", html
         )
         self.assertLess(html.index("15 octobre 2026"), html.index("10 septembre 2026"))
 
@@ -214,7 +216,7 @@ class DocumentByPathTests(PresentationTestCase):
         html = self.get(view="document", group="path").content.decode()
         new_url = reverse("note_taking:note_detail", args=["2026-10-15"])
 
-        self.assertIn(f'<a href="{new_url}#réunion">jeudi 15 octobre 2026</a>', html)
+        self.assertIn(new_tab_link(f"{new_url}#réunion", "jeudi 15 octobre 2026"), html)
         self.assertIn("10 septembre 2026", html)
 
     def test_dates_les_plus_recentes_d_abord_sous_un_chemin(self):
@@ -280,7 +282,7 @@ NOTES_369 = {
 }
 OUTLINE_REGEX = re.compile(
     r"<h([2-6])>(.*?)</h\1>"
-    r'|<strong><a href="/notes/(\d{4}-\d{2}-\d{2})/[^"]*">'
+    r'|<strong><a href="/notes/(\d{4}-\d{2}-\d{2})/[^"]*"[^>]*>'
     r"|<p>(c\d{4}\w*)</p>",
     re.DOTALL,
 )
@@ -294,7 +296,9 @@ def outline(html: str) -> list[str]:
     for match in OUTLINE_REGEX.finditer(document):
         level, title, day, content = match.groups()
         if level:
-            items.append(f"h{level} {re.sub(r'<[^>]+>', '', title)}")
+            items.append(
+                f"h{level} {re.sub(r'<[^>]+>', '', without_new_tab_marks(title))}"
+            )
         else:
             items.append(day or content)
     return items
