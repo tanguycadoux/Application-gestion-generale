@@ -3,6 +3,8 @@ durcis (voir docs/architecture.md, « Contexte »)."""
 
 from pathlib import Path
 
+from django.utils.csp import CSP
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application locale, jamais exposée : clé et mode debug en dur.
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
@@ -39,6 +42,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+# Le navigateur refuse toute image d'un autre serveur (#458) : seconde barrière, après le
+# filtrage du HTML des notes. `data:` sert à l'éditeur (CodeMirror).
+SECURE_CSP = {"img-src": [CSP.SELF, "data:"]}
+
 ROOT_URLCONF = "app_gestion.urls"
 
 TEMPLATES = [

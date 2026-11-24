@@ -15,6 +15,8 @@ from markdown.inlinepatterns import (
 )
 from markdown.util import HTML_PLACEHOLDER_RE
 
+from .sanitize import is_remote
+
 FIGURE_CLASSES = "my-2"
 FIGCAPTION_CLASSES = "mt-2 text-sm text-center text-slate-600"
 HTML_TAG_REGEX = re.compile(r"<[^>]*>")
@@ -113,10 +115,12 @@ class FigureTreeprocessor(markdown.treeprocessors.Treeprocessor):
 
 
 def is_alone(paragraph: etree.Element) -> bool:
-    """Le paragraphe ne contient qu'une image."""
+    """Le paragraphe ne contient qu'une image, qui n'est pas sur un autre serveur : elle
+    deviendrait un lien (#458)."""
     return (
         len(paragraph) == 1
         and paragraph[0].tag == "img"
+        and not is_remote(paragraph[0].get("src", ""))
         and not (paragraph.text or "").strip()
         and not (paragraph[0].tail or "").strip()
     )

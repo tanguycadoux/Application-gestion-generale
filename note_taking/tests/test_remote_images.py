@@ -1,7 +1,6 @@
 """Aucune image d'un autre serveur n'est chargée, quelle que soit son écriture (#458)."""
 
 import re
-import unittest
 
 from django.test import TestCase
 from django.urls import reverse
@@ -34,7 +33,6 @@ class RemoteImageTests(TestCase):
     def assertNoImage(self, html: str) -> None:
         self.assertNotRegex(html, r"(?i)<img\b")
 
-    @unittest.expectedFailure
     def test_lien_au_lieu_de_l_image(self):
         for name, text in WRITINGS.items():
             for where in ("{}", "::: {{.callout-note}}\n{}\n:::", "- {}"):
@@ -44,7 +42,6 @@ class RemoteImageTests(TestCase):
                     self.assertNoImage(html)
                     self.assertRegex(html, r"<a [^>]*exemple\.org[^>]*>Logo<")
 
-    @unittest.expectedFailure
     def test_dans_un_passage(self):
         for name, text in WRITINGS.items():
             with self.subTest(writing=name):
@@ -54,7 +51,6 @@ class RemoteImageTests(TestCase):
 
                 self.assertNoImage(note.passages.get().rendered_content())
 
-    @unittest.expectedFailure
     def test_ni_figure_ni_legende(self):
         """Une image distante n'est jamais une figure implicite (#422)."""
         html = render_note_body(WRITINGS["référence"])
@@ -62,7 +58,6 @@ class RemoteImageTests(TestCase):
         self.assertNotIn("<figure", html)
         self.assertNotIn("<figcaption", html)
 
-    @unittest.expectedFailure
     def test_dans_un_lien_son_texte_seul(self):
         html = render_markdown(
             f'<a href="https://exemple.org"><img src="{URL}" alt="Logo"></a>'
@@ -72,13 +67,11 @@ class RemoteImageTests(TestCase):
             re.sub(r"\s", "", html), '<p><ahref="https://exemple.org">Logo</a></p>'
         )
 
-    @unittest.expectedFailure
     def test_sans_texte_l_adresse(self):
         html = render_markdown(f'<img src="{URL}">')
 
         self.assertIn(f'<a href="{URL}">{URL}</a>', html)
 
-    @unittest.expectedFailure
     def test_texte_echappe(self):
         html = render_markdown(
             f'<img src="{URL}?a=1&b=2" alt="&lt;script&gt;alert(1)&lt;/script&gt;">'
@@ -104,7 +97,6 @@ class RemoteImageTests(TestCase):
 
 
 class ContentSecurityPolicyTests(TestCase):
-    @unittest.expectedFailure
     def test_images_de_l_application_seulement(self):
         """Seconde barrière : le navigateur refuse une image d'un autre serveur."""
         response = self.client.get(reverse("note_taking:new_note"))
