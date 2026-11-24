@@ -1,7 +1,6 @@
 """Les notes d'une semaine, groupées par projet (#208)."""
 
 import re
-from unittest import expectedFailure
 
 from django.db import connection
 from django.test import TestCase
@@ -45,7 +44,6 @@ class WeekNotesTests(TestCase):
     def url(self, anchor: str = "") -> str:
         return reverse("note_taking:note_detail", args=["2025-11-24"]) + anchor
 
-    @expectedFailure
     def test_groupees_par_projet_puis_par_date(self):
         self.note("2025-11-25", "# Beta\nx\n# Alpha\ny")
         self.note("2025-11-24", "# Alpha\nz")
@@ -58,7 +56,6 @@ class WeekNotesTests(TestCase):
             ],
         )
 
-    @expectedFailure
     def test_bornes_de_la_semaine_comprises(self):
         for day in ("2025-11-23", "2025-11-24", "2025-11-30", "2025-12-01"):
             self.note(day, "# P\nx")
@@ -68,7 +65,6 @@ class WeekNotesTests(TestCase):
             [("P", ["lundi 24 novembre 2025", "dimanche 30 novembre 2025"])],
         )
 
-    @expectedFailure
     def test_chemins_ecrits_avec_leur_lien(self):
         self.note("2025-11-24", "# P\nx\n## A {#a-1}\ny\n### B\nz\n## A\nw")
 
@@ -79,7 +75,6 @@ class WeekNotesTests(TestCase):
         # Un chemin répété dans la note une seule fois.
         self.assertEqual(html.count(">A</a>"), 1)
 
-    @expectedFailure
     def test_niveau_sans_texte_omis(self):
         self.note("2025-11-24", "# P\n## A\n### B\nz")
 
@@ -88,31 +83,26 @@ class WeekNotesTests(TestCase):
         self.assertNotIn(">A</a>", html)
         self.assertIn(">A › B</a>", html)
 
-    @expectedFailure
     def test_note_ouverte_a_son_projet(self):
         self.note("2025-11-24", "# P\nx\n# Q\n## A\ny")
 
         self.assertIn(f'href="{self.url("#q")}"><time', self.html())
 
-    @expectedFailure
     def test_texte_sans_projet_a_la_fin(self):
         self.note("2025-11-24", "libre\n# P\nx")
 
         self.assertEqual([name for name, _ in self.groups()], ["P", "Sans projet"])
 
-    @expectedFailure
     def test_note_vide(self):
         self.note("2025-11-24", "")
 
         self.assertEqual(self.groups(), [("Sans projet", ["lundi 24 novembre 2025"])])
 
-    @expectedFailure
     def test_titre_echappe(self):
         self.note("2025-11-24", "# P\n## R&D <b>\nx")
 
         self.assertIn("R&amp;D &lt;b&gt;</a>", self.html())
 
-    @expectedFailure
     def test_nombre_de_requetes_constant(self):
         def count() -> int:
             with CaptureQueriesContext(connection) as captured:

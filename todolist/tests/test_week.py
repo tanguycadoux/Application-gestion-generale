@@ -2,7 +2,6 @@
 
 import re
 from datetime import date, datetime, timedelta
-from unittest import expectedFailure
 
 from django.db import connection
 from django.test import TestCase
@@ -64,7 +63,6 @@ class WeekTasksTestCase(TestCase):
 
 
 class DoneTests(WeekTasksTestCase):
-    @expectedFailure
     def test_terminees_dans_la_semaine_par_date(self):
         self.task("Mardi", completed=at(date(2025, 11, 25)))
         self.task("Avant", completed=at(BEFORE))
@@ -74,7 +72,6 @@ class DoneTests(WeekTasksTestCase):
 
         self.assertEqual(self.titles("done"), ["Lundi", "Mardi"])
 
-    @expectedFailure
     def test_heure_locale(self):
         """Lundi 0 h 30 à Paris est encore dimanche en temps universel."""
         self.task("Début", completed=at(MONDAY, 0, 30))
@@ -86,7 +83,6 @@ class DoneTests(WeekTasksTestCase):
 
 
 class CreatedTests(WeekTasksTestCase):
-    @expectedFailure
     def test_creees_dans_la_semaine_heure_locale(self):
         self.task("Début", created=at(MONDAY, 0, 30))
         self.task("Fin", created=at(SUNDAY, 23, 30))
@@ -95,14 +91,12 @@ class CreatedTests(WeekTasksTestCase):
 
         self.assertEqual(self.titles("created"), ["Début", "Fin"])
 
-    @expectedFailure
     def test_creee_et_terminee_dans_les_deux(self):
         self.task("T", created=at(MONDAY), completed=at(SUNDAY))
 
         self.assertEqual(self.titles("created"), ["T"])
         self.assertEqual(self.titles("done"), ["T"])
 
-    @expectedFailure
     def test_ecartee_absente(self):
         task = self.task("T", created=at(MONDAY), completed=at(MONDAY), due=BEFORE)
         Task.all_objects.filter(pk=task.pk).update(note_state=Task.NoteState.DISMISSED)
@@ -114,7 +108,6 @@ class CreatedTests(WeekTasksTestCase):
 class LateTests(WeekTasksTestCase):
     """En retard : à la fin de la semaine, ou aujourd'hui pour celle en cours."""
 
-    @expectedFailure
     def test_semaine_passee_a_sa_fin(self):
         self.task("Dans la semaine", due=SUNDAY)
         self.task("Avant", due=BEFORE)
@@ -123,7 +116,6 @@ class LateTests(WeekTasksTestCase):
 
         self.assertEqual(self.titles("late"), ["Avant", "Dans la semaine"])
 
-    @expectedFailure
     def test_terminee_depuis_etait_en_retard(self):
         self.task("Depuis", due=MONDAY, completed=at(AFTER, 0, 30))
         self.task("À temps", due=MONDAY, completed=at(SUNDAY, 23, 30))
@@ -131,13 +123,11 @@ class LateTests(WeekTasksTestCase):
         self.assertEqual(self.titles("late"), ["Depuis"])
         self.assertIn("terminée depuis, le", self.html())
 
-    @expectedFailure
     def test_creee_apres_la_semaine_absente(self):
         self.task("Trop tard", due=MONDAY, created=at(AFTER))
 
         self.assertEqual(self.titles("late"), [])
 
-    @expectedFailure
     def test_semaine_en_cours_a_aujourd_hui(self):
         from core.weeks import Week
 
@@ -148,7 +138,6 @@ class LateTests(WeekTasksTestCase):
 
         self.assertEqual(self.titles("late", Week.of(today).slug), ["Hier"])
 
-    @expectedFailure
     def test_semaine_a_venir_sans_retard(self):
         """Un retard à venir ne se sait pas : la rubrique n'apparaît pas."""
         from core.weeks import Week
@@ -163,7 +152,6 @@ class LateTests(WeekTasksTestCase):
 
 
 class DisplayTests(WeekTasksTestCase):
-    @expectedFailure
     def test_projet_et_compte(self):
         self.task("T", completed=at(MONDAY))
 
@@ -174,20 +162,17 @@ class DisplayTests(WeekTasksTestCase):
         )
         self.assertIn(">P</span>", html)
 
-    @expectedFailure
     def test_tache_sans_projet(self):
         self.task("T", completed=at(MONDAY))
         Task.objects.update(project=None)
 
         self.assertEqual(self.titles("done"), ["T"])
 
-    @expectedFailure
     def test_titre_echappe(self):
         self.task("<b>R&D</b>", completed=at(MONDAY))
 
         self.assertEqual(self.titles("done"), ["&lt;b&gt;R&amp;D&lt;/b&gt;"])
 
-    @expectedFailure
     def test_nombre_de_requetes_constant(self):
         def count() -> int:
             with CaptureQueriesContext(connection) as captured:

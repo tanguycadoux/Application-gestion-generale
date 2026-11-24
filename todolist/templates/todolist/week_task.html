@@ -1,0 +1,3 @@
+{# Une tâche du bilan de la semaine (#208) : son lien, puis le début de la ligne qui suit (son projet). #}
+{% load ui %}<a href="{% url 'todolist:task_detail' task.pk %}">{{ task.title }}</a><br>
+{% if task.project %}<span class="text-sm">{% project_badge task.project %} ·</span>{% endif %}

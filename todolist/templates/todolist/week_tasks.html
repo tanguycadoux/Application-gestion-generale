@@ -1,0 +1,53 @@
+{% load ui %}
+{# Tâches de la semaine (#208) ; `late` est absent pour une semaine à venir. #}
+<div class="space-y-4">
+    <section aria-labelledby="week-done">
+        <h3 id="week-done" class="mb-1 font-medium">Terminées <span class="text-slate-600">({{ done|length }})</span></h3>
+        {% if done %}
+            <ul class="space-y-1">
+                {% for task in done %}
+                    <li class="[overflow-wrap:anywhere]">
+                        {% include "todolist/week_task.html" %}
+                        <span class="text-sm text-slate-600">{% date_time task.completed_at "court" %}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-slate-600">Aucune tâche terminée.</p>
+        {% endif %}
+    </section>
+
+    <section aria-labelledby="week-created">
+        <h3 id="week-created" class="mb-1 font-medium">Créées <span class="text-slate-600">({{ created|length }})</span></h3>
+        {% if created %}
+            <ul class="space-y-1">
+                {% for task in created %}
+                    <li class="[overflow-wrap:anywhere]">
+                        {% include "todolist/week_task.html" %}
+                        <span class="text-sm text-slate-600">{% date_time task.created_at "court" %}{% if task.done %}, terminée{% endif %}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-slate-600">Aucune tâche créée.</p>
+        {% endif %}
+    </section>
+
+    {% if late is not None %}
+        <section aria-labelledby="week-late">
+            <h3 id="week-late" class="mb-1 font-medium">{% if week.is_current %}En retard aujourd'hui{% else %}En retard à la fin de la semaine{% endif %} <span class="text-slate-600">({{ late|length }})</span></h3>
+            {% if late %}
+                <ul class="space-y-1">
+                    {% for task in late %}
+                        <li class="[overflow-wrap:anywhere]">
+                            {% include "todolist/week_task.html" %}
+                            <span class="text-sm text-red-800">échéance {% date_time task.due_date "court" %}</span>{% if task.done %}<span class="text-sm text-slate-600">, terminée depuis, le {% date_time task.completed_at "court" %}</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-slate-600">Aucune tâche en retard.</p>
+            {% endif %}
+        </section>
+    {% endif %}
+</div>

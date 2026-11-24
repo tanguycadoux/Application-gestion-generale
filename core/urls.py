@@ -7,6 +7,8 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("week/", views.week, name="week_current"),
+    path("week/<week:week>/", views.week, name="week"),
     path("projects/", views.projects, name="projects"),
     path("projects/new/", views.ProjectCreateView.as_view(), name="project_create"),
     path(

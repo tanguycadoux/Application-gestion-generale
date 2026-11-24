@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ui %}
+
+{% block title %}Semaine {{ week.label }}{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start gap-2">
+        <div class="flex-1">
+            <h1>Semaine {{ week.label }}</h1>
+            <p class="text-slate-600">Semaine {{ week.number }}{% if week.is_current %}, en cours{% elif week.is_future %}, à venir{% endif %}</p>
+        </div>
+
+        <nav aria-label="Semaine" class="flex items-center gap-1">
+            {% if week.previous %}
+                {% url 'core:week' week.previous as previous_url %}
+                {% button "Semaine précédente" icon="chevron_left" href=previous_url variant="ghost" icon_only=True %}
+            {% endif %}
+            {% url 'core:week_current' as current_url %}
+            {% button "Cette semaine" icon="today" href=current_url variant="ghost" %}
+            {% if week.next %}
+                {% url 'core:week' week.next as next_url %}
+                {% button "Semaine suivante" icon="chevron_right" href=next_url variant="ghost" icon_only=True %}
+            {% endif %}
+        </nav>
+    </header>
+
+    {# Un bloc par entrée déclarée par les apps (`week_blocks` de leur AppConfig, #208). #}
+    <div class="grid items-start gap-6 lg:grid-cols-2">
+        {% for block in blocks %}
+            <section aria-labelledby="week-block-{{ forloop.counter }}" class="rounded-lg border border-slate-200 p-4">
+                <h2 id="week-block-{{ forloop.counter }}" class="mb-3">{{ block.title }}</h2>
+                {{ block.html }}
+            </section>
+        {% endfor %}
+    </div>
+{% endblock content %}
