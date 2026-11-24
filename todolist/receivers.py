@@ -7,6 +7,7 @@ from note_taking.signals import (
     NoteFollowUp,
     note_headings_renamed,
     passages_processed,
+    sections_reviewed,
 )
 
 from .models import Task
@@ -18,6 +19,7 @@ from .services import (
     note_lines,
     note_tasks_to_review,
     renamed_identities,
+    section_task_titles,
 )
 
 
@@ -34,6 +36,12 @@ def create_tasks_from_passages(sender, note, passages, **kwargs) -> NoteFollowUp
         return None
     label = "1 tâche à revoir" if count == 1 else f"{count} tâches à revoir"
     return NoteFollowUp(label, reverse("todolist:note_review", args=[str(note.date)]))
+
+
+@receiver(sections_reviewed)
+def tasks_of_sections(sender, sections, **kwargs) -> list[list[str]]:
+    """Les tâches de chaque section d'un bilan de renommage (#376)."""
+    return section_task_titles(sections)
 
 
 @receiver(note_headings_renamed)

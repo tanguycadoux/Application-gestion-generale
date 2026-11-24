@@ -23,6 +23,11 @@ from django.apps import apps
 from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
+from django.utils.text import Truncator
+
+# Les tâches citées sous un titre, dans le bilan d'un renommage (#376).
+TASKS_SHOWN = 3
+TASK_TITLE_LENGTH = 60
 
 
 @dataclass(frozen=True)
@@ -96,12 +101,29 @@ class SectionUsage:
 class HeadingOccurrence:
     """Un endroit où le nom d'un niveau est écrit, pour le bilan d'un renommage :
     `key` identifie la case à cocher, `where` dit où (« Note du 24 novembre,
-    ligne 5 »), `url` y mène et `chain` donne le chemin entier."""
+    ligne 5 »), `url` y mène et `chain` donne le chemin entier. `excerpt` (les premiers
+    mots de la section) et `tasks` (les titres de ses tâches) aident à choisir (#376)."""
 
     key: str
     where: str
     url: str
     chain: str
+    excerpt: str = ""
+    tasks: tuple[str, ...] = ()
+
+    @property
+    def tasks_text(self) -> str:
+        """« 2 tâches : Commander le béton, Relancer », les trois premières ; vide
+        sans tâche."""
+        if not self.tasks:
+            return ""
+        shown = [
+            Truncator(t).chars(TASK_TITLE_LENGTH) for t in self.tasks[:TASKS_SHOWN]
+        ]
+        more = len(self.tasks) - len(shown)
+        others = f" et {more} autre{'s' if more > 1 else ''}" if more else ""
+        noun = "tâche" if len(self.tasks) == 1 else "tâches"
+        return f"{len(self.tasks)} {noun}\u00a0: {', '.join(shown)}{others}"
 
 
 @dataclass(frozen=True)

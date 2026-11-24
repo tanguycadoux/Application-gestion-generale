@@ -11,7 +11,7 @@
         {% button "Retour aux chemins" icon="arrow_back" href=back_url variant="ghost" %}
     </header>
 
-    <p class="mb-4 text-slate-600">{% project_badge project %} · {% for level in chain %}{{ level }}{% if not forloop.last %} › {% endif %}{% endfor %}</p>
+    <p class="mb-4 text-slate-600">{% project_badge project %} › {% for level in chain %}{{ level }}{% if not forloop.last %} › {% endif %}{% endfor %}</p>
 
     <form method="get" action="{% url 'core:section_rename' project.pk section.pk %}" class="mb-4 flex flex-wrap items-center gap-2">
         <label for="new-name" class="font-medium">Nouveau nom</label>
@@ -45,13 +45,19 @@
                             {% for occurrence in occurrences %}
                                 <li class="py-2">
                                     <label class="flex items-start gap-2">
-                                        <input type="checkbox" name="headings" value="{{ occurrence.key }}" checked class="mt-1">
+                                        <input type="checkbox" name="headings" value="{{ occurrence.key }}" checked class="mt-1"{% if occurrence.excerpt or occurrence.tasks %} aria-describedby="heading-{{ forloop.counter }}-about"{% endif %}>
                                         <span>
                                             <span class="font-medium">{{ occurrence.where }}</span>
                                             <span class="block text-sm text-slate-600">{{ occurrence.chain }}</span>
                                         </span>
                                     </label>
-                                    <a href="{{ occurrence.url }}" class="ml-6 text-sm">Voir la note</a>
+                                    {% if occurrence.excerpt or occurrence.tasks %}
+                                        <div id="heading-{{ forloop.counter }}-about" class="ml-5.25 text-sm text-slate-600">
+                                            {% if occurrence.excerpt %}<p class="truncate">{{ occurrence.excerpt }}</p>{% endif %}
+                                            {% if occurrence.tasks %}<p class="[overflow-wrap:anywhere]">{{ occurrence.tasks_text }}</p>{% endif %}
+                                        </div>
+                                    {% endif %}
+                                    <p class="ml-5.25 text-sm"><a href="{{ occurrence.url }}">Voir la note</a></p>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -98,6 +104,21 @@
                 </section>
             {% endif %}
 
+            {% if homonyms %}
+                <section aria-labelledby="homonyms-title" class="mb-4">
+                    <h2 id="homonyms-title" class="mb-2">Ailleurs, le même nom</h2>
+                    <p class="mb-2 text-slate-600">Ces niveaux ne changent pas avec celui-ci. Chacun a son propre bilan, ouvert dans un nouvel onglet.</p>
+                    <ul class="list-disc space-y-1 pl-6">
+                        {% for label, url in homonyms %}
+                            <li>{{ label }} <span class="ml-2 text-sm"><a href="{{ url }}" target="_blank" rel="noopener" aria-label="Renommer aussi « {{ label }} » (nouvel onglet)">Renommer aussi</a></span></li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            {% if usage and not target %}
+                <p class="mb-2 text-slate-600">{% filter nbsp_punct %}{% if occurrences %}Si tous les titres restent cochés, suivent{% else %}Suivent{% endif %} le nouveau chemin, sous-niveaux compris : {{ usage }}.{% endfilter %}</p>
+            {% endif %}
             <p class="mb-4 text-slate-600">Les tâches issues de ces titres gardent leur fiche (avancement, échéance, parent) et suivent leur nouveau chemin. Rien n'est écrit tant que vous ne confirmez pas.</p>
 
             <div class="flex gap-2">
