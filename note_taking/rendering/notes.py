@@ -19,14 +19,20 @@ from .new_tab import open_links_in_new_tab
 from .note_links import resolve_note_links
 
 
-def render_passage(content: str) -> str:
-    return open_links_in_new_tab(
-        resolve_note_links(
-            number_floats(
-                render_markdown(remote_images_as_links(resolve_image_refs(content)))
-            )
+def render_passage(content: str, heading_prefix: str = "") -> str:
+    """Rend le texte d'un passage, ou des passages assemblés en un document (#356).
+
+    `heading_prefix` : donne aux titres un identifiant qui commence ainsi (#431), sans
+    quoi celui d'un titre pourrait être celui d'un autre élément de la page.
+    """
+    html = resolve_note_links(
+        number_floats(
+            render_markdown(remote_images_as_links(resolve_image_refs(content)))
         )
     )
+    if heading_prefix:
+        html = add_heading_ids(html, heading_prefix)
+    return open_links_in_new_tab(html)
 
 
 def render_note_body(body: str, heading_ids: bool = False) -> str:

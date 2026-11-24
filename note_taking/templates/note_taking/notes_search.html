@@ -1,18 +1,31 @@
 {% extends "note_taking/base.html" %}
-{% load ui %}
+{% load static ui %}
 
 {% block title %}{% if form.q.value %}{{ form.q.value }} · {% endif %}Recherche de notes{% endblock title %}
 
 {# La page a sa propre zone de recherche : pas de barre dans le menu (#202). #}
 {% block menu_search %}{% endblock menu_search %}
 
+{# La vue « Document » se lit comme une note (#431) : feuille sur un fond plus foncé, ancres arrêtées sous l'en-tête, dont note_reading.js donne la hauteur. #}
+{% block main_class %}{% if view == "document" %} [--reading-top:6rem] scroll-pt-[calc(var(--reading-top)+1rem)] [scrollbar-gutter:stable] bg-slate-100 print:bg-white{% endif %}{% endblock main_class %}
+
 {% block content %}
-<h1 class="mb-4">Rechercher parmi les notes</h1>
+{% if view == "document" %}
+    {# L'en-tête collant d'une note (#421) : il couvre la marge de <main>. Il se remplit avec les résultats ; les options passent sous le titre tant que tout ne tient pas sur une ligne. #}
+    <header class="sticky -top-4 z-10 -mx-4 -mt-4 mb-4 flex flex-wrap items-center gap-x-8 gap-y-1 border-b border-slate-300 bg-white px-4 py-2 print:static" data-reading-bar>
+        <h1 class="min-w-0 flex-1 truncate min-[112.5rem]:flex-none">Rechercher parmi les notes</h1>
+        <div id="results-options" class="order-last flex w-full min-w-0 flex-wrap items-center gap-x-8 gap-y-1 min-[112.5rem]:order-none min-[112.5rem]:w-auto min-[112.5rem]:flex-1 print:hidden">{% include "note_taking/search_options.html" with in_header=True %}</div>
+        <div class="flex min-h-10 shrink-0 items-center print:hidden" data-outline-slot></div>
+    </header>
+{% else %}
+    <h1 class="mb-4">Rechercher parmi les notes</h1>
+{% endif %}
 
 {# Colonne de gauche d'au moins 16rem (#370) : la zone « Texte », en w-full, ne fait que s'élargir avec la page, jamais rétrécir sous sa largeur d'origine. #}
-<div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(16rem,1fr)_3fr] print:block">
+{# Vue « Document » : la colonne reste à ce minimum, la place va à la feuille. #}
+<div class="grid grid-cols-1 gap-4{% if view == "document" %} lg:grid-cols-[16rem_minmax(0,1fr)]{% else %} lg:grid-cols-[minmax(16rem,1fr)_3fr]{% endif %} print:block">
     {# Les filtres restent visibles au défilement (#432), comme le plan d'une note : au plus la hauteur visible sous l'en-tête, et leur propre défilement au-delà (la marge rentrée laisse la place du contour de focus). Fenêtre étroite : au-dessus des résultats, non collants. #}
-    <search class="lg:sticky lg:top-0 lg:-mx-1 lg:max-h-[calc(100dvh-8.25rem)] lg:self-start lg:overflow-y-auto lg:px-1 print:hidden">
+    <search class="lg:sticky lg:self-start lg:overflow-y-auto print:hidden{% if view == "document" %} lg:top-(--reading-top) lg:max-h-[calc(100dvh-5.25rem-var(--reading-top))] rounded-lg border border-slate-300 bg-white px-3 pt-3{% else %} lg:top-0 lg:-mx-1 lg:max-h-[calc(100dvh-8.25rem)] lg:px-1{% endif %}">
         {# GET : la recherche est dans l'adresse. htmx ne remplace que les résultats et la met à jour. #}
         <form
         method="get"
@@ -49,14 +62,18 @@
                 <button type="submit" class="rounded-md bg-slate-700 px-3 py-1 text-white">Rechercher</button>
             </p>
         </form>
-        {% load search_tags %}{% saved_searches form.q.value %}
+        {% load search_tags %}<div{% if view == "document" %} class="pb-3"{% endif %}>{% saved_searches form.q.value %}</div>
     </search>
 
-    <div id="results" class="overflow-hidden" aria-live="polite">
+    {# Pas de `overflow` dans la vue « Document » : le plan colle au défilement de la page. #}
+    <div id="results" class="{% if view == "document" %}min-w-0{% else %}overflow-hidden{% endif %}" aria-live="polite">
         {% include "note_taking/notes_search_result.html" %}
     </div>
 </div>
 
-{% load static %}
+{% if view == "document" %}
+    <script src="{% static 'note_taking/note_sheet.js' %}"></script>
+    <script src="{% static 'note_taking/note_reading.js' %}" defer></script>
+{% endif %}
 <script src="{% static 'note_taking/search_tree.js' %}" defer></script>
 {% endblock content %}

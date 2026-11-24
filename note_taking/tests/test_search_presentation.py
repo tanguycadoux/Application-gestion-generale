@@ -25,6 +25,11 @@ from note_taking.services import process_passages
 from note_taking.tests.links import new_tab_link
 
 
+def without_ids(html: str) -> str:
+    """Les titres du document sans leur identifiant (#431)."""
+    return re.sub(r'(<h[2-6]) id="doc-[^"]*"', r"\1", html)
+
+
 class PresentationTestCase(TestCase):
     url = reverse("note_taking:notes_search")
 
@@ -154,7 +159,7 @@ class DocumentByDateTests(PresentationTestCase):
         self.assertNotContains(response, "<mark>")
 
     def test_un_titre_par_note_les_plus_recentes_d_abord(self):
-        html = self.get(view="document").content.decode()
+        html = without_ids(self.get(view="document").content.decode())
         new_url = reverse("note_taking:note_detail", args=["2026-10-15"])
 
         self.assertIn(
@@ -163,7 +168,7 @@ class DocumentByDateTests(PresentationTestCase):
         self.assertLess(html.index("15 octobre 2026"), html.index("10 septembre 2026"))
 
     def test_projet_et_niveaux_en_titres_sans_repetition(self):
-        html = self.get(view="document").content.decode()
+        html = without_ids(self.get(view="document").content.decode())
 
         self.assertIn("<h3>Alpha</h3>", html)
         self.assertIn("<h4>Réunion</h4>", html)
@@ -173,7 +178,7 @@ class DocumentByDateTests(PresentationTestCase):
 
     def test_hierarchie_des_titres(self):
         # Les résultats s'insèrent sous le h1 de la page de recherche.
-        html = self.get(view="document").content.decode()
+        html = without_ids(self.get(view="document").content.decode())
         html = html.split('id="results"')[1]
 
         self.assertNotIn("<h1", html)
@@ -187,13 +192,13 @@ class DocumentByDateTests(PresentationTestCase):
         self.part(self.new, table % "un", "Alpha › Tableaux")
         self.part(self.old, table % "deux", "Alpha › Tableaux")
 
-        html = self.get(q="Légende", view="document").content.decode()
+        html = without_ids(self.get(q="Légende", view="document").content.decode())
 
         self.assertIn("Table\u00a01", html)
         self.assertIn("Table\u00a02", html)
 
     def test_pas_de_bloc_details(self):
-        html = self.get(view="document").content.decode()
+        html = without_ids(self.get(view="document").content.decode())
         results = html.split('id="results"')[1]
 
         # Le seul bloc replié des résultats est l'aide de syntaxe, après eux.
@@ -205,7 +210,7 @@ class DocumentByDateTests(PresentationTestCase):
 
 class DocumentByPathTests(PresentationTestCase):
     def test_arbre_projet_niveaux(self):
-        html = self.get(view="document", group="path").content.decode()
+        html = without_ids(self.get(view="document", group="path").content.decode())
 
         self.assertIn("<h2>Alpha</h2>", html)
         self.assertIn("<h3>Réunion</h3>", html)
@@ -213,28 +218,28 @@ class DocumentByPathTests(PresentationTestCase):
         self.assertEqual(html.count("<h3>Réunion</h3>"), 1)
 
     def test_chaque_partie_precedee_de_sa_date_en_lien(self):
-        html = self.get(view="document", group="path").content.decode()
+        html = without_ids(self.get(view="document", group="path").content.decode())
         new_url = reverse("note_taking:note_detail", args=["2026-10-15"])
 
         self.assertIn(new_tab_link(f"{new_url}#réunion", "jeudi 15 octobre 2026"), html)
         self.assertIn("10 septembre 2026", html)
 
     def test_dates_les_plus_recentes_d_abord_sous_un_chemin(self):
-        html = self.get(view="document", group="path").content.decode()
+        html = without_ids(self.get(view="document", group="path").content.decode())
 
         self.assertLess(html.index("banc de test"), html.index("un banc ancien"))
 
     def test_passage_du_projet_seul_sous_le_projet(self):
         self.part(self.new, "banc seul", "Alpha")
 
-        html = self.get(view="document", group="path").content.decode()
+        html = without_ids(self.get(view="document", group="path").content.decode())
 
         self.assertEqual(html.count("<h2>Alpha</h2>"), 1)
         self.assertLess(html.index("<h2>Alpha</h2>"), html.index("banc seul"))
         self.assertLess(html.index("banc seul"), html.index("<h3>Réunion</h3>"))
 
     def test_regroupement_inconnu_retombe_sur_la_date(self):
-        html = self.get(view="document", group="autre").content.decode()
+        html = without_ids(self.get(view="document", group="autre").content.decode())
 
         self.assertIn("Note du jeudi 15 octobre 2026", html)
 
@@ -247,7 +252,7 @@ class HtmxTests(PresentationTestCase):
             headers={"HX-Request": "true"},
         )
 
-        self.assertContains(response, "<h2>Alpha</h2>")
+        self.assertIn("<h2>Alpha</h2>", without_ids(response.content.decode()))
         self.assertNotContains(response, "<html")
 
 
@@ -291,7 +296,7 @@ OUTLINE_REGEX = re.compile(
 def outline(html: str) -> list[str]:
     """Les titres, les dates en lien et les marqueurs de contenu du document, dans
     l'ordre : « h2 Chantier Nord », « 2026-10-15 », « c1015maj »."""
-    document = html.split('id="results"')[1]
+    document = without_ids(html.split('id="results"')[1])
     items = []
     for match in OUTLINE_REGEX.finditer(document):
         level, title, day, content = match.groups()

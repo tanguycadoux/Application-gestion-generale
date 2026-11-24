@@ -30,11 +30,12 @@ def heading_slug(text: str) -> str:
     return text[letter.start() :] if letter else "section"
 
 
-def add_heading_ids(html: str) -> str:
+def add_heading_ids(html: str, prefix: str = "") -> str:
     """Donne un `id` à chaque titre qui n'en a pas (`{#id}` est conservé).
 
     Les titres répétés prennent `-1`, `-2`… comme dans Pandoc ; un identifiant déjà
-    pris dans la page (figure, tableau) compte aussi.
+    pris dans la page (figure, tableau) compte aussi. `prefix` commence chaque
+    identifiant donné.
     """
     used = {match["id"] for match in ANY_ID_REGEX.finditer(html)}
 
@@ -42,7 +43,7 @@ def add_heading_ids(html: str) -> str:
         if ANY_ID_REGEX.search(match["attrs"]):
             return match[0]
         text = html_module.unescape(HTML_TAG_REGEX.sub("", match["inner"]))
-        slug = candidate = heading_slug(text)
+        slug = candidate = prefix + heading_slug(text)
         count = 0
         while candidate in used:
             count += 1

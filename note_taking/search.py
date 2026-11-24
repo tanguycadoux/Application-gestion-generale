@@ -22,11 +22,11 @@ L'analyse est dans `search_query.py` (sans base) et l'index plein texte dans
 """
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from django.db.models import Count, Q, QuerySet
 from django.urls import reverse
-from django.utils.safestring import SafeString, mark_safe
+from django.utils.safestring import SafeString
 
 from core.dates import date_text
 from core.models import Project, Section, Tag
@@ -34,9 +34,17 @@ from core.sections import with_descendants
 from core.tables import fold
 
 from .models import Note, Passage
+from .note_outline import NoteLayout, outline_sections
 from .qmd.parser import heading_name
 from .rendering import heading_anchor, render_passage
-from .search_document import GROUPS, DocPassage, Level, assemble, split_titles
+from .search_document import (
+    GROUPS,
+    NOTE_TITLE,
+    DocPassage,
+    Level,
+    assemble,
+    split_titles,
+)
 from .search_index import (
     WORDS,
     WRITTEN,
@@ -369,15 +377,20 @@ def passage_anchors(passage: Passage, titles: tuple[str, ...]) -> list[str | Non
     return [heading_anchor(title) for title in titles]
 
 
+# Le début de l'identifiant des titres du document (#431) : un niveau peut avoir le nom
+# d'un élément de la page (« Results »).
+DOCUMENT_PREFIX = "doc-"
+
 # Le premier niveau du document pour le texte sans projet (#385) : aucune clé de
 # projet ne vaut 0.
 NO_PROJECT = Level(0, "Sans projet")
 
 
-def document_html(
+def document_layout(
     passages: list[Passage], group: str, oldest_first: bool = False
-) -> SafeString:
-    """Les passages assemblés en un document, rendu comme une note (#356).
+) -> NoteLayout:
+    """Les passages assemblés en un document, rendu comme une note (#356), avec son plan
+    et ses sections repliables (#431).
 
     Les numéros des tableaux et figures se calculent sur le texte assemblé. Dans une
     note, les passages restent dans l'ordre où ils sont écrits (#387). Les titres
@@ -402,7 +415,16 @@ def document_html(
                 content=passage.content,
             )
         )
-    return mark_safe(render_passage(assemble(pieces, group, oldest_first)))
+    text = assemble(pieces, group, oldest_first)
+    layout = outline_sections(render_passage(text, DOCUMENT_PREFIX))
+    # Dans le plan, la date seule : le titre entier y serait coupé avant l'année.
+    layout.entries = [
+        replace(entry, text=entry.text.removeprefix(NOTE_TITLE))
+        if group == "date" and entry.level == 2
+        else entry
+        for entry in layout.entries
+    ]
+    return layout
 
 
 def levels_of(passages: list[Passage]) -> dict[int, tuple[Level, ...]]:
