@@ -4,6 +4,7 @@
 - `search_page` : sa page de recherche (un `NavItem`), vers laquelle mène la barre de
   recherche du menu commun (#202) ;
 - `dashboard_blocks` : ses blocs de l'accueil général (#233) ;
+- `project_blocks` : ses blocs de la fiche d'un projet (#205) ;
 - `debug_pages` : ses pages réservées au mode DEBUG, réunies dans la section
   « Debug » du menu (#235) ;
 - `project_usages` : ce qui, chez elle, utilise un projet (pour l'afficher et
@@ -16,14 +17,19 @@
 Les apps sont parcourues dans l'ordre d'INSTALLED_APPS.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from django.apps import apps
 from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.text import Truncator
+
+# Lu avant le chargement des modèles (les AppConfig importent ce module).
+if TYPE_CHECKING:
+    from .models import Project, Section
 
 # Les tâches citées sous un titre, dans le bilan d'un renommage (#376).
 TASKS_SHOWN = 3
@@ -59,6 +65,37 @@ class DashboardBlock:
     order: int
     template: str
     context: Callable[[], dict]
+
+
+@dataclass(frozen=True)
+class ProjectScope:
+    """Ce que montre la fiche d'un projet (#205) : le projet, le niveau choisi dans
+    son arbre (`None` pour tout le projet) avec ses descendants, et la requête."""
+
+    project: Project
+    section: Section | None
+    section_ids: frozenset[int]
+    params: Mapping[str, str]
+
+    @property
+    def lookup(self) -> Q:
+        """Le filtre de ce qui porte un projet et un niveau (passages, tâches)."""
+        if self.section is None:
+            return Q(project=self.project)
+        return Q(section__in=self.section_ids)
+
+
+@dataclass(frozen=True)
+class ProjectBlock:
+    """Un bloc de la fiche d'un projet (#205) : son ancre dans la page, son titre, un
+    rang, un gabarit et la fonction qui lui donne son contexte ; elle renvoie `None`
+    quand le bloc n'a rien à montrer, et il n'est pas affiché."""
+
+    key: str
+    title: str
+    order: int
+    template: str
+    context: Callable[[ProjectScope], dict | None]
 
 
 @dataclass(frozen=True)
@@ -182,6 +219,15 @@ def dashboard_blocks() -> list[DashboardBlock]:
         block
         for config in apps.get_app_configs()
         for block in getattr(config, "dashboard_blocks", ())
+    )
+    return sorted(blocks, key=lambda block: block.order)
+
+
+def project_blocks() -> list[ProjectBlock]:
+    blocks = (
+        block
+        for config in apps.get_app_configs()
+        for block in getattr(config, "project_blocks", ())
     )
     return sorted(blocks, key=lambda block: block.order)
 

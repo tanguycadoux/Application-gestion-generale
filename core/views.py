@@ -14,7 +14,9 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, UpdateView
 
 from .app_registry import (
+    ProjectScope,
     dashboard_blocks,
+    project_blocks,
     project_renamers,
     project_usages,
     section_renamers,
@@ -22,15 +24,18 @@ from .app_registry import (
 from .exceptions import AppError
 from .forms import ProjectEditForm, ProjectForm
 from .models import Project, Section
+from .path_tree import path_tree
 from .projects import check_new_project_name
-from .section_tree import section_tree
+from .section_tree import section_counts, section_tree
 from .sections import (
     check_new_name,
     homonyms,
+    label,
     levels,
     merge_plan,
     merge_section,
     sibling_named,
+    with_descendants,
 )
 from .suggestions import elsewhere_suggestions as find_elsewhere
 from .suggestions import project_suggestions as find_projects
@@ -111,6 +116,52 @@ def projects(request):
         # Texte qui décrit le bouton de suppression désactivé (aria-describedby).
         project.usage_id = f"project-{project.pk}-usage"
     return render(request, "core/projects.html", {"projects": project_list})
+
+
+def project_detail(request, pk):
+    """La fiche d'un projet (#205) : les blocs que chaque app déclare, restreints au
+    niveau choisi dans l'arbre de ses chemins (`?path=`, descendants compris)."""
+    project = get_object_or_404(Project, pk=pk)
+    asked = request.GET.get("path", "")
+    section = (
+        Section.objects.filter(project=project, pk=asked).first()
+        if asked.isdecimal()
+        else None
+    )
+    scope = ProjectScope(
+        project,
+        section,
+        frozenset(with_descendants([section.pk]) if section else ()),
+        request.GET,
+    )
+    blocks = []
+    for block in project_blocks():
+        context = block.context(scope)
+        if context is not None:
+            html = render_to_string(
+                block.template, {"scope": scope, "block": block, **context}, request
+            )
+            blocks.append({"key": block.key, "title": block.title, "html": html})
+    whole = request.GET.copy()
+    whole.pop("path", None)
+    return render(
+        request,
+        "core/project_detail.html",
+        {
+            "project": project,
+            "blocks": blocks,
+            "nodes": path_tree(
+                section_counts(project),
+                [section.pk] if section else [],
+                project=project,
+                only_counted=True,
+            ),
+            "section_label": label(section) if section else "",
+            "whole_url": f"{request.path}?{whole.urlencode()}"
+            if whole
+            else request.path,
+        },
+    )
 
 
 class ProjectCreateView(SuccessMessageMixin, CreateView):

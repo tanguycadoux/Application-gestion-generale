@@ -45,7 +45,7 @@
             <dt class="font-semibold">Projet</dt>
             <dd>
                 {% if object.project %}
-                    {% project_badge object.project %}
+                    {% project_badge object.project link=True %}
                 {% else %}
                     {# Tâche « à ranger » (#385). #}
                     <span class="text-amber-800">Aucun : à rattacher à un projet.</span>

@@ -30,7 +30,7 @@ dix lignes au plus, puis « et N autres ».
                     {% for task in undated.items %}
                         <li>
                             <span class="line-clamp-2 break-words"><a href="{% url 'todolist:task_detail' task.pk %}" title="{{ task.title }}">{{ task.title }}</a>
-                                {% if task.project %}<span class="ml-1">{% project_badge task.project %}</span>{% endif %}
+                                {% if task.project %}<span class="ml-1">{% project_badge task.project link=True %}</span>{% endif %}
                             </span>
                         </li>
                     {% endfor %}

@@ -55,6 +55,7 @@ class NoteDetail(DetailView):
         layout = outline_sections(render_note_body(self.object.body, heading_ids=True))
         context["content"] = layout.html
         context["outline"] = layout.entries
+        context["projects"] = self.object.projects
         # Les notes qui citent celle-ci (#207).
         context["citations"] = citations(self.object)
         return context

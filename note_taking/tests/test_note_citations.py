@@ -136,7 +136,7 @@ class CitationsPageTests(TestCase):
         self.assertContains(response, "Citée par")
         self.assertContains(response, "Voir la veille.")
         # Le projet en pastille, puis le chemin sous le projet.
-        self.assertContains(response, '<span class="self-baseline">Alpha</span>')
+        self.assertContains(response, ">Alpha</a></span>")
         self.assertContains(response, "Suivi › Bilan")
         self.assertNotContains(response, "Alpha › Suivi")
         self.assertContains(

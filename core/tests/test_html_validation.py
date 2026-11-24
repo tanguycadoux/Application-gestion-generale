@@ -150,6 +150,11 @@ class HtmlValidationTests(TestCase):
         return {
             "accueil": reverse("core:index"),
             "projets": reverse("core:projects"),
+            "projet": reverse("core:project_detail", args=[project.pk]),
+            "projet_niveau": (
+                reverse("core:project_detail", args=[project.pk])
+                + f"?path={section.pk}&group=path&order=asc&state=all"
+            ),
             "projet_nouveau": reverse("core:project_create"),
             "chemins": reverse("core:project_paths", args=[project.pk]),
             "chemin_renommer": rename,

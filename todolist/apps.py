@@ -5,6 +5,7 @@ from core.app_registry import (
     DashboardBlock,
     NavItem,
     NavSection,
+    ProjectBlock,
     ProjectUsage,
     SectionUsage,
 )
@@ -40,7 +41,29 @@ class TodolistConfig(AppConfig):
     )
 
     def ready(self):
-        from . import dashboard, progress, receivers  # noqa: F401
+        from . import (  # noqa: F401 (récepteurs)
+            dashboard,
+            progress,
+            project_blocks,
+            receivers,
+        )
+
+        self.project_blocks = (
+            ProjectBlock(
+                "project-tasks",
+                "Tâches",
+                20,
+                "todolist/project_tasks.html",
+                project_blocks.tasks_block,
+            ),
+            ProjectBlock(
+                "project-timeline",
+                "Frise des tâches",
+                50,
+                "todolist/project_timeline.html",
+                project_blocks.timeline_block,
+            ),
+        )
 
         self.dashboard_blocks = (
             DashboardBlock(

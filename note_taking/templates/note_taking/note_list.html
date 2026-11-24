@@ -48,7 +48,7 @@
                             {% if projects %}
                                 <ul class="m-0 flex h-fit list-none flex-wrap gap-x-3 gap-y-1 p-0">
                                     {% for project in projects %}
-                                        <li>{% project_badge project %}</li>
+                                        <li>{% project_badge project link=True %}</li>
                                     {% endfor %}
                                 </ul>
                             {% endif %}

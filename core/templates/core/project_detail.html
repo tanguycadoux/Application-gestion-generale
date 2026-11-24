@@ -1,0 +1,57 @@
+{% extends "core/projects_base.html" %}
+{% load ui %}
+
+{% block title %}Projet « {{ project.name }} »{% endblock title %}
+
+{% block content %}
+    <header class="mb-4 flex items-start gap-2">
+        <div class="min-w-0 flex-1">
+            <h1>{% project_badge project %}</h1>
+            {% if project.description %}<p class="text-slate-600">{{ project.description }}</p>{% endif %}
+        </div>
+
+        {% url 'core:projects' as url %}
+        {% button "Retour aux projets" icon="arrow_back" href=url variant="ghost" %}
+
+        {% url 'core:project_paths' project.pk as url %}
+        {% button "Chemins du projet" icon="account_tree" href=url variant="ghost" icon_only=True %}
+
+        {% url 'core:project_edit' project.pk as url %}
+        {% button "Modifier le projet" icon="edit" href=url variant="ghost" icon_only=True %}
+    </header>
+
+    <div class="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <aside aria-label="Sommaire et chemins du projet" class="space-y-4 self-start lg:sticky lg:top-0 lg:max-h-[calc(100dvh-6rem)] lg:overflow-auto">
+            <nav aria-label="Sommaire de la fiche">
+                <h2 class="mb-1 text-base">Sommaire</h2>
+                <ul class="space-y-0.5 text-sm">
+                    {% for block in blocks %}
+                        <li><a href="#{{ block.key }}">{{ block.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% if nodes %}
+                <nav aria-label="Chemins du projet">
+                    <h2 class="mb-1 text-base">Chemins</h2>
+                    {% path_tree nodes mode="link" param="path" count_noun="élément" %}
+                </nav>
+            {% endif %}
+        </aside>
+
+        {# Un bloc par entrée déclarée par les apps (`project_blocks` de leur AppConfig, #205). #}
+        <div class="min-w-0 space-y-8">
+            {% if section_label %}
+                <p class="flex flex-wrap gap-x-3 text-slate-600">
+                    <span>{% filter nbsp_punct %}Niveau affiché, sous-niveaux compris : {% endfilter %}<strong class="font-semibold text-slate-900">{{ section_label }}</strong></span>
+                    <a href="{{ whole_url }}">Tout le projet</a>
+                </p>
+            {% endif %}
+            {% for block in blocks %}
+                <section id="{{ block.key }}" aria-labelledby="{{ block.key }}-title">
+                    <h2 id="{{ block.key }}-title" class="mb-2">{{ block.title }}</h2>
+                    {{ block.html }}
+                </section>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock content %}

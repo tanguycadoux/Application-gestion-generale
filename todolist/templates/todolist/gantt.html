@@ -1,11 +1,11 @@
 {% load l10n ui task_ui %}
 {% comment %}
-Frise de type Gantt des sous-tâches (#168). Les positions sont des données : elles
+Frise de type Gantt des sous-tâches (#168) ou des tâches d'un projet (#205, sans `chart.task`). Les positions sont des données : elles
 passent par des variables CSS (--start, --width…) que lisent les classes Tailwind,
 sans localisation (unlocalize) : en français, 33.7 s'afficherait 33,7, invalide en CSS.
 {% endcomment %}
-<figure aria-labelledby="gantt-title" class="mt-6">
-    <figcaption id="gantt-title" class="mb-2 text-lg font-semibold">Chronologie de la tâche et de ses sous-tâches</figcaption>
+<figure aria-labelledby="gantt-title"{% if chart.task %} class="mt-6"{% endif %}>
+    <figcaption id="gantt-title" class="{% if chart.task %}mb-2 text-lg font-semibold{% else %}sr-only{% endif %}">{% if chart.task %}Chronologie de la tâche et de ses sous-tâches{% else %}Chronologie des tâches{% endif %}</figcaption>
 
     <div class="grid grid-cols-[minmax(8rem,14rem)_1fr] gap-x-3 text-sm">
         <div class="relative col-start-2 h-6 text-xs text-slate-600">
@@ -20,7 +20,7 @@ sans localisation (unlocalize) : en français, 33.7 s'afficherait 33,7, invalide
 
         {% for row in chart.rows %}
             <div data-gantt-row class="truncate py-1 {{ row.level|indent_class }}">
-                {% if forloop.first %}
+                {% if row.task == chart.task %}
                     {# La tâche observée : déjà sur sa page. #}
                     <span class="font-semibold">{{ row.task.title }}</span>
                 {% else %}

@@ -11,7 +11,7 @@
         {% button "Retour aux chemins" icon="arrow_back" href=back_url variant="ghost" %}
     </header>
 
-    <p class="mb-4 text-slate-600">{% project_badge project %} › {% for level in chain %}{{ level }}{% if not forloop.last %} › {% endif %}{% endfor %}</p>
+    <p class="mb-4 text-slate-600">{% project_badge project link=True %} › {% for level in chain %}{{ level }}{% if not forloop.last %} › {% endif %}{% endfor %}</p>
 
     <form method="get" action="{% url 'core:section_rename' project.pk section.pk %}" class="mb-4 flex flex-wrap items-center gap-2">
         <label for="new-name" class="font-medium">Nouveau nom</label>

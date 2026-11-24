@@ -1,1 +1,1 @@
-{% if project %}<span class="inline-flex items-center gap-1.5"><span class="size-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span><span class="self-baseline">{{ project.name }}</span></span>{% endif %}
+{% if project %}<span class="inline-flex items-center gap-1.5"><span class="size-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span><span class="self-baseline">{% if link %}<a href="{% url 'core:project_detail' project.pk %}">{{ project.name }}</a>{% else %}{{ project.name }}{% endif %}</span></span>{% endif %}

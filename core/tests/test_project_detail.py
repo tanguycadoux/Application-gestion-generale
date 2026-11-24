@@ -3,7 +3,6 @@ les restreint à un niveau (#205)."""
 
 import re
 from datetime import date
-from unittest import expectedFailure
 
 from django.db import connection
 from django.template import Context, Template
@@ -57,7 +56,6 @@ class ProjectPageTestCase(TestCase):
 
 
 class PageTests(ProjectPageTestCase):
-    @expectedFailure
     def test_titre_description_et_actions(self):
         html = self.get()
 
@@ -69,7 +67,6 @@ class PageTests(ProjectPageTestCase):
     def test_projet_inconnu(self):
         self.assertEqual(self.client.get("/projects/999/").status_code, 404)
 
-    @expectedFailure
     def test_blocs_dans_l_ordre_avec_un_sommaire(self):
         self.note("# P\nx")
         self.task("T")
@@ -80,7 +77,6 @@ class PageTests(ProjectPageTestCase):
         self.assertEqual(re.findall(r'<section id="([\w-]+)"', html), keys)
         self.assertEqual(re.findall(r'href="#(project-[\w-]+)"', html), keys)
 
-    @expectedFailure
     def test_projet_vide(self):
         html = self.get()
 
@@ -89,7 +85,6 @@ class PageTests(ProjectPageTestCase):
         self.assertNotIn("project-images", html)
         self.assertNotIn("project-timeline", html)
 
-    @expectedFailure
     def test_nombre_de_requetes_constant(self):
         def count() -> int:
             with CaptureQueriesContext(connection) as captured:
@@ -112,7 +107,6 @@ class PathFilterTests(ProjectPageTestCase):
         )
         self.task("Main", section=self.section("C"))
 
-    @expectedFailure
     def test_arbre_du_projet_en_liens(self):
         section = self.section("A")
 
@@ -120,7 +114,6 @@ class PathFilterTests(ProjectPageTestCase):
 
         self.assertRegex(html, rf'href="{self.url()}\?path={section.pk}"[^>]*>A</a>')
 
-    @expectedFailure
     def test_un_niveau_et_ses_descendants(self):
         html = self.get(path=self.section("A").pk)
 
@@ -130,20 +123,17 @@ class PathFilterTests(ProjectPageTestCase):
         self.assertIn(">Une</a>", html)
         self.assertNotIn(">Main</a>", html)
 
-    @expectedFailure
     def test_niveau_choisi_nomme_et_retirable(self):
         html = self.get(path=self.section("A", "B").pk)
 
         self.assertIn("A › B", html)
         self.assertIn(f'href="{self.url()}">Tout le projet</a>', html)
 
-    @expectedFailure
     def test_retirer_le_niveau_garde_le_reste(self):
         html = self.get(path=self.section("A").pk, state="all")
 
         self.assertIn(f'href="{self.url()}?state=all">Tout le projet</a>', html)
 
-    @expectedFailure
     def test_niveau_inconnu_invalide_ou_d_un_autre_projet_ignore(self):
         elsewhere = section_for(self.other, ["A"])
         assert elsewhere is not None
@@ -156,7 +146,6 @@ class PathFilterTests(ProjectPageTestCase):
 class TasksBlockTests(ProjectPageTestCase):
     KEY = "project-tasks"
 
-    @expectedFailure
     def test_taches_du_projet_seulement(self):
         self.task("Ici")
         Task.objects.create(title="Ailleurs", project=self.other)
@@ -166,7 +155,6 @@ class TasksBlockTests(ProjectPageTestCase):
         self.assertIn(">Ici</a>", block)
         self.assertNotIn("Ailleurs", block)
 
-    @expectedFailure
     def test_en_cours_par_defaut_puis_terminees_ou_toutes(self):
         self.task("Ouverte")
         self.task("Finie", progress=100)
@@ -181,7 +169,15 @@ class TasksBlockTests(ProjectPageTestCase):
         # Les écartées ont leur tableau dans la liste des tâches.
         self.assertEqual(titles(state="dismissed"), ["Ouverte"])
 
-    @expectedFailure
+    def test_cases_a_cocher_utilisables(self):
+        """Le cookie que lit `task.js` est posé, sans autre page visitée avant."""
+        self.task("T")
+
+        block = self.block(self.KEY)
+
+        self.assertIn("todolist/task.js", block)
+        self.assertIn("csrftoken", self.client.cookies)
+
     def test_parent_d_un_autre_projet_attenue(self):
         parent = Task.objects.create(title="Parent", project=self.other)
         self.task("Enfant", parent=parent)
@@ -192,7 +188,6 @@ class TasksBlockTests(ProjectPageTestCase):
         self.assertIn("text-slate-500", row)
         self.assertIn(">Enfant</a>", block)
 
-    @expectedFailure
     def test_lien_vers_la_liste_filtree(self):
         section = self.section("A")
         url = reverse("todolist:task_list")
@@ -205,7 +200,6 @@ class TasksBlockTests(ProjectPageTestCase):
 
 
 class TimelineBlockTests(ProjectPageTestCase):
-    @expectedFailure
     def test_frise_des_memes_taches(self):
         parent = self.task("Parent", due_date=date(2026, 12, 1))
         self.task("Enfant", parent=parent)
@@ -232,17 +226,14 @@ class NotesBlockTests(ProjectPageTestCase):
         block = self.block(self.KEY, **params)
         return re.findall(r"\b(?:Direct|Premier|Second|Encore|Ailleurs)\b", block)
 
-    @expectedFailure
     def test_par_note_les_recentes_d_abord(self):
         self.assertEqual(self.excerpts(), ["Second", "Encore", "Direct", "Premier"])
 
-    @expectedFailure
     def test_par_note_les_anciennes_d_abord(self):
         self.assertEqual(
             self.excerpts(order="asc"), ["Direct", "Premier", "Second", "Encore"]
         )
 
-    @expectedFailure
     def test_par_chemin(self):
         self.assertEqual(
             self.excerpts(group="path"), ["Direct", "Second", "Encore", "Premier"]
@@ -252,11 +243,9 @@ class NotesBlockTests(ProjectPageTestCase):
             ["Direct", "Premier", "Second", "Encore"],
         )
 
-    @expectedFailure
     def test_regroupement_inconnu_ignore(self):
         self.assertEqual(len(self.excerpts(group="x", order="y")), 4)
 
-    @expectedFailure
     def test_chaque_passage_mene_a_son_titre(self):
         """À sa propre occurrence d'un titre répété."""
         block = self.block(self.KEY)
@@ -265,7 +254,6 @@ class NotesBlockTests(ProjectPageTestCase):
         self.assertIn(f'href="{url}#a"', block)
         self.assertIn(f'href="{url}#a-1"', block)
 
-    @expectedFailure
     def test_lien_vers_le_document(self):
         section = self.section("A")
         url = reverse("note_taking:notes_search")
@@ -279,7 +267,6 @@ class NotesBlockTests(ProjectPageTestCase):
             self.block(self.KEY, path=section.pk, group="path"),
         )
 
-    @expectedFailure
     def test_le_lien_du_document_montre_les_memes_passages(self):
         found = re.search(r'href="([^"]*view=document[^"]*)"', self.block(self.KEY))
         assert found is not None
@@ -288,7 +275,6 @@ class NotesBlockTests(ProjectPageTestCase):
 
         self.assertContains(response, "4 passages dans 2 notes")
 
-    @expectedFailure
     def test_les_options_gardent_le_niveau_et_l_etat(self):
         section = self.section("A")
 
@@ -298,7 +284,6 @@ class NotesBlockTests(ProjectPageTestCase):
             f'href="?path={section.pk}&amp;state=all&amp;group=path#{self.KEY}"', block
         )
 
-    @expectedFailure
     def test_extrait_echappe(self):
         self.note("# P\nUn <b>texte</b>", "2025-11-26")
 
@@ -317,7 +302,6 @@ class ImagesBlockTests(ProjectPageTestCase):
         block = self.block(self.KEY, **params)
         return re.findall(r">([ab]\.png)</figcaption>", block)
 
-    @expectedFailure
     def test_images_utilisees_une_fois_chacune(self):
         self.note(
             "# P\n## A\n![](images/a.png)\n## C\n![](images/a.png)\n"
@@ -326,7 +310,6 @@ class ImagesBlockTests(ProjectPageTestCase):
 
         self.assertEqual(self.names(), ["a.png"])
 
-    @expectedFailure
     def test_images_du_niveau_choisi(self):
         self.note("# P\n## A\n![](images/a.png)\n## C\n![](images/b.png)")
 
@@ -336,7 +319,6 @@ class ImagesBlockTests(ProjectPageTestCase):
 class LinksTests(ProjectPageTestCase):
     """La fiche s'ouvre depuis les pastilles de projet."""
 
-    @expectedFailure
     def test_pastille_en_lien(self):
         html = Template("{% load ui %}{% project_badge p link=True %}").render(
             Context({"p": self.project})
@@ -351,7 +333,6 @@ class LinksTests(ProjectPageTestCase):
 
         self.assertNotIn("<a", html)
 
-    @expectedFailure
     def test_depuis_les_pages(self):
         note = self.note("# P\n## A\nx")
         task = self.task("T", section=self.section("A"))
