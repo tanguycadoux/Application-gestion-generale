@@ -19,7 +19,7 @@ from .models import Note, Passage, PassageNoteLink
 from .qmd.files import check_metadata_date, read_note_file, split_front_matter
 from .qmd.links import from_quarto, note_links
 from .qmd.parser import HEADING_SEPARATOR, ParsedNote, parse_note
-from .rendering import IMAGE_PATH_REGEX, image_name, note_heading_ids
+from .rendering import IMAGE_PATH_REGEX, image_name, note_heading_ids, with_path
 from .signals import NoteFollowUp, passages_processed
 
 
@@ -181,6 +181,6 @@ def replace_image_paths(content: str) -> tuple[str, list[Image]]:
             ) from None
 
         images[image_obj.pk] = image_obj
-        return match.group(0).replace(path, f"image:{image_obj.pk}")
+        return with_path(match, f"image:{image_obj.pk}")
 
     return IMAGE_PATH_REGEX.sub(repl, content), list(images.values())

@@ -12,7 +12,7 @@ from typing import IO
 from images.models import Image
 
 from ..models import Note
-from ..rendering import IMAGE_PATH_REGEX, image_name
+from ..rendering import IMAGE_PATH_REGEX, image_name, with_path
 from .links import to_quarto
 from .parser import FRONT_MATTER_DELIMITER
 
@@ -40,7 +40,7 @@ def normalize_image_paths(body: str) -> str:
         name = image_name(match.group("path"))
         if name is None:
             return match.group(0)
-        return match.group(0).replace(match.group("path"), f"{IMAGES_DIR}/{name}")
+        return with_path(match, f"{IMAGES_DIR}/{name}")
 
     return IMAGE_PATH_REGEX.sub(repl, body)
 

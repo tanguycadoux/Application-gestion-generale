@@ -14,6 +14,10 @@ EXCERPT_LENGTH = 160
 LINE_MARKER_REGEX = re.compile(r"^\s*(?:[-*+>]|\d+[.)]|#+)\s+(?:\[[ xX]\]\s+)?")
 # Lien ou image : son texte seul.
 LINK_REGEX = re.compile(r"!?\[(?P<text>[^\]\n]*)\]\([^)\n]*\)(?:\{[^}\n]*\})?")
+# Lien sans crochets dans son texte : dans la légende d'une image, il est réduit d'abord.
+INNER_LINK_REGEX = re.compile(
+    r"(?<!!)\[(?P<text>[^\[\]\n]*)\]\([^)\n]*\)(?:\{[^}\n]*\})?"
+)
 # Une ligne sans mot (filet, séparation d'un tableau).
 WORD_REGEX = re.compile(r"\w")
 
@@ -21,7 +25,9 @@ WORD_REGEX = re.compile(r"\w")
 def plain_line(line: str) -> str:
     """Le texte d'une ligne, raccourci : sans marque de début, les liens et les images
     réduits à leur texte."""
-    text = LINK_REGEX.sub(lambda m: m["text"], LINE_MARKER_REGEX.sub("", line))
+    text = LINE_MARKER_REGEX.sub("", line)
+    for regex in (INNER_LINK_REGEX, LINK_REGEX):
+        text = regex.sub(lambda m: m["text"], text)
     return Truncator(" ".join(text.split())).chars(EXCERPT_LENGTH)
 
 

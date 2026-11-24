@@ -9,25 +9,40 @@ from images.models import Image
 
 IMAGE_MISSING_PATH = "note_taking/img/image-missing.svg"
 
+# Légende d'une image : des crochets appariés y sont permis, sur un niveau (un lien, du
+# code, une formule, #453).
+CAPTION = r"(?:\[[^\[\]]*\]|[^\]])*"
+
 # Image telle qu'écrite dans une note : ![légende](chemin/vers/image.png)
-IMAGE_PATH_REGEX = re.compile(r"\!\[[^\]]*\]\((?P<path>[^)]+)\)")
+IMAGE_PATH_REGEX = re.compile(rf"\!\[(?P<alt>{CAPTION})\]\((?P<path>[^)]+)\)")
 
 # Image référencée en base après analyse : ![légende](image:<pk>){attributs}
 IMAGE_REF_REGEX = re.compile(
-    r"\!\[(?P<alt>[^\]]*)\]\(image:(?P<pk>\d+)\)(?P<attrs>\{[^}]*\})?"
+    rf"\!\[(?P<alt>{CAPTION})\]\(image:(?P<pk>\d+)\)(?P<attrs>\{{[^}}]*\}})?"
 )
 
 
 # Image désignée par une URL complète ou absolue : pas une image importée.
 EXTERNAL_URL_REGEX = re.compile(r"^([a-z][a-z0-9+.-]*://|/|data:)", re.IGNORECASE)
 
-# Image sur un autre serveur, avec son titre et ses attributs éventuels :
-# ![légende](https://…/a.png "titre"){width=50%}. Elle n'est pas chargée (#220).
-REMOTE_IMAGE_REGEX = re.compile(
-    r"\!\[(?P<alt>[^\]]*)\]\((?P<url>[a-z][a-z0-9+.-]*://[^)\s]+)"
-    r"(?:\s+\"[^\"]*\")?\)(?:\{[^}]*\})?",
-    re.IGNORECASE,
+# Image entière, avec ses attributs éventuels. On cherche d'abord l'image, puis on regarde
+# son chemin : un motif limité aux adresses distantes prendrait celle d'un lien de la
+# légende pour celle de l'image (#453).
+IMAGE_REGEX = re.compile(rf"{IMAGE_PATH_REGEX.pattern}(?:\{{[^}}]*\}})?")
+# Chemin sur un autre serveur, avec son titre éventuel : https://…/a.png "titre".
+# L'image n'est pas chargée (#220).
+REMOTE_PATH_REGEX = re.compile(
+    r"(?P<url>[a-z][a-z0-9+.-]*://\S+)(?:\s+\"[^\"]*\")?", re.IGNORECASE
 )
+# Lien dans une légende, dont on ne garde que le texte.
+CAPTION_LINK_REGEX = re.compile(r"\[(?P<text>[^\[\]]*)\]\([^)]*\)")
+
+
+def with_path(match: re.Match[str], path: str) -> str:
+    """L'image trouvée par `IMAGE_PATH_REGEX` avec ce chemin ; la légende ne change
+    pas, même si elle reprend l'ancien (`![banc.png](banc.png)`)."""
+    start, end = (position - match.start() for position in match.span("path"))
+    return match[0][:start] + path + match[0][end:]
 
 
 def resolve_image_refs(content: str) -> str:
@@ -62,7 +77,7 @@ def resolve_image_paths(content: str) -> str:
 
         image = Image.objects.filter(name=name).first()
         url = image.file.url if image else static(IMAGE_MISSING_PATH)
-        return match.group(0).replace(path, url)
+        return with_path(match, url)
 
     return IMAGE_PATH_REGEX.sub(repl, content)
 
@@ -82,11 +97,15 @@ def remote_images_as_links(content: str) -> str:
     """Remplace chaque image sur un autre serveur par un lien vers son adresse.
 
     Les notes sont privées : le navigateur ne contacte aucun serveur tiers (#220).
-    Le texte du lien est la légende, ou l'adresse sans légende.
+    Le texte du lien est la légende, ou l'adresse sans légende ; un lien de la légende
+    n'y garde que son texte, un lien n'en contenant pas d'autre.
     """
 
     def repl(match: re.Match[str]) -> str:
-        url = match.group("url")
-        return f"[{match.group('alt') or url}]({url})"
+        remote = REMOTE_PATH_REGEX.fullmatch(match["path"])
+        if remote is None:
+            return match[0]
+        text = CAPTION_LINK_REGEX.sub(lambda link: link["text"], match["alt"])
+        return f"[{text or remote['url']}]({remote['url']})"
 
-    return REMOTE_IMAGE_REGEX.sub(repl, content)
+    return IMAGE_REGEX.sub(repl, content)

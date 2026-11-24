@@ -1,7 +1,5 @@
 """Un lien ou des crochets dans la légende d'une image (#453)."""
 
-import unittest
-
 from django.test import TestCase
 
 from core.models import Project
@@ -28,7 +26,6 @@ class CaptionLinkTests(TestCase):
         process_passages(note)
         return note.passages.get()
 
-    @unittest.expectedFailure
     def test_page_de_la_note(self):
         html = render_note_body(f"![{CAPTION}](images/banc.png)")
 
@@ -36,7 +33,6 @@ class CaptionLinkTests(TestCase):
         self.assertIn('alt="Vue, voir le guide"', html)
         self.assertIn(f">Vue, voir {LINK}</figcaption>", html)
 
-    @unittest.expectedFailure
     def test_analyse_et_passage(self):
         passage = self.analysed(f"![{CAPTION}](images/banc.png){{width=50%}}")
 
@@ -49,7 +45,6 @@ class CaptionLinkTests(TestCase):
         self.assertIn(f'src="{self.image.file.url}"', html)
         self.assertIn(f">Vue, voir {LINK}</figcaption>", html)
 
-    @unittest.expectedFailure
     def test_crochets_dans_du_code_ou_une_formule(self):
         for caption in ("`mesures[0]`", "$x \\in [0, 1]$", "$x \\in [0, 1[$"):
             with self.subTest(caption=caption):
@@ -58,7 +53,6 @@ class CaptionLinkTests(TestCase):
                 self.assertIn(f'src="{self.image.file.url}"', html)
                 self.assertIn("<figcaption", html)
 
-    @unittest.expectedFailure
     def test_image_distante(self):
         """Elle reste un lien, qui n'en contient pas d'autre."""
         html = render_note_body(f"![{CAPTION}](https://exemple.org/a.png)")
@@ -68,7 +62,12 @@ class CaptionLinkTests(TestCase):
         )
         self.assertNotIn("<img", html)
 
-    @unittest.expectedFailure
+    def test_image_distante_avec_titre_et_attributs(self):
+        html = render_note_body('![Logo](https://exemple.org/a.png "t"){width=50%}')
+
+        self.assertIn(new_tab_link("https://exemple.org/a.png", "Logo"), html)
+        self.assertNotIn("width", html)
+
     def test_export_et_reimport(self):
         body = f"# P\n\n![{CAPTION}](images/banc.png)"
         note = Note(date="2025-11-24", body=body.replace("images/", "../autre/"))
@@ -79,7 +78,6 @@ class CaptionLinkTests(TestCase):
         self.assertEqual(imported.body, body)
         self.assertEqual(list(imported.passages.get().images.all()), [self.image])
 
-    @unittest.expectedFailure
     def test_extrait(self):
         self.assertEqual(
             plain_line(f"![{CAPTION}](images/banc.png){{width=50%}} fin"),
@@ -101,11 +99,9 @@ class CaptionNamedAsPathTests(TestCase):
         self.image = Image.objects.create(name="banc.png", file="note_images/banc.png")
         self.text = "![banc.png](banc.png)"
 
-    @unittest.expectedFailure
     def test_page_de_la_note(self):
         self.assertIn(">banc.png</figcaption>", render_note_body(self.text))
 
-    @unittest.expectedFailure
     def test_passage(self):
         note = Note.objects.create(date="2025-11-24", body=f"# P\n{self.text}")
         process_passages(note)
@@ -114,7 +110,6 @@ class CaptionNamedAsPathTests(TestCase):
             note.passages.get().content, f"![banc.png](image:{self.image.pk})"
         )
 
-    @unittest.expectedFailure
     def test_export(self):
         qmd = note_to_qmd(Note(date="2025-11-24", body=self.text))
 
