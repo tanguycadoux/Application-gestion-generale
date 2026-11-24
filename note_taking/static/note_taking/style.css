@@ -34,8 +34,23 @@
     vertical-align: middle;
 }
 
+/* Tags d'un bloc de métadonnées (#429) : des pastilles, sans puce ni retrait. */
+.rendered-content ul.note-tags {
+    padding-left: 0;
+    list-style-type: none;
+}
+
 .rendered-content input[type="checkbox"] {
     margin-right: .4em;
+}
+
+/* Images (#422) : le reset de Tailwind en fait des blocs ; au milieu d'un texte, une image
+   reste dans sa ligne, et celle d'une figure est centrée, comme sa légende. */
+.rendered-content img { display: inline; }
+
+.rendered-content figure > img {
+    display: block;
+    margin-inline: auto;
 }
 
 /* Tableaux encadrés, cellules comprises. */

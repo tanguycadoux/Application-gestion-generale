@@ -11,6 +11,7 @@ from core.icons import icon_svg
 
 from ..qmd.parser import METADATA_BLOCK_START, TODO_TAG
 from .divs import CODE_FENCE, DIV_ID_REGEX, find_block_end, split_blocks
+from .figures import FIGCAPTION_CLASSES, FIGURE_CLASSES
 from .markdown import render_plain_markdown
 
 # Callout Quarto : ::: {.callout-<type> title="…"} … :::
@@ -133,14 +134,13 @@ def render_layout(start: re.Match[str], body: list[str]) -> str:
         f'<div class="min-w-0">{render_markdown(cell)}</div>' for cell in cells
     )
     caption_html = (
-        '<figcaption class="mt-2 text-sm text-center text-slate-600">'
-        f"{render_markdown(caption)}</figcaption>"
+        f'<figcaption class="{FIGCAPTION_CLASSES}">{render_markdown(caption)}</figcaption>'
         if caption is not None
         else ""
     )
 
     return (
-        f'<{tag} class="my-2"{id_attr}>'
+        f'<{tag} class="{FIGURE_CLASSES}"{id_attr}>'
         f'<div class="grid {LAYOUT_GRID_CLASSES[ncol]} gap-4 items-start">'
         f"{cells_html}</div>{caption_html}</{tag}>"
     )
