@@ -4,7 +4,8 @@ Frise de type Gantt des sous-tâches (#168) ou des tâches d'un projet (#205, sa
 passent par des variables CSS (--start, --width…) que lisent les classes Tailwind,
 sans localisation (unlocalize) : en français, 33.7 s'afficherait 33,7, invalide en CSS.
 {% endcomment %}
-<figure aria-labelledby="gantt-title"{% if chart.task %} class="mt-6"{% endif %}>
+{# `relative` : les textes `sr-only` (en position absolue) restent dans la frise, sans allonger la page. #}
+<figure aria-labelledby="gantt-title" class="relative{% if chart.task %} mt-6{% endif %}">
     <figcaption id="gantt-title" class="{% if chart.task %}mb-2 text-lg font-semibold{% else %}sr-only{% endif %}">{% if chart.task %}Chronologie de la tâche et de ses sous-tâches{% else %}Chronologie des tâches{% endif %}</figcaption>
 
     <div class="grid grid-cols-[minmax(8rem,14rem)_1fr] gap-x-3 text-sm">

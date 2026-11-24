@@ -91,6 +91,13 @@ class GanttPageTests(GanttTestCase):
             reverse("todolist:task_detail", args=[task.pk])
         ).content.decode()
 
+    def test_textes_masques_dans_le_cadre_de_la_frise(self):
+        """`sr-only` est en position absolue : sans cadre positionné, une longue frise
+        ajoute une seconde barre de défilement à la page (#205)."""
+        html = self.html(self.parent)
+
+        self.assertIn('<figure aria-labelledby="gantt-title" class="relative', html)
+
     def test_frise_dans_le_detail_d_un_parent(self):
         html = self.html(self.parent)
 
