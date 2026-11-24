@@ -63,8 +63,10 @@ class LayoutRenderingTests(SimpleTestCase):
             html,
             '<figure class="my-2" id="fig-banc">'
             '<div class="grid grid-cols-2 gap-4 items-start">'
-            '<div class="min-w-0"><p><img loading="lazy" decoding="async" alt="A" src="a.png"></p></div>'
-            '<div class="min-w-0"><p><img loading="lazy" decoding="async" alt="B" id="fig-banc-b" src="b.png"></p></div>'
+            '<div class="min-w-0"><figure class="my-2"><img loading="lazy" decoding="async" alt="A" src="a.png">'
+            '<figcaption class="mt-2 text-sm text-center text-slate-600">A</figcaption></figure></div>'
+            '<div class="min-w-0"><figure class="my-2" id="fig-banc-b"><img loading="lazy" decoding="async" alt="B" src="b.png">'
+            '<figcaption class="mt-2 text-sm text-center text-slate-600">B</figcaption></figure></div>'
             "</div>"
             '<figcaption class="mt-2 text-sm text-center text-slate-600">'
             "<p>Légende du <em>banc</em></p>"
@@ -72,12 +74,12 @@ class LayoutRenderingTests(SimpleTestCase):
             "</figure>",
         )
 
-    def test_colonnes_sans_identifiant_ni_legende(self):
+    def test_colonnes_sans_identifiant_ni_legende_commune(self):
         html = render_markdown("::: {layout-ncol=2}\n![A](a.png)\n\n![B](b.png)\n:::")
 
         self.assertIn('class="grid grid-cols-2 gap-4 items-start"', html)
         self.assertEqual(html.count('<div class="min-w-0">'), 2)
-        self.assertNotIn("<figcaption", html)
+        self.assertEqual(html.count("<figcaption"), 2)
         self.assertNotIn(":::", html)
 
     def test_nombre_de_colonnes(self):

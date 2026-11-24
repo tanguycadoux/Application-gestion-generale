@@ -13,6 +13,7 @@ from images.models import Image
 from note_taking.models import Note, Passage
 from note_taking.rendering import image_name
 from note_taking.services import process_passages
+from note_taking.tests.links import new_tab_link
 
 URL = "https://example.com/logo.png"
 
@@ -45,20 +46,20 @@ class ExternalImageRenderingTests(TestCase):
     def test_passage_lien_au_lieu_de_l_image(self):
         html = self.render_part(f"![Logo]({URL})")
 
-        self.assertInHTML(f'<a href="{URL}">Logo</a>', html)
+        self.assertIn(new_tab_link(URL, "Logo"), html)
         self.assertNotIn("<img", html)
 
     def test_legende_vide_lien_sur_l_adresse(self):
         html = self.render_part(f"![]({URL})")
 
-        self.assertInHTML(f'<a href="{URL}">{URL}</a>', html)
+        self.assertIn(new_tab_link(URL, URL), html)
 
     def test_note_complete_lien_au_lieu_de_l_image(self):
         note = Note.objects.create(date="2025-11-24", body=f"![Logo]({URL})")
 
         response = self.client.get(reverse("note_taking:note_detail", args=[note.date]))
 
-        self.assertContains(response, f'<a href="{URL}">Logo</a>', html=True)
+        self.assertContains(response, new_tab_link(URL, "Logo"))
         self.assertNotContains(response, f'src="{URL}"')
 
 

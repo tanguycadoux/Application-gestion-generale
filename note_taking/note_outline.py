@@ -18,6 +18,8 @@ import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 
+from .rendering import without_new_tab_marks
+
 HEADING_REGEX = re.compile(
     r"<h(?P<level>[2-6])(?P<attrs>[^>]*)>(?P<inner>.*?)</h(?P=level)>", re.DOTALL
 )
@@ -105,7 +107,8 @@ def outline_sections(html: str) -> NoteLayout:
             f'<section class="note-section" data-level="{level}">{match[0]}'
             f'<div class="note-section-body" id="section-body-{len(entries) + 1}">'
         )
-        text = html_module.unescape(TAG_REGEX.sub("", match["inner"])).strip()
+        inner = without_new_tab_marks(match["inner"])
+        text = html_module.unescape(TAG_REGEX.sub("", inner)).strip()
         entries.append(OutlineEntry(level, text, html_module.unescape(found["id"])))
         position = match.end()
     pieces.append(html[position:])

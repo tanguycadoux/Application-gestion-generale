@@ -3,12 +3,14 @@
 Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
 
 - `sanitize` : filtrage du HTML (nh3) et retouches du HTML filtré ;
-- `lists`, `tables`, `inline` : extensions Python-Markdown fidèles à Pandoc ;
+- `lists`, `tables`, `inline`, `figures` : extensions Python-Markdown fidèles à
+  Pandoc ;
 - `markdown` : Markdown filtré, sans les blocs Quarto (`render_plain_markdown`) ;
 - `images` : références, chemins et URL externes des images ;
 - `divs`, `blocks` : blocs Quarto `:::` (callouts, colonnes, métadonnées),
   rendus par `render_markdown` ;
 - `floats` : numéros des tableaux et figures, références croisées ;
+- `new_tab` : liens ouverts dans un nouvel onglet (#438) ;
 - `headings` : décalage et identifiants des titres ;
 - `note_links` : liens vers d'autres notes, `AAAA-MM-JJ.qmd` (#206) ;
 - `notes` : assemblage, pour une note (`render_note_body`) et un passage
@@ -30,6 +32,7 @@ from .images import (
     resolve_image_refs,
 )
 from .markdown import render_plain_markdown
+from .new_tab import without_new_tab_marks
 from .notes import note_heading_ids, render_note_body, render_passage
 from .sanitize import sanitize_html
 
@@ -52,4 +55,5 @@ __all__ = [
     "resolve_image_paths",
     "resolve_image_refs",
     "sanitize_html",
+    "without_new_tab_marks",
 ]

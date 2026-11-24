@@ -371,6 +371,8 @@ Les images sont importées séparément (bouton d'import, liste sur `/images/`) 
 
 Au moment de l'analyse, le chemin est remplacé par une référence vers l'image en base (`image:<id>`), à partir du nom de fichier uniquement. L'image doit donc avoir été importée avant la note.
 
+Une image **seule dans son paragraphe**, avec un texte entre crochets, est une figure : ce texte s'affiche dessous, en légende (#422). La légende n'est numérotée (« Figure 1: ») qu'avec un identifiant `{#fig-…}`. `{fig-alt="…"}` donne un texte alternatif différent de la légende. Une image au milieu d'un texte, ou sans texte entre crochets, n'a pas de légende.
+
 Une image désignée par une adresse externe (`![Légende](https://…)`) n'est pas une image importée : elle ne bloque pas l'analyse, et elle n'est pas chargée. Elle s'affiche comme un lien vers son adresse, avec sa légende pour texte, pour que le navigateur ne contacte aucun serveur tiers (#220).
 
 Les images sont gérées par l'app `images` (modèle `Image`) ; leurs pages restent dans la prise de notes. Une image a un nom (son nom de fichier d'origine, unique), un fichier affiché et, pour les images créées dans l'application à terme, un fichier source éditable. Son format (vectoriel ou matriciel) se déduit du fichier, et son origine (importée ou créée dans l'application) de la présence d'une source.
@@ -387,7 +389,7 @@ Voir [la réunion de lundi](2026-03-09), et son [ordre du jour](2026-03-09#ordre
 
 L'ancre est l'identifiant d'un titre de la note citée, celui de Quarto (minuscules, espaces en tirets : `#ordre-du-jour`) ; c'est aussi celui de son plan dans l'application. Pour Pandoc, c'est un lien relatif valide ; mais Quarto ne reconnaît une autre page du projet qu'à son fichier. **L'export ajoute donc l'extension** : le lien devient `(2026-03-09.qmd#ordre-du-jour)`, les notes sont côte à côte à la racine de l'archive, et Quarto en fait un lien vers la page `.html` de la note. **L'import la retire** : une note exportée puis réimportée revient telle qu'elle était. La forme avec `.qmd` est aussi acceptée dans l'application.
 
-Dans l'application, le lien mène à la page de la note, à la section visée. Une note qui n'existe pas encore n'empêche pas l'enregistrement : le lien est signalé (souligné en pointillés, en rouge, avec une explication au survol) et mène à la création de la note à cette date ; l'enregistrement le rappelle. Un lien écrit dans du code n'est pas un lien. Dans l'éditeur, `](` propose les notes existantes, les plus récentes d'abord (`AAAA-MM-JJ`).
+Dans l'application, le lien mène à la page de la note, à la section visée, dans un nouvel onglet, comme tout lien d'une note qui quitte la page (marqué « ↗ », #438). Une note qui n'existe pas encore n'empêche pas l'enregistrement : le lien est signalé (souligné en pointillés, en rouge, avec une explication au survol) et mène à la création de la note à cette date ; l'enregistrement le rappelle. Un lien écrit dans du code n'est pas un lien. Dans l'éditeur, `](` propose les notes existantes, les plus récentes d'abord (`AAAA-MM-JJ`).
 
 La page d'une note liste, sous son texte, les notes qui la **citent** (#207) : pour chaque passage qui contient un lien vers elle, la note, le projet et le chemin du passage, la ligne du lien, et un lien vers ce passage. Ces liens sont recalculés à chaque enregistrement (et par `reprocess_notes`) ; un lien vers une note à venir est gardé, et la note le voit dès sa création.
 
