@@ -1,19 +1,41 @@
 import datetime
+import logging
+from functools import partial
 
-from django.db import models
+from django.db import models, transaction
+from django.db.models.functions import Length
 
 from core.models import Project, Section, Tag
 from images.models import Image
 
 from .signals import NoteFollowUp
 
+logger = logging.getLogger(__name__)
+
 
 class Note(models.Model):
+    class Source(models.TextChoices):
+        """Ce qui modifie une note (#468). Le libellé suit « modifiée par »."""
+
+        EDITOR = "editor", "l'éditeur"
+        OVERWRITE = "overwrite", "l'éditeur, en remplaçant la version enregistrée"
+        CAPTURE = "capture", "la capture rapide"
+        PATH_RENAME = "path_rename", "le renommage d'un chemin"
+        PROJECT_RENAME = "project_rename", "le renommage d'un projet"
+        SOURCE_FILE = "source_file", "le remplacement par son fichier source"
+        IMPORT = "import", "l'import"
+        COMMAND = "command", "une commande de gestion"
+        ADMIN = "admin", "l'administration"
+
     date = models.DateField(unique=True)
     body = models.TextField(blank=True, default="")
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    # Ce qui a fait la dernière modification ; vide : inconnu.
+    updated_by = models.CharField(
+        max_length=20, choices=Source, blank=True, default="", editable=False
+    )
 
     # Suites proposées par les autres apps au dernier recalcul des passages
     # (#239) : tâches créées, par exemple.
@@ -26,6 +48,35 @@ class Note(models.Model):
 
     def __str__(self):
         return f"{self.date}"
+
+    def save(self, *args, source: str = "", **kwargs) -> None:
+        """Seul point d'écriture du texte (#468) : garde la source de la modification
+        et la trace dans le log, une fois la transaction validée. Sans `source`, elle
+        est inconnue : celle d'avant n'est pas gardée."""
+        before = (
+            Note.objects.filter(pk=self.pk).values_list("updated", Length("body"))
+        ).first() or (None, 0)
+        self.updated_by = source
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {*kwargs["update_fields"], "updated_by"}
+        super().save(*args, **kwargs)
+        transaction.on_commit(
+            partial(
+                logger.info,
+                "Note %s enregistrée : source=%s version=%s -> %s taille=%d -> %d",
+                self.date,
+                source or "inconnue",
+                before[0].isoformat() if before[0] else "nouvelle",
+                self.updated.isoformat(),
+                before[1],
+                len(self.body),
+            )
+        )
+
+    @property
+    def source_label(self) -> str:
+        """« la capture rapide » : ce qui a fait la dernière modification."""
+        return dict(self.Source.choices).get(self.updated_by, "")
 
     @property
     def projects(self):

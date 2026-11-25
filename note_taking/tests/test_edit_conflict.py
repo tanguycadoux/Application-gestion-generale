@@ -1,12 +1,17 @@
 """L'éditeur signale une note qui a changé depuis son ouverture, sans perdre le texte
 saisi (#386)."""
 
+import datetime
+import logging
 import re
+from urllib.parse import unquote
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from note_taking.models import Note
+from note_taking.quick_capture import capture
 from note_taking.services import process_passages
 
 VERSION_REGEX = re.compile(r'<input type="hidden" name="version" value="([^"]+)"')
@@ -143,3 +148,111 @@ class EditConflictTests(TestCase):
         html = self.client.get(reverse("note_taking:new_note")).content.decode()
 
         self.assertNotIn('name="version"', html)
+
+
+class ConflictReasonTests(TestCase):
+    """Le conflit dit ce qui a changé la note, et quand (#468)."""
+
+    def setUp(self):
+        self.day = str(timezone.localdate())
+        self.note = Note.objects.create(date=self.day, body="# P\nouvert")
+        process_passages(self.note)
+        self.url = reverse("note_taking:edit_note", args=[self.day])
+        self.opened = self.note.updated.isoformat()
+
+    def save(self, in_place: bool = False, **fields):
+        data = {"date": self.day, "body": "x", "version": self.opened, **fields}
+        if in_place:
+            data["stay"] = "1"
+        headers = {"HX-Request": "true"} if in_place else {}
+        return self.client.post(self.url, data, headers=headers)
+
+    def time(self, value) -> str:
+        return timezone.localtime(value).strftime("%H:%M")
+
+    def test_encadre_nomme_la_capture(self):
+        Note.objects.update(updated=timezone.now() - datetime.timedelta(minutes=7))
+        self.opened = Note.objects.get().updated.isoformat()
+        opened = Note.objects.get().updated
+        capture("ligne")
+        updated = Note.objects.get().updated
+
+        html = self.save().content.decode()
+
+        self.assertIn(
+            f"La note a été modifiée à {self.time(updated)} par la capture rapide", html
+        )
+        self.assertIn(self.time(opened), html)
+        self.assertNotIn("autre onglet…", html)
+
+    def test_meme_minute_avec_les_secondes(self):
+        opened = Note.objects.get().updated
+        Note.objects.update(
+            updated=opened + datetime.timedelta(microseconds=1), updated_by="capture"
+        )
+
+        html = self.save().content.decode()
+
+        self.assertIn(f"modifiée à {timezone.localtime(opened):%H:%M:%S} par", html)
+
+    def test_sur_place_la_raison_est_dans_l_en_tete(self):
+        capture("ligne")
+
+        response = self.save(in_place=True)
+
+        reason = unquote(response.headers["X-Note-Conflict"])
+        self.assertIn("par la capture rapide", reason)
+
+    def test_autre_jour_avec_sa_date(self):
+        Note.objects.update(
+            updated=timezone.now() - datetime.timedelta(days=40), updated_by="editor"
+        )
+
+        html = self.save(version="2020-03-05T10:00:00+00:00").content.decode()
+
+        self.assertIn("5 mars 2020", html)
+
+    def test_source_inconnue_dite_telle_quelle(self):
+        self.note.save()
+
+        html = self.save().content.decode()
+
+        self.assertIn("sans que l&#x27;application sache par quoi", html)
+
+    def test_version_sans_modification_connue(self):
+        """Version plus récente que celle de la base : aucune écriture ne l'explique."""
+        html = self.save(version="2999-01-01T00:00:00+00:00").content.decode()
+
+        self.assertIn("aucune modification connue", html)
+
+    def test_version_illisible(self):
+        response = self.save(version="n'importe quoi")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("aucune modification connue", response.content.decode())
+
+    def test_log(self):
+        capture("ligne")
+
+        with self.assertLogs("note_taking", logging.WARNING) as logs:
+            self.save(overwrite="vieux")
+
+        (line,) = [r.getMessage() for r in logs.records]
+        self.assertIn(f"Note {self.day}", line)
+        self.assertIn(f"ouverte={self.opened}", line)
+        self.assertIn(f"enregistrée={Note.objects.get().updated.isoformat()}", line)
+        self.assertIn("overwrite=vieux", line)
+        self.assertIn("source=capture", line)
+
+
+class EditorCacheTests(TestCase):
+    """Revenir à l'éditeur par Précédent redemande la page, texte et version à jour."""
+
+    def test_editeur_jamais_repris_du_cache(self):
+        Note.objects.create(date="2025-11-24", body="x")
+        for url in (
+            reverse("note_taking:new_note"),
+            reverse("note_taking:edit_note", args=["2025-11-24"]),
+        ):
+            with self.subTest(url=url):
+                self.assertIn("no-store", self.client.get(url).headers["Cache-Control"])

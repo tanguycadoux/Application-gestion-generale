@@ -1,7 +1,9 @@
-"""Lanceur de tests sans réseau (#218)."""
+"""Lanceur de tests sans réseau (#218) ni fichier de log (#468)."""
 
+import logging
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test.runner import DiscoverRunner
 
 
@@ -11,6 +13,9 @@ class NoNetworkTestRunner(DiscoverRunner):
 
     def setup_test_environment(self, **kwargs):
         super().setup_test_environment(**kwargs)
+        # Ni fichier ni lignes `INFO` dans la sortie ; `assertLogs` fonctionne sans.
+        for name in settings.LOGGING["loggers"]:
+            logging.getLogger(name).handlers = [logging.NullHandler()]
         self._network_guard = patch(
             "socket.socket.connect",
             side_effect=RuntimeError(

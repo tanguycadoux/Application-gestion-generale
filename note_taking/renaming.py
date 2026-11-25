@@ -241,7 +241,7 @@ def rename_titles(
             old_body = note.body
             new_body = rewrite_titles(old_body, numbers, new_name)
             note.body = new_body
-            note.save()
+            note.save(source=Note.Source.PATH_RENAME)
             note_headings_renamed.send(
                 sender=Note, note=note, old_body=old_body, new_body=new_body
             )
@@ -299,7 +299,7 @@ def rename_project_titles(project: Project, old_name: str, new_name: str) -> lis
             old_body = note.body
             new_body = rewrite_titles(old_body, numbers, new_name)
             note.body = new_body
-            note.save()
+            note.save(source=Note.Source.PROJECT_RENAME)
             note_headings_renamed.send(
                 sender=Note, note=note, old_body=old_body, new_body=new_body
             )

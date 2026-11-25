@@ -115,7 +115,7 @@ def apply_choice(pending: PendingProjectRename, choice: str) -> str:
         numbers = [heading.number for heading in project_headings(note.body, new)]
         old_body = note.body
         note.body = rewrite_titles(old_body, numbers, old)
-        note.save()
+        note.save(source=Note.Source.PROJECT_RENAME)
         follow_tasks(note, old_body, note.body)
         process_passages(note)
         forget_project_if_unused(project_named(new))

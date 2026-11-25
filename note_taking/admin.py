@@ -26,6 +26,9 @@ class NoteAdmin(admin.ModelAdmin):
     readonly_fields = ("date",)
     list_filter = ("date",)
 
+    def save_model(self, request, obj, form, change):
+        obj.save(source=Note.Source.ADMIN)
+
 
 @admin.register(Passage)
 class PassageAdmin(admin.ModelAdmin):

@@ -2,6 +2,8 @@
 et les anciennes adresses par id (#273)."""
 
 import copy
+import logging
+from urllib.parse import quote
 
 from django.contrib import messages
 from django.db.models import Prefetch
@@ -9,6 +11,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import DetailView, ListView
 
@@ -16,6 +19,7 @@ from core.dates import date_text, parse_date_param
 from core.exceptions import AppError
 
 from .. import note_table
+from ..edit_conflict import conflict_reason
 from ..forms import NewNoteForm
 from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
@@ -26,6 +30,8 @@ from ..project_renaming import record_project_renames
 from ..rendering import render_note_body
 from ..services import process_passages
 from .common import next_page, note_name, save_warnings
+
+logger = logging.getLogger(__name__)
 
 # Nombre de notes proposées par l'éditeur après `](` (#206).
 SUGGESTED_NOTES = 20
@@ -194,8 +200,20 @@ def changed_since_opened(request, note: Note) -> bool:
 
 def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
     """Rien n'est enregistré : l'éditeur garde le texte saisi et propose de voir la
-    version enregistrée, ou de la remplacer."""
-    current = note_version(note)
+    version enregistrée, ou de la remplacer. La raison est dite, et tracée (#468)."""
+    # Relue : la note a pu changer depuis le début de la requête.
+    note.refresh_from_db()
+    current = note.updated.isoformat()
+    reason = conflict_reason(note, request.POST["version"])
+    logger.warning(
+        "Note %s, conflit : ouverte=%s enregistrée=%s overwrite=%s "
+        "dernière modification : source=%s",
+        note.date,
+        request.POST["version"],
+        current,
+        request.POST.get("overwrite") or "non",
+        note.updated_by or "inconnue",
+    )
     if in_place:
         messages.error(
             request,
@@ -204,6 +222,8 @@ def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
         )
         response = toasts_response(request, status=409)
         response["X-Note-Version"] = current
+        # Encodé : un en-tête ne porte pas d'accents.
+        response["X-Note-Conflict"] = quote(reason)
         return response
     return render(
         request,
@@ -215,16 +235,21 @@ def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
             "version": request.POST["version"],
             "current_version": current,
             "conflict": True,
+            "conflict_reason": reason,
         },
         status=409,
     )
 
 
+# Jamais reprise du cache (#468) : revenir à l'éditeur par Précédent redemande la page,
+# avec le texte et la version à jour.
+@never_cache
 def new_note(request):
     if request.method == "POST":
         form = NewNoteForm(request.POST)
         if form.is_valid():
-            note = form.save()
+            note = form.save(commit=False)
+            note.save(source=Note.Source.EDITOR)
             stay = stays_in_editor(request)
             return redirect(save_passages(request, note, "créée", stay=stay))
     else:
@@ -245,6 +270,7 @@ def note_today(request):
     return redirect(f"{reverse('note_taking:new_note')}?date={today.isoformat()}")
 
 
+@never_cache
 def edit_note(request, note_date):
     note = get_object_or_404(Note, date=note_date)
 
@@ -257,7 +283,11 @@ def edit_note(request, note_date):
         old_body = note.body
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
-            note = form.save()
+            note = form.save(commit=False)
+            overwriting = request.POST.get("overwrite") == version
+            note.save(
+                source=Note.Source.OVERWRITE if overwriting else Note.Source.EDITOR
+            )
             # Un titre de projet renommé : en attente du choix, tâches qui suivent (#170).
             record_project_renames(note, old_body, note.body)
             url = save_passages(request, note, "modifiée", stay=stay)

@@ -86,7 +86,10 @@ class PassageMigrationTests(TransactionTestCase):
         self.assertNotIn("note_part_search", tables)
 
     def test_index_de_recherche_rempli(self):
-        self.migrate(self.migrated)
+        # La recherche est celle d'aujourd'hui : elle lit les colonnes ajoutées aux notes
+        # depuis (`updated_by`, #468).
+        graph = MigrationExecutor(connection).loader.graph
+        self.migrate([*self.migrated, *graph.leaf_nodes("note_taking")])
 
         found = search_passages(parse_query("intro")) or []
 

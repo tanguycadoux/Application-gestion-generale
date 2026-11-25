@@ -37,7 +37,7 @@ def update_note_from_source_file(note: Note, file) -> Note:
         )
 
     note.body = body
-    note.save()
+    note.save(source=Note.Source.SOURCE_FILE)
 
     process_passages(note)
     return note
@@ -54,7 +54,8 @@ def insert_note_in_table(file) -> Note:
     if Note.objects.filter(date=note_date).exists():
         raise NoteAlreadyExistsError(f"Une note existe déjà pour le {note_date}.")
 
-    note = Note.objects.create(date=date.fromisoformat(note_date), body=body)
+    note = Note(date=date.fromisoformat(note_date), body=body)
+    note.save(source=Note.Source.IMPORT)
 
     process_passages(note)
     return note

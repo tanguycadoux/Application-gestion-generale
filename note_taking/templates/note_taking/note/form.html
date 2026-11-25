@@ -7,7 +7,9 @@
         <input type="hidden" name="version" value="{{ version }}">
         <div data-note-conflict{% if not conflict %} hidden{% endif %}>
             <div role="alert" class="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900">
-                <p>La note a changé depuis l'ouverture de l'éditeur (capture rapide, renommage, autre onglet…). Rien n'est enregistré, et le texte ci-dessous est le vôtre : y reporter ce qui manque, puis remplacer la version enregistrée.</p>
+                {# La raison (#468) : écrite ici par la vue, ou par note_form.js pour un enregistrement sur place. #}
+                <p data-conflict-reason>{{ conflict_reason|default:"La note a changé depuis l'ouverture de l'éditeur." }}</p>
+                <p>Rien n'est enregistré, et le texte ci-dessous est le vôtre : y reporter ce qui manque, puis remplacer la version enregistrée.</p>
                 <p class="my-2"><a href="{% url 'note_taking:note_detail' note.date %}" target="_blank" rel="noopener">Voir la version enregistrée (nouvel onglet)</a></p>
                 {% button "Remplacer par mon texte" icon="save" variant="danger" name="overwrite" value=current_version %}
             </div>
