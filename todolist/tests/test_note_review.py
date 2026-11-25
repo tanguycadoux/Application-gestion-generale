@@ -1,6 +1,7 @@
 """Tâches issues des notes : sans échéance, et page bilan après l'enregistrement
 d'une note qui a des tâches à revoir (#239, #240)."""
 
+import re
 from datetime import date
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -162,6 +163,16 @@ class ReviewPageTests(TestCase):
 
         self.assertContains(response, "Première")
         self.assertNotContains(response, "Autre")
+
+    def test_un_seul_bouton_d_enregistrement(self):
+        """En bas, à la fin du bilan (#466), avec son libellé."""
+        html = self.client.get(self.url()).content.decode()
+
+        buttons = re.findall(r"<button[^>]*>.*?</button>", html, re.DOTALL)
+        saving = [button for button in buttons if "Enregistrer les tâches" in button]
+        self.assertEqual(len(saving), 1)
+        self.assertIn("Enregistrer les tâches</button>", saving[0])
+        self.assertGreater(html.index(saving[0]), html.rindex("</table>"))
 
     def test_enregistrer_les_modifications(self):
         project = Project.objects.create(name="Q")
