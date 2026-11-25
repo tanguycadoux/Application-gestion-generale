@@ -5,7 +5,6 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from unittest import expectedFailure
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
@@ -35,11 +34,9 @@ class StaticVersionTests(SimpleTestCase):
         self.file.write_text(content, encoding="utf-8")
         os.utime(self.file, (mtime, mtime))
 
-    @expectedFailure
     def test_adresse_avec_empreinte(self):
         self.assertRegex(static("essai.js"), rf"^/static/essai\.js{VERSION}$")
 
-    @expectedFailure
     def test_contenu_change_adresse_change(self):
         before = static("essai.js")
 
@@ -47,7 +44,6 @@ class StaticVersionTests(SimpleTestCase):
 
         self.assertNotEqual(static("essai.js"), before)
 
-    @expectedFailure
     def test_meme_contenu_meme_adresse(self):
         """Une date de fichier qui change (clone, changement de branche) ne suffit pas."""
         before = static("essai.js")
@@ -68,7 +64,6 @@ class StaticVersionTests(SimpleTestCase):
 
 
 class PageAddressesTests(TestCase):
-    @expectedFailure
     def test_toutes_les_adresses_des_pages_ont_une_empreinte(self):
         for name in (
             "core:index",
@@ -122,15 +117,12 @@ class ModuleVersionsTests(TestCase):
             with self.subTest(module=module):
                 self.assertRegex(imports[address], rf"^{re.escape(address)}{VERSION}$")
 
-    @expectedFailure
     def test_modules_de_l_editeur(self):
         self.check("note_taking:new_note", "editor.js")
 
-    @expectedFailure
     def test_modules_de_la_page_des_images(self):
         self.check("note_taking:images_list", "images_capture.js")
 
-    @expectedFailure
     def test_codemirror_avec_empreinte(self):
         address = self.imports("note_taking:new_note")["@codemirror/state"]
 
@@ -142,7 +134,6 @@ class ModuleVersionsTests(TestCase):
 class EditorGuardTests(SimpleTestCase):
     """Le script n'est pas exécuté par les tests : ce qu'il promet, lu dans sa source."""
 
-    @expectedFailure
     def test_version_absente_de_la_reponse_signalee(self):
         path = finders.find("note_taking/note_form.js")
         source = Path(str(path)).read_text(encoding="utf-8")

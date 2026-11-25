@@ -7,6 +7,7 @@ import json
 import tarfile
 
 from django.template import Context, Template
+from django.templatetags.static import static
 from django.test import SimpleTestCase
 
 from core import codemirror
@@ -60,7 +61,7 @@ class ImportMapTests(SimpleTestCase):
 
         self.assertEqual(
             imports["@codemirror/state"],
-            "/static/vendor/codemirror/codemirror-state/index.js",
+            static("vendor/codemirror/codemirror-state/index.js"),
         )
         self.assertEqual(set(imports), {p.name for p in codemirror.load_packages()})
         for address in imports.values():

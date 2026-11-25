@@ -33,6 +33,6 @@
 <template id="outline-toggle">{% button "Plan" icon="toc" variant="ghost" type="button" %}</template>
 
 {# Éditeur (#89) : CodeMirror embarqué remplace le <textarea> ; sans lui, le <textarea> reste. #}
-{% codemirror_importmap %}
+{% codemirror_importmap 'note_taking/editor.js' %}
 <script src="{% static 'note_taking/note_form.js' %}" defer></script>
 <script type="module" src="{% static 'note_taking/editor.js' %}"></script>

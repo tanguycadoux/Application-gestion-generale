@@ -117,6 +117,13 @@ STATIC_URL = "static/"
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
+# Adresses des fichiers statiques avec l'empreinte de leur contenu (#469) : après une mise
+# à jour, le navigateur ne garde pas un ancien script.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "core.static_files.VersionedStaticFilesStorage"},
+}
+
 # Tailwind CSS compilé par django-tailwind-cli (CLI autonome, sans Node) :
 # `python manage.py tailwind build`, ou `tailwind runserver` pour le reconstruire
 # à chaque modification.

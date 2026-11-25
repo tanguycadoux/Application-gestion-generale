@@ -11,6 +11,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.core.management import call_command
 from django.template import Context, Template, TemplateSyntaxError
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -137,7 +138,7 @@ class FaviconTests(TestCase):
         html = self.client.get(reverse("core:index")).content.decode()
 
         self.assertIn(
-            '<link rel="icon" href="/static/core/favicon.svg" type="image/svg+xml">',
+            f'<link rel="icon" href="{static("core/favicon.svg")}" type="image/svg+xml">',
             html,
         )
         self.assertTrue(

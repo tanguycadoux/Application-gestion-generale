@@ -3,6 +3,7 @@
 import re
 from pathlib import Path
 
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -94,7 +95,7 @@ class SearchBarTests(TestCase):
 
     def test_script_du_raccourci_charge(self):
         self.assertIn(
-            '<script src="/static/core/search.js" defer></script>', self.page()
+            f'<script src="{static("core/search.js")}" defer></script>', self.page()
         )
 
     def test_la_barre_marche_sans_javascript(self):

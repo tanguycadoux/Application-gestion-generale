@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -118,7 +119,7 @@ class KeyboardShortcutTests(TestCase):
     def test_script_charge_et_servi(self):
         response = self.client.get(reverse("note_taking:index"))
 
-        self.assertContains(response, 'src="/static/core/month_calendar.js"')
+        self.assertContains(response, f'src="{static("core/month_calendar.js")}"')
         self.assertIsNotNone(finders.find("core/month_calendar.js"))
 
 

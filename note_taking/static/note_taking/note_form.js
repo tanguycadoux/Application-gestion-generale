@@ -75,6 +75,13 @@
             if (response.status === 409) showConflict(version);
             if (response.ok) {
                 keepVersion(version);
+                // Sans la nouvelle version (page et serveur dépareillés après une mise
+                // à jour, #469), le prochain enregistrement serait refusé sans raison.
+                if (form.elements.version && !version) {
+                    Toast.show(
+                        "La note est enregistrée, mais l'application a changé depuis l'ouverture de l'éditeur. Rechargez la page avant de continuer.",
+                    );
+                }
                 saved = sent;
                 unsaved = false;
                 const redirect = response.headers.get("HX-Redirect");

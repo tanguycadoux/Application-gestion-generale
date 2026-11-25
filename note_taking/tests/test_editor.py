@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from django.conf import settings
+from django.templatetags.static import static
 from django.test import TestCase
 from django.urls import reverse
 
@@ -31,7 +32,8 @@ class NoteEditorPageTests(TestCase):
                     html.index('<script type="module"'),
                 )
                 self.assertIn(
-                    '<script type="module" src="/static/note_taking/editor.js">', html
+                    f'<script type="module" src="{static("note_taking/editor.js")}">',
+                    html,
                 )
 
     def test_garde_fou_charge_en_script_classique(self):
@@ -39,9 +41,9 @@ class NoteEditorPageTests(TestCase):
         for page, url in self.pages().items():
             with self.subTest(page=page):
                 html = self.client.get(url).content.decode()
-                self.assertRegex(
+                self.assertIn(
+                    f'<script src="{static("note_taking/note_form.js")}" defer>',
                     html,
-                    r'<script src="/static/note_taking/note_form\.js" defer>',
                 )
 
     def test_bouton_du_plan_dans_un_template(self):

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 from django.test import TestCase
 from django.urls import reverse
 
@@ -25,7 +26,7 @@ class FrontAssetsTests(TestCase):
             with self.subTest(page=name):
                 self.assertEqual(
                     html.count(
-                        '<link rel="stylesheet" href="/static/css/tailwind.css">'
+                        f'<link rel="stylesheet" href="{static("css/tailwind.css")}">'
                     ),
                     1,
                 )
@@ -34,7 +35,7 @@ class FrontAssetsTests(TestCase):
         for name, html in self.pages().items():
             with self.subTest(page=name):
                 self.assertEqual(
-                    html.count('<script src="/static/vendor/htmx/htmx.min.js">'), 1
+                    html.count(f'<script src="{static("vendor/htmx/htmx.min.js")}">'), 1
                 )
 
     def test_aucun_script_externe(self):

@@ -6,6 +6,7 @@ from datetime import datetime
 
 from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
@@ -167,7 +168,8 @@ class CapturePagesTests(TestCase):
         )
         self.assertIn("data-csrf=", html)
         self.assertIn(
-            '<script type="module" src="/static/note_taking/images_capture.js">', html
+            f'<script type="module" src="{static("note_taking/images_capture.js")}">',
+            html,
         )
 
     def test_formulaire_de_note(self):
