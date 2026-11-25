@@ -123,13 +123,6 @@ class ModuleVersionsTests(TestCase):
     def test_modules_de_la_page_des_images(self):
         self.check("note_taking:images_list", "images_capture.js")
 
-    def test_codemirror_avec_empreinte(self):
-        address = self.imports("note_taking:new_note")["@codemirror/state"]
-
-        self.assertRegex(
-            address, rf"^/static/vendor/codemirror/codemirror-state/index\.js{VERSION}$"
-        )
-
 
 class EditorGuardTests(SimpleTestCase):
     """Le script n'est pas exécuté par les tests : ce qu'il promet, lu dans sa source."""

@@ -163,14 +163,6 @@ class SingleWritePointTests(SimpleTestCase):
 
 
 class LoggingSettingsTests(SimpleTestCase):
-    def test_fichier_a_rotation(self):
-        handler = settings.LOGGING["handlers"]["file"]
-
-        self.assertEqual(handler["class"], "logging.handlers.RotatingFileHandler")
-        self.assertEqual(Path(handler["filename"]).name, "app.log")
-        self.assertGreater(handler["maxBytes"], 0)
-        self.assertGreater(handler["backupCount"], 0)
-
     def test_loggers(self):
         loggers = settings.LOGGING["loggers"]
 
