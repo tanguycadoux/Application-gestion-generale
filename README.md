@@ -470,6 +470,7 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
+| M27 · Enregistrement et rendu des notes | fichiers statiques jamais périmés après une mise à jour, conflit d'enregistrement expliqué et fichier de log, un seul bouton au bilan d'une note, liens sans texte et document des écarts à Pandoc |
 | M23 · Éditeur : listes et blocs | hiérarchie du menu du clic droit et formatage groupé des tableaux, listes imbriquées (retrait, coloration, Tab), insertion des blocs à syntaxe particulière, plan sans les titres de callout |
 | M26 · Éditeur : tableaux et mise en forme | lignes et colonnes d'un tableau au clic droit, édition dans une fenêtre à part, paires automatiques, Ctrl+B / I / U |
 | M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |

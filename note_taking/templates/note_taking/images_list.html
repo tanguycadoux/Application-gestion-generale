@@ -1,5 +1,5 @@
 {% extends "note_taking/base.html" %}
-{% load static %}
+{% load static vendor %}
 
 {% block title %}Liste des images{% endblock title %}
 
@@ -12,5 +12,6 @@
     </div>
 
     {% include "note_taking/image_grid.html" %}
+    {% modules_importmap 'note_taking/images_capture.js' %}
     <script type="module" src="{% static 'note_taking/images_capture.js' %}"></script>
 {% endblock content %}

@@ -2,6 +2,7 @@
 
 import re
 
+from django.templatetags.static import static
 from django.test import TestCase
 from django.urls import reverse
 
@@ -55,7 +56,7 @@ class NavigationTests(TestCase):
         self.assertIn(" hidden ", button)
         self.assertIn('aria-controls="main-nav"', button)
         self.assertIn('aria-expanded="true"', button)
-        self.assertIn('<script src="/static/core/nav.js">', html)
+        self.assertIn(f'<script src="{static("core/nav.js")}">', html)
 
     def test_page_courante_marquee(self):
         response = self.client.get(reverse("note_taking:notes_list"))

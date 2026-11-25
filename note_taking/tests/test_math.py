@@ -8,6 +8,7 @@ dans le navigateur.
 import re
 
 from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
@@ -107,9 +108,9 @@ class KatexAssetsTests(TestCase):
         html = self.client.get(reverse("note_taking:index")).content.decode()
 
         for tag in (
-            '<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">',
-            '<script src="/static/vendor/katex/katex.min.js" defer></script>',
-            '<script src="/static/note_taking/math.js" defer></script>',
+            f'<link rel="stylesheet" href="{static("vendor/katex/katex.min.css")}">',
+            f'<script src="{static("vendor/katex/katex.min.js")}" defer></script>',
+            f'<script src="{static("note_taking/math.js")}" defer></script>',
         ):
             with self.subTest(tag=tag):
                 self.assertEqual(html.count(tag), 1)
