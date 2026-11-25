@@ -20,7 +20,7 @@ Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
 Les noms utilisés hors du paquet sont réexportés ici.
 """
 
-from .blocks import CALLOUT_ICONS, render_markdown
+from .blocks import CALLOUT_DEFAULT_TITLES, CALLOUT_ICONS, render_markdown
 from .floats import number_floats
 from .headings import add_heading_ids, heading_anchor, heading_slug
 from .images import (
@@ -39,6 +39,7 @@ from .notes import note_heading_ids, render_note_body, render_passage
 from .sanitize import sanitize_html
 
 __all__ = [
+    "CALLOUT_DEFAULT_TITLES",
     "CALLOUT_ICONS",
     "IMAGE_MISSING_PATH",
     "IMAGE_PATH_REGEX",
