@@ -3,7 +3,6 @@ d'une note qui a des tâches à revoir (#239, #240)."""
 
 import re
 from datetime import date
-from unittest import expectedFailure
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -165,7 +164,6 @@ class ReviewPageTests(TestCase):
         self.assertContains(response, "Première")
         self.assertNotContains(response, "Autre")
 
-    @expectedFailure
     def test_un_seul_bouton_d_enregistrement(self):
         """En bas, à la fin du bilan (#466), avec son libellé."""
         html = self.client.get(self.url()).content.decode()
