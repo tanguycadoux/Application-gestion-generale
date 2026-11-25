@@ -16,6 +16,7 @@ import { tags } from "@lezer/highlight";
 import { Strikethrough, Table, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
 import { editorMenu } from "./editor_menu.js";
+import { hangingIndent } from "./hanging.js";
 import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
@@ -62,6 +63,8 @@ const theme = EditorView.theme({
     // où il voit du code (#417).
     ".cm-pandoc-list-mark, .cm-pandoc-list-mark span": { color: "var(--color-amber-700)" },
     ".cm-pandoc-text, .cm-pandoc-text span": { color: "inherit" },
+    // Le marqueur d'un élément reste avec le début de son texte (#418, hanging.js).
+    ".cm-hanging-prefix": { whiteSpace: "pre" },
     // Une ligne de tableau ne revient pas à la ligne (#402) : l'éditeur défile
     // horizontalement d'un seul tenant, les colonnes restent alignées.
     ".cm-table-line": { whiteSpace: "pre", overflowWrap: "normal", wordBreak: "normal" },
@@ -156,6 +159,8 @@ function mountEditor(textarea) {
                 syntaxHighlighting(highlighting),
                 // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
                 pandocListMarks,
+                // La suite d'une ligne longue revient sous son texte (#418).
+                hangingIndent,
                 // Tableaux sans retour à la ligne (#402).
                 tableLines,
                 // Clic droit : copier, coller, insérer, formater les tableaux (#400, #437).

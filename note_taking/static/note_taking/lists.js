@@ -13,7 +13,7 @@ import { Decoration, ViewPlugin } from "@codemirror/view";
 // Une ligne d'élément, avant validation : retrait, marqueur, espaces qui suivent.
 const ITEM_LINE = /^(\s*)([-*+]|(?:\d+|[A-Za-z]+|#)[.)]|\((?:\d+|[A-Za-z]+|@[\w-]*)\))([ \t]+|$)/;
 // Case à cocher en tête du texte de l'élément : `[ ]`, `[x]`.
-const TASK_BOX = /^\[[ xX]\](?:[ \t]+|$)/;
+export const TASK_BOX = /^\[[ xX]\](?:[ \t]+|$)/;
 const HEADING_LINE = /^#{1,6}(\s|$)/;
 const RULE_LINE = /^\s*([-*])(?:[ \t]*\1){2,}[ \t]*$/;
 const FENCE_LINE = /^\s*(`{3,}|~{3,})([^`]*)$/;
@@ -225,7 +225,7 @@ function nodeNames(state, line, item) {
  * en dessous est mal placé. `repair` : accepte aussi un élément devenu un bloc de code par un
  * retrait trop grand (4 espaces de plus que le texte de son parent), que Maj+Tab doit remettre.
  */
-function itemOf(state, line, repair = false) {
+export function itemOf(state, line, repair = false) {
     const item = scanLists(state.doc).get(line.number);
     if (!item) return null;
     const names = nodeNames(state, line, item);
