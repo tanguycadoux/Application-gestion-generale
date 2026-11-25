@@ -64,7 +64,7 @@ function blockTemplates(callouts) {
             { label: "Colonnes…", skeleton: columnsBlock, fields: [{ name: "columns", label: "Colonnes", value: 2, min: 2, max: MAX_LAYOUT }] },
             { label: "Figure en colonnes…", skeleton: figureBlock, complete: true, fields: [{ name: "images", label: "Images", value: 2, min: 1, max: MAX_LAYOUT }] },
         ] },
-        { label: "Métadonnées", skeleton: "::: {.metadata}\ntags: [«»]\ntodo: false\n:::" },
+        { label: "Métadonnées", skeleton: "::: {.metadata}\ntags: [«»]\n:::" },
         { label: "Légende de tableau", skeleton: ": «Légende» {#tbl-nom}" },
         { label: "Renvoi", blocks: [
             { label: "Vers une figure", skeleton: "@fig-«nom»", inline: true, word: true },

@@ -67,6 +67,8 @@ class BlockTemplatesTests(TestCase):
         for html in self.rendered("Métadonnées"):
             self.assertIn('<ul class="note-tags', html)
             self.assertNotIn(":::", html)
+        # `todo: false` retirerait le marqueur d'une branche `todo: true`.
+        self.assertNotIn("todo", "".join(skeletons()["Métadonnées"]))
 
     def test_legende_et_renvois_ont_les_memes_identifiants(self):
         for html in self.rendered(
