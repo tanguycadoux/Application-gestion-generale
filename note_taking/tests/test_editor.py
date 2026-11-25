@@ -173,3 +173,17 @@ class NoteEditorScriptsTests(TestCase):
         self.assertEqual(int(match.group(1)), CODE_INDENT)
         marks = script[script.index("function pandocMarks(") :]
         self.assertNotIn("knownToParser", marks)
+
+    def test_tab_donne_le_style_du_niveau_d_arrivee(self):
+        """Tab et Maj+Tab (#419) : marqueur pris à l'élément du niveau d'arrivée, `(@)` hors
+        de la règle, une seule modification (un seul Ctrl+Z)."""
+        script = self.read("lists.js")
+
+        model = script[script.index("function levelModel(") :]
+        self.assertIn('marker.kind !== "example"', model[: model.index("\n}\n")])
+        shift = script[script.index("export function shiftItems(") :]
+        shift = shift[: shift.index("\n}\n")]
+        self.assertIn("levelModel(", shift)
+        self.assertIn("restyle(item, model, value)", shift)
+        self.assertEqual(shift.count("view.dispatch("), 1)
+        self.assertIn('userEvent: "input.indent"', shift)

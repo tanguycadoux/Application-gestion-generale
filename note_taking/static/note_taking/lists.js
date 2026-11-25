@@ -153,6 +153,7 @@ const scans = new WeakMap();
  * - `level` : le nombre de ceux dont la ligne atteint le texte. Le parent est donc
  *   `open[level - 1]`, l'élément précédent du même niveau `open[level]` ;
  * - `valid` : Pandoc en ferait un élément ;
+ * - `end` : sa dernière ligne, suites et sous-listes comprises ;
  * - `pandoc` : la liste a un marqueur que l'analyseur ne connaît pas, à cette ligne ou au-dessus.
  *
  * Un bloc de code délimité est sauté, un bloc `:::` ferme les listes.
@@ -167,12 +168,15 @@ function scanLists(doc) {
     let number = 0;
     for (const text of doc.iterLines()) {
         number += 1;
+        const indent = text.length - text.trimStart().length;
+        if (text.trim()) {
+            for (const item of open) if (indent >= item.column) item.end = number;
+        }
         const delimiter = FENCE_LINE.exec(text);
         if (fence) {
             if (delimiter?.[1].startsWith(fence) && !delimiter[2].trim()) fence = null;
             continue;
         }
-        const indent = text.length - text.trimStart().length;
         const div = DIV_LINE.test(text);
         if (div || (delimiter && indent === 0)) open = [];
         if (delimiter) fence = delimiter[1];
@@ -193,7 +197,7 @@ function scanLists(doc) {
                 indent < container + CODE_INDENT &&
                 (knownToParser(marker) || blank || afterHeading || open.length > 0);
             const pandoc = !knownToParser(marker) || open.some((item) => item.pandoc);
-            const item = { ...raw, marker, column: textColumn(raw), level, open, valid, pandoc };
+            const item = { ...raw, marker, column: textColumn(raw), level, open, valid, pandoc, end: number };
             found.set(number, item);
             if (valid) open = [...open.slice(0, level), item];
         }
@@ -279,14 +283,50 @@ export function continueList(view) {
 }
 
 /**
- * Rang du marqueur de l'élément déplacé au niveau `level`, selon sa nouvelle place : 1 s'il
- * ouvre une liste (Pandoc commence une liste numérotée au numéro de son premier élément, un
- * `2.` imbriqué ferait donc partir la sous-liste à 2 ; `a.` et `i.` de même), sinon le suivant
- * de l'élément précédent du niveau, s'il est du même style.
+ * Rang, dans le style de `marker`, du marqueur de l'élément déplacé au niveau `level`, selon sa
+ * nouvelle place : 1 s'il ouvre une liste (Pandoc commence une liste numérotée au numéro de son
+ * premier élément, un `2.` imbriqué ferait donc partir la sous-liste à 2 ; `a.` et `i.` de même),
+ * sinon le suivant de l'élément précédent du niveau, s'il est du même style.
  */
-function startValue(target, level) {
+function startValue(target, level, marker) {
     const above = target.open[level];
-    return above && styleOf(above.marker) === styleOf(target.marker) ? above.marker.value + 1 : 1;
+    return above && styleOf(above.marker) === styleOf(marker) ? above.marker.value + 1 : 1;
+}
+
+/**
+ * L'élément dont le marqueur sert de modèle à `target`, déplacé au niveau `level` (#419) : parmi
+ * ceux qui y seront ses frères, au-dessus et en dessous, le plus proche (en nombre d'éléments,
+ * au-dessus d'abord) de ceux du style majoritaire. Les `(@)` ne comptent pas. `null` si le
+ * niveau est vide.
+ */
+function levelModel(doc, target, level) {
+    const above = [];
+    for (let item = target.open[level]; item; item = item.open[level]) above.push(item);
+    const below = [];
+    let previous = target.open[level];
+    for (const item of scanLists(doc).values()) {
+        if (!item.valid || item.level !== level) continue;
+        if (item.open[level - 1] !== target.open[level - 1] || item.open[level] !== previous) continue;
+        below.push(item);
+        previous = item;
+    }
+    const [over, under] = [above, below].map((items) => items.filter(({ marker }) => marker.kind !== "example"));
+    const near = [];
+    for (let i = 0; i < Math.max(over.length, under.length); i++) near.push(over[i], under[i]);
+    const siblings = near.filter(Boolean);
+    const counts = new Map();
+    for (const { marker } of siblings) counts.set(styleOf(marker), (counts.get(styleOf(marker)) ?? 0) + 1);
+    const most = Math.max(...counts.values());
+    return siblings.find(({ marker }) => counts.get(styleOf(marker)) === most) ?? null;
+}
+
+/** Marqueur et espaces de `item`, au rang `value` dans le style de `model` (`null` : le sien). */
+function restyle(item, model, value) {
+    const text = markerText((model ?? item).marker, value) ?? (model ?? item).text;
+    if (text === item.text) return item;
+    // Au-delà de 4 espaces, la suite est du code : on n'y touche pas, et on n'en crée pas.
+    const usable = [item, model].every((of) => of?.spacing && of.spacing.length <= CODE_INDENT);
+    return { ...item, text, spacing: spacingFor(text, (usable ? model : item).spacing) };
 }
 
 /**
@@ -301,8 +341,10 @@ function startValue(target, level) {
  *   de plus en ferait un bloc de code.
  * - **Désindenter** : l'élément passe au niveau de son parent ; un élément trop enfoncé (déjà
  *   un bloc de code) est ramené à la colonne du texte de son parent.
- * - Les éléments numérotés du niveau déplacé sont renumérotés (1, a, i…) à partir de leur
- *   nouvelle place.
+ * - Les éléments du niveau déplacé prennent le style du niveau où ils arrivent (`levelModel`,
+ *   #419), et sont renumérotés (1, a, i…) à partir de leur nouvelle place.
+ * - Les suites et les sous-listes d'un élément déplacé restent alignées sur son texte, même hors
+ *   de la sélection ; ce qui suivait dans le parent et devient sa suite s'y aligne aussi.
  */
 export function shiftItems(view, direction) {
     const { state } = view;
@@ -334,34 +376,51 @@ export function shiftItems(view, direction) {
         amount = Math.min(2, target.indent);
     }
 
-    // Les éléments numérotés du niveau déplacé sont renumérotés à partir de leur nouvelle
-    // place ; ceux des sous-niveaux gardent leurs numéros (relatifs à leur propre liste).
-    let value = startValue(target, level);
+    // Les éléments du niveau déplacé changent de style et de numéro ; ceux des sous-niveaux
+    // gardent les leurs (relatifs à leur propre liste).
+    const changesLevel = level !== target.level;
+    const model = changesLevel || !valid ? levelModel(state.doc, target, level) : null;
+    const style = styleOf(target.marker);
+    let value = startValue(target, level, (model ?? target).marker);
 
     const changes = [];
+    const move = (line, by) => {
+        if (!line.text.trim()) return;
+        if (by > 0) changes.push({ from: line.from, insert: " ".repeat(by) });
+        const remove = Math.min(-by, line.text.length - line.text.trimStart().length);
+        if (remove > 0) changes.push({ from: line.from, to: line.from + remove });
+    };
+
+    let end = last.number;
     for (let n = first.number; n <= last.number; n++) {
+        end = Math.max(end, scanLists(state.doc).get(n)?.end ?? 0);
+    }
+    let shift = 0;
+    let column = 0;
+    for (let n = first.number; n <= end; n++) {
         const line = state.doc.line(n);
-        if (!line.text.trim()) continue;
-        if (direction > 0) {
-            changes.push({ from: line.from, insert: " ".repeat(amount) });
-        } else {
-            const spaces = line.text.length - line.text.trimStart().length;
-            const remove = Math.min(amount, spaces);
-            if (remove) changes.push({ from: line.from, to: line.from + remove });
+        const item = itemOf(state, line, !valid);
+        if (!item || item.level > target.level) {
+            move(line, shift);
+            continue;
         }
-        const item = itemOf(state, line, direction < 0);
-        if (item && item.indent === target.indent && styleOf(item.marker) === styleOf(target.marker)) {
-            const text = markerText(item.marker, value);
-            if (text !== null && text !== item.text) {
-                const from = line.from + item.indent;
-                changes.push({
-                    from,
-                    to: from + item.text.length + item.spacing.length,
-                    insert: text + spacingFor(text, item.spacing),
-                });
-            }
+        shift = direction > 0 ? amount : -Math.min(amount, item.indent);
+        move(line, shift);
+        if (item.level < target.level) continue;
+        if (item.marker.kind !== "example" && (model || styleOf(item.marker) === style)) {
+            const next = restyle(item, model, value);
             value += 1;
+            if (next !== item) {
+                const from = line.from + item.indent;
+                changes.push({ from, to: from + item.width, insert: next.text + next.spacing });
+                // Le texte s'est décalé avec la largeur du marqueur : ce qui suit aussi.
+                shift += textColumn(next) - item.column;
+            }
         }
+        column = item.column + shift;
+    }
+    if (direction < 0 && changesLevel) {
+        for (let n = end + 1; n <= parent.end; n++) move(state.doc.line(n), column - parent.column);
     }
     if (!changes.length) return true;
     view.dispatch({ changes, scrollIntoView: true, userEvent: "input.indent" });
