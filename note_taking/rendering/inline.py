@@ -1,4 +1,4 @@
-"""Motifs en ligne de Pandoc : exposants, indices, barré et formules LaTeX."""
+"""Motifs en ligne de Pandoc : exposants, indices, barré, souligné et formules LaTeX."""
 
 import re
 import xml.etree.ElementTree as etree
@@ -46,6 +46,38 @@ class TagInlineProcessor(markdown.inlinepatterns.InlineProcessor):
         element = etree.Element(self.tag)
         element.text = m.group("text").replace("\\ ", " ")
         return element, m.start(0), m.end(0)
+
+
+class UnderlineExtension(markdown.Extension):
+    """Souligné `[texte]{.underline}`, comme dans Quarto (#434).
+
+    De l'extension `bracketed_spans` de Pandoc, seule cette classe est reconnue :
+    d'autres attributs laissent le tout en texte (`docs/ecarts-pandoc.md`).
+    """
+
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        # Après le code, les liens et les images (140), qui gardent leurs crochets et où
+        # le souligné est rendu ensuite ; avant un lien par référence `[texte]` (130).
+        md.inlinePatterns.register(
+            UnderlineInlineProcessor(r"(?<!!)\[", md), "underline", 135
+        )
+
+
+class UnderlineInlineProcessor(markdown.inlinepatterns.LinkInlineProcessor):
+    """Un lien dont les attributs remplacent l'adresse : mêmes crochets appariés."""
+
+    CLASS_REGEX = re.compile(r"\{[ ]*\.underline[ ]*\}")
+
+    def handleMatch(  # type: ignore[override]
+        self, m: re.Match[str], data: str
+    ) -> tuple[etree.Element | None, int | None, int | None]:
+        text, index, closed = self.getText(data, m.end(0))
+        found = self.CLASS_REGEX.match(data, index) if closed else None
+        if found is None:
+            return None, None, None
+        element = etree.Element("span", {"class": "underline"})
+        element.text = text
+        return element, m.start(0), found.end()
 
 
 # Formule en bloc $$…$$, éventuellement sur plusieurs lignes.

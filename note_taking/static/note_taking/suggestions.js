@@ -26,6 +26,9 @@ const phrases = { Completions: "Suggestions" };
 const HERE = { name: "À ce niveau", rank: 0 };
 const ELSEWHERE = { name: "Ailleurs", rank: 1 };
 
+// Ce que l'éditeur a fermé tout seul au bout d'un titre (#434).
+const CLOSED_AT_END = /^[)\]}"'`]+[ \t]*$/;
+
 async function fetchResults(url, params, context) {
     const controller = new AbortController();
     context.addEventListener("abort", () => controller.abort());
@@ -107,16 +110,36 @@ function titleSource(urls) {
         }
         if (!options.length) return null;
         // La liste est déjà filtrée par le serveur (casse et accents ignorés).
-        return { from, filter: false, options };
+        // `# Projet (|)` : le nom complété apporte sa parenthèse.
+        const closed = CLOSED_AT_END.test(context.state.sliceDoc(context.pos, line.to));
+        return { from, to: closed ? line.to : context.pos, filter: false, options };
     };
+}
+
+/**
+ * La fin de l'image à remplacer, dont le texte avant le curseur est `before` et le texte après
+ * `after` : le crochet qui ferme `![`, s'il y est (l'éditeur l'ajoute, #434), et l'adresse qui le
+ * suit. Dans `[![|](adresse)`, le crochet est celui du lien autour.
+ */
+function closedImageEnd(before, after) {
+    const own = /^[)}"'`]*\](?:\(images\/[^)\s]*\))?/.exec(after);
+    if (!own) return 0;
+    // Ce qui reste ouvert avant le curseur, et fermé après.
+    const open = [...before].reduce((n, c) => (c === "[" ? n + 1 : c === "]" ? Math.max(0, n - 1) : n), 0);
+    let depth = 0;
+    let close = 0;
+    for (const c of after) {
+        if (c === "[") depth++;
+        else if (c === "]" && depth) depth--;
+        else if (c === "]") close++;
+    }
+    return close >= open ? own[0].length : 0;
 }
 
 function imageSource(urls) {
     return async (context) => {
-        const before = context.state.sliceDoc(
-            context.state.doc.lineAt(context.pos).from,
-            context.pos,
-        );
+        const line = context.state.doc.lineAt(context.pos);
+        const before = context.state.sliceDoc(line.from, context.pos);
         const inPath = IMAGE_PATH_TRIGGER.exec(before);
         const created = inPath ?? IMAGE_TRIGGER.exec(before);
         if (!created) return null;
@@ -124,8 +147,10 @@ function imageSource(urls) {
         const results = data?.results;
         if (!results?.length) return null;
         const from = context.pos - (inPath ? inPath[1].length : created[0].length);
+        const closed = inPath ? 0 : closedImageEnd(before, context.state.sliceDoc(context.pos, line.to));
         return {
             from,
+            to: context.pos + closed,
             filter: false,
             options: results.map((image) => ({
                 label: image.name,

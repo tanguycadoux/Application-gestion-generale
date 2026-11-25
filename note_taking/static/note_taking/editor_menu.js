@@ -14,6 +14,7 @@ import { startCompletion } from "@codemirror/autocomplete";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { blockEntries } from "./block_templates.js";
+import { formattingEntries } from "./formatting.js";
 import { tableEntries } from "./table_edit.js";
 import { findTables, formatTables, tableAt } from "./tables.js";
 
@@ -111,6 +112,7 @@ function entries(view, pos, { importImages, images, showForm }) {
                 ...blockEntries(view, showForm),
             ],
         },
+        { label: "Mise en forme", submenu: formattingEntries(view) },
         { separator: true },
         {
             label: "Tableau",
