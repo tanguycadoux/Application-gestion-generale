@@ -82,6 +82,11 @@ Voir @tbl-retreint et @fig-banc.
 - [ ] Case vide
 - [x] Case cochée
 
+1. Élément [souligné]{.underline}
+
+   - sous-liste après une ligne vide
+2. Élément suivant (#482)
+
 | Matériau | Rétreint |
 |---|---|
 | Cu | 3.2 |

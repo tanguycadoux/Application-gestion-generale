@@ -108,7 +108,9 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | retour | `arrow_back` |
 | mois précédent, suivant | `chevron_left`, `chevron_right` |
 | aujourd'hui, note du jour | `today` |
-| terminer (l'édition d'une note) | `check_circle` |
+| terminer (l'édition d'une note), valider (un tableau) | `check_circle` |
+| annuler, abandonner (l'édition d'un tableau) | `close` |
+| formater (un tableau) | `table` |
 
 Confirmation avant envoi (#126, #292) : toute suppression, tout écart ou rétablissement passe par `{% confirm_button %}` (`core/templatetags/ui.py`), une **popover HTML native** sans JavaScript. Le bouton de la page (`type="button"`, `popovertarget`) l'ouvre ; le navigateur la ferme (Échap, clic à côté, « Annuler ») et la place sous le bouton, alignée sur son bord droit, par l'ancrage CSS (`.confirm-popover`, retournée au-dessus si la place manque). Elle contient le message et un formulaire POST, avec « Annuler » (`ghost`) puis l'action (« Supprimer » ou « Écarter » en `danger`, « Rétablir » en `primary`). Sans JavaScript, elle fonctionne aussi. Le bouton d'une suppression impossible est désactivé, relié à sa raison (`describedby`), et n'ouvre rien. Le message **ne reprend pas le nom de l'objet** (un titre de tâche peut être très long, avec un lien) : la page ou la ligne montre déjà de quoi il s'agit ; il dit seulement ce qui disparaît avec lui (« et ses 2 sous-tâches »). La popover ne défile jamais : le texte passe à la ligne et la hauteur s'adapte. Les vues de suppression n'acceptent que POST : il n'y a pas de page de confirmation.
 
@@ -467,12 +469,12 @@ Milestones terminés :
 | M25 · Recherche (suite) | tri des résultats par pertinence ou par date ; vue « Document » lue comme une note, avec son plan et son bandeau ; filtres toujours visibles ; arbre des chemins fidèle à ce qui est cherché |
 | M27 · Enregistrement et rendu des notes | fichiers statiques à l'adresse qui change avec leur contenu ; modifications des notes tracées dans un fichier de log, sans leur texte ; conflit d'enregistrement expliqué ; un seul bouton au bilan d'une note ; liens sans texte visibles et document des écarts à Pandoc |
 | M23 · Éditeur : listes et blocs | menu du clic droit hiérarchisé (presse-papiers, insertion des callouts, formules, colonnes, figures, renvois) ; formatage groupé des tableaux ; listes de Pandoc lues comme le rendu (coloration, Entrée, Tab) et marqueur du niveau d'arrivée avec Tab ; suite des lignes longues sous leur texte ; plan sans les titres des blocs |
+| M26 · Éditeur : tableaux et mise en forme | paires fermées toutes seules, Ctrl+B / I / U et souligné au rendu ; lignes, colonnes et dimensions d'un tableau au clic droit ; tableau édité dans une fenêtre à part, retour à la ligne rétabli dans l'éditeur ; élément qui suit une sous-liste rendu à son niveau |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M26 · Éditeur : tableaux et mise en forme | lignes et colonnes d'un tableau au clic droit, édition dans une fenêtre à part, paires automatiques, Ctrl+B / I / U |
 | M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |
 | M22 · Import et export (suite) | import depuis la page d'une note, choix de la version à garder au réimport |
 | M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes, import depuis la liste, suppression des images inutilisées |

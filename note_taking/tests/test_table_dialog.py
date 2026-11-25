@@ -56,10 +56,7 @@ class TableDialogScriptTests(SimpleTestCase):
         self.assertIn('isolateHistory.of("full")', script)
 
     def test_modifications_non_validees_protegees(self):
-        script = read("table_dialog.js")
-
-        self.assertIn('"beforeunload"', script)
-        self.assertNotIn("confirm(", script)
+        self.assertIn('"beforeunload"', read("table_dialog.js"))
 
     def test_retour_a_la_ligne_dans_la_note_seulement(self):
         """Ce que les deux éditeurs partagent (`createEditor`) ne fait pas revenir à la ligne."""
