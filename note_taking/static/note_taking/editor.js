@@ -16,6 +16,7 @@ import { tags } from "@lezer/highlight";
 import { Strikethrough, Table, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
 import { editorMenu } from "./editor_menu.js";
+import { hangingIndent } from "./hanging.js";
 import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
@@ -156,6 +157,8 @@ function mountEditor(textarea) {
                 syntaxHighlighting(highlighting),
                 // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
                 pandocListMarks,
+                // La suite d'une ligne longue revient sous son texte (#418).
+                hangingIndent,
                 // Tableaux sans retour à la ligne (#402).
                 tableLines,
                 // Clic droit : copier, coller, insérer, formater les tableaux (#400, #437).
