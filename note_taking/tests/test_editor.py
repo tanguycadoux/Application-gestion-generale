@@ -1,7 +1,6 @@
 """Éditeur de note : CodeMirror embarqué, <textarea> conservé, garde-fous (#89, #228)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -175,7 +174,6 @@ class NoteEditorScriptsTests(TestCase):
         marks = script[script.index("function pandocMarks(") :]
         self.assertNotIn("knownToParser", marks)
 
-    @unittest.expectedFailure
     def test_tab_donne_le_style_du_niveau_d_arrivee(self):
         """Tab et Maj+Tab (#419) : marqueur pris à l'élément du niveau d'arrivée, `(@)` hors
         de la règle, une seule modification (un seul Ctrl+Z)."""
@@ -186,6 +184,6 @@ class NoteEditorScriptsTests(TestCase):
         shift = script[script.index("export function shiftItems(") :]
         shift = shift[: shift.index("\n}\n")]
         self.assertIn("levelModel(", shift)
-        self.assertIn("?? model.text", shift)
+        self.assertIn("restyle(item, model, value)", shift)
         self.assertEqual(shift.count("view.dispatch("), 1)
         self.assertIn('userEvent: "input.indent"', shift)
