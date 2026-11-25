@@ -217,9 +217,9 @@ function nodeNames(state, line, item) {
 /**
  * L'élément d'une ligne (voir `scanLists`), `null` si ce n'en est pas un (ou du code, une
  * citation). L'arbre de l'analyseur décide, sauf pour un marqueur qu'il ne connaît pas et pour
- * les lignes qui suivent dans la même liste (#417) : pour lui, `A.  ` est du texte et le `-` en dessous
- * est mal placé. `repair` : accepte aussi un élément devenu un bloc de code par un retrait trop
- * grand (4 espaces de plus que le texte de son parent), que Maj+Tab doit pouvoir remettre.
+ * les lignes qui suivent dans la même liste (#417) : pour lui, `A.  ` est du texte et le `-`
+ * en dessous est mal placé. `repair` : accepte aussi un élément devenu un bloc de code par un
+ * retrait trop grand (4 espaces de plus que le texte de son parent), que Maj+Tab doit remettre.
  */
 function itemOf(state, line, repair = false) {
     const item = scanLists(state.doc).get(line.number);
