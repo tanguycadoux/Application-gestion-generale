@@ -465,12 +465,12 @@ Milestones terminés :
 | M21 · Qualité du code (suite) | noms internes des tâches en « task », modules à plusieurs rôles découpés |
 | M24 · Page d'une note : lecture et rendu | note présentée comme une feuille, à l'échelle quand la place manque ; titre et actions toujours visibles, plan par-dessus la feuille sur une fenêtre étroite ; tableaux larges qui défilent seuls ; légende des images seules, comme Pandoc ; tags sans puces ; liens dans un nouvel onglet |
 | M25 · Recherche (suite) | tri des résultats par pertinence ou par date ; vue « Document » lue comme une note, avec son plan et son bandeau ; filtres toujours visibles ; arbre des chemins fidèle à ce qui est cherché |
+| M27 · Enregistrement et rendu des notes | fichiers statiques à l'adresse qui change avec leur contenu ; modifications des notes tracées dans un fichier de log, sans leur texte ; conflit d'enregistrement expliqué ; un seul bouton au bilan d'une note ; liens sans texte visibles et document des écarts à Pandoc |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
-| M27 · Enregistrement et rendu des notes | fichiers statiques jamais périmés après une mise à jour, conflit d'enregistrement expliqué et fichier de log, un seul bouton au bilan d'une note, liens sans texte et document des écarts à Pandoc |
 | M23 · Éditeur : listes et blocs | hiérarchie du menu du clic droit et formatage groupé des tableaux, listes imbriquées (retrait, coloration, Tab), insertion des blocs à syntaxe particulière, plan sans les titres de callout |
 | M26 · Éditeur : tableaux et mise en forme | lignes et colonnes d'un tableau au clic droit, édition dans une fenêtre à part, paires automatiques, Ctrl+B / I / U |
 | M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |
