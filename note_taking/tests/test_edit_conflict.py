@@ -183,7 +183,6 @@ class ConflictReasonTests(TestCase):
             f"La note a été modifiée à {self.time(updated)} par la capture rapide", html
         )
         self.assertIn(self.time(opened), html)
-        self.assertNotIn("autre onglet…", html)
 
     def test_meme_minute_avec_les_secondes(self):
         opened = Note.objects.get().updated

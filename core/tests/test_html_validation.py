@@ -67,6 +67,8 @@ Dans une ligne ![icône](images/banc.png), en lien
 [![vue](images/banc.png)](https://exemple.org), distante
 ![logo](https://exemple.org/logo.png), [gras **ici**](mailto:a@exemple.org).
 
+Sans texte (#467) : [](https://exemple.org/a?b=1&c=2), [](#voir-le-site), [](2999-01-01).
+
 ### Voir [le site](https://exemple.org)
 
 ```python
@@ -248,6 +250,15 @@ class HtmlValidationTests(TestCase):
                 path = Path(directory) / f"{name}.html"
                 path.write_bytes(response.content)
                 paths.append(path)
+            # L'éditeur qui refuse d'écraser la note (#386, #468) : réponse à un envoi.
+            response = self.client.post(
+                reverse("note_taking:edit_note", args=[self.note.date]),
+                {"date": self.note.date, "body": "x", "version": "2020-01-01T00:00Z"},
+            )
+            self.assertEqual(response.status_code, 409)
+            path = Path(directory) / "note_conflit.html"
+            path.write_bytes(response.content)
+            paths.append(path)
 
             errors = html_validator.validate(paths)
 
