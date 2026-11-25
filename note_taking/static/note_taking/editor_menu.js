@@ -14,6 +14,7 @@ import { startCompletion } from "@codemirror/autocomplete";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { blockEntries } from "./block_templates.js";
+import { tableEntries } from "./table_edit.js";
 import { findTables, formatTables, tableAt } from "./tables.js";
 
 // Le temps d'aller en diagonale de l'entrée à son sous-menu.
@@ -78,7 +79,7 @@ function entries(view, pos, { importImages, images, showForm }) {
     const { state } = view;
     const selected = state.selection.ranges.some((range) => !range.empty);
     const table = tableAt(state, pos);
-    const here = table ? findTables(state, [{ from: pos, to: pos }]) : [];
+    const here = table ? findTables(state, [table]) : [];
     const tables = findTables(
         state,
         selected ? state.selection.ranges.filter((range) => !range.empty) : null,
@@ -115,6 +116,7 @@ function entries(view, pos, { importImages, images, showForm }) {
             label: "Tableau",
             when: Boolean(table),
             submenu: [
+                ...tableEntries(view, pos, showForm),
                 {
                     label: "Formater le tableau",
                     enabled: here.length > 0,

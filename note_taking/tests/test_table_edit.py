@@ -2,7 +2,6 @@
 n'est pas exécuté par les tests)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -15,7 +14,6 @@ class TableEditTests(SimpleTestCase):
     def read(self, name: str) -> str:
         return (STATIC_DIR / name).read_text(encoding="utf-8")
 
-    @unittest.expectedFailure
     def test_entrees_du_sous_menu_tableau(self):
         script = self.read("table_edit.js")
 
@@ -34,7 +32,6 @@ class TableEditTests(SimpleTestCase):
             "...tableEntries(view, pos, showForm)", self.read("editor_menu.js")
         )
 
-    @unittest.expectedFailure
     def test_une_seule_modification_sans_confirmation(self):
         """Un Ctrl+Z annule la commande entière, et elle seule."""
         script = self.read("table_edit.js")
@@ -43,13 +40,11 @@ class TableEditTests(SimpleTestCase):
         self.assertIn('isolateHistory.of("full")', script)
         self.assertNotIn("confirm(", script)
 
-    @unittest.expectedFailure
     def test_commandes_independantes_du_menu(self):
         self.assertNotIn(
             "editor_menu.js", re.sub(r"//.*", "", self.read("table_edit.js"))
         )
 
-    @unittest.expectedFailure
     def test_legende_collee_laissee_telle_quelle(self):
         """L'analyseur en fait une ligne du tableau ; « Formater » lui mettait des barres."""
         script = self.read("tables.js")
