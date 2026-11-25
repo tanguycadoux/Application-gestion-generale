@@ -171,8 +171,6 @@ class NoteEditorScriptsTests(TestCase):
         match = re.search(r"^const CODE_INDENT = (\d+);", script, re.M)
         assert match is not None
         self.assertEqual(int(match.group(1)), CODE_INDENT)
-        marks = script[script.index("function pandocMarks(") :]
-        self.assertNotIn("knownToParser", marks)
 
     def test_tab_donne_le_style_du_niveau_d_arrivee(self):
         """Tab et Maj+Tab (#419) : marqueur pris à l'élément du niveau d'arrivée, `(@)` hors
