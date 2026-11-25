@@ -63,6 +63,8 @@ const theme = EditorView.theme({
     // où il voit du code (#417).
     ".cm-pandoc-list-mark, .cm-pandoc-list-mark span": { color: "var(--color-amber-700)" },
     ".cm-pandoc-text, .cm-pandoc-text span": { color: "inherit" },
+    // Le marqueur d'un élément reste avec le début de son texte (#418, hanging.js).
+    ".cm-hanging-prefix": { whiteSpace: "pre" },
     // Une ligne de tableau ne revient pas à la ligne (#402) : l'éditeur défile
     // horizontalement d'un seul tenant, les colonnes restent alignées.
     ".cm-table-line": { whiteSpace: "pre", overflowWrap: "normal", wordBreak: "normal" },

@@ -4,9 +4,11 @@
 //   cocher comprise ;
 // - une citation, le texte après ses `>`, et après le marqueur d'une liste qui s'y trouve ;
 // - une autre ligne indentée (suite d'un élément, code), son propre retrait.
+// Le retrait, le marqueur et le premier caractère du texte restent ensemble : devant un mot
+// trop long, le navigateur couperait à l'espace du marqueur, qui resterait seul sur sa ligne.
 // En `ch` : l'éditeur est en police à chasse fixe.
 import { syntaxTree } from "@codemirror/language";
-import { RangeSetBuilder } from "@codemirror/state";
+import { RangeSetBuilder, findClusterBreak } from "@codemirror/state";
 import { Decoration, ViewPlugin } from "@codemirror/view";
 import { TASK_BOX, itemOf } from "./lists.js";
 
@@ -38,6 +40,9 @@ function hanging(column) {
     return decorations.get(column);
 }
 
+// Pas de retour à la ligne dans ce qui précède le texte, ni juste avant lui (`editor.js`).
+const prefix = Decoration.mark({ class: "cm-hanging-prefix" });
+
 function hangingLines(view) {
     const builder = new RangeSetBuilder();
     const { state } = view;
@@ -51,6 +56,9 @@ function hangingLines(view) {
                 // Une tabulation n'a pas de largeur fixe : la ligne reste telle quelle.
                 if (column && !line.text.slice(0, column).includes("\t")) {
                     builder.add(line.from, line.from, hanging(column));
+                    // `-` seul sur sa ligne : la colonne du texte est après sa fin.
+                    const length = column < line.length ? findClusterBreak(line.text, column) : line.length;
+                    builder.add(line.from, line.from + length, prefix);
                 }
             }
             if (line.to >= to || line.number === state.doc.lines) break;

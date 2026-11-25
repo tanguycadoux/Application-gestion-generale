@@ -2,7 +2,6 @@
 par les tests)."""
 
 from pathlib import Path
-from unittest import expectedFailure
 
 from django.conf import settings
 from django.test import SimpleTestCase
@@ -24,7 +23,6 @@ class HangingIndentTests(SimpleTestCase):
         self.assertIn("itemOf(state, line)", script)
         self.assertIn('from "./lists.js"', script)
 
-    @expectedFailure
     def test_marqueur_jamais_seul_sur_sa_ligne(self):
         """Un premier mot trop long se coupe ; la ligne ne revient pas après le tiret."""
         self.assertIn("cm-hanging-prefix", self.read("hanging.js"))
