@@ -58,8 +58,10 @@ const theme = EditorView.theme({
     ".cm-content": { padding: "0.25rem 0.5rem" },
     // Où une image déposée s'insérera : un trait bleu bien visible.
     ".cm-dropCursor": { borderLeft: "2px solid var(--color-blue-700)" },
-    // Même couleur que les marqueurs connus de l'analyseur (`processingInstruction`).
-    ".cm-pandoc-list-mark": { color: "var(--color-amber-700)" },
+    // Même couleur que les marqueurs connus de l'analyseur (`processingInstruction`), même là
+    // où il voit du code (#417).
+    ".cm-pandoc-list-mark, .cm-pandoc-list-mark span": { color: "var(--color-amber-700)" },
+    ".cm-pandoc-text, .cm-pandoc-text span": { color: "inherit" },
     // Une ligne de tableau ne revient pas à la ligne (#402) : l'éditeur défile
     // horizontalement d'un seul tenant, les colonnes restent alignées.
     ".cm-table-line": { whiteSpace: "pre", overflowWrap: "normal", wordBreak: "normal" },

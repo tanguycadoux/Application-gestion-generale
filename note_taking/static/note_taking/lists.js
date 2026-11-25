@@ -5,7 +5,7 @@
 // Les marqueurs sont ceux de Pandoc (extension `fancy_lists`), comme dans `qmd/lists.py`, dont
 // `parseMarker` est le pendant : `-` `*` `+`, `1.` `1)` `(1)`, `a.` `A)` `(a)`, `i.` `iv)`,
 // `#.`, `(@)`. L'analyseur de @lezer/markdown ne connaît que les puces et `1.` `1)` : pour les
-// autres, la ligne est un élément si Pandoc en ferait un (voir `eligible`).
+// autres, et sous eux, la ligne est un élément si Pandoc en ferait un (voir `scanLists`).
 import { syntaxTree } from "@codemirror/language";
 import { EditorSelection, RangeSetBuilder } from "@codemirror/state";
 import { Decoration, ViewPlugin } from "@codemirror/view";
@@ -15,9 +15,14 @@ const ITEM_LINE = /^(\s*)([-*+]|(?:\d+|[A-Za-z]+|#)[.)]|\((?:\d+|[A-Za-z]+|@[\w-
 // Case à cocher en tête du texte de l'élément : `[ ]`, `[x]`.
 const TASK_BOX = /^\[[ xX]\](?:[ \t]+|$)/;
 const HEADING_LINE = /^#{1,6}(\s|$)/;
+const RULE_LINE = /^\s*([-*])(?:[ \t]*\1){2,}[ \t]*$/;
+const FENCE_LINE = /^\s*(`{3,}|~{3,})([^`]*)$/;
+const DIV_LINE = /^\s*:::/;
+// À 4 espaces au-delà du texte du parent, un marqueur n'ouvre plus d'élément (`qmd/lists.py`).
+const CODE_INDENT = 4;
 // Dans ces blocs, Entrée garde son comportement (une `- ` dans du code n'est pas une liste ;
 // les listes d'une citation ne sont pas continuées).
-const KEEP_DEFAULT = new Set(["FencedCode", "CodeBlock", "Blockquote"]);
+const KEEP_DEFAULT = new Set(["FencedCode", "Blockquote"]);
 
 const ROMAN = /^m{0,4}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})$/;
 const ROMAN_PARTS = [
@@ -121,9 +126,9 @@ function spacingFor(text, spacing) {
 }
 
 /** (retrait, marqueur et espaces) d'une ligne qui a la forme d'un élément, sinon `null`. */
-function rawItem(line) {
-    const match = ITEM_LINE.exec(line.text);
-    if (!match) return null;
+function rawItem(text) {
+    const match = ITEM_LINE.exec(text);
+    if (!match || RULE_LINE.test(text)) return null;
     return {
         indent: match[1].length,
         text: match[2],
@@ -132,69 +137,98 @@ function rawItem(line) {
     };
 }
 
+/** Colonne du texte d'un élément : pendant de `text_column` (`qmd/lists.py`). */
+function textColumn(raw) {
+    const space = raw.spacing.length;
+    return raw.indent + raw.text.length + (space > 0 && space <= CODE_INDENT ? space : 1);
+}
+
+// Par texte de la note (immuable) : il n'est lu qu'une fois pour toutes ses lignes.
+const scans = new WeakMap();
+
 /**
- * Le marqueur d'une ligne, lu avec le contexte de sa liste : les éléments précédents du même
- * retrait, du premier au dernier. Une ligne de texte au même retrait, ou moins, ouvre la liste.
+ * Les lignes de marqueur de la note, lues comme le rendu (pendant de
+ * `PandocListsPreprocessor`, `rendering/lists.py`) : numéro de ligne → élément, avec
+ * - `open` : les éléments ouverts au-dessus, du plus extérieur au plus intérieur ;
+ * - `level` : le nombre de ceux dont la ligne atteint le texte. Le parent est donc
+ *   `open[level - 1]`, l'élément précédent du même niveau `open[level]` ;
+ * - `valid` : Pandoc en ferait un élément ;
+ * - `pandoc` : la liste a un marqueur que l'analyseur ne connaît pas, à cette ligne ou au-dessus.
+ *
+ * Un bloc de code délimité est sauté, un bloc `:::` ferme les listes.
  */
-function markerOf(state, line, raw) {
-    const chain = [];
-    for (let n = line.number - 1; n >= 1; n--) {
-        const above = state.doc.line(n);
-        if (!above.text.trim()) continue;
-        const aboveRaw = rawItem(above);
-        if (aboveRaw && aboveRaw.indent === raw.indent && parseMarker(aboveRaw.text, aboveRaw.spacing)) {
-            chain.push(aboveRaw);
+function scanLists(doc) {
+    if (scans.has(doc)) return scans.get(doc);
+    const found = new Map();
+    let open = [];
+    let fence = null;
+    let blank = true;
+    let afterHeading = false;
+    let number = 0;
+    for (const text of doc.iterLines()) {
+        number += 1;
+        const delimiter = FENCE_LINE.exec(text);
+        if (fence) {
+            if (delimiter?.[1].startsWith(fence) && !delimiter[2].trim()) fence = null;
             continue;
         }
-        if (above.text.length - above.text.trimStart().length > raw.indent) continue;
-        break;
+        const indent = text.length - text.trimStart().length;
+        const div = DIV_LINE.test(text);
+        if (div || (delimiter && indent === 0)) open = [];
+        if (delimiter) fence = delimiter[1];
+        if (div || delimiter || !text.trim()) {
+            blank = true;
+            afterHeading = false;
+            continue;
+        }
+        const heading = HEADING_LINE.test(text);
+        const level = open.filter((item) => indent >= item.column).length;
+        const raw = rawItem(text);
+        const marker = raw && parseMarker(raw.text, raw.spacing, open[level]?.marker);
+        let valid = false;
+        if (marker) {
+            const container = level ? open[level - 1].column : 0;
+            // Les marqueurs de Pandoc ne peuvent pas interrompre un paragraphe.
+            valid =
+                indent < container + CODE_INDENT &&
+                (knownToParser(marker) || blank || afterHeading || open.length > 0);
+            const pandoc = !knownToParser(marker) || open.some((item) => item.pandoc);
+            const item = { ...raw, marker, column: textColumn(raw), level, open, valid, pandoc };
+            found.set(number, item);
+            if (valid) open = [...open.slice(0, level), item];
+        }
+        if (!valid && !level && (blank || heading)) open = [];
+        blank = false;
+        afterHeading = heading;
     }
-    let context = null;
-    for (const above of chain.reverse()) {
-        context = parseMarker(above.text, above.spacing, context) ?? context;
-    }
-    return parseMarker(raw.text, raw.spacing, context);
+    scans.set(doc, found);
+    return found;
 }
 
-/**
- * Pandoc fait d'un marqueur que l'analyseur ne connaît pas (`a.`, `(1)`, `#.`…) un élément de
- * liste après une ligne vide, un titre, un autre élément ou en début de texte : pas collé à un
- * paragraphe.
- */
-function eligible(state, line) {
-    if (line.number === 1) return true;
-    const above = state.doc.line(line.number - 1);
-    if (!above.text.trim() || HEADING_LINE.test(above.text)) return true;
-    const aboveRaw = rawItem(above);
-    if (aboveRaw && parseMarker(aboveRaw.text, aboveRaw.spacing)) return true;
-    return above.text.startsWith(" ");
-}
-
-/**
- * La ligne est-elle un élément de liste (et pas du code, une citation) ? `repair` : accepte
- * aussi un élément devenu un bloc de code par un retrait trop grand (4 espaces de plus que le
- * texte de son parent), que Maj+Tab doit pouvoir remettre.
- */
-function isListItem(state, line, raw, marker, repair) {
+/** Les nœuds de l'arbre au marqueur de la ligne, du plus intérieur au plus extérieur. */
+function nodeNames(state, line, item) {
     const names = [];
-    for (let node = syntaxTree(state).resolveInner(line.from + raw.indent, 1); node; node = node.parent) {
+    for (let node = syntaxTree(state).resolveInner(line.from + item.indent, 1); node; node = node.parent) {
         names.push(node.name);
     }
-    if (repair && names.includes("CodeBlock") && !names.includes("FencedCode") && !names.includes("Blockquote")) {
-        return true;
-    }
-    if (names.some((name) => KEEP_DEFAULT.has(name))) return false;
-    if (knownToParser(marker)) return names[0] === "ListMark";
-    return eligible(state, line);
+    return names;
 }
 
-/** L'élément d'une ligne : retrait, largeur du marqueur, marqueur lu ; sinon `null`. */
+/**
+ * L'élément d'une ligne (voir `scanLists`), `null` si ce n'en est pas un (ou du code, une
+ * citation). L'arbre de l'analyseur décide, sauf pour un marqueur qu'il ne connaît pas et pour
+ * les lignes qui suivent dans la même liste (#417) : pour lui, `A.  ` est du texte et le `-` en dessous
+ * est mal placé. `repair` : accepte aussi un élément devenu un bloc de code par un retrait trop
+ * grand (4 espaces de plus que le texte de son parent), que Maj+Tab doit pouvoir remettre.
+ */
 function itemOf(state, line, repair = false) {
-    const raw = rawItem(line);
-    if (!raw) return null;
-    const marker = markerOf(state, line, raw);
-    if (!marker || !isListItem(state, line, raw, marker, repair)) return null;
-    return { ...raw, marker };
+    const item = scanLists(state.doc).get(line.number);
+    if (!item) return null;
+    const names = nodeNames(state, line, item);
+    if (names.some((name) => KEEP_DEFAULT.has(name))) return null;
+    if (repair && names.includes("CodeBlock")) return item;
+    const valid = item.pandoc ? item.valid : names[0] === "ListMark";
+    return valid ? item : null;
 }
 
 /**
@@ -245,19 +279,14 @@ export function continueList(view) {
 }
 
 /**
- * Rang du marqueur de l'élément déplacé au retrait `indent`, selon sa nouvelle place : 1 s'il
+ * Rang du marqueur de l'élément déplacé au niveau `level`, selon sa nouvelle place : 1 s'il
  * ouvre une liste (Pandoc commence une liste numérotée au numéro de son premier élément, un
  * `2.` imbriqué ferait donc partir la sous-liste à 2 ; `a.` et `i.` de même), sinon le suivant
  * de l'élément précédent du niveau, s'il est du même style.
  */
-function startValue(state, lineNumber, indent, marker) {
-    for (let n = lineNumber - 1; n >= 1; n--) {
-        const above = itemOf(state, state.doc.line(n));
-        if (!above || above.indent > indent) continue;
-        if (above.indent < indent) return 1;
-        return styleOf(above.marker) === styleOf(marker) ? above.marker.value + 1 : 1;
-    }
-    return 1;
+function startValue(target, level) {
+    const above = target.open[level];
+    return above && styleOf(above.marker) === styleOf(target.marker) ? above.marker.value + 1 : 1;
 }
 
 /**
@@ -286,37 +315,28 @@ export function shiftItems(view, direction) {
     const target = valid ?? (direction < 0 ? itemOf(state, first, true) : null);
     if (!target) return false;
 
-    let sibling = null;
-    let parent = null;
-    for (let n = first.number - 1; n >= 1; n--) {
-        const above = itemOf(state, state.doc.line(n));
-        if (!above || above.indent > target.indent) continue;
-        if (above.indent < target.indent) {
-            parent = above;
-            break;
-        }
-        // Indenter : on s'imbrique sous le frère juste au-dessus. Désindenter : les frères
-        // ne comptent pas, on cherche le parent au-delà.
-        sibling ??= above;
-        if (direction > 0) break;
-    }
+    // Indenter : on s'imbrique sous le frère juste au-dessus. Désindenter : on cherche le parent.
+    const sibling = target.open[target.level];
+    const parent = target.open[target.level - 1];
     if (!valid && !parent) return false;
 
     let amount;
+    let level = target.level;
     if (direction > 0) {
         if (!sibling) return true;
-        amount = sibling.width;
+        amount = sibling.column - target.indent;
+        level += 1;
     } else if (parent) {
-        const child = parent.indent + parent.width;
-        amount = target.indent - (target.indent > child ? child : parent.indent);
+        const realign = target.indent > parent.column;
+        amount = target.indent - (realign ? parent.column : parent.indent);
+        if (!realign) level -= 1;
     } else {
         amount = Math.min(2, target.indent);
     }
 
     // Les éléments numérotés du niveau déplacé sont renumérotés à partir de leur nouvelle
     // place ; ceux des sous-niveaux gardent leurs numéros (relatifs à leur propre liste).
-    const moved = direction > 0 ? amount : -Math.min(amount, target.indent);
-    let value = startValue(state, first.number, target.indent + moved, target.marker);
+    let value = startValue(target, level);
 
     const changes = [];
     for (let n = first.number; n <= last.number; n++) {
@@ -359,10 +379,12 @@ export const listKeymap = [
 ];
 
 // Marqueurs que l'analyseur ne connaît pas (#328) : `a.`, `(1)`, `#.`, `iv)`… Pour lui, ces
-// lignes sont des paragraphes ; ils sont colorés comme les `ListMark` (`cm-pandoc-list-mark`,
-// même couleur que les autres marqueurs), d'après la règle de `itemOf`. Coloration seule :
+// lignes sont des paragraphes ; ils sont colorés, et les marqueurs sous eux (#417), comme les
+// `ListMark` (`cm-pandoc-list-mark`, même couleur), d'après la règle de `itemOf` ; un `ListMark`
+// qui n'en est pas un pour elle perd sa couleur (`cm-pandoc-text`). Coloration seule :
 // l'arbre syntaxique ne contient toujours pas ces listes.
 const pandocMark = Decoration.mark({ class: "cm-pandoc-list-mark" });
+const pandocText = Decoration.mark({ class: "cm-pandoc-text" });
 
 function pandocMarks(view) {
     const builder = new RangeSetBuilder();
@@ -370,10 +392,12 @@ function pandocMarks(view) {
     for (const { from, to } of view.visibleRanges) {
         let line = state.doc.lineAt(from);
         while (true) {
-            const item = itemOf(state, line);
-            if (item && !knownToParser(item.marker)) {
+            const item = scanLists(state.doc).get(line.number);
+            if (item?.pandoc) {
                 const start = line.from + item.indent;
-                builder.add(start, start + item.text.length, pandocMark);
+                const end = start + item.text.length;
+                if (itemOf(state, line)) builder.add(start, end, pandocMark);
+                else if (nodeNames(state, line, item)[0] === "ListMark") builder.add(start, end, pandocText);
             }
             if (line.to >= to || line.number === state.doc.lines) break;
             line = state.doc.line(line.number + 1);

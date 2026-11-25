@@ -1,7 +1,6 @@
 """Éditeur de note : CodeMirror embarqué, <textarea> conservé, garde-fous (#89, #228)."""
 
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -164,7 +163,6 @@ class NoteEditorScriptsTests(TestCase):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
 
-    @unittest.expectedFailure
     def test_imbrication_des_listes_d_apres_la_regle_de_pandoc(self):
         """Sous `A.  `, l'arbre de l'analyseur se trompe de niveau (#417) : la coloration,
         Entrée et Tab suivent les éléments ouverts, comme `PandocListsPreprocessor`."""
