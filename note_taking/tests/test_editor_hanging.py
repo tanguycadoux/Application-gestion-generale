@@ -14,7 +14,7 @@ class HangingIndentTests(SimpleTestCase):
         return (STATIC_DIR / name).read_text(encoding="utf-8")
 
     def test_branche_dans_l_editeur(self):
-        self.assertIn("\n                hangingIndent,\n", self.read("editor.js"))
+        self.assertIn("\n            hangingIndent,\n", self.read("editor.js"))
 
     def test_colonne_du_texte_est_celle_des_listes(self):
         """La même que pour l'imbrication (#417), pas une autre lecture des marqueurs."""

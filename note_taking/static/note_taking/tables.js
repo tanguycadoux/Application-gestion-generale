@@ -1,18 +1,14 @@
-// Tableaux de l'éditeur (#401, #402). Les tableaux sont ceux à barres (`| a | b |`, les
+// Tableaux de l'éditeur (#401). Les tableaux sont ceux à barres (`| a | b |`, les
 // « pipe tables » de Pandoc), reconnus par l'extension `Table` de @lezer/markdown : un
 // tableau dans un bloc de code n'en est pas un. Les tableaux en grille (`+---+`) ne sont pas
 // reconnus : « Formater » ne les touche pas.
 //
-// - `formatTable` aligne les colonnes : chaque cellule prend la largeur de la plus large de
-//   sa colonne, comptée en caractères affichés (un « é » décomposé compte pour un, un
-//   caractère chinois ou un emoji pour deux). Un tableau à barres n'a qu'une ligne par
-//   cellule : il n'y a pas de hauteur à égaliser.
-// - `tableLines` : les lignes d'un tableau ne reviennent pas à la ligne (#402). Elles
-//   débordent, et tout l'éditeur défile horizontalement d'un seul tenant : les colonnes
-//   restent alignées. Les paragraphes gardent leur retour à la ligne.
+// `formatTable` aligne les colonnes : chaque cellule prend la largeur de la plus large de sa
+// colonne, comptée en caractères affichés (un « é » décomposé compte pour un, un caractère
+// chinois ou un emoji pour deux). Un tableau à barres n'a qu'une ligne par cellule : il n'y a
+// pas de hauteur à égaliser.
 import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
-import { EditorSelection, RangeSetBuilder } from "@codemirror/state";
-import { Decoration, ViewPlugin } from "@codemirror/view";
+import { EditorSelection } from "@codemirror/state";
 
 const DELIMITER_CELL = /^:?-+:?$/;
 // `: Légende`, ou le `:::` d'un bloc (`TABLE_CAPTION_REGEX`, `rendering/tables.py`).
@@ -262,44 +258,3 @@ export function tableSkeleton(columns, rows) {
     const lines = [row, `|${" --- |".repeat(columns)}`, ...Array(rows).fill(row)];
     return { text: lines.join("\n"), cursor: 2 };
 }
-
-// Lignes d'un tableau : sans retour à la ligne (#402).
-const tableLine = Decoration.line({ class: "cm-table-line" });
-
-function tableDecorations(view) {
-    const builder = new RangeSetBuilder();
-    const { state } = view;
-    // Un tableau à cheval sur deux parties visibles n'est décoré qu'une fois, dans l'ordre.
-    let decorated = 0;
-    for (const { from, to } of view.visibleRanges) {
-        syntaxTree(state).iterate({
-            from,
-            to,
-            enter(node) {
-                if (node.name !== "Table") return;
-                const last = state.doc.lineAt(node.to).number;
-                for (let n = Math.max(state.doc.lineAt(node.from).number, decorated + 1); n <= last; n++) {
-                    builder.add(state.doc.line(n).from, state.doc.line(n).from, tableLine);
-                    decorated = n;
-                }
-                return false;
-            },
-        });
-    }
-    return builder.finish();
-}
-
-export const tableLines = ViewPlugin.fromClass(
-    class {
-        constructor(view) {
-            this.decorations = tableDecorations(view);
-        }
-
-        update(update) {
-            if (update.docChanged || update.viewportChanged || syntaxTree(update.state) !== syntaxTree(update.startState)) {
-                this.decorations = tableDecorations(update.view);
-            }
-        }
-    },
-    { decorations: (plugin) => plugin.decorations },
-);
