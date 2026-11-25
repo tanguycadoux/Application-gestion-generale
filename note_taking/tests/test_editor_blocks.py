@@ -3,7 +3,6 @@ pas exécuté par les tests)."""
 
 import re
 from pathlib import Path
-from unittest import expectedFailure
 
 from django.conf import settings
 from django.test import SimpleTestCase
@@ -17,7 +16,6 @@ class EditorBlocksTests(SimpleTestCase):
     def read(self, name: str) -> str:
         return (STATIC_DIR / name).read_text(encoding="utf-8")
 
-    @expectedFailure
     def test_titres_des_blocs_ecartes_du_plan_et_des_suggestions(self):
         outline = self.read("outline.js")
 
@@ -25,7 +23,6 @@ class EditorBlocksTests(SimpleTestCase):
         # Les suggestions de chemins partent des mêmes titres.
         self.assertIn("readHeadings(context.state)", self.read("suggestions.js"))
 
-    @expectedFailure
     def test_memes_blocs_que_le_rendu(self):
         """Les motifs de `blocks.js` sont ceux du rendu : un bloc ajouté d'un côté sans
         l'autre ferait diverger le plan."""

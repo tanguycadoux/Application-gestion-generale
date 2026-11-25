@@ -1,9 +1,11 @@
 // Plan de la note (#314), comme la vue « Plan » de VS Code : les titres du texte, un
 // clic ou Entrée pour s'y rendre. Les titres viennent de l'arbre de l'analyseur
 // Markdown (pas d'une expression régulière sur le texte) : un `#` dans un bloc de
-// code n'en est pas un.
+// code n'en est pas un. L'analyseur ne connaît pas les blocs `:::` : un titre dans un
+// callout, des colonnes… n'est pas un niveau de la note, et n'y est pas (#423).
 import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
+import { closedBlocks } from "./blocks.js";
 
 const HEADING_NODE = /^(?:ATXHeading|SetextHeading)([1-6])$/;
 // Retrait par niveau (écrit en entier pour que Tailwind trouve les classes).
@@ -15,6 +17,7 @@ const STORAGE_KEY = "note-outline-hidden";
 
 export function readHeadings(state) {
     const tree = ensureSyntaxTree(state, state.doc.length, 100) ?? syntaxTree(state);
+    const blocks = closedBlocks(state.doc);
     const headings = [];
     tree.iterate({
         enter(node) {
@@ -23,6 +26,7 @@ export function readHeadings(state) {
             // Un titre ATX tient sur sa ligne ; un titre souligné (Setext) a son texte
             // sur la première.
             const line = state.doc.lineAt(node.from);
+            if (blocks.some((block) => block.first <= line.number && line.number <= block.last)) return false;
             const text = line.text
                 .replace(/^\s{0,3}#{1,6}\s*/, "")
                 .replace(/\s+#+\s*$/, "")
