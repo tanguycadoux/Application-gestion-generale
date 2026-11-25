@@ -3,7 +3,6 @@ rendu comprend (le JavaScript n'est pas exécuté par les tests, sa source est l
 
 import json
 import re
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -52,27 +51,23 @@ class BlockTemplatesTests(TestCase):
             for skeleton in skeletons()[label]
         ]
 
-    @unittest.expectedFailure
     def test_callout_avec_son_titre_et_son_texte(self):
         for html in self.rendered("Callout"):
             self.assertIn('class="callout callout-note"', html)
             self.assertIn('<span class="callout-title">Titre (optionnel)</span>', html)
             self.assertNotIn(":::", html)
 
-    @unittest.expectedFailure
     def test_formules(self):
         for html in self.rendered("En bloc"):
             self.assertIn('<span class="math display">', html)
         for html in self.rendered("Dans la ligne"):
             self.assertIn('<span class="math inline">\\(x\\)</span>', html)
 
-    @unittest.expectedFailure
     def test_metadonnees_lues_par_l_analyse(self):
         for html in self.rendered("Métadonnées"):
             self.assertIn('<ul class="note-tags', html)
             self.assertNotIn(":::", html)
 
-    @unittest.expectedFailure
     def test_legende_et_renvois_ont_les_memes_identifiants(self):
         for html in self.rendered(
             "Légende de tableau", "|a|\n|-|\n|b|\n\n{}\n\nvoir @tbl-nom"
@@ -82,7 +77,6 @@ class BlockTemplatesTests(TestCase):
         for label, prefix in (("Vers une figure", "fig"), ("Vers un tableau", "tbl")):
             self.assertEqual(skeletons()[label], [f"@{prefix}-«nom»"])
 
-    @unittest.expectedFailure
     def test_mise_en_page_lue_par_le_rendu(self):
         """Squelettes calculés (nombre choisi) : la syntaxe que le rendu reconnaît."""
         source = SCRIPT.read_text(encoding="utf-8")
@@ -96,7 +90,6 @@ class BlockTemplatesTests(TestCase):
 
 
 class BlockMenuTests(TestCase):
-    @unittest.expectedFailure
     def test_chaque_type_de_callout_est_dans_le_menu(self):
         """Types, libellés et icônes viennent du serveur : le script les clone."""
         html = self.client.get(reverse("note_taking:new_note")).content.decode()
@@ -110,7 +103,6 @@ class BlockMenuTests(TestCase):
             list(CALLOUT_ICONS),
         )
 
-    @unittest.expectedFailure
     def test_insertion_en_une_modification(self):
         """Un seul `dispatch` : un Ctrl+Z annule l'insertion."""
         self.assertEqual(SCRIPT.read_text(encoding="utf-8").count("view.dispatch("), 1)

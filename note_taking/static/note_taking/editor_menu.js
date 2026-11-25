@@ -7,15 +7,15 @@
 //   Entrée pour choisir, Échap pour tout fermer (le curseur revient dans l'éditeur).
 // - **Une seule liste** décrit le menu, `entries` : une issue y ajoute ses entrées sans
 //   toucher au reste. Une entrée a `label` et, au choix : `shortcut` (affiché), `when`
-//   (absente si faux), `enabled` (grisée si faux), `run` ou `submenu` (une liste). Un
-//   `separator` sépare deux groupes.
+//   (absente si faux), `enabled` (grisée si faux), `icon` (un `<template>`), `run` ou
+//   `submenu` (une liste). Un `separator` sépare deux groupes. Les blocs du sous-menu
+//   « Insérer » sont dans `block_templates.js` (#420).
 import { startCompletion } from "@codemirror/autocomplete";
 import { EditorSelection } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
-import { findTables, formatTables, tableAt, tableSkeleton } from "./tables.js";
+import { blockEntries } from "./block_templates.js";
+import { findTables, formatTables, tableAt } from "./tables.js";
 
-const MAX_COLUMNS = 20;
-const MAX_ROWS = 50;
 // Le temps d'aller en diagonale de l'entrée à son sous-menu.
 const SUBMENU_DELAY = 250;
 
@@ -23,28 +23,6 @@ const PANEL_CLASS =
     "fixed z-50 min-w-56 rounded-lg border border-slate-200 bg-white py-1 text-sm text-black shadow-lg";
 const ITEM_CLASS =
     "flex w-full items-baseline gap-6 rounded px-3 py-1 text-left whitespace-nowrap hover:bg-slate-100 focus:bg-slate-100 focus:outline-none aria-expanded:bg-slate-100 disabled:text-slate-400 disabled:hover:bg-transparent";
-
-/** Insère `text` en bloc au curseur : sur sa propre ligne, séparé du texte par des lignes vides. */
-function insertBlock(view, text, cursorOffset) {
-    const { state } = view;
-    const line = state.doc.lineAt(state.selection.main.head);
-    const blank = !line.text.trim();
-    const at = blank ? line.from : line.to;
-    const previous = line.number > 1 ? state.doc.line(line.number - 1) : null;
-    const next = line.number < state.doc.lines ? state.doc.line(line.number + 1) : null;
-    let prefix = "";
-    if (!blank) prefix = "\n\n";
-    else if (previous && previous.text.trim()) prefix = "\n";
-    const after = blank ? line : next;
-    const suffix = after && (blank ? next?.text.trim() : after.text.trim()) ? "\n" : "";
-    const insert = `${prefix}${text}${blank ? "" : "\n"}${suffix}`;
-    view.dispatch({
-        changes: { from: at, to: at, insert },
-        selection: EditorSelection.cursor(at + prefix.length + cursorOffset),
-        scrollIntoView: true,
-        userEvent: "input",
-    });
-}
 
 /** Couper ou copier par le navigateur : l'éditeur y met sa sélection, comme Ctrl+X et Ctrl+C. */
 function clipboardCommand(view, command, shortcut) {
@@ -129,7 +107,7 @@ function entries(view, pos, { importImages, images, showForm }) {
                     when: Boolean(importImages),
                     run: () => chooseImages(view, importImages),
                 },
-                { label: "Tableau…", keepOpen: true, run: () => showForm(tableForm) },
+                ...blockEntries(view, showForm),
             ],
         },
         { separator: true },
@@ -172,39 +150,6 @@ function chooseImages(view, importImages) {
         if (input.files.length) importImages(view, [...input.files]);
     });
     input.click();
-}
-
-/** Le choix des colonnes et des lignes d'un tableau à insérer ; `close` ferme le menu. */
-function tableForm(view, close) {
-    const form = document.createElement("form");
-    form.className = "grid grid-cols-[auto_4rem] items-center gap-2 px-3 py-2";
-    form.setAttribute("aria-label", "Insérer un tableau");
-    const field = (name, label, value, max) => {
-        const id = `editor-menu-${name}`;
-        const caption = document.createElement("label");
-        caption.htmlFor = id;
-        caption.textContent = label;
-        const input = document.createElement("input");
-        Object.assign(input, { id, name, type: "number", min: "1", max: String(max), value: String(value), required: true });
-        input.className = "w-16";
-        form.append(caption, input);
-        return input;
-    };
-    const columns = field("columns", "Colonnes", 3, MAX_COLUMNS);
-    const rows = field("rows", "Lignes", 2, MAX_ROWS);
-    const submit = document.createElement("button");
-    submit.type = "submit";
-    submit.className = "col-span-2 rounded-md bg-slate-700 px-3 py-1 text-white";
-    submit.textContent = "Insérer";
-    form.append(submit);
-    form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const count = (input, max) => Math.min(max, Math.max(1, Number.parseInt(input.value, 10) || 1));
-        const skeleton = tableSkeleton(count(columns, MAX_COLUMNS), count(rows, MAX_ROWS));
-        close();
-        insertBlock(view, skeleton.text, skeleton.cursor);
-    });
-    return form;
 }
 
 /** Sans les entrées absentes ni les séparateurs qui ne séparent plus rien. */
@@ -279,6 +224,10 @@ function buildPanel(list, label, choose) {
         const text = document.createElement("span");
         text.className = "flex-1";
         text.textContent = entry.label;
+        if (entry.icon) {
+            text.className = "flex flex-1 items-center gap-2";
+            text.prepend(entry.icon.content.cloneNode(true));
+        }
         item.append(text);
         if (entry.shortcut || entry.submenu) {
             const mark = document.createElement("span");
