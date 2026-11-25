@@ -30,10 +30,10 @@ function tableBlock(columns, rows) {
 }
 
 function columnsBlock(count) {
-    const width = Math.floor(10000 / count) / 100;
+    // Sans `width`, les colonnes se partagent la place.
     const columns = Array.from(
         { length: count },
-        (_, index) => `::: {.column width="${width}%"}\n${index ? "" : "«»"}\n:::`,
+        (_, index) => `::: {.column}\n${index ? "" : "«»"}\n:::`,
     );
     return `::: {.columns}\n${columns.join("\n")}\n:::`;
 }

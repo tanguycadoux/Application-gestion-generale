@@ -83,10 +83,12 @@ class BlockTemplatesTests(TestCase):
 
         for opening in (
             "::: {.columns}",
-            '::: {.column width="${',
+            "::: {.column}",
             "::: {#fig-nom layout-ncol=${",
         ):
             self.assertIn(opening, source)
+        # Les colonnes se partagent la place : pas de largeur à écrire.
+        self.assertNotIn("{.column width", source)
 
 
 class BlockMenuTests(TestCase):
