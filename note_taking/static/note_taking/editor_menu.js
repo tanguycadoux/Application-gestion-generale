@@ -15,6 +15,7 @@ import { EditorSelection } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { blockEntries } from "./block_templates.js";
 import { formattingEntries } from "./formatting.js";
+import { tableBlockAt } from "./table_dialog.js";
 import { tableEntries } from "./table_edit.js";
 import { findTables, formatTables, tableAt } from "./tables.js";
 
@@ -73,10 +74,10 @@ function formatLabel(count, selected) {
 }
 
 /**
- * Le menu, pour un clic à la position `pos`. `importImages` et `images` : voir `editorMenu` ;
- * `showForm` remplace le menu par un formulaire.
+ * Le menu, pour un clic à la position `pos`. `importImages`, `images` et `editTable` : voir
+ * `editorMenu` ; `showForm` remplace le menu par un formulaire.
  */
-function entries(view, pos, { importImages, images, showForm }) {
+function entries(view, pos, { importImages, images, editTable, showForm }) {
     const { state } = view;
     const selected = state.selection.ranges.some((range) => !range.empty);
     const table = tableAt(state, pos);
@@ -118,6 +119,13 @@ function entries(view, pos, { importImages, images, showForm }) {
             label: "Tableau",
             when: Boolean(table),
             submenu: [
+                {
+                    label: "Éditer le tableau…",
+                    when: Boolean(editTable),
+                    enabled: Boolean(table && tableBlockAt(state, pos)),
+                    run: () => editTable(view, pos),
+                },
+                { separator: true },
                 ...tableEntries(view, pos, showForm),
                 {
                     label: "Formater le tableau",
@@ -275,10 +283,10 @@ function buildPanel(list, label, choose) {
 
 /**
  * L'extension du menu. `importImages(view, files)` importe des fichiers image et insère leur
- * référence ; sans elle, ni `images` (suggestions d'images disponibles), l'entrée
- * correspondante n'apparaît pas.
+ * référence ; sans elle, ni `images` (suggestions d'images disponibles), ni
+ * `editTable(view, pos)` (la fenêtre d'un tableau, #436), l'entrée correspondante n'apparaît pas.
  */
-export function editorMenu({ importImages = null, images = false } = {}) {
+export function editorMenu({ importImages = null, images = false, editTable = null } = {}) {
     let menu = null;
     let openedByKeyboard = 0;
 
@@ -342,7 +350,7 @@ export function editorMenu({ importImages = null, images = false } = {}) {
             form.querySelector("input")?.select();
         };
         menu = buildPanel(
-            entries(view, pos, { importImages, images, showForm }),
+            entries(view, pos, { importImages, images, editTable, showForm }),
             "Menu de l'éditeur",
             (entry) => {
                 // Une entrée qui affiche un formulaire garde le menu ouvert.
@@ -356,7 +364,8 @@ export function editorMenu({ importImages = null, images = false } = {}) {
         hint.textContent = "Menu du navigateur : Maj + clic droit";
         menu.append(hint);
         menu.addEventListener("keydown", (event) => keydown(event, view));
-        document.body.append(menu);
+        // Une fenêtre modale cache le reste de la page, et le rend inerte (#436).
+        (view.dom.closest("dialog") ?? document.body).append(menu);
         place(menu, x, y);
         document.addEventListener("pointerdown", outside, true);
         itemsOf(menu)[0]?.focus();

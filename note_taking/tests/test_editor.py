@@ -75,11 +75,11 @@ class NoteEditorPageTests(TestCase):
         self.assertIn("Maj + clic droit : menu du navigateur", help_line)
 
     def test_tableaux_et_menu_branches_dans_l_editeur(self):
-        """#400, #401, #402 : l'analyseur reconnaît les tableaux à barres."""
+        """#400, #401 : l'analyseur reconnaît les tableaux à barres."""
         source = (STATIC_DIR / "editor.js").read_text()
 
         self.assertIn("parser.configure([TaskList, Strikethrough, Table])", source)
-        for name in ("tableLines", "editorMenu(", "pandocListMarks"):
+        for name in ("editorMenu(", "pandocListMarks"):
             self.assertIn(name, source)
 
     def test_aide_de_l_editeur_cachee_sans_javascript(self):

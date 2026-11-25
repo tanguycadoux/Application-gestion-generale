@@ -21,11 +21,11 @@ import { hangingIndent } from "./hanging.js";
 import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
-import { tableLines } from "./tables.js";
+import { openTableDialog } from "./table_dialog.js";
 
 // Sans @codemirror/lang-markdown, qui fait charger l'analyseur HTML : seul l'analyseur
 // Markdown est embarqué. Les cases `- [ ]`, le barré `~~x~~` et les tableaux à barres
-// (#401, #402) sont ceux de Pandoc.
+// (#401) sont ceux de Pandoc.
 const markdown = new Language(
     defineLanguageFacet(),
     parser.configure([TaskList, Strikethrough, Table]),
@@ -66,9 +66,6 @@ const theme = EditorView.theme({
     ".cm-pandoc-text, .cm-pandoc-text span": { color: "inherit" },
     // Le marqueur d'un élément reste avec le début de son texte (#418, hanging.js).
     ".cm-hanging-prefix": { whiteSpace: "pre" },
-    // Une ligne de tableau ne revient pas à la ligne (#402) : l'éditeur défile
-    // horizontalement d'un seul tenant, les colonnes restent alignées.
-    ".cm-table-line": { whiteSpace: "pre", overflowWrap: "normal", wordBreak: "normal" },
 });
 
 // Textes du panneau de recherche (Ctrl+F), en anglais par défaut.
@@ -147,9 +144,11 @@ function mountEditor(textarea) {
         })
         : [];
     let outline;
-    const view = new EditorView({
+    // L'éditeur de la note et celui de la fenêtre d'un tableau (#436) : `own`, les extensions
+    // qu'ils ne partagent pas.
+    const createEditor = (doc, own, editTable = null) => new EditorView({
         state: EditorState.create({
-            doc: textarea.value,
+            doc,
             extensions: [
                 history(),
                 drawSelection(),
@@ -160,32 +159,24 @@ function mountEditor(textarea) {
                 // Parenthèses et guillemets fermés tout seuls (#434).
                 closeBracketPairs,
                 syntaxHighlighting(highlighting),
-                // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
-                pandocListMarks,
-                // La suite d'une ligne longue revient sous son texte (#418).
-                hangingIndent,
-                // Tableaux sans retour à la ligne (#402).
-                tableLines,
+                ...own,
                 // Clic droit : copier, coller, insérer, formater les tableaux (#400, #437).
                 editorMenu({
                     images: Boolean(imagesUrl),
                     importImages: textarea.form.dataset.captureUrl
                         ? (editorView, files) => insertCaptures(editorView, files, textarea.form)
                         : null,
+                    editTable,
                 }),
-                EditorView.lineWrapping,
                 search({ top: true }),
-                // Entrée continue les listes (lists.js) avant de passer à la ligne.
                 // Gras, italique, souligné (#434) : avant Ctrl+I et Ctrl+U de CodeMirror.
                 keymap.of([
                     ...formattingKeymap,
-                    ...listKeymap,
                     ...defaultKeymap,
                     ...historyKeymap,
                     ...searchKeymap,
                 ]),
                 EditorState.phrases.of(phrases),
-                EditorView.contentAttributes.of(attributes),
                 EditorView.domEventHandlers({
                     paste(event, editorView) {
                         const files = imageFiles(event.clipboardData);
@@ -206,13 +197,27 @@ function mountEditor(textarea) {
                     },
                 }),
                 theme,
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged) textarea.value = update.state.doc.toString();
-                    outline?.update(update);
-                }),
             ],
         }),
     });
+    const view = createEditor(
+        textarea.value,
+        [
+            // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
+            pandocListMarks,
+            // La suite d'une ligne longue revient sous son texte (#418).
+            hangingIndent,
+            EditorView.lineWrapping,
+            // Entrée continue les listes (lists.js) avant de passer à la ligne.
+            keymap.of(listKeymap),
+            EditorView.contentAttributes.of(attributes),
+            EditorView.updateListener.of((update) => {
+                if (update.docChanged) textarea.value = update.state.doc.toString();
+                outline?.update(update);
+            }),
+        ],
+        (noteView, pos) => openTableDialog(noteView, pos, createEditor),
+    );
 
     // Conteneur à nous, aux bordures des champs de formulaire (assets/css/source.css) :
     // il prend la place restante du formulaire, l'éditeur défile dedans.
