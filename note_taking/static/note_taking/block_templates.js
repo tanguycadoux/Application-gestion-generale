@@ -13,6 +13,11 @@ import { isolateHistory } from "@codemirror/commands";
 import { EditorSelection } from "@codemirror/state";
 import { tableAt, tableSkeleton } from "./tables.js";
 
+// Les dimensions d'un tableau, à l'insertion et ensuite (`table_edit.js`).
+export const TABLE_FIELDS = [
+    { name: "columns", label: "Colonnes", value: 3, min: 1, max: 20 },
+    { name: "rows", label: "Lignes", value: 2, min: 1, max: 50 },
+];
 // Le rendu ne va pas plus loin (`LAYOUT_GRID_CLASSES`).
 const MAX_LAYOUT = 6;
 const CALLOUT = { label: "Callout", skeleton: "::: {.callout-TYPE}\n## «Titre (optionnel)»\n\n:::", wrap: "::: {.callout-TYPE}\n## «Titre (optionnel)»\n\n¦\n:::" };
@@ -46,10 +51,7 @@ function figureBlock(count) {
 /** Les blocs à insérer ; `callouts` : type, libellé et icône de chaque sorte (du serveur). */
 function blockTemplates(callouts) {
     return [
-        { label: "Tableau…", skeleton: tableBlock, fields: [
-            { name: "columns", label: "Colonnes", value: 3, min: 1, max: 20 },
-            { name: "rows", label: "Lignes", value: 2, min: 1, max: 50 },
-        ] },
+        { label: "Tableau…", skeleton: tableBlock, fields: TABLE_FIELDS },
         { label: CALLOUT.label, blocks: callouts.map(({ type, label, icon }) => ({
             label,
             icon,
@@ -171,13 +173,13 @@ function insertTemplate(view, block, counts) {
     if (block.complete) startCompletion(view);
 }
 
-/** Le choix des nombres d'un bloc (`fields`) ; `close` ferme le menu. */
-function countsForm(block) {
+/** Le choix de nombres (`fields`), rendus à `run` par le bouton `action` ; `close` ferme le menu. */
+export function countsForm({ label: title, fields, action, run }) {
     return (view, close) => {
         const form = document.createElement("form");
         form.className = "grid grid-cols-[auto_4rem] items-center gap-2 px-3 py-2";
-        form.setAttribute("aria-label", `Insérer : ${block.label.replace("…", "")}`);
-        const inputs = block.fields.map(({ name, label, value, min, max }) => {
+        form.setAttribute("aria-label", `${action} : ${title.replace("…", "")}`);
+        const inputs = fields.map(({ name, label, value, min, max }) => {
             const id = `editor-menu-${name}`;
             const caption = document.createElement("label");
             caption.htmlFor = id;
@@ -191,15 +193,15 @@ function countsForm(block) {
         const submit = document.createElement("button");
         submit.type = "submit";
         submit.className = "col-span-2 rounded-md bg-slate-700 px-3 py-1 text-white";
-        submit.textContent = "Insérer";
+        submit.textContent = action;
         form.append(submit);
         form.addEventListener("submit", (event) => {
             event.preventDefault();
-            const counts = block.fields.map(({ min, max }, index) =>
+            const counts = fields.map(({ min, max }, index) =>
                 Math.min(max, Math.max(min, Number.parseInt(inputs[index].value, 10) || min)),
             );
             close();
-            insertTemplate(view, block, counts);
+            run(counts);
         });
         return form;
     };
@@ -221,7 +223,7 @@ export function blockEntries(view, showForm, blocks = blockTemplates(readCallout
     return blocks.map((block) => {
         const { label, icon } = block;
         if (block.blocks) return { label, submenu: blockEntries(view, showForm, block.blocks) };
-        if (block.fields) return { label, keepOpen: true, run: () => showForm(countsForm(block)) };
+        if (block.fields) return { label, keepOpen: true, run: () => showForm(countsForm({ ...block, action: "Insérer", run: (counts) => insertTemplate(view, block, counts) })) };
         // Une formule dans la ligne ne passe pas d'un paragraphe à l'autre.
         const enabled = !(block.inline && block.wrap && BLANK_LINE.test(selected));
         return { label, icon, enabled, run: () => insertTemplate(view, block) };

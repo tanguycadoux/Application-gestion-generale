@@ -19,6 +19,7 @@ Le rendu des notes suit le Markdown de Pandoc, celui de Quarto (voir [`architect
 | Niveau des titres | `#` donne `h1` | `#` donne `h2`, et ainsi de suite | la page a son propre `h1` | | niveaux d'origine |
 | `::: {.metadata}` | bloc ordinaire | pastilles des tags | métadonnées de l'application | | bloc ordinaire |
 | Numéros des tableaux et figures | sur tout le document | repartent de 1 à chaque rendu : la note, ou l'extrait seul | un extrait est rendu sans le reste de la note | #278 | numérotés par Quarto |
+| Liste dont certains éléments seulement sont suivis d'une ligne vide | un seul élément aéré aère toute la liste ; une ligne vide entre deux sous-éléments n'aère que la sous-liste | seuls les éléments voisins de la ligne vide sont aérés, le parent des sous-éléments aussi | règle de Python-Markdown ; écart connu, non traité | #482 | règle de Pandoc |
 | Images d'une figure en colonnes | 1a, 1b | leur légende, sans numéro | écart connu, non traité | #278 | 1a, 1b |
 
 ## Syntaxes non prises en charge
