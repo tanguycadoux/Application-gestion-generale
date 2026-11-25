@@ -30,7 +30,7 @@ Le rendu les laisse **en texte**. Elles restent dans la note et fonctionnent à 
 | `[^1]`, `^[…]` | note de bas de page | texte |
 | `"…"`, `--`, `...` | guillemets, tirets et points de suspension typographiques (`smart`) | tels quels |
 | `Terme` puis `: définition` | liste de définitions | texte |
-| `[texte]{.classe}` | portion de texte avec attributs | texte |
+| `[texte]{…}` | portion de texte avec attributs | texte, sauf `[texte]{.underline}`, souligné (#434) |
 | `\| ligne` | bloc de lignes | texte |
 | `+---+---+` | tableau en grille | texte |
 | `\` en fin de ligne | retour à la ligne | texte (deux espaces en fin de ligne fonctionnent) |

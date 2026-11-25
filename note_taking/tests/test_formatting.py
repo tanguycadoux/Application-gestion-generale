@@ -2,7 +2,6 @@
 
 Le JavaScript n'est pas exécuté par les tests : on vérifie ce qu'il promet."""
 
-import unittest
 from pathlib import Path
 
 from django.conf import settings
@@ -24,13 +23,11 @@ class UnderlineRenderingTests(SimpleTestCase):
     def assertRenders(self, source: str, expected: str) -> None:
         self.assertHTMLEqual(render_markdown(source), expected)
 
-    @unittest.expectedFailure
     def test_souligne(self):
         for source in ("[mot]{.underline}", "[mot]{ .underline }"):
             with self.subTest(source=source):
                 self.assertRenders(source, '<p><span class="underline">mot</span></p>')
 
-    @unittest.expectedFailure
     def test_markdown_dans_le_texte(self):
         self.assertRenders(
             "[**a** `b` [c](https://exemple.fr) [d]]{.underline}",
@@ -38,7 +35,6 @@ class UnderlineRenderingTests(SimpleTestCase):
             '<a href="https://exemple.fr">c</a> [d]</span></p>',
         )
 
-    @unittest.expectedFailure
     def test_dans_du_markdown(self):
         for source, expected in (
             ("**a [b]{.underline}**", f"<p><strong>a {self.B}</strong></p>"),
@@ -51,7 +47,6 @@ class UnderlineRenderingTests(SimpleTestCase):
 
     B = '<span class="underline">b</span>'
 
-    @unittest.expectedFailure
     def test_legende_d_image(self):
         html = render_plain_markdown("![a [b]{.underline}](/i.png){width=50%}")
 
@@ -59,13 +54,11 @@ class UnderlineRenderingTests(SimpleTestCase):
         self.assertIn('alt="a b"', html)
         self.assertIn('style="width: 50%"', html)
 
-    @unittest.expectedFailure
     def test_legende_d_une_image_d_un_autre_site(self):
         source = remote_images_as_links("![a [b]{.underline}](https://x.fr/i.png)")
 
         self.assertIn(f">a {self.B}</a>", render_plain_markdown(source))
 
-    @unittest.expectedFailure
     def test_identifiant_du_titre_sans_la_syntaxe(self):
         html = add_heading_ids(render_plain_markdown("## Le [bilan]{.underline} B"))
 
@@ -107,7 +100,6 @@ class FormattingEditorTests(SimpleTestCase):
     def read(self, name: str) -> str:
         return (STATIC_DIR / name).read_text(encoding="utf-8")
 
-    @unittest.expectedFailure
     def test_branche_avant_les_raccourcis_de_codemirror(self):
         """Ctrl+I et Ctrl+U y font autre chose (`selectParentSyntax`, `undoSelection`)."""
         script = self.read("editor.js")
@@ -117,7 +109,6 @@ class FormattingEditorTests(SimpleTestCase):
             script.index("...formattingKeymap"), script.index("...defaultKeymap")
         )
 
-    @unittest.expectedFailure
     def test_sous_menu_et_raccourcis(self):
         self.assertIn(
             'label: "Mise en forme", submenu: formattingEntries(view)',
@@ -129,18 +120,15 @@ class FormattingEditorTests(SimpleTestCase):
                 self.assertIn(f'shortcut: "Ctrl+{key}"', script)
                 self.assertIn(f'key: "Mod-{key.lower()}"', script)
 
-    @unittest.expectedFailure
     def test_paires(self):
         self.assertIn(
             'const PAIRS = ["(", "[", "{", "\'", \'"\', "`"];',
             self.read("formatting.js"),
         )
 
-    @unittest.expectedFailure
     def test_souligne_ecrit_ce_que_le_rendu_lit(self):
         self.assertIn('"]{.underline}"', self.read("formatting.js"))
 
-    @unittest.expectedFailure
     def test_suggestion_remplace_le_crochet_ajoute(self):
         """Sinon `![` complété laisserait `![](images/x)]`."""
         self.assertIn("closedImageEnd(", self.read("suggestions.js"))

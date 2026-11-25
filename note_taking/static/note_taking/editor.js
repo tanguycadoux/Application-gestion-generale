@@ -16,6 +16,7 @@ import { tags } from "@lezer/highlight";
 import { Strikethrough, Table, TaskList, parser } from "@lezer/markdown";
 import { imageFiles, uploadCapture } from "./capture.js";
 import { editorMenu } from "./editor_menu.js";
+import { closeBracketPairs, formattingKeymap } from "./formatting.js";
 import { hangingIndent } from "./hanging.js";
 import { listKeymap, pandocListMarks } from "./lists.js";
 import { createOutline } from "./outline.js";
@@ -156,6 +157,8 @@ function mountEditor(textarea) {
                 dropCursor(),
                 markdown.extension,
                 suggest,
+                // Parenthèses et guillemets fermés tout seuls (#434).
+                closeBracketPairs,
                 syntaxHighlighting(highlighting),
                 // Marqueurs des listes de Pandoc, inconnus de l'analyseur (#328).
                 pandocListMarks,
@@ -173,7 +176,14 @@ function mountEditor(textarea) {
                 EditorView.lineWrapping,
                 search({ top: true }),
                 // Entrée continue les listes (lists.js) avant de passer à la ligne.
-                keymap.of([...listKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap]),
+                // Gras, italique, souligné (#434) : avant Ctrl+I et Ctrl+U de CodeMirror.
+                keymap.of([
+                    ...formattingKeymap,
+                    ...listKeymap,
+                    ...defaultKeymap,
+                    ...historyKeymap,
+                    ...searchKeymap,
+                ]),
                 EditorState.phrases.of(phrases),
                 EditorView.contentAttributes.of(attributes),
                 EditorView.domEventHandlers({
