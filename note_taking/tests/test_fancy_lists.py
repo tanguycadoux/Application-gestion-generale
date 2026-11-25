@@ -238,6 +238,17 @@ class FancyListRenderingTests(SimpleTestCase):
             }
         )
 
+    def test_puce_alignee_sur_le_texte_de_l_element_a_marqueur_de_pandoc(self):
+        """Référence de la coloration de l'éditeur (#417) : le `-` est sous l'élément
+        dont il atteint le texte, sinon sous `1.`."""
+        for marker, column in (("A.  ", 4), ("a. ", 3), ("a) ", 3), ("i. ", 3)):
+            with self.subTest(marker=marker):
+                nested = f"1. un\n   {marker}deux\n{' ' * (3 + column)}- trois"
+                self.assertIn("<li>deux<ul>", render_markdown(nested))
+                sibling = f"1. un\n   {marker}deux\n{' ' * (2 + column)}- trois"
+                self.assertIn("<li>deux</li>", render_markdown(sibling))
+        self.assertNotIn("<ul>", render_markdown("1. un\n   A. deux\n       - trois"))
+
     def test_liste_lache_et_liste_interrompue(self):
         self.check(
             {

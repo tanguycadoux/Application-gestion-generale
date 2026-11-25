@@ -10,6 +10,7 @@ from django.urls import reverse
 
 from core.codemirror import imported_specifiers, load_packages
 from note_taking.models import Note
+from note_taking.qmd.lists import CODE_INDENT
 
 STATIC_DIR = Path(settings.BASE_DIR) / "note_taking" / "static" / "note_taking"
 
@@ -161,3 +162,14 @@ class NoteEditorScriptsTests(TestCase):
         ):
             with self.subTest(name=name):
                 self.assertIsNone(re.search(r"https?://", self.read(name)))
+
+    def test_imbrication_des_listes_d_apres_la_regle_de_pandoc(self):
+        """Sous `A.  `, l'arbre de l'analyseur se trompe de niveau (#417) : la coloration,
+        Entrée et Tab suivent les éléments ouverts, comme `PandocListsPreprocessor`."""
+        script = self.read("lists.js")
+
+        match = re.search(r"^const CODE_INDENT = (\d+);", script, re.M)
+        assert match is not None
+        self.assertEqual(int(match.group(1)), CODE_INDENT)
+        marks = script[script.index("function pandocMarks(") :]
+        self.assertNotIn("knownToParser", marks)
