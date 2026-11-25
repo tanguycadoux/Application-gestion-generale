@@ -1,7 +1,5 @@
 """Un lien sans texte affiche son adresse, écart voulu à Pandoc (#467)."""
 
-from unittest import expectedFailure
-
 from django.test import TestCase
 
 from note_taking.models import Note
@@ -11,7 +9,6 @@ from note_taking.tests.links import new_tab_link
 
 
 class EmptyLinksTests(TestCase):
-    @expectedFailure
     def test_adresse_affichee_comme_un_lien_automatique(self):
         for text in (
             "[](https://exemple.org/a_b_c)",
@@ -32,20 +29,17 @@ class EmptyLinksTests(TestCase):
             render_note_body("<https://exemple.org>"),
         )
 
-    @expectedFailure
     def test_adresse_echappee(self):
         html = render_note_body("[](https://exemple.org?a=1&b=2)")
 
         self.assertIn(">https://exemple.org?a=1&amp;b=2<", html)
 
-    @expectedFailure
     def test_adresse_electronique_sans_mailto(self):
         self.assertIn(
             new_tab_link("mailto:a@b.fr", "a@b.fr"),
             render_note_body("[](mailto:a@b.fr)"),
         )
 
-    @expectedFailure
     def test_note_existante(self):
         Note.objects.create(date="2026-03-12", body="x")
         for link in ("2026-03-12", "2026-03-12.qmd", "2026-03-12#ancre"):
@@ -54,31 +48,26 @@ class EmptyLinksTests(TestCase):
                     ">Note du jeudi 12 mars 2026<", render_note_body(f"[]({link})")
                 )
 
-    @expectedFailure
     def test_note_absente(self):
         html = render_note_body("[](2026-03-12)")
 
         self.assertIn(">Note du jeudi 12 mars 2026<", html)
         self.assertIn("note-link-missing", html)
 
-    @expectedFailure
     def test_date_impossible(self):
         self.assertIn(">2026-13-45<", render_note_body("[](2026-13-45)"))
 
-    @expectedFailure
     def test_ancre_d_un_titre(self):
         html = render_note_body("[](#mon-titre)\n\n# Mon *titre*", heading_ids=True)
 
         self.assertIn('<a href="#mon-titre">Mon titre</a>', html)
 
-    @expectedFailure
     def test_ancre_absente(self):
         self.assertIn(
             '<a href="#nulle-part">#nulle-part</a>',
             render_note_body("[](#nulle-part)\n\n# Titre", heading_ids=True),
         )
 
-    @expectedFailure
     def test_passage_de_la_recherche(self):
         html = render_passage("# Titre\n\n[](#titre) [](https://exemple.org)", "p-")
 
@@ -91,7 +80,6 @@ class EmptyLinksTests(TestCase):
 
         self.assertIn('id="section"', html)
 
-    @expectedFailure
     def test_titre_affiche_dans_le_plan(self):
         html = render_note_body("# [](https://exemple.org)", heading_ids=True)
 
