@@ -2,6 +2,7 @@
 identifiants des titres d'une note."""
 
 from .blocks import render_markdown
+from .empty_links import fill_empty_links
 from .floats import number_floats
 from .headings import (
     HEADING_TAG_REGEX,
@@ -19,20 +20,25 @@ from .new_tab import open_links_in_new_tab
 from .note_links import resolve_note_links
 
 
+def finish_links(html: str, heading_prefix: str = "") -> str:
+    """Les liens du HTML rendu, une fois les titres identifiés : ce qui s'ajoute à un
+    lien (texte, marque) n'entre pas dans l'identifiant d'un titre."""
+    html = fill_empty_links(html, heading_prefix)
+    return open_links_in_new_tab(resolve_note_links(html))
+
+
 def render_passage(content: str, heading_prefix: str = "") -> str:
     """Rend le texte d'un passage, ou des passages assemblés en un document (#356).
 
     `heading_prefix` : donne aux titres un identifiant qui commence ainsi (#431), sans
     quoi celui d'un titre pourrait être celui d'un autre élément de la page.
     """
-    html = resolve_note_links(
-        number_floats(
-            render_markdown(remote_images_as_links(resolve_image_refs(content)))
-        )
+    html = number_floats(
+        render_markdown(remote_images_as_links(resolve_image_refs(content)))
     )
     if heading_prefix:
         html = add_heading_ids(html, heading_prefix)
-    return open_links_in_new_tab(html)
+    return finish_links(html, heading_prefix)
 
 
 def render_note_body(body: str, heading_ids: bool = False) -> str:
@@ -41,19 +47,18 @@ def render_note_body(body: str, heading_ids: bool = False) -> str:
     Les titres sont décalés d'un niveau (# devient h2) : la page qui l'affiche
     a son propre h1. Les blocs `{.metadata}` s'affichent en pastilles ; les
     tableaux et figures sont numérotés (`number_floats`), les liens vers
-    d'autres notes mènent à leur page (`resolve_note_links`, #206). Avec
+    d'autres notes mènent à leur page (`resolve_note_links`, #206), un lien sans texte
+    affiche son adresse (`fill_empty_links`, #467). Avec
     `heading_ids`, chaque titre reçoit son identifiant (`add_heading_ids`), pour
     qu'un lien mène à sa section (#201). Les liens qui quittent la page s'ouvrent dans
     un nouvel onglet (`open_links_in_new_tab`, #438), en dernier : leur marque n'entre
     pas dans l'identifiant d'un titre.
     """
-    html = resolve_note_links(
-        number_floats(
-            render_markdown(remote_images_as_links(resolve_image_paths(body)))
-        )
+    html = number_floats(
+        render_markdown(remote_images_as_links(resolve_image_paths(body)))
     )
     html = HEADING_TAG_REGEX.sub(shift_heading, html)
-    return open_links_in_new_tab(add_heading_ids(html) if heading_ids else html)
+    return finish_links(add_heading_ids(html) if heading_ids else html)
 
 
 def note_heading_ids(body: str, titles: list[str]) -> list[str]:

@@ -15,6 +15,8 @@ NOTE_LINK_TAG_REGEX = re.compile(
     r'<a\b(?P<before>[^>]*?)\shref="(?P<date>\d{4}-\d{2}-\d{2})(?:\.qmd)?'
     r'(?P<anchor>#[^"]*)?"(?P<after>[^>]*)>'
 )
+# La même adresse, seule.
+NOTE_HREF_REGEX = re.compile(r"(?P<date>\d{4}-\d{2}-\d{2})(?:\.qmd)?(?:#.*)?")
 # Titre et classes écrits, remplacés par ceux d'un lien cassé.
 REPLACED_ATTRS_REGEX = re.compile(r'\s(?:title|class)="[^"]*"')
 

@@ -13,6 +13,7 @@ Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
 - `new_tab` : liens ouverts dans un nouvel onglet (#438) ;
 - `headings` : décalage et identifiants des titres ;
 - `note_links` : liens vers d'autres notes, `AAAA-MM-JJ.qmd` (#206) ;
+- `empty_links` : texte des liens qui n'en ont pas (#467) ;
 - `notes` : assemblage, pour une note (`render_note_body`) et un passage
   (`render_passage`).
 

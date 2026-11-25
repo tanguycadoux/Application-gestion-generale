@@ -119,6 +119,11 @@
     overflow-wrap: break-word;
 }
 
+/* Une longue adresse affichée (#467) n'élargit pas une colonne ; un tableau, lui, défile. */
+.rendered-content a:not(:is(td, th) *) {
+    overflow-wrap: anywhere;
+}
+
 .rendered-content :is(pre, .table-scroll, .katex-display) {
     overflow-x: auto;
 }
