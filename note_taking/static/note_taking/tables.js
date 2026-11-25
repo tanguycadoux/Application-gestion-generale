@@ -15,6 +15,8 @@ import { EditorSelection, RangeSetBuilder } from "@codemirror/state";
 import { Decoration, ViewPlugin } from "@codemirror/view";
 
 const DELIMITER_CELL = /^:?-+:?$/;
+// `: Légende`, ou le `:::` d'un bloc (`TABLE_CAPTION_REGEX`, `rendering/tables.py`).
+const CAPTION = /^\s*(?:[Tt]able)?:/;
 const WIDE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}　-〿！-｠￠-￦]|\p{Extended_Pictographic}/u;
 const segmenter = typeof Intl.Segmenter === "function" ? new Intl.Segmenter() : null;
 
@@ -24,26 +26,64 @@ export function displayWidth(text) {
     return graphemes.reduce((total, grapheme) => total + (WIDE.test(grapheme) ? 2 : 1), 0);
 }
 
-/** Les cellules d'une ligne : coupée aux `|` non échappés, barres du bord retirées. */
-export function splitRow(line) {
-    let text = line.trim();
-    if (text.startsWith("|")) text = text.slice(1);
-    if (text.endsWith("|") && !text.endsWith("\\|")) text = text.slice(0, -1);
-    const cells = [];
-    let current = "";
-    for (let i = 0; i < text.length; i++) {
-        if (text[i] === "\\" && text[i + 1] === "|") {
-            current += "\\|";
-            i++;
-        } else if (text[i] === "|") {
-            cells.push(current.trim());
-            current = "";
-        } else {
-            current += text[i];
-        }
+/**
+ * Les positions des barres qui séparent les cellules de `line`, lues comme le rendu
+ * (`TableProcessor` de Python-Markdown) : ni `\|`, ni une barre dans du code.
+ */
+function barPositions(line) {
+    const bars = [];
+    const ticks = [];
+    for (const { 0: text, 1: escaped, 2: plain, 3: bar, index } of line.matchAll(/\\\\|(\\`+)|(`+)|\\\||(\|)/g)) {
+        if (bar) bars.push(index);
+        // Un accent grave échappé n'ouvre pas de code, mais peut en fermer.
+        else if (escaped) ticks.push({ from: index, to: index + text.length, size: text.length - 1, opens: text.length - 2 });
+        else if (plain) ticks.push({ from: index, to: index + text.length, size: text.length, opens: text.length });
     }
-    cells.push(current.trim());
-    return cells;
+    const code = [];
+    for (let open = 0; open < ticks.length; open++) {
+        const { from, opens } = ticks[open];
+        const close = opens ? ticks.findIndex(({ size }, index) => index > open && size === opens) : -1;
+        if (close < 0) continue;
+        code.push({ from, to: ticks[close].to });
+        open = close;
+    }
+    return bars.filter((bar) => !code.some(({ from, to }) => from <= bar && bar < to));
+}
+
+/**
+ * Où sont les cellules d'une ligne, `{ from, to }` entre deux barres, espaces compris. Sans
+ * barre au bord de l'en-tête (`edges` faux), une barre qui commence une ligne suit une
+ * première cellule vide, comme dans le rendu.
+ */
+export function cellRanges(line, edges = true) {
+    const bars = barPositions(line);
+    let from = line.length - line.trimStart().length;
+    let end = line.trimEnd().length;
+    // Les barres du bord n'ouvrent pas de cellule.
+    if (edges && bars[0] === from) from = bars.shift() + 1;
+    if (bars.length && bars.at(-1) === end - 1) end = bars.pop();
+    const ranges = [];
+    for (const bar of bars) {
+        ranges.push({ from, to: bar });
+        from = bar + 1;
+    }
+    ranges.push({ from, to: Math.max(from, end) });
+    return ranges;
+}
+
+/** Vrai si l'en-tête d'un tableau a une barre à un bord. */
+export function hasEdges(header) {
+    const text = header.trim();
+    const bars = barPositions(text);
+    return bars[0] === 0 || bars.at(-1) === text.length - 1;
+}
+
+/** Le texte des cellules d'un tableau, ligne par ligne. */
+export function splitTable(lines) {
+    const edges = hasEdges(lines[0]);
+    return lines.map((line, index) =>
+        cellRanges(line, edges || index === 1).map(({ from, to }) => line.slice(from, to).trim()),
+    );
 }
 
 function alignmentOf(cell) {
@@ -83,7 +123,7 @@ export function formatTable(text) {
     const lines = text.split("\n");
     if (lines.length < 2) return null;
     const indent = /^\s*/.exec(lines[0])[0];
-    const rows = lines.map(splitRow);
+    const rows = splitTable(lines);
     if (!rows[1].every((cell) => DELIMITER_CELL.test(cell))) return null;
     const alignments = rows[1].map(alignmentOf);
     const columns = Math.max(...rows.map((row) => row.length));
@@ -118,8 +158,23 @@ export function tableAt(state, pos) {
 }
 
 /**
+ * Le numéro de la dernière ligne du tableau qui va de `first` à `last` : l'analyseur en fait
+ * aussi une ligne de la légende, ou du `:::`, collés dessous.
+ */
+function lastRow(state, first, last) {
+    for (let number = first + 2; number <= last; number++) {
+        const { text } = state.doc.line(number);
+        if (!CAPTION.test(text)) continue;
+        // Sans barres au bord, une cellule peut commencer par « : ».
+        const barred = state.doc.line(number - 1).text.trimStart().startsWith("|");
+        if (barred || cellRanges(text).length === 1) return number - 1;
+    }
+    return last;
+}
+
+/**
  * Les tableaux à barres de la note, dans l'ordre : `{ from, to, formatted }`, sans ceux que
- * `formatTable` ne reconnaît pas. Avec `ranges`, seulement ceux que ces sélections touchent,
+ * `formatTable` ne reconnaît pas, ni ceux qui suivent une puce ou un `>` sur leur ligne. Avec `ranges`, seulement ceux que ces sélections touchent,
  * même en partie. L'arbre est celui de toute la note, pas de la partie visible (#437).
  */
 export function findTables(state, ranges = null) {
@@ -128,8 +183,9 @@ export function findTables(state, ranges = null) {
     tree.iterate({
         enter(node) {
             if (node.name !== "Table") return;
-            const from = state.doc.lineAt(node.from).from;
-            const to = state.doc.lineAt(node.to).to;
+            const { from, number, text } = state.doc.lineAt(node.from);
+            const { to } = state.doc.line(lastRow(state, number, state.doc.lineAt(node.to).number));
+            if (text.slice(0, node.from - from).trim()) return false;
             if (!ranges || ranges.some((range) => range.from <= to && range.to >= from)) {
                 const formatted = formatTable(state.doc.sliceString(from, to));
                 if (formatted !== null) found.push({ from, to, formatted });
