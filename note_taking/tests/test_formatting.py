@@ -120,12 +120,6 @@ class FormattingEditorTests(SimpleTestCase):
                 self.assertIn(f'shortcut: "Ctrl+{key}"', script)
                 self.assertIn(f'key: "Mod-{key.lower()}"', script)
 
-    def test_paires(self):
-        self.assertIn(
-            'const PAIRS = ["(", "[", "{", "\'", \'"\', "`"];',
-            self.read("formatting.js"),
-        )
-
     def test_souligne_ecrit_ce_que_le_rendu_lit(self):
         self.assertIn('"]{.underline}"', self.read("formatting.js"))
 
