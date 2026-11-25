@@ -4,12 +4,17 @@ import re
 import xml.etree.ElementTree as etree
 
 import markdown
+from markdown.blockprocessors import HRProcessor, ListIndentProcessor
 
 from ..qmd.lists import LIST_ITEM_REGEX, Marker, parse_marker, text_column
 
 ATX_HEADING_REGEX = re.compile(r"^#{1,6}(\s|$)")
 # Pas d'indentation de Python-Markdown : un niveau de liste, un bloc de code.
 MARKDOWN_INDENT = 4
+# Élément d'un bloc de Python-Markdown, réindenté par `PandocListsPreprocessor`.
+BLOCK_ITEM_REGEX = re.compile(r"^(?P<indent>(?: {4})*)(?:\d+\.|[*+-]) ")
+# Lignes qui terminent une liste pour Python-Markdown : titre, trait horizontal.
+BLOCK_END_REGEX = re.compile(rf"^#|{HRProcessor.RE}")
 
 
 class PandocListsExtension(markdown.Extension):
@@ -33,6 +38,10 @@ class PandocListsExtension(markdown.Extension):
     def extendMarkdown(self, md: markdown.Markdown) -> None:
         # Après fenced_code (25) : un bloc de code délimité est déjà mis de côté.
         md.preprocessors.register(PandocListsPreprocessor(md), "pandoc_lists", 24)
+        # Remplace le processeur de Python-Markdown, à la même priorité.
+        md.parser.blockprocessors.register(
+            DedentedItemsProcessor(md.parser), "indent", 90
+        )
         # Après le traitement du texte en ligne (20), avant la mise en forme (10)
         # et les cases à cocher (-1), qui lisent le début du texte de l'élément.
         md.treeprocessors.register(ListTypeTreeprocessor(md), "list_type", 12)
@@ -161,6 +170,101 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
             after_heading = bool(ATX_HEADING_REGEX.match(line))
 
         return result
+
+
+class DedentedItemsProcessor(ListIndentProcessor):
+    """Découpe un bloc qui commence dans une sous-liste et en sort (#482).
+
+    Python-Markdown place tout un bloc (des lignes sans ligne vide) au niveau de sa
+    première ligne : dans « 1. x / (vide) / - t1 / 2. t4 », `2. t4` était lu dans la
+    sous-liste de `t1`. Chaque élément moins indenté que ceux qui le précèdent est
+    ici ajouté à la liste de son niveau.
+
+    Ajouter une ligne vide devant lui ne suffirait pas : elle aérerait toujours la
+    liste. Pour Pandoc, une ligne vide entre deux sous-éléments n'aère que la
+    sous-liste : l'élément n'est dans un `<p>` que si la liste en a déjà.
+    """
+
+    def run(self, parent: etree.Element, blocks: list[str]) -> None:
+        parts = split_dedented_items(blocks[0])
+        level, sibling = self.get_level(parent, blocks[0])
+        if (
+            len(parts) < 2
+            or level != parts[0][0]
+            or self.parser.state.isstate("list")
+            or parent.tag in self.LIST_TYPES
+        ):
+            super().run(parent, blocks)
+            return
+
+        blocks.pop(0)
+        # Le texte de l'élément parent n'est mis dans un `<p>` que si la ligne vide le
+        # suit : pas si le bloc continue une sous-liste.
+        item = self.lastChild(sibling)
+        child = self.lastChild(item) if item is not None else None
+        text = None
+        if item is not None and child is not None and child.tag in self.LIST_TYPES:
+            text, item.text = item.text, None
+        super().run(parent, [parts[0][1]])
+        if item is not None and text:
+            item.text = text
+
+        for index, (part_level, part) in enumerate(parts[1:], start=1):
+            target = None if part_level is None else self.list_at(parent, part_level)
+            if part_level is None or target is None:
+                # Fin de la liste, ou pas de liste à ce niveau : la suite est lue
+                # comme un autre bloc.
+                blocks.insert(0, "\n".join(text for _, text in parts[index:]))
+                return
+            self.add_items(target, self.looseDetab(part, part_level))
+
+    def list_at(self, parent: etree.Element, level: int) -> etree.Element | None:
+        """Dernière liste de `parent` au niveau donné, si elle est encore ouverte."""
+        found = None
+        for _ in range(level + 1):
+            found = self.lastChild(parent)
+            if found is None or found.tag not in self.LIST_TYPES or not len(found):
+                return None
+            parent = found[-1]
+        return found
+
+    def add_items(self, target: etree.Element, block: str) -> None:
+        loose = any(child.tag == "p" for item in target for child in item)
+        known = len(target)
+        # Avec une liste pour parent, le processeur y ajoute les éléments, sans `<p>`.
+        name = "olist" if target.tag == "ol" else "ulist"
+        self.parser.blockprocessors[name].run(target, [block])
+        for item in target[known:]:
+            if loose and item.text:
+                paragraph = etree.Element("p")
+                paragraph.text, item.text = item.text, ""
+                item.insert(0, paragraph)
+
+
+def split_dedented_items(block: str) -> list[tuple[int | None, str]]:
+    """Découpe un bloc avant chaque élément moins indenté que les précédents.
+
+    Renvoie chaque partie avec le niveau de son premier élément. Un titre ou un trait
+    horizontal termine la liste : la dernière partie, sans niveau, commence là. Le bloc
+    entier, sans niveau, s'il ne commence pas par un élément.
+    """
+    lines = block.split("\n")
+    first = BLOCK_ITEM_REGEX.match(lines[0])
+    if not first:
+        return [(None, block)]
+    level = len(first["indent"]) // MARKDOWN_INDENT
+    parts: list[tuple[int | None, str]] = []
+    start = 0
+    for index, line in enumerate(lines):
+        item = BLOCK_ITEM_REGEX.match(line)
+        if BLOCK_END_REGEX.match(line):
+            parts.append((level, "\n".join(lines[start:index])))
+            return [*parts, (None, "\n".join(lines[index:]))]
+        item_level = len(item["indent"]) // MARKDOWN_INDENT if item else level
+        if item_level < level:
+            parts.append((level, "\n".join(lines[start:index])))
+            start, level = index, item_level
+    return [*parts, (level, "\n".join(lines[start:]))]
 
 
 def escape_list_marker(item: re.Match[str], line: str) -> str:

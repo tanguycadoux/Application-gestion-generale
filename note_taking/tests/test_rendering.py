@@ -1,7 +1,5 @@
 """Tests du rendu HTML des notes : passages et vue Markdown complète."""
 
-import unittest
-
 from django.contrib.staticfiles import finders
 from django.templatetags.static import static
 from django.test import SimpleTestCase, TestCase
@@ -287,7 +285,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             with self.subTest(text=text):
                 self.assertHTMLEqual(render_markdown(text), expected)
 
-    @unittest.expectedFailure
     def test_puce_sous_un_numero(self):
         self.check(
             {
@@ -301,7 +298,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_puce_sous_une_puce_revient_a_son_niveau(self):
         self.check(
             {
@@ -315,7 +311,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_marqueurs_de_pandoc(self):
         for marker in ("a. ", "A.  ", "(1) ", "i) ", "#. "):
             indent = " " * len(marker)
@@ -332,7 +327,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
                     html,
                 )
 
-    @unittest.expectedFailure
     def test_sous_liste_a_marqueur_de_pandoc(self):
         for marker in ("a. ", "A.  ", "(1) "):
             with self.subTest(marker=marker):
@@ -342,7 +336,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
                 self.assertInHTML("<li><p>t4</p></li>", html)
                 self.assertEqual(html.count("</ol>"), 2)
 
-    @unittest.expectedFailure
     def test_deux_niveaux(self):
         self.check(
             {
@@ -367,7 +360,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_ligne_vide_entre_deux_sous_elements(self):
         self.check(
             {
@@ -378,7 +370,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_changement_de_type_de_sous_liste(self):
         self.check(
             {
@@ -389,7 +380,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_suite_des_elements(self):
         self.check(
             {
@@ -405,7 +395,6 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
     def test_cases(self):
         self.check(
             {
@@ -419,14 +408,17 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
             }
         )
 
-    @unittest.expectedFailure
-    def test_titre_apres_la_sous_liste(self):
+    def test_titre_ou_trait_apres_la_sous_liste(self):
         self.check(
             {
+                "1. x\n\n   - t1\n2. t4\n***\nfin": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li><li><p>t4</p></li></ol>"
+                    "<hr><p>fin</p>"
+                ),
                 "1. x\n\n   - t1\n# Titre\n- k": (
                     "<ol><li><p>x</p><ul><li>t1</li></ul></li></ol><h1>Titre</h1>"
                     "<ul><li>k</li></ul>"
-                )
+                ),
             }
         )
 
