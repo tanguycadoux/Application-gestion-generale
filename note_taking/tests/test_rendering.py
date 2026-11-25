@@ -271,6 +271,182 @@ class SubListRenderingTests(SimpleTestCase):
         self.assertNotIn("<li>", html)
 
 
+class ItemAfterSubListRenderingTests(SimpleTestCase):
+    """Sous-liste précédée d'une ligne vide, puis élément d'un niveau supérieur sans
+    ligne vide (#482).
+
+    Une liste est aérée (`<p>`) si une ligne vide suit le texte d'un de ses éléments ;
+    une ligne vide dans une sous-liste n'aère que la sous-liste. Résultats attendus
+    d'après le manuel et les sources de Pandoc (`compactify`), sans Pandoc sur la machine.
+    """
+
+    def check(self, cases: dict[str, str]):
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertHTMLEqual(render_markdown(text), expected)
+
+    def test_puce_sous_un_numero(self):
+        self.check(
+            {
+                "1. x\n\n   - t1\n2. t4": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li><li><p>t4</p></li></ol>"
+                ),
+                "1. x\n\n   - t1\n   - t2\n2. t4\n3. t5": (
+                    "<ol><li><p>x</p><ul><li>t1</li><li>t2</li></ul></li>"
+                    "<li><p>t4</p></li><li><p>t5</p></li></ol>"
+                ),
+            }
+        )
+
+    def test_puce_sous_une_puce_revient_a_son_niveau(self):
+        self.check(
+            {
+                "- x\n\n  - a\n- d": (
+                    "<ul><li><p>x</p><ul><li>a</li></ul></li><li><p>d</p></li></ul>"
+                ),
+                "- x\n\n  - a\n- d\n  - e\n- f": (
+                    "<ul><li><p>x</p><ul><li>a</li></ul></li>"
+                    "<li><p>d</p><ul><li>e</li></ul></li><li><p>f</p></li></ul>"
+                ),
+            }
+        )
+
+    def test_marqueurs_de_pandoc(self):
+        for marker in ("a. ", "A.  ", "(1) ", "i) ", "#. "):
+            indent = " " * len(marker)
+            with self.subTest(marker=marker):
+                html = render_markdown(
+                    f"{marker}x\n\n{indent}- t1\n{marker}t4\n{indent}- t5\n{marker}t6"
+                )
+
+                self.assertEqual(html.count("<ol"), 1)
+                self.assertInHTML(
+                    "<li><p>x</p><ul><li>t1</li></ul></li>"
+                    "<li><p>t4</p><ul><li>t5</li></ul></li>"
+                    "<li><p>t6</p></li>",
+                    html,
+                )
+
+    def test_sous_liste_a_marqueur_de_pandoc(self):
+        for marker in ("a. ", "A.  ", "(1) "):
+            with self.subTest(marker=marker):
+                html = render_markdown(f"1. x\n\n   {marker}t1\n2. t4")
+
+                self.assertInHTML("<li>t1</li>", html)
+                self.assertInHTML("<li><p>t4</p></li>", html)
+                self.assertEqual(html.count("</ol>"), 2)
+
+    def test_deux_niveaux(self):
+        self.check(
+            {
+                # La ligne vide aère les sous-éléments, pas la liste du dessus.
+                "1. x\n   - a\n\n     - b\n   - c\n2. d": (
+                    "<ol><li>x<ul><li><p>a</p><ul><li>b</li></ul></li>"
+                    "<li><p>c</p></li></ul></li><li>d</li></ol>"
+                ),
+                # Retour de deux niveaux d'un coup.
+                "1. x\n   - a\n\n     - b\n2. d": (
+                    "<ol><li>x<ul><li><p>a</p><ul><li>b</li></ul></li></ul></li>"
+                    "<li>d</li></ol>"
+                ),
+                "1. x\n\n   - a\n\n     - b\n   - c\n2. d": (
+                    "<ol><li><p>x</p><ul><li><p>a</p><ul><li>b</li></ul></li>"
+                    "<li><p>c</p></li></ul></li><li><p>d</p></li></ol>"
+                ),
+                "- x\n\n  - a\n    - b\n  - c\n- d": (
+                    "<ul><li><p>x</p><ul><li>a<ul><li>b</li></ul></li><li>c</li></ul>"
+                    "</li><li><p>d</p></li></ul>"
+                ),
+            }
+        )
+
+    def test_ligne_vide_entre_deux_sous_elements(self):
+        self.check(
+            {
+                "- x\n  - a\n\n  - c\n- d": (
+                    "<ul><li>x<ul><li><p>a</p></li><li><p>c</p></li></ul></li>"
+                    "<li>d</li></ul>"
+                )
+            }
+        )
+
+    def test_changement_de_type_de_sous_liste(self):
+        self.check(
+            {
+                "- x\n  - a\n  1. b\n- d": (
+                    "<ul><li>x<ul><li>a</li></ul><ol><li>b</li></ol></li>"
+                    "<li>d</li></ul>"
+                )
+            }
+        )
+
+    def test_suite_des_elements(self):
+        self.check(
+            {
+                "1. x\n\n   - t1\n     suite\n2. t4\n   suite\n\n   fin": (
+                    "<ol><li><p>x</p><ul><li>t1 suite</li></ul></li>"
+                    "<li><p>t4 suite</p><p>fin</p></li></ol>"
+                ),
+                "1. x\n\n   - t1\n2. t4\n\n   - t5\n3. t6\n\nfin": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li>"
+                    "<li><p>t4</p><ul><li>t5</li></ul></li><li><p>t6</p></li></ol>"
+                    "<p>fin</p>"
+                ),
+            }
+        )
+
+    def test_cases(self):
+        self.check(
+            {
+                "- [ ] x\n\n  - [x] a\n- [ ] d": (
+                    '<ul class="task-list"><li><p><label><input type="checkbox" '
+                    'disabled>x</label></p><ul class="task-list"><li><label><input '
+                    'type="checkbox" checked disabled>a</label></li></ul></li>'
+                    '<li><p><label><input type="checkbox" disabled>d</label></p></li>'
+                    "</ul>"
+                )
+            }
+        )
+
+    def test_titre_ou_trait_apres_la_sous_liste(self):
+        self.check(
+            {
+                "1. x\n\n   - t1\n2. t4\n***\nfin": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li><li><p>t4</p></li></ol>"
+                    "<hr><p>fin</p>"
+                ),
+                "1. x\n\n   - t1\n# Titre\n- k": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li></ol><h1>Titre</h1>"
+                    "<ul><li>k</li></ul>"
+                ),
+            }
+        )
+
+    def test_avec_une_ligne_vide(self):
+        self.check(
+            {
+                "1. x\n\n   - t1\n\n2. t4": (
+                    "<ol><li><p>x</p><ul><li>t1</li></ul></li><li><p>t4</p></li></ol>"
+                )
+            }
+        )
+
+    def test_marqueur_dans_du_code_indente(self):
+        html = render_markdown("- x\n\n  - a\n\n        - z\n- d")
+
+        self.assertInHTML("<pre><code>- z\n</code></pre>", html)
+        self.assertInHTML("<li><p>d</p></li>", html)
+
+    def test_autres_lignes_moins_indentees_restent_la_suite_du_texte(self):
+        self.check(
+            {
+                "1. x\n\n   - t1\nparesseuse": (
+                    "<ol><li><p>x</p><ul><li>t1 paresseuse</li></ul></li></ol>"
+                )
+            }
+        )
+
+
 class TaskListRenderingTests(SimpleTestCase):
     """Cases à cocher « - [ ] » et « - [x] » comme dans Quarto (#231).
 
