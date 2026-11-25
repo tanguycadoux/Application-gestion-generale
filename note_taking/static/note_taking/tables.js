@@ -10,7 +10,7 @@
 // - `tableLines` : les lignes d'un tableau ne reviennent pas à la ligne (#402). Elles
 //   débordent, et tout l'éditeur défile horizontalement d'un seul tenant : les colonnes
 //   restent alignées. Les paragraphes gardent leur retour à la ligne.
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { EditorSelection, RangeSetBuilder } from "@codemirror/state";
 import { Decoration, ViewPlugin } from "@codemirror/view";
 
@@ -117,50 +117,84 @@ export function tableAt(state, pos) {
     return null;
 }
 
-/** Rang de la cellule du curseur dans sa ligne : les `|` non échappés avant lui. */
-function cellIndex(lineText, column) {
-    const before = lineText.slice(0, column).trimStart();
-    const pipes = (before.match(/(?<!\\)\|/g) ?? []).length;
-    return before.startsWith("|") ? Math.max(0, pipes - 1) : pipes;
-}
-
-/** Position du début du texte de la cellule `index` d'une ligne formatée. */
-function cellStart(lineText, index) {
-    let seen = -1;
-    for (let i = 0; i < lineText.length; i++) {
-        if (lineText[i] === "|" && lineText[i - 1] !== "\\") {
-            seen++;
-            if (seen === index) return Math.min(i + 2, lineText.length);
-        }
-    }
-    return lineText.length;
+/**
+ * Les tableaux à barres de la note, dans l'ordre : `{ from, to, formatted }`, sans ceux que
+ * `formatTable` ne reconnaît pas. Avec `ranges`, seulement ceux que ces sélections touchent,
+ * même en partie. L'arbre est celui de toute la note, pas de la partie visible (#437).
+ */
+export function findTables(state, ranges = null) {
+    const tree = ensureSyntaxTree(state, state.doc.length, 2000) ?? syntaxTree(state);
+    const found = [];
+    tree.iterate({
+        enter(node) {
+            if (node.name !== "Table") return;
+            const from = state.doc.lineAt(node.from).from;
+            const to = state.doc.lineAt(node.to).to;
+            if (!ranges || ranges.some((range) => range.from <= to && range.to >= from)) {
+                const formatted = formatTable(state.doc.sliceString(from, to));
+                if (formatted !== null) found.push({ from, to, formatted });
+            }
+            return false;
+        },
+    });
+    return found;
 }
 
 /**
- * Commande « Formater » (#401) : aligne le tableau du curseur, en une seule modification
- * (un Ctrl+Z l'annule), le curseur au début de sa cellule. `false` hors d'un tableau.
+ * Les modifications qui font de la ligne `before` (à la position `from`) la ligne `after`,
+ * où seuls des espaces et des barres diffèrent : le texte des cellules n'est pas touché,
+ * un curseur qui s'y trouve y reste.
  */
-export function formatTableAtCursor(view) {
+function rowChanges(before, after, from) {
+    const changes = [];
+    let i = 0;
+    let j = 0;
+    while (i < before.length || j < after.length) {
+        if (i < before.length && before[i] === after[j]) {
+            i++;
+            j++;
+        } else if (j < after.length && (after[j] === " " || !/\s/.test(before[i] ?? ""))) {
+            changes.push({ from: from + i, insert: after[j++] });
+        } else {
+            changes.push({ from: from + i, to: from + i + 1 });
+            i++;
+        }
+    }
+    return changes;
+}
+
+function tableChanges(state, { from, to, formatted }) {
+    return formatted.split("\n").flatMap((after, row) => {
+        const line = state.doc.line(state.doc.lineAt(from).number + row);
+        // La ligne de séparation n'a pas de texte à garder.
+        if (row === 1) return line.text === after ? [] : [{ from: line.from, to: line.to, insert: after }];
+        return rowChanges(line.text, after, line.from);
+    });
+}
+
+/**
+ * Aligne ces tableaux (`findTables`) en une seule modification : un Ctrl+Z annule le tout.
+ * Le curseur et la sélection restent à leur place dans le texte.
+ */
+export function formatTables(view, tables) {
     const { state } = view;
-    const head = state.selection.main.head;
-    const table = tableAt(state, head);
-    if (!table) return false;
-    const text = state.doc.sliceString(table.from, table.to);
-    const formatted = formatTable(text);
-    if (formatted === null) return false;
-    if (formatted === text) return true;
-    const line = state.doc.lineAt(head);
-    const row = line.number - state.doc.lineAt(table.from).number;
-    const cell = cellIndex(line.text, head - line.from);
-    const lines = formatted.split("\n");
-    const offset = lines.slice(0, row).reduce((total, text) => total + text.length + 1, 0);
+    const changes = state.changes(tables.flatMap((table) => tableChanges(state, table)));
+    if (changes.empty) return;
+    const move = (pos) => {
+        // Au début du texte d'une cellule : y rester quand des espaces s'ajoutent devant.
+        const before = state.doc.sliceString(Math.max(0, pos - 1), pos);
+        const after = state.doc.sliceString(pos, pos + 1);
+        return changes.mapPos(pos, /^[\s|]$/.test(before) && /^[^\s|]$/.test(after) ? 1 : -1);
+    };
+    const { ranges, mainIndex } = state.selection;
     view.dispatch({
-        changes: { from: table.from, to: table.to, insert: formatted },
-        selection: EditorSelection.cursor(table.from + offset + cellStart(lines[row], cell)),
-        scrollIntoView: true,
+        changes,
+        selection: EditorSelection.create(
+            ranges.map((range) => EditorSelection.range(move(range.anchor), move(range.head))),
+            mainIndex,
+        ),
         userEvent: "input.format",
     });
-    return true;
 }
 
 /**

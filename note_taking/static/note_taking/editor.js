@@ -156,7 +156,7 @@ function mountEditor(textarea) {
                 pandocListMarks,
                 // Tableaux sans retour à la ligne (#402).
                 tableLines,
-                // Clic droit : insérer une image, un tableau ; formater un tableau (#400, #401).
+                // Clic droit : copier, coller, insérer, formater les tableaux (#400, #437).
                 editorMenu({
                     images: Boolean(imagesUrl),
                     importImages: textarea.form.dataset.captureUrl
