@@ -319,7 +319,7 @@ def capture(
     note = Note.objects.filter(date=today).first() or Note(date=today)
     known = known_warnings(note)
     note.body = add_to_body(note.body, text, key, is_task, new_title)
-    note.save()
+    note.save(source=Note.Source.CAPTURE)
     process_passages(note)
     note.warnings = tuple(
         warning

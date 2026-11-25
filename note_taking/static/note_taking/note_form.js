@@ -11,7 +11,8 @@
 //
 // Version ouverte (#386) : le formulaire dit quelle version de la note il a ouverte.
 // Si elle a changé depuis, rien n'est enregistré (409) : le texte saisi reste, et un
-// encadré propose de voir la version enregistrée ou de la remplacer.
+// encadré propose de voir la version enregistrée ou de la remplacer. Il dit ce qui a
+// modifié la note, et quand (#468, en-tête X-Note-Conflict).
 (() => {
     const form = document.getElementById("note-form");
     if (!form) return;
@@ -38,8 +39,12 @@
         form.hasAttribute("data-save-in-place") &&
         (!form.elements.date || form.elements.date.value === saved[1]);
 
-    function showConflict(version) {
+    function showConflict(version, reason) {
         overwriteButton.value = version;
+        if (reason) {
+            conflict.querySelector("[data-conflict-reason]").textContent =
+                decodeURIComponent(reason);
+        }
         conflict.hidden = false;
         conflict.scrollIntoView({ block: "nearest" });
     }
@@ -72,7 +77,9 @@
                     "La note n'est pas enregistrée : le serveur a rencontré une erreur.",
                 );
             }
-            if (response.status === 409) showConflict(version);
+            if (response.status === 409) {
+                showConflict(version, response.headers.get("X-Note-Conflict"));
+            }
             if (response.ok) {
                 keepVersion(version);
                 // Sans la nouvelle version (page et serveur dépareillés après une mise

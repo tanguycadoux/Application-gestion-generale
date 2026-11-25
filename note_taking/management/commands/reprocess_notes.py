@@ -27,7 +27,9 @@ class Command(BaseCommand):
         errors = 0
 
         with transaction.atomic():
-            for note in Note.objects.order_by("date"):
+            # Les seuls champs lus : la migration `0042_passages` lance cette commande
+            # sur une table qui n'a pas encore les suivants (`updated_by`, #468).
+            for note in Note.objects.only("date", "body").order_by("date"):
                 try:
                     # Une note en erreur est annulée sans bloquer les autres.
                     with transaction.atomic():

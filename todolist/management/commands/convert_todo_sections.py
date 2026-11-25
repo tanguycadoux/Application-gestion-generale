@@ -183,7 +183,7 @@ class Command(BaseCommand):
                 existing_tasks(move).update(note_path=move.new_path)
             for note, found in concerned:
                 note.body = found.body
-                note.save()
+                note.save(source=Note.Source.COMMAND)
             try:
                 for note in [note for note, _ in concerned] + boxed:
                     process_passages(note)

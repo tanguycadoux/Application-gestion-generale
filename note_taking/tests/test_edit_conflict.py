@@ -4,7 +4,6 @@ saisi (#386)."""
 import datetime
 import logging
 import re
-from unittest import expectedFailure
 from urllib.parse import unquote
 
 from django.test import TestCase
@@ -171,8 +170,10 @@ class ConflictReasonTests(TestCase):
     def time(self, value) -> str:
         return timezone.localtime(value).strftime("%H:%M")
 
-    @expectedFailure
     def test_encadre_nomme_la_capture(self):
+        Note.objects.update(updated=timezone.now() - datetime.timedelta(minutes=7))
+        self.opened = Note.objects.get().updated.isoformat()
+        opened = Note.objects.get().updated
         capture("ligne")
         updated = Note.objects.get().updated
 
@@ -181,10 +182,19 @@ class ConflictReasonTests(TestCase):
         self.assertIn(
             f"La note a été modifiée à {self.time(updated)} par la capture rapide", html
         )
-        self.assertIn(f"la version de {self.time(self.note.updated)}", html)
+        self.assertIn(self.time(opened), html)
         self.assertNotIn("autre onglet…", html)
 
-    @expectedFailure
+    def test_meme_minute_avec_les_secondes(self):
+        opened = Note.objects.get().updated
+        Note.objects.update(
+            updated=opened + datetime.timedelta(microseconds=1), updated_by="capture"
+        )
+
+        html = self.save().content.decode()
+
+        self.assertIn(f"modifiée à {timezone.localtime(opened):%H:%M:%S} par", html)
+
     def test_sur_place_la_raison_est_dans_l_en_tete(self):
         capture("ligne")
 
@@ -193,7 +203,6 @@ class ConflictReasonTests(TestCase):
         reason = unquote(response.headers["X-Note-Conflict"])
         self.assertIn("par la capture rapide", reason)
 
-    @expectedFailure
     def test_autre_jour_avec_sa_date(self):
         Note.objects.update(
             updated=timezone.now() - datetime.timedelta(days=40), updated_by="editor"
@@ -203,7 +212,6 @@ class ConflictReasonTests(TestCase):
 
         self.assertIn("5 mars 2020", html)
 
-    @expectedFailure
     def test_source_inconnue_dite_telle_quelle(self):
         self.note.save()
 
@@ -211,21 +219,18 @@ class ConflictReasonTests(TestCase):
 
         self.assertIn("sans que l&#x27;application sache par quoi", html)
 
-    @expectedFailure
     def test_version_sans_modification_connue(self):
         """Version plus récente que celle de la base : aucune écriture ne l'explique."""
         html = self.save(version="2999-01-01T00:00:00+00:00").content.decode()
 
         self.assertIn("aucune modification connue", html)
 
-    @expectedFailure
     def test_version_illisible(self):
         response = self.save(version="n'importe quoi")
 
         self.assertEqual(response.status_code, 409)
         self.assertIn("aucune modification connue", response.content.decode())
 
-    @expectedFailure
     def test_log(self):
         capture("ligne")
 
@@ -243,7 +248,6 @@ class ConflictReasonTests(TestCase):
 class EditorCacheTests(TestCase):
     """Revenir à l'éditeur par Précédent redemande la page, texte et version à jour."""
 
-    @expectedFailure
     def test_editeur_jamais_repris_du_cache(self):
         Note.objects.create(date="2025-11-24", body="x")
         for url in (

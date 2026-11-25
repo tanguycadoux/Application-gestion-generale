@@ -21,7 +21,7 @@ python manage.py tailwind runserver
 
 L'application est ensuite accessible sur <http://127.0.0.1:8000/>.
 
-`tailwind runserver` lance le serveur Django et reconstruit la feuille de style Tailwind à chaque modification d'un gabarit ou d'un script. Au premier lancement, il télécharge le CLI de Tailwind (environ 110 Mo, sans Node) dans `.django_tailwind_cli/` : c'est une étape d'installation, l'application elle-même ne fait aucune requête vers l'extérieur. La feuille compilée (`static/css/tailwind.css`) n'est pas versionnée ; pour la construire une seule fois, sans serveur : `python manage.py tailwind build`.
+`tailwind runserver` lance le serveur Django et reconstruit la feuille de style Tailwind à chaque modification d'un gabarit ou d'un script. Les erreurs et chaque modification d'une note (sans son texte) sont aussi écrites dans `logs/app.log`, ou dans le dossier de la variable d'environnement `APP_GESTION_LOG_DIR` (#468). Au premier lancement, il télécharge le CLI de Tailwind (environ 110 Mo, sans Node) dans `.django_tailwind_cli/` : c'est une étape d'installation, l'application elle-même ne fait aucune requête vers l'extérieur. La feuille compilée (`static/css/tailwind.css`) n'est pas versionnée ; pour la construire une seule fois, sans serveur : `python manage.py tailwind build`.
 
 ### Dépendances
 
