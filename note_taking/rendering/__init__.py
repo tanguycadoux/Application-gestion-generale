@@ -5,6 +5,8 @@ Les sous-modules, du plus simple au plus composé (aucun n'importe un suivant) :
 - `sanitize` : filtrage du HTML (nh3) et retouches du HTML filtré ;
 - `lists`, `tables`, `inline`, `figures` : extensions Python-Markdown fidèles à
   Pandoc ;
+- `file_paths` : liens vers un fichier local ou réseau, bouton « Copier le chemin »
+  (#496) ;
 - `markdown` : Markdown filtré, sans les blocs Quarto (`render_plain_markdown`) ;
 - `images` : références, chemins et URL externes des images ;
 - `divs`, `blocks` : blocs Quarto `:::` (callouts, colonnes, métadonnées),

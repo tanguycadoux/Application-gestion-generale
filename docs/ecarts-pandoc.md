@@ -12,6 +12,7 @@ Le rendu des notes suit le Markdown de Pandoc, celui de Quarto (voir [`architect
 |---|---|---|---|---|---|
 | `[](https://…)`, lien sans texte | lien vide : rien ne s'affiche | l'adresse, comme `<https://…>` ; « Note du … » pour une note ; le titre visé, sinon l'ancre, pour `[](#ancre)` | un lien vide est presque toujours un oubli, et l'adresse serait perdue à la lecture | #467 | lien vide |
 | `[texte](https://…)` | même onglet par défaut (`link-external-newwindow: false`) | nouvel onglet, et une flèche ↗ | ne pas quitter la note | #438 | même onglet |
+| `[texte](C:\…)`, `[texte](\\serveur\…)`, `[texte](file:///…)`, lien vers un fichier | lien vers le fichier (`C:\…` lu comme une adresse relative, `\\` comme une barre échappée) | le texte, suivi d'un bouton « Copier le chemin » (chemin Windows, `file:` retiré et `%20` décodés) ; sans texte, le nom du fichier ; à l'impression, le chemin entre parenthèses | un navigateur n'ouvre pas un fichier depuis une page ; le chemin se colle dans l'Explorateur | #496 | lien vers le fichier |
 | `[texte](AAAA-MM-JJ)` | lien relatif ordinaire | page de la note ; lien rouge vers sa création si elle n'existe pas | lier les notes entre elles | #206 | `.qmd` ajouté, que Quarto suit |
 | `![…](https://…)`, image d'un autre site | image affichée | lien vers l'image | aucun serveur tiers n'est contacté | #220, #458 | image affichée, chargée depuis son site |
 | HTML : `<script>`, `<iframe>`, `on…`, `javascript:` | gardé | retiré | il s'exécuterait dans la page | #241 | gardé |
