@@ -4,7 +4,8 @@ Une racine et ses descendants forment un groupe ; chaque tâche est une ligne
 avec son niveau, placée sous son parent direct. Le tri (`?sort=`, #178) s'applique
 aux frères à chaque niveau, sans jamais sortir une tâche de sous son parent, et aux
 racines : par défaut l'échéance (sans échéance à la fin), les racines par l'échéance
-la plus proche des tâches non terminées de leur arbre.
+la plus proche des tâches non terminées de leur arbre. Par date de complétion
+(#255), les tâches non terminées suivent, dans l'ordre de l'échéance.
 """
 
 from collections import defaultdict
@@ -23,6 +24,8 @@ SORTING = Sorting(
         "title": Column(key=lambda task: fold(task.title)),
         "progress": Column(key=lambda task: task.progress),
         "due": Column(key=lambda task: task.due_date),
+        # Les plus récentes d'abord au premier clic (#255).
+        "completed": Column(key=lambda task: task.completed_at, descending_first=True),
     },
     default=Sort("due"),
 )
@@ -49,6 +52,17 @@ def tie(task: Task) -> tuple:
     return (fold(task.title), task.pk)
 
 
+def due_tie(task: Task) -> tuple:
+    """L'ordre de l'échéance (sans échéance à la fin), puis le titre."""
+    return (task.due_date is None, task.due_date or date.max, *tie(task))
+
+
+def tie_for(sort: Sort):
+    """Le départage des égalités : par date de complétion, les tâches non terminées,
+    toutes à égalité, restent dans l'ordre de l'échéance (#255)."""
+    return due_tie if sort.column == "completed" else tie
+
+
 def load_tasks() -> list[Task]:
     """Toutes les tâches (hors écartées), avec leur projet, en une requête."""
     return list(Task.objects.select_related("project"))
@@ -71,7 +85,7 @@ def children_map(
     for task in tasks_by_id.values():
         children[task.parent_id].append(task)
     for parent_id, siblings in children.items():
-        children[parent_id] = SORTING.sort_items(siblings, sort, tie)
+        children[parent_id] = SORTING.sort_items(siblings, sort, tie_for(sort))
     for task in tasks_by_id.values():
         parent = tasks_by_id[task.parent_id] if task.parent_id else None
         task.tree = (parent, children.get(task.pk, []))
@@ -164,9 +178,14 @@ def task_groups(
         if done is None or root.done == done
     ]
     fill_paths([row for group in groups for row in group.rows])
-    return SORTING.sort_items(
-        groups, sort, tie=lambda g: tie(g.root), key=group_key(sort)
-    )
+    group_tie = group_due_tie if sort.column == "completed" else lambda g: tie(g.root)
+    return SORTING.sort_items(groups, sort, tie=group_tie, key=group_key(sort))
+
+
+def group_due_tie(group: TaskGroup) -> tuple:
+    """L'ordre d'un groupe trié par échéance, pour départager les égalités."""
+    due = earliest_pending_due(group.rows)
+    return (due is None, due or date.max, *tie(group.root))
 
 
 def task_rows(ids: list[int]) -> dict[int, TaskRow]:
