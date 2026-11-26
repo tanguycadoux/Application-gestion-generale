@@ -41,6 +41,11 @@ class FilePathFormsTests(SimpleTestCase):
             ("file://serveur/partage/plan.pdf", "\\\\serveur\\partage\\plan.pdf"),
             ("file:////serveur/partage/plan.pdf", "\\\\serveur\\partage\\plan.pdf"),
             ("FILE:///C:/Docs/plan.pdf", "C:\\Docs\\plan.pdf"),
+            (
+                "file:///C:/Mes%20documents/plan%C3%A9.pdf",
+                "C:\\Mes documents\\plané.pdf",
+            ),
+            ("file:///home/moi/plan.pdf", "/home/moi/plan.pdf"),
         ):
             with self.subTest(target=target):
                 html = render_passage(f"Voir [le plan]({target}).")
@@ -49,16 +54,6 @@ class FilePathFormsTests(SimpleTestCase):
                 self.assertIn('<span class="file-path">le plan<button', html)
                 self.assertEqual(copied_path(html), path)
                 self.assertTrue(html.endswith("</span>.</p>"), html)
-
-    def test_adresse_file_decodee(self):
-        html = render_passage("[plan](file:///C:/Mes%20documents/plan%C3%A9.pdf)")
-
-        self.assertEqual(copied_path(html), "C:\\Mes documents\\plané.pdf")
-
-    def test_chemin_linux_d_une_adresse_file(self):
-        html = render_passage("[plan](file:///home/moi/plan.pdf)")
-
-        self.assertEqual(copied_path(html), "/home/moi/plan.pdf")
 
     def test_chemin_avec_espaces_entre_chevrons(self):
         for text in (
