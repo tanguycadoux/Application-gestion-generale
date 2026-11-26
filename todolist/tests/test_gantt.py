@@ -221,7 +221,7 @@ class GanttPageTests(GanttTestCase):
 
         html = self.html(self.parent)
 
-        self.assertIn("Aujourd&#x27;hui →", html)
+        self.assertRegex(html, r"Aujourd(&#x27;|')hui →")
         self.assertNotRegex(html, r"aria-label=\"Aujourd(&#x27;|')hui\"")
 
     def test_pas_de_frise_sans_sous_tache(self):
