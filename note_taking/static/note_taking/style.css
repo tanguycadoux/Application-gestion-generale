@@ -138,6 +138,23 @@
     }
 }
 
+/* Lien vers un fichier (#496) : à l'impression, le chemin entre parenthèses à la place du
+   bouton « Copier le chemin ». */
+@media print {
+    .rendered-content .file-path-copy {
+        display: inline;
+        color: inherit;
+    }
+
+    .rendered-content .file-path-copy svg {
+        display: none;
+    }
+
+    .rendered-content .file-path-copy::after {
+        content: " (" attr(data-copy-path) ")";
+    }
+}
+
 /* Pas de marge au bord du conteneur ni à celui du corps d'un callout ; ni au-dessus du
    premier titre d'une note en sections (#404), dont la marge traverserait la section. */
 .rendered-content > :first-child,
