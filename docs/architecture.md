@@ -161,7 +161,7 @@ Les vues sont fines : elles délèguent aux services et n'attrapent que les erre
 | `coherence.py` | incohérences entre une tâche, son parent et ses enfants (`Incoherence`, `pair_incoherences`, #165) |
 | `tree.py` | arbre des tâches en une requête (`children_map`), groupes et lignes du tableau ; chaque tâche y reçoit son parent et ses enfants déjà chargés (`Task.tree`, #188) |
 | `services.py`, `receivers.py` | tâches issues des notes, créées à l'écoute de `passages_processed` ; le receveur propose le bilan des tâches créées (`note_review`, #239) |
-| `task_calendar.py` | calendrier des tâches : une tâche en cours à son échéance, une tâche terminée à sa date de complétion |
+| `task_calendar.py` | calendrier des tâches : une tâche en cours à son échéance, une tâche terminée à sa date de complétion (`calendar_date`, aussi utilisée par la page d'un jour, `task_day`, #181) |
 | `gantt.py` | frise de type Gantt du détail d'un parent (#168) |
 | `parent_choices.py` | choix de la tâche parente (#390) : groupes « Même chemin », « Même projet », « Autres projets » d'après le projet et le chemin saisis, tâches en cours sauf demande, sans la tâche ni ses descendantes ; calculé à l'affichage par le widget `ParentSelect` (`forms.py`), rechargé par htmx (`todolist:parent_choices`) |
 | `templatetags/task_ui.py` | affichage du tableau : indentation, temps restant, couleurs du signal d'échéance |

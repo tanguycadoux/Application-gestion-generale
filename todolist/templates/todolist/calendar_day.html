@@ -2,7 +2,9 @@
 {# Case d'un jour du calendrier des tâches (#167), dans le composant partagé de core. #}
 <div class="{% calendar_cell_classes day clickable=False %}"{% if day.is_today %} aria-current="date"{% endif %}>
     <div class="flex items-center">
-        <time datetime="{{ day.date|date:'Y-m-d' }}" class="flex-1 {% calendar_number_classes day %}">{{ day.date.day }}</time>
+        {% url 'todolist:task_day' day.date as day_url %}
+        {# Le numéro mène à toutes les tâches du jour (#181) : la case contient d'autres liens, elle ne peut pas en être un. #}
+        <a class="flex-1 rounded-md px-0.5 hover:bg-blue-50" href="{{ day_url }}" aria-label="Toutes les tâches du {{ day.date|date_text:"moyen" }}"><time datetime="{{ day.date|date:'Y-m-d' }}" class="{% calendar_number_classes day %}">{{ day.date.day }}</time></a>
         {% if day.can_create %}
             {% url 'todolist:task_create' as create_url %}
             <a class="rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-blue-50" href="{{ create_url }}?due={{ day.date|date:'Y-m-d' }}" aria-label="Créer une tâche pour le {{ day.date|date_text:"moyen" }}">
@@ -19,7 +21,7 @@
                 </li>
             {% endfor %}
             {% if day.more %}
-                <li class="text-slate-600">+ {{ day.more }} autre{{ day.more|pluralize }}</li>
+                <li><a class="rounded px-0.5 text-slate-600 hover:bg-slate-100" href="{{ day_url }}">+ {{ day.more }} autre{{ day.more|pluralize }}</a></li>
             {% endif %}
         </ul>
     {% endif %}
