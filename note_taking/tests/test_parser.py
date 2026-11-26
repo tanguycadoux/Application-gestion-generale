@@ -74,6 +74,7 @@ class ParsedNoteTests(SimpleTestCase):
                     )
                 ],
                 headings=["P", "S"],
+                heading_lines=[(4, 1), (5, 2)],
             ),
         )
 
