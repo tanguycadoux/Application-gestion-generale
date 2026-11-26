@@ -7,7 +7,7 @@ from django.urls import reverse
 from core.icons import icon_svg
 from core.templatetags.ui import BUTTON_VARIANTS
 
-SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
+SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold select-none"
 PRIMARY = SHAPE + " bg-blue-100 text-blue-800 hover:bg-blue-50"
 DANGER = SHAPE + " bg-red-100 text-red-800 hover:bg-red-50"
 GHOST = SHAPE + " hover:bg-slate-200"

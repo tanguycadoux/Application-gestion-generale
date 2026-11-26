@@ -16,6 +16,30 @@
         cursor: pointer;
     }
 
+    /* Interface hors contenu (#497) : une sélection à la souris ou par Ctrl+A,
+       collée ailleurs, n'emporte que le contenu, pas les libellés des boutons, le
+       menu, le plan, les raccourcis. Les boutons créés par les scripts (repli des
+       sections, menu de l'éditeur, « Copier le chemin ») sont couverts aussi. */
+    nav, button, [role="button"], summary, kbd {
+        user-select: none;
+    }
+    /* Règles à part : un pseudo-élément inconnu ferait ignorer toute la règle. */
+    ::placeholder {
+        user-select: none;
+    }
+    ::file-selector-button {
+        user-select: none;
+    }
+    /* Texte pour les lecteurs d'écran : invisible, il ne doit pas être copié
+       (« Terminée » d'un en-tête de colonne, « (nouvel onglet) » d'un lien). */
+    .sr-only {
+        user-select: none;
+    }
+    /* Le texte tapé reste sélectionnable, même dans une zone qui ne l'est pas. */
+    input, textarea, [contenteditable] {
+        user-select: text;
+    }
+
     /* Titres de page (#118) ; le contenu rendu des notes a ses propres règles. */
     h1 {
         @apply text-2xl font-semibold;

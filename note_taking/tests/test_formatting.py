@@ -126,3 +126,45 @@ class FormattingEditorTests(SimpleTestCase):
     def test_suggestion_remplace_le_crochet_ajoute(self):
         """Sinon `![` complété laisserait `![](images/x)]`."""
         self.assertIn("closedImageEnd(", self.read("suggestions.js"))
+
+
+class MathPairsEditorTests(SimpleTestCase):
+    """Paires autour d'une sélection dans une formule, et `$` qui entoure (#498).
+
+    Le comportement est vérifié dans Chrome et Firefox ; ici, ce que le code promet."""
+
+    def read(self, name: str) -> str:
+        return (STATIC_DIR / name).read_text(encoding="utf-8")
+
+    def test_selection_entouree_meme_dans_une_formule_ou_du_code(self):
+        script = self.read("formatting.js")
+        pairs_at = script[script.index("function pairsAt(") :]
+
+        self.assertLess(
+            pairs_at.index("if (!state.selection.main.empty) return PAIRS;"),
+            pairs_at.index("if (inCodeBlock(state, pos) || inMath(state, pos))"),
+        )
+
+    def test_dollar_entoure_la_selection(self):
+        script = self.read("formatting.js")
+
+        self.assertIn("EditorView.inputHandler.of(wrapInMath)", script)
+        # Ni paire sans sélection, ni formule dans une formule ou un bloc de code.
+        self.assertNotIn('"$"', script[: script.index("const BEFORE")])
+        wrap = script[script.index("function wrapInMath(") :]
+        self.assertIn("inCodeBlock(state, range.from)", wrap)
+        self.assertIn("inMath(state, range.from)", wrap)
+        # Formule en bloc pour plusieurs lignes, sur leurs propres lignes.
+        self.assertIn('"$$"', wrap)
+
+    def test_aide_de_l_editeur(self):
+        help_text = (
+            Path(settings.BASE_DIR)
+            / "note_taking"
+            / "templates"
+            / "note_taking"
+            / "note"
+            / "form.html"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("<kbd>$</kbd> : mettre la sélection en formule", help_text)

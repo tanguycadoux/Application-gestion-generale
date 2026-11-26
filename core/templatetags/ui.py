@@ -60,8 +60,9 @@ def nav_link(context, url_name: str, label: str, icon: str) -> dict:
     }
 
 
-# Forme commune à toutes les variantes de bouton (#145).
-BUTTON_SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold"
+# Forme commune à toutes les variantes de bouton (#145). `select-none` : un
+# lien-bouton (`<a>`) ne se sélectionne pas, comme un `<button>` (#497).
+BUTTON_SHAPE = "inline-flex items-center gap-2 rounded-xl p-2 font-semibold select-none"
 
 # Classes de chaque variante de bouton, écrites en entier. Pleins : l'action
 # principale, le fond s'éclaircit au survol. Ghost : les actions sur l'objet
