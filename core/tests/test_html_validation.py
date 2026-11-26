@@ -195,6 +195,10 @@ class HtmlValidationTests(TestCase):
             due_date=TODAY + timedelta(days=5),
             progress=40,
         )
+        # Sous-tâche terminée : colonne « Terminée le » (#255), barre de la frise.
+        Task.objects.create(
+            title="Enfant terminé", project=project, parent=self.parent, progress=100
+        )
 
     def pages(self) -> dict[str, str]:
         parent, note = self.parent.pk, self.note.date
@@ -270,6 +274,9 @@ class HtmlValidationTests(TestCase):
             "taches_liste_filtres": (
                 reverse("todolist:task_list")
                 + "?state=all&title=e&sort=-due&project=ASTERICS&project=PDS1"
+            ),
+            "taches_liste_terminees": (
+                reverse("todolist:task_list") + "?state=all&sort=-completed"
             ),
             "taches_liste_ecartees": reverse("todolist:task_list") + "?state=dismissed",
             "tache": reverse("todolist:task_detail", args=[parent]),
