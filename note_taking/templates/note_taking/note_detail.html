@@ -31,6 +31,16 @@
         </ul>
     {% endif %}
 
+    {% if repeated %}
+        {# Titres écrits plusieurs fois sous le même parent : le regroupement est proposé, jamais fait d'office (#315). #}
+        {% url 'note_taking:regroup_review' note.date as regroup_url %}
+        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 print:hidden">
+            {% icon "info" %}
+            <p class="flex-1">{% filter nbsp_punct %}Cette note écrit plusieurs fois {% if repeated|length == 1 %}le titre « {{ repeated.0.title }} »{% else %}{{ repeated|length }} titres{% endif %} sous le même parent.{% endfilter %}</p>
+            {% button "Regrouper les titres répétés" icon="account_tree" href=regroup_url variant="ghost" %}
+        </div>
+    {% endif %}
+
     {% if content %}
         {% include "note_taking/reading.html" with label="Plan de la note" %}
         <script src="{% static 'note_taking/note_sheet.js' %}"></script>

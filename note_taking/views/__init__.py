@@ -8,6 +8,7 @@
 - `images` : pages et actions des images ;
 - `debug` : pages de développement (#235) ;
 - `project_renames` : bilan d'un titre de projet renommé dans une note (#170) ;
+- `regroup` : regroupement des titres répétés d'une note (#315) ;
 - `common` : aides partagées (nom d'une note, avertissements, page suivante).
 
 Tout est réexporté ici : `urls.py` écrit `views.NoteDetail`.
@@ -34,6 +35,7 @@ from .notes import (
     note_today,
 )
 from .project_renames import project_rename_review
+from .regroup import regroup_review
 from .saved_searches import (
     create_saved_search,
     delete_saved_search,
@@ -67,6 +69,7 @@ __all__ = [
     "notes_search",
     "project_rename_review",
     "quick_capture",
+    "regroup_review",
     "rename_saved_search",
     "update_source_file",
 ]

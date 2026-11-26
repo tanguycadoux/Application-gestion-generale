@@ -22,6 +22,7 @@ class Note(models.Model):
         CAPTURE = "capture", "la capture rapide"
         PATH_RENAME = "path_rename", "le renommage d'un chemin"
         PROJECT_RENAME = "project_rename", "le renommage d'un projet"
+        REGROUP = "regroup", "le regroupement des titres répétés"
         SOURCE_FILE = "source_file", "le remplacement par son fichier source"
         IMPORT = "import", "l'import"
         COMMAND = "command", "une commande de gestion"

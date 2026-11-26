@@ -1,0 +1,57 @@
+{% extends "note_taking/base.html" %}
+{% load ui %}
+
+{% block title %}Regrouper les titres répétés · Note du {{ note.date|date_text:"moyen" }}{% endblock title %}
+
+{% block content %}
+    {% url 'note_taking:note_detail' note.date as note_url %}
+    <header class="mb-4 flex items-start gap-2">
+        <h1 class="flex-1">Regrouper les titres répétés de la note du {% date_time note.date "long" %}</h1>
+        {% button "Voir la note" icon="arrow_back" href=note_url variant="ghost" %}
+    </header>
+
+    <p class="mb-4 text-slate-600">Un titre écrit plusieurs fois sous le même parent peut n'y être écrit qu'une fois. Les occurrences suivantes rejoignent la première : leur texte se place après le sien, avant ses sous-titres ; leurs sous-titres de même nom fusionnent aussi, les autres s'ajoutent à la suite. Le chemin des passages et des tâches ne change pas. Décocher un titre le laisse tel qu'il est écrit.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="version" value="{{ version }}">
+        <fieldset class="mb-4">
+            <legend class="mb-2 font-medium">{{ headings|length }} titre{{ headings|length|pluralize }} répété{{ headings|length|pluralize }}</legend>
+            <ul class="divide-y divide-slate-200">
+                {% for heading in headings %}
+                    <li class="py-2">
+                        <label class="flex items-start gap-2">
+                            <input type="checkbox" name="headings" value="{{ heading.key }}" class="mt-1" aria-describedby="regroup-{{ forloop.counter }}-about"{% if heading.blocked %} disabled{% else %} checked{% endif %}>
+                            <span>
+                                <code class="font-medium">{{ heading.written }}</code>
+                                {% if heading.parents %}<span class="block text-sm text-slate-600">{{ heading.chain }}</span>{% endif %}
+                            </span>
+                        </label>
+                        <div id="regroup-{{ forloop.counter }}-about" class="ml-5.25 text-sm text-slate-600">
+                            <p>{% filter nbsp_punct %}Écrit {{ heading.occurrences|length }} fois. {% for other in heading.others %}Lignes {{ other.line }} à {{ other.last_line }}{% if not forloop.last %}, {% endif %}{% endfor %} : rejoignent le titre de la ligne {{ heading.first.line }}.{% endfilter %}</p>
+                            {% if heading.nested %}
+                                <p>{% filter nbsp_punct %}Sous-titres fusionnés aussi : {% for title in heading.nested %}« {{ title }} »{% if not forloop.last %}, {% endif %}{% endfor %}.{% endfilter %}</p>
+                            {% endif %}
+                            {% if heading.blocked %}
+                                <p class="text-amber-800">{% filter nbsp_punct %}Pas proposé : {{ heading.blocked }}{% endfilter %}</p>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </fieldset>
+
+        {% if preview %}
+            <details class="mb-4">
+                <summary class="cursor-pointer font-medium">Aperçu de la note, tous les titres proposés regroupés</summary>
+                <pre class="mt-2 max-h-96 overflow-auto rounded border border-slate-300 bg-slate-50 p-2 text-sm whitespace-pre-wrap">{{ preview }}</pre>
+            </details>
+        {% endif %}
+
+        {% if proposed %}
+            {% button "Regrouper" icon="save" %}
+        {% else %}
+            <p>Aucun de ces titres ne peut être regroupé automatiquement.</p>
+        {% endif %}
+    </form>
+{% endblock content %}

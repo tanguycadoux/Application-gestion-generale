@@ -41,6 +41,11 @@ urlpatterns = [
         views.project_rename_review,
         name="project_rename_review",
     ),
+    path(
+        "notes/<date:note_date>/regroup/",
+        views.regroup_review,
+        name="regroup_review",
+    ),
     path("notes/<date:note_date>/delete/", views.delete_note, name="delete_note"),
     path(
         "notes/<date:note_date>/source/",

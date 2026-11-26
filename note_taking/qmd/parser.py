@@ -79,6 +79,8 @@ class ParsedNote:
     # Les titres de la note, dans l'ordre, tels qu'écrits : ceux que le parseur
     # reconnaît (ni dans un bloc de code ni dans un callout, `#` à `######`).
     headings: list[str] = field(default_factory=list)
+    # Pour chacun de ces titres : sa ligne (à partir de 1) et son niveau (#315).
+    heading_lines: list[tuple[int, int]] = field(default_factory=list)
     # Ce qui est accepté mais probablement pas voulu : un titre qui saute un niveau,
     # un titre sans projet (#305). Le texte de la note n'est pas réécrit.
     warnings: list[str] = field(default_factory=list)
@@ -223,6 +225,7 @@ class NoteParser:
         title = match.group(2).strip()
         self.levels[level] = Level(title=title, number=len(self.note.headings))
         self.note.headings.append(title)
+        self.note.heading_lines.append((number + 1, level))
         for deeper in range(level + 1, MAX_LEVEL + 1):
             self.levels[deeper] = Level()
         # Le titre ouvre un passage.
