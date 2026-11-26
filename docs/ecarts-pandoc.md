@@ -16,6 +16,7 @@ Le rendu des notes suit le Markdown de Pandoc, celui de Quarto (voir [`architect
 | `![…](https://…)`, image d'un autre site | image affichée | lien vers l'image | aucun serveur tiers n'est contacté | #220, #458 | image affichée, chargée depuis son site |
 | HTML : `<script>`, `<iframe>`, `on…`, `javascript:` | gardé | retiré | il s'exécuterait dans la page | #241 | gardé |
 | Titre souligné (`=====`, `-----`) | titre | texte | une liste à l'élément vide (`-`) ferait un titre ; le découpage ne connaît que `#` | #124 | titre |
+| Titre collé à un paragraphe (`texte` puis `# Titre`, sans ligne vide), dans un élément de liste aussi | texte du paragraphe (`blank_before_header`) | titre, hors de la liste | l'analyse de la note (passages, chemins) y voit un titre, le rendu suit | #491 | texte du paragraphe |
 | Niveau des titres | `#` donne `h1` | `#` donne `h2`, et ainsi de suite | la page a son propre `h1` | | niveaux d'origine |
 | `::: {.metadata}` | bloc ordinaire | pastilles des tags | métadonnées de l'application | | bloc ordinaire |
 | Numéros des tableaux et figures | sur tout le document | repartent de 1 à chaque rendu : la note, ou l'extrait seul | un extrait est rendu sans le reste de la note | #278 | numérotés par Quarto |

@@ -447,6 +447,117 @@ class ItemAfterSubListRenderingTests(SimpleTestCase):
         )
 
 
+class FencedCodeInListRenderingTests(SimpleTestCase):
+    """Bloc de code délimité, indenté sous un élément de liste (#489)."""
+
+    def check(self, cases: dict[str, str]):
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertHTMLEqual(render_markdown(text), expected)
+
+    def test_bloc_dans_l_element(self):
+        self.check(
+            {
+                "1. x\n\n   ```\n   - code\n   ```\n2. y": (
+                    "<ol><li><p>x</p><pre><code>- code\n</code></pre></li>"
+                    "<li><p>y</p></li></ol>"
+                ),
+                "1. x\n   ```\n   code\n   ```\n2. y": (
+                    "<ol><li>x<pre><code>code\n</code></pre></li><li>y</li></ol>"
+                ),
+            }
+        )
+
+    def test_bloc_dans_une_sous_liste(self):
+        self.check(
+            {
+                "- x\n  - a\n\n    ~~~\n    1. code\n    ~~~\n- y": (
+                    # La ligne vide aère aussi la liste parente : écart connu (#482).
+                    "<ul><li><p>x</p><ul><li><p>a</p><pre><code>1. code\n</code></pre>"
+                    "</li></ul></li><li><p>y</p></li></ul>"
+                )
+            }
+        )
+
+    def test_langue_et_indentation_du_code_gardees(self):
+        html = render_markdown("- x\n\n  ```python\n  if a:\n      b\n  ```")
+
+        self.assertInHTML(
+            '<pre><code class="language-python">if a:\n    b\n</code></pre>', html
+        )
+
+    def test_aucune_ligne_du_code_n_est_une_case(self):
+        html = render_markdown("- x\n\n  ```\n  - [ ] pas une case\n  ```")
+
+        self.assertNotIn("checkbox", html)
+        self.assertInHTML("<pre><code>- [ ] pas une case\n</code></pre>", html)
+
+
+class BlockquoteListRenderingTests(SimpleTestCase):
+    """Listes d'une citation : les mêmes que hors de la citation (#490)."""
+
+    def check(self, cases: dict[str, str]):
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertHTMLEqual(render_markdown(text), expected)
+
+    def test_sous_liste(self):
+        self.check(
+            {
+                "> 1. x\n>    - a\n> 2. b": (
+                    "<blockquote><ol><li>x<ul><li>a</li></ul></li><li>b</li></ol>"
+                    "</blockquote>"
+                ),
+                "> 1. x\n>\n>    - a\n> 2. b": (
+                    "<blockquote><ol><li><p>x</p><ul><li>a</li></ul></li>"
+                    "<li><p>b</p></li></ol></blockquote>"
+                ),
+            }
+        )
+
+    def test_marqueurs_de_pandoc(self):
+        self.check(
+            {
+                "> a. x\n> b. y": (
+                    '<blockquote><ol type="a" class="list-lower-alpha"><li>x</li>'
+                    "<li>y</li></ol></blockquote>"
+                ),
+                "> (1) x\n> (2) y": (
+                    "<blockquote><ol><li>x</li><li>y</li></ol></blockquote>"
+                ),
+            }
+        )
+
+    def test_citation_dans_une_citation(self):
+        self.check(
+            {
+                "> > - x\n> >   - a": (
+                    "<blockquote><blockquote><ul><li>x<ul><li>a</li></ul></li></ul>"
+                    "</blockquote></blockquote>"
+                )
+            }
+        )
+
+    def test_bloc_de_code_dans_la_citation(self):
+        self.check(
+            {
+                "> ```\n> - code\n> ```": (
+                    "<blockquote><pre><code>- code\n</code></pre></blockquote>"
+                )
+            }
+        )
+
+
+class HeadingAfterItemRenderingTests(SimpleTestCase):
+    """Titre collé à la suite d'un élément de liste : au premier niveau (#491)."""
+
+    def test_titre_apres_un_paragraphe_de_suite(self):
+        self.assertHTMLEqual(
+            render_markdown("- x\n\n  suite\n# Titre"),
+            "<ul><li><p>x</p><p>suite</p></li></ul><h1>Titre</h1>",
+        )
+
+
 class TaskListRenderingTests(SimpleTestCase):
     """Cases à cocher « - [ ] » et « - [x] » comme dans Quarto (#231).
 
