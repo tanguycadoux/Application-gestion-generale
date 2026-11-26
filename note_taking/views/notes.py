@@ -27,9 +27,11 @@ from ..note_citations import citations
 from ..note_outline import outline_sections
 from ..pending_renames import add_pending_follow_up
 from ..project_renaming import record_project_renames
+from ..qmd.regroup import repeated_headings
 from ..rendering import render_note_body
 from ..services import process_passages
 from .common import next_page, note_name, save_warnings
+from .regroup import proposed, repeated_message
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,8 @@ class NoteDetail(DetailView):
         context["projects"] = self.object.projects
         # Les notes qui citent celle-ci (#207).
         context["citations"] = citations(self.object)
+        # Titres répétés : leur regroupement est proposé (#315).
+        context["repeated"] = proposed(repeated_headings(self.object.body))
         return context
 
 
@@ -150,6 +154,9 @@ def save_passages(request, note: Note, done: str, *, stay: bool = False) -> str:
     else:
         messages.success(request, f"{note_name(note)} est {done}.")
         save_warnings(request, note)
+        repeated = proposed(repeated_headings(note.body))
+        if repeated:
+            messages.info(request, repeated_message(repeated))
     if stay:
         for follow_up in note.follow_ups:
             messages.warning(

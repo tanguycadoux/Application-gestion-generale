@@ -37,3 +37,8 @@ class InvalidArchiveError(NoteError):
 
 class SavedSearchError(NoteError):
     """Recherche enregistrée refusée : nom vide, trop long ou déjà pris, requête vide."""
+
+
+class RegroupError(NoteError):
+    """Regroupement des titres répétés refusé (#315) : la note a changé depuis
+    l'aperçu, ou les titres choisis ensemble changeraient ce que l'analyse en tire."""
