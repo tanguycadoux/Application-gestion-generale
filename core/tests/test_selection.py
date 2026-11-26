@@ -25,6 +25,9 @@ class SelectionRulesTests(TestCase):
     def test_texte_indicatif_des_champs_non_selectionnable(self):
         self.assertIn("::placeholder {\n        user-select: none;", self.css)
 
+    def test_texte_pour_lecteurs_d_ecran_non_selectionnable(self):
+        self.assertIn(".sr-only {\n        user-select: none;", self.css)
+
     def test_texte_tape_reste_selectionnable(self):
         self.assertIn(
             "input, textarea, [contenteditable] {\n        user-select: text;",
