@@ -19,5 +19,6 @@ todolist.tree.TaskRow). Renvoyée aussi par la case à cocher (#189).
         </td>
         <td class="whitespace-nowrap p-2 align-baseline text-sm {{ task|remaining_class }}">{{ task|remaining_text }}</td>
         <td class="whitespace-nowrap p-2 align-baseline text-sm">{% if task.due_date %}{% date_time task.due_date "court" %}{% else %}—{% endif %}</td>
+        <td class="whitespace-nowrap p-2 align-baseline text-sm">{% if task.completed_at %}{% date_time task.completed_at "court" %}{% else %}—{% endif %}</td>
     </tr>
 {% endwith %}
