@@ -56,6 +56,12 @@ class OpenBoxTests(CheckboxTestCase):
 
         self.assertEqual(self.titles(), ["Vraie"])
 
+    def test_case_dans_un_bloc_de_code_sous_un_element_ignoree(self):
+        # #489 : le bloc de code est dans l'élément, ses lignes n'en sont pas.
+        self.save_note("# P\n- [ ] Vraie\n\n  ```\n  - [ ] Exemple\n  ```\n- [ ] Autre")
+
+        self.assertEqual(self.tree(), {"Vraie": None, "Autre": None})
+
     def test_fins_de_ligne_windows(self):
         self.save_note("# P\r\n- [ ] A\r\n- [ ] B\r\n")
 
