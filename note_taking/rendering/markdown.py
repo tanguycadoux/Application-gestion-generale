@@ -3,6 +3,7 @@
 import markdown
 
 from .figures import ImplicitFiguresExtension
+from .file_paths import FilePathLinkExtension, file_path_buttons
 from .inline import MathExtension, SuperscriptSubscriptExtension, UnderlineExtension
 from .lists import PandocListsExtension, TaskListExtension, task_checkboxes
 from .sanitize import lazy_images, sanitize_html, scrollable_tables
@@ -36,6 +37,7 @@ MARKDOWN_EXTENSIONS: list[str | markdown.Extension] = [
     UnderlineExtension(),
     MathExtension(),
     ImplicitFiguresExtension(),
+    FilePathLinkExtension(),
 ]
 
 
@@ -46,4 +48,4 @@ def render_plain_markdown(text: str) -> str:
     à partir de valeurs échappées ou contrôlées, et n'a pas à être filtré.
     """
     html = sanitize_html(markdown.markdown(text, extensions=MARKDOWN_EXTENSIONS))
-    return lazy_images(scrollable_tables(task_checkboxes(html)))
+    return file_path_buttons(lazy_images(scrollable_tables(task_checkboxes(html))))
