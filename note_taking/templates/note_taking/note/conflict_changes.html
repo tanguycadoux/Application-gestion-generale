@@ -1,0 +1,12 @@
+{# Ce qui a changé dans la version enregistrée depuis l'ouverture de l'éditeur (#471) : le texte est échappé. #}
+{% if conflict_changes %}
+    <p class="mt-2">Ce qui a changé dans la version enregistrée :</p>
+    <ul class="my-2 space-y-2">
+        {% for change in conflict_changes %}
+            <li>
+                <p>{% if change.where %}Sous « {{ change.where }} »{% else %}Avant le premier titre{% endif %} : {{ change.summary }}</p>
+                <pre class="mt-1 max-h-48 overflow-auto rounded-lg bg-white p-2 text-sm text-slate-800">{% for line in change.removed %}<del class="block text-red-800">− {{ line }}</del>{% endfor %}{% for line in change.added %}<ins class="block text-green-800 no-underline">+ {{ line }}</ins>{% endfor %}</pre>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

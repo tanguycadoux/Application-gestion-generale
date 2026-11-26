@@ -30,6 +30,7 @@ from ..project_renaming import record_project_renames
 from ..qmd.regroup import repeated_headings
 from ..rendering import render_note_body
 from ..services import process_passages
+from ..text_merge import describe_changes
 from .common import next_page, note_name, save_warnings
 from .regroup import proposed, repeated_message
 
@@ -212,6 +213,9 @@ def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
     note.refresh_from_db()
     current = note.updated.isoformat()
     reason = conflict_reason(note, request.POST["version"])
+    # Le texte ouvert par l'éditeur, s'il l'a renvoyé (#471).
+    original = request.POST.get("original")
+    changes = describe_changes(original, note.body) if original is not None else []
     logger.warning(
         "Note %s, conflit : ouverte=%s enregistrée=%s overwrite=%s "
         "dernière modification : source=%s",
@@ -227,7 +231,12 @@ def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
             "La note n'est pas enregistrée : elle a changé depuis l'ouverture de "
             "l'éditeur.",
         )
-        response = toasts_response(request, status=409)
+        response = render(
+            request,
+            "note_taking/note/conflict_toasts.html",
+            {"conflict_changes": changes},
+            status=409,
+        )
         response["X-Note-Version"] = current
         # Encodé : un en-tête ne porte pas d'accents.
         response["X-Note-Conflict"] = quote(reason)
@@ -243,6 +252,9 @@ def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
             "current_version": current,
             "conflict": True,
             "conflict_reason": reason,
+            "conflict_changes": changes,
+            # Toujours celui de l'ouverture : la note n'a pas été enregistrée.
+            "original": original,
         },
         status=409,
     )
@@ -315,7 +327,12 @@ def edit_note(request, note_date):
     return render(
         request,
         "note_taking/note_edit.html",
-        {"form": form, "note": note, "version": version},
+        {
+            "form": form,
+            "note": note,
+            "version": version,
+            "original": Note.objects.values_list("body", flat=True).get(pk=note.pk),
+        },
     )
 
 

@@ -12,7 +12,9 @@
 // Version ouverte (#386) : le formulaire dit quelle version de la note il a ouverte.
 // Si elle a changé depuis, rien n'est enregistré (409) : le texte saisi reste, et un
 // encadré propose de voir la version enregistrée ou de la remplacer. Il dit ce qui a
-// modifié la note, et quand (#468, en-tête X-Note-Conflict).
+// modifié la note, et quand (#468, en-tête X-Note-Conflict), et ce qui a changé dans
+// la version enregistrée (#471) : la vue compare le texte ouvert (`original`, tenu à
+// jour à chaque enregistrement) à celui de la base.
 (() => {
     const form = document.getElementById("note-form");
     if (!form) return;
@@ -39,12 +41,18 @@
         form.hasAttribute("data-save-in-place") &&
         (!form.elements.date || form.elements.date.value === saved[1]);
 
-    function showConflict(version, reason) {
+    function showConflict(version, reason, html) {
         overwriteButton.value = version;
         if (reason) {
             conflict.querySelector("[data-conflict-reason]").textContent =
                 decodeURIComponent(reason);
         }
+        // Le HTML de la réponse, analysé sans rien exécuter, où Django a échappé le
+        // texte de la note : les différences remplacent celles d'avant.
+        const parsed = new DOMParser().parseFromString(html, "text/html");
+        const changes = parsed.querySelector("template[data-conflict-changes]");
+        const content = changes ? document.importNode(changes.content, true) : "";
+        conflict.querySelector("[data-conflict-changes]")?.replaceChildren(content);
         conflict.hidden = false;
         conflict.scrollIntoView({ block: "nearest" });
     }
@@ -70,18 +78,21 @@
                 headers: { "HX-Request": "true" },
             });
             const version = response.headers.get("X-Note-Version");
+            const html = await response.text();
             if (response.ok || response.status === 422 || response.status === 409) {
-                Toast.insert(await response.text());
+                Toast.insert(html);
             } else {
                 Toast.show(
                     "La note n'est pas enregistrée : le serveur a rencontré une erreur.",
                 );
             }
             if (response.status === 409) {
-                showConflict(version, response.headers.get("X-Note-Conflict"));
+                showConflict(version, response.headers.get("X-Note-Conflict"), html);
             }
             if (response.ok) {
                 keepVersion(version);
+                // Le texte enregistré est celui dont l'éditeur part désormais.
+                if (form.elements.original) form.elements.original.value = sent[0];
                 // Sans la nouvelle version (page et serveur dépareillés après une mise
                 // à jour, #469), le prochain enregistrement serait refusé sans raison.
                 if (form.elements.version && !version) {
