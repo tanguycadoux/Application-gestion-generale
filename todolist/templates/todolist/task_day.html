@@ -1,0 +1,44 @@
+{% extends "todolist/base.html" %}
+{% load ui %}
+
+{# Toutes les tâches d'un jour du calendrier (#181). #}
+{% block title %}Tâches du {{ day|date_text:"moyen" }}{% endblock title %}
+
+{% block extra_head %}
+    {{ block.super }}
+    {% load static %}
+    <script src="{% static 'todolist/task.js' %}"></script>
+{% endblock extra_head %}
+
+{% block content %}
+    <header class="mb-4 flex flex-wrap items-start gap-2">
+        <h1 class="flex-1">Tâches du {% date_time day "long" %}</h1>
+
+        <nav aria-label="Jours" class="flex items-center gap-1">
+            {% url 'todolist:task_day' previous_day as previous_url %}
+            {% url 'todolist:task_day' next_day as next_url %}
+            {% button "Jour précédent" icon="chevron_left" href=previous_url variant="ghost" icon_only=True %}
+            {% url 'todolist:index' as index_url %}
+            {% with month=day|date:"Y-m" %}
+                {% button "Calendrier" icon="arrow_back" href=index_url|add:"?month="|add:month variant="ghost" %}
+            {% endwith %}
+            {% button "Jour suivant" icon="chevron_right" href=next_url variant="ghost" icon_only=True %}
+        </nav>
+
+        {% url 'todolist:task_create' as create_url %}
+        {% with due=day|date:"Y-m-d" %}
+            {% button "Créer une tâche" icon="add" href=create_url|add:"?due="|add:due %}
+        {% endwith %}
+    </header>
+
+    <p class="mb-2 text-slate-600">Les tâches en cours à leur échéance, les tâches terminées à leur date de complétion, comme dans le calendrier.</p>
+
+    <h2 id="tasks-title" class="mb-2">Tâches <span class="text-base font-normal text-slate-600">({{ count }})</span></h2>
+
+    <section aria-labelledby="tasks-title" class="mb-6">
+        {% include "todolist/task_table.html" with show_project=True live=True %}
+        {% if not groups %}
+            <p class="mt-2">Aucune tâche ce jour-là.</p>
+        {% endif %}
+    </section>
+{% endblock content %}

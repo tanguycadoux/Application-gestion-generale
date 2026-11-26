@@ -265,6 +265,7 @@ class HtmlValidationTests(TestCase):
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),
+            "taches_du_jour": reverse("todolist:task_day", args=[TODAY]),
             "taches_liste": reverse("todolist:task_list"),
             "taches_liste_filtres": (
                 reverse("todolist:task_list")
@@ -286,10 +287,18 @@ class HtmlValidationTests(TestCase):
                 path = Path(directory) / f"{name}.html"
                 path.write_bytes(response.content)
                 paths.append(path)
-            # L'éditeur qui refuse d'écraser la note (#386, #468) : réponse à un envoi.
+            # L'éditeur qui refuse d'écraser la note (#386, #468) : réponse à un envoi,
+            # avec les différences de la version enregistrée entre-temps (#471).
             response = self.client.post(
                 reverse("note_taking:edit_note", args=[self.note.date]),
-                {"date": self.note.date, "body": "x", "version": "2020-01-01T00:00Z"},
+                {
+                    "date": self.note.date,
+                    "body": "x",
+                    "version": "2020-01-01T00:00Z",
+                    "original": NOTE_BODY.replace(
+                        "## Réunion\n", "## Réunion\nretirée\n"
+                    ),
+                },
             )
             self.assertEqual(response.status_code, 409)
             path = Path(directory) / "note_conflit.html"

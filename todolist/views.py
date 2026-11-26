@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
@@ -37,7 +37,7 @@ from .services import (
     restore_task,
     top_dismissed,
 )
-from .task_calendar import task_calendar
+from .task_calendar import calendar_date, task_calendar
 from .tree import TaskGroup, descendant_rows, task_groups, task_rows
 
 
@@ -48,6 +48,32 @@ def index(request):
         request,
         "todolist/index.html",
         {"calendar": task_calendar(year, month, today)},
+    )
+
+
+def task_day(request, day: date):
+    """Toutes les tâches d'un jour du calendrier (#181) : celles en cours à leur
+    échéance, les terminées à leur date de complétion, comme les cases du mois.
+
+    Le tableau est celui de la liste, trié comme elle (`?sort=`) ; les parents
+    d'une sous-tâche du jour sont affichés atténués, pour le contexte.
+    """
+    sort = tree.SORTING.read(request.GET.get("sort"))
+    tasks = tree.load_tasks()
+    matching = {task.pk for task in tasks if calendar_date(task) == day}
+    groups = task_groups(tasks, sort, matching)
+    return render(
+        request,
+        "todolist/task_day.html",
+        {
+            "day": day,
+            "previous_day": day - timedelta(days=1),
+            "next_day": day + timedelta(days=1),
+            "sorting": tree.SORTING,
+            "sort": sort,
+            "groups": groups,
+            "count": len(matching),
+        },
     )
 
 
