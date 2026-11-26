@@ -265,6 +265,7 @@ class HtmlValidationTests(TestCase):
             "images": reverse("note_taking:images_list"),
             "image": reverse("note_taking:image_detail", args=[self.image.pk]),
             "taches_accueil": reverse("todolist:index"),
+            "taches_du_jour": reverse("todolist:task_day", args=[TODAY]),
             "taches_liste": reverse("todolist:task_list"),
             "taches_liste_filtres": (
                 reverse("todolist:task_list")

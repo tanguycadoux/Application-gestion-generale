@@ -11,6 +11,7 @@ from .views import (
     note_review,
     parent_choices_view,
     restore_task_view,
+    task_day,
     task_list,
     toggle_task,
 )
@@ -20,6 +21,7 @@ app_name = "todolist"
 urlpatterns = [
     path("", index, name="index"),
     path("list/", task_list, name="task_list"),
+    path("day/<date:day>/", task_day, name="task_day"),
     path("new/", TaskCreateView.as_view(), name="task_create"),
     path("parent-choices/", parent_choices_view, name="parent_choices"),
     path("<int:pk>/", TaskDetailView.as_view(), name="task_detail"),
