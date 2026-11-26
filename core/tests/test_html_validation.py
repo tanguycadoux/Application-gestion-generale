@@ -87,6 +87,22 @@ Voir @tbl-retreint et @fig-banc.
    - sous-liste après une ligne vide
 2. Élément suivant (#482)
 
+1. Code sous un élément (#489)
+
+   ```python
+   - [ ] pas une case
+   ```
+
+> 1. Liste d'une citation (#490)
+>    - sous-élément
+
+- Élément
+
+  suite
+#### Titre collé à un élément (#491)
+
+Le [plan](C:\\Docs\\plan.pdf), le [](\\\\serveur\\partage\\rapport.docx) (#496).
+
 | Matériau | Rétreint |
 |---|---|
 | Cu | 3.2 |
@@ -127,6 +143,15 @@ class HtmlValidationTests(TestCase):
             body=f"À ranger\n# ASTERICS\n[jour]({TODAY}) [plus tard](2999-01-01)",
         )
         process_passages(self.citing)
+        # Des titres répétés : regroupement proposé (#315).
+        self.repeated = Note.objects.create(
+            date=TODAY - timedelta(days=14),
+            body=(
+                "# PDS1\n## x\n- [ ] a\n# ASTERICS\n# PDS1\n## x\nsuite\n"
+                "# ASTERICS\n::: {.metadata}\ntags: [suivi]\n:::\nb"
+            ),
+        )
+        process_passages(self.repeated)
         PendingProjectRename.objects.create(
             note=self.citing, old_name="PDS1", new_name="ASTERICS"
         )
@@ -207,6 +232,12 @@ class HtmlValidationTests(TestCase):
             ),
             "note_projet_renomme": reverse(
                 "note_taking:project_rename_review", args=[self.citing.date]
+            ),
+            "note_titres_repetes": reverse(
+                "note_taking:note_detail", args=[self.repeated.date]
+            ),
+            "note_regrouper": reverse(
+                "note_taking:regroup_review", args=[self.repeated.date]
             ),
             "note_nouvelle": reverse("note_taking:new_note"),
             "note_modifier": reverse("note_taking:edit_note", args=[note]),
