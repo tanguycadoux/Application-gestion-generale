@@ -477,6 +477,7 @@ Milestones terminés :
 | M25 · Recherche (suite) | tri des résultats par pertinence ou par date ; vue « Document » lue comme une note, avec son plan et son bandeau ; filtres toujours visibles ; arbre des chemins fidèle à ce qui est cherché |
 | M27 · Enregistrement et rendu des notes | fichiers statiques à l'adresse qui change avec leur contenu ; modifications des notes tracées dans un fichier de log, sans leur texte ; conflit d'enregistrement expliqué ; un seul bouton au bilan d'une note ; liens sans texte visibles et document des écarts à Pandoc |
 | M23 · Éditeur : listes et blocs | menu du clic droit hiérarchisé (presse-papiers, insertion des callouts, formules, colonnes, figures, renvois) ; formatage groupé des tableaux ; listes de Pandoc lues comme le rendu (coloration, Entrée, Tab) et marqueur du niveau d'arrivée avec Tab ; suite des lignes longues sous leur texte ; plan sans les titres des blocs |
+| M29 · Édition : conflits et confort | différences de la version enregistrée entre-temps montrées dans l'encadré de conflit, sous leur titre ; fusion automatique quand les modifications ne se recouvrent pas ; paires et `$` autour d'une sélection, formules comprises ; menus, boutons et plan qui ne se copient plus avec le contenu |
 | M28 · Rendu des notes (suite) | bloc de code délimité sous un élément de liste, listes et code d'une citation, titre collé à un élément rendu hors de la liste ; « Copier le chemin » d'un lien vers un fichier local ou réseau ; regroupement proposé des titres répétés d'une note |
 | M26 · Éditeur : tableaux et mise en forme | paires fermées toutes seules, Ctrl+B / I / U et souligné au rendu ; lignes, colonnes et dimensions d'un tableau au clic droit ; tableau édité dans une fenêtre à part, retour à la ligne rétabli dans l'éditeur ; élément qui suit une sous-liste rendu à son niveau |
 
@@ -484,7 +485,6 @@ Milestones terminés :
 
 | Milestone | Contenu |
 |---|---|
-| M29 · Édition : conflits et confort | différences et fusion automatique dans un conflit d'enregistrement, paires autour d'une sélection dans les formules, interface qui ne se sélectionne pas avec le contenu |
 | M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |
 | M22 · Import et export (suite) | import depuis la page d'une note, choix de la version à garder au réimport |
 | M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes, import depuis la liste, suppression des images inutilisées |

@@ -102,12 +102,7 @@ class ConflictChangesViewTests(TestCase):
         self.assertIn("« P »", html)
         self.assertIn("&lt;b&gt;capturé&lt;/b&gt;", html)
         self.assertNotIn("<b>capturé</b>", html)
-
-    def test_encadre_garde_le_texte_d_origine_envoye(self):
-        self.change("# P\nouvert\ncapturé")
-
-        html = self.save("# P\nmon texte").content.decode()
-
+        # Le texte d'origine envoyé reste celui du formulaire.
         self.assertRegex(html, r'<textarea name="original" hidden>\n# P\nouvert</')
 
     def test_sans_texte_d_origine_pas_de_differences(self):
