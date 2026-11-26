@@ -15,6 +15,11 @@
 // modifié la note, et quand (#468, en-tête X-Note-Conflict), et ce qui a changé dans
 // la version enregistrée (#471) : la vue compare le texte ouvert (`original`, tenu à
 // jour à chaque enregistrement) à celui de la base.
+//
+// Fusion (#472) : si les deux modifications ne se touchent pas, la vue les réunit et
+// enregistre ; la réponse porte le texte fusionné et les lignes venues d'ailleurs,
+// que l'éditeur applique (merge.js). Sans éditeur, le <textarea> prend le texte
+// fusionné s'il n'a pas changé depuis l'envoi.
 (() => {
     const form = document.getElementById("note-form");
     if (!form) return;
@@ -57,6 +62,38 @@
         conflict.scrollIntoView({ block: "nearest" });
     }
 
+    // Les lignes venues d'ailleurs, dans l'éditeur ; faux si elles n'ont pas pu y
+    // être mises, la page garde alors la version d'avant : l'enregistrement suivant
+    // sera un conflit, plutôt que d'effacer ces lignes.
+    function applyMerge(html, sent) {
+        const original = form.elements.original;
+        const parsed = new DOMParser().parseFromString(html, "text/html");
+        const data = parsed.getElementById("note-merge");
+        if (!data) {
+            // Le texte enregistré est celui dont l'éditeur part désormais.
+            if (original) original.value = sent;
+            return true;
+        }
+        const { text, edits } = JSON.parse(data.textContent);
+        const body = form.elements.body;
+        const detail = { sent, edits, applied: false };
+        body.dispatchEvent(new CustomEvent("note:merge", { detail }));
+        if (!detail.applied && body.value === sent) {
+            body.value = text;
+            detail.applied = true;
+        }
+        if (!detail.applied) {
+            Toast.show(
+                "La note est enregistrée avec une modification faite ailleurs, que l'éditeur n'a pas pu reprendre. Rechargez la page avant de continuer.",
+            );
+            unsaved = true;
+            return false;
+        }
+        saved = [text, ...saved.slice(1)];
+        if (original) original.value = text;
+        return true;
+    }
+
     function keepVersion(version) {
         if (!version || !form.elements.version) return;
         form.elements.version.value = version;
@@ -67,6 +104,7 @@
         if (saving) return;
         saving = true;
         const sent = fields.map((field) => field.value);
+        form.elements.body.dispatchEvent(new CustomEvent("note:saving"));
         const data = new FormData(form);
         data.set("stay", "1");
         if (overwrite) data.set("overwrite", overwrite);
@@ -90,9 +128,9 @@
                 showConflict(version, response.headers.get("X-Note-Conflict"), html);
             }
             if (response.ok) {
-                keepVersion(version);
-                // Le texte enregistré est celui dont l'éditeur part désormais.
-                if (form.elements.original) form.elements.original.value = sent[0];
+                saved = sent;
+                unsaved = false;
+                if (applyMerge(html, sent[0])) keepVersion(version);
                 // Sans la nouvelle version (page et serveur dépareillés après une mise
                 // à jour, #469), le prochain enregistrement serait refusé sans raison.
                 if (form.elements.version && !version) {
@@ -100,8 +138,6 @@
                         "La note est enregistrée, mais l'application a changé depuis l'ouverture de l'éditeur. Rechargez la page avant de continuer.",
                     );
                 }
-                saved = sent;
-                unsaved = false;
                 const redirect = response.headers.get("HX-Redirect");
                 if (redirect) {
                     submitting = true;

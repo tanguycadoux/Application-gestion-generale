@@ -19,7 +19,7 @@ from core.dates import date_text, parse_date_param
 from core.exceptions import AppError
 
 from .. import note_table
-from ..edit_conflict import conflict_reason
+from ..edit_conflict import conflict_reason, merge_message
 from ..forms import NewNoteForm
 from ..models import Note, Passage
 from ..note_calendar import requested_month_calendar
@@ -30,7 +30,7 @@ from ..project_renaming import record_project_renames
 from ..qmd.regroup import repeated_headings
 from ..rendering import render_note_body
 from ..services import process_passages
-from ..text_merge import describe_changes
+from ..text_merge import Merge, describe_changes, merge_texts
 from .common import next_page, note_name, save_warnings
 from .regroup import proposed, repeated_message
 
@@ -206,6 +206,27 @@ def changed_since_opened(request, note: Note) -> bool:
     return note_version(note) not in (opened, request.POST.get("overwrite"))
 
 
+def merged_text(merge: Merge) -> dict:
+    """Pour l'éditeur (#472) : le texte fusionné, en fins de ligne `\n` comme dans la
+    page, et les lignes à changer dans le texte envoyé."""
+    return {"text": merge.text.replace("\r\n", "\n"), "edits": merge.edits}
+
+
+def mergeable(request, note: Note) -> Merge | None:
+    """Le texte saisi réuni à la version enregistrée depuis l'ouverture de l'éditeur
+    (#472), si leurs changements ne se touchent pas. Rien sans le texte d'origine,
+    pour un remplacement demandé, ou un formulaire refusé : c'est le conflit."""
+    original = request.POST.get("original")
+    if original is None or request.POST.get("overwrite"):
+        return None
+    form = NewNoteForm(request.POST, instance=copy.copy(note))
+    if not form.is_valid():
+        return None
+    # Relue : la note a pu changer depuis le début de la requête.
+    note.refresh_from_db()
+    return merge_texts(original, form.cleaned_data["body"], note.body)
+
+
 def conflict_response(request, note: Note, in_place: bool) -> HttpResponse:
     """Rien n'est enregistré : l'éditeur garde le texte saisi et propose de voir la
     version enregistrée, ou de la remplacer. La raison est dite, et tracée (#468)."""
@@ -296,22 +317,38 @@ def edit_note(request, note_date):
     if request.method == "POST":
         stay = stays_in_editor(request)
         in_place = stay and bool(request.htmx)
+        merge = None
         if changed_since_opened(request, note):
-            return conflict_response(request, note, in_place)
+            merge = mergeable(request, note)
+            if merge is None:
+                return conflict_response(request, note, in_place)
+            messages.success(request, merge_message(note))
+            logger.info(
+                "Note %s, fusion : ouverte=%s enregistrée=%s source=%s",
+                note.date,
+                request.POST["version"],
+                note.updated.isoformat(),
+                note.updated_by or "inconnue",
+            )
         version = note_version(note)
         old_body = note.body
         form = NewNoteForm(request.POST, instance=note)
         if form.is_valid():
             note = form.save(commit=False)
             overwriting = request.POST.get("overwrite") == version
-            note.save(
-                source=Note.Source.OVERWRITE if overwriting else Note.Source.EDITOR
-            )
+            source = Note.Source.OVERWRITE if overwriting else Note.Source.EDITOR
+            if merge is not None:
+                note.body, source = merge.text, Note.Source.MERGE
+            note.save(source=source)
             # Un titre de projet renommé : en attente du choix, tâches qui suivent (#170).
             record_project_renames(note, old_body, note.body)
             url = save_passages(request, note, "modifiée", stay=stay)
             if in_place:
-                response = toasts_response(request)
+                response = render(
+                    request,
+                    "note_taking/note/save_toasts.html",
+                    {"merge": merged_text(merge) if merge else None},
+                )
                 response["X-Note-Version"] = note_version(note)
                 if str(note.date) != str(note_date):
                     # L'adresse de l'éditeur suit la date : note_form.js y va.

@@ -40,13 +40,27 @@ def conflict_reason(note: Note, opened_version: str) -> str:
     # Dans la même minute, les secondes distinguent les deux versions.
     same_minute = f"{opened:%F %H:%M}" == f"{note.updated:%F %H:%M}"
     clock = "%H:%M:%S" if same_minute else "%H:%M"
+    return (
+        f"La note a été modifiée {moment(note.updated, 'à', clock)}{changed_by(note)}. "
+        f"L'éditeur était ouvert sur la version {moment(opened, 'de', clock)}."
+    )
+
+
+def changed_by(note: Note) -> str:
+    """« par la capture rapide », ou ce qu'on en sait."""
     # Un enregistrement de l'éditeur : celui d'un autre onglet, ou de celui-ci si la
     # page a été reprise du cache.
-    by = {
+    return {
         "": ", sans que l'application sache par quoi",
         Note.Source.EDITOR: " par l'éditeur (dans cet onglet ou un autre)",
     }.get(note.updated_by, f" par {note.source_label}")
+
+
+def merge_message(note: Note) -> str:
+    """Toast d'une fusion (#472) : `note` est la version enregistrée qui a été
+    réunie au texte saisi."""
     return (
-        f"La note a été modifiée {moment(note.updated, 'à', clock)}{by}. "
-        f"L'éditeur était ouvert sur la version {moment(opened, 'de', clock)}."
+        f"La note avait été modifiée {moment(note.updated, 'à', '%H:%M')}"
+        f"{changed_by(note)} depuis l'ouverture de l'éditeur : les deux "
+        "modifications sont réunies."
     )

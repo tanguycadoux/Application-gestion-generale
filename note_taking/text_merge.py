@@ -103,3 +103,72 @@ def describe_changes(opened: str, saved: str) -> list[Change]:
             where = paths[min(hunk.other_start, len(paths) - 1)]
             changes.append(Change(where, added, removed))
     return changes
+
+
+# Fusion (#472)
+
+
+@dataclass
+class Merge:
+    """Le texte fusionné, et ce que l'éditeur doit changer au texte saisi pour y
+    arriver : les lignes `from` à `to` (exclue) remplacées par `lines`."""
+
+    text: str
+    edits: list[dict] = field(default_factory=list)
+
+
+def touches(first: Hunk, second: Hunk) -> bool:
+    """Deux changements qui touchent les mêmes lignes, ou des lignes voisines : deux
+    ajouts au même endroit, une ligne modifiée juste après une autre…"""
+    return first.start <= second.end and second.start <= first.end
+
+
+def merge_texts(original: str, mine: str, saved: str) -> Merge | None:
+    """Le texte saisi (`mine`) et la version enregistrée (`saved`), partis tous deux
+    du texte ouvert par l'éditeur (`original`) : réunis si leurs changements ne se
+    touchent pas, rien sinon.
+
+    Chaque ligne du résultat vient du texte saisi ou de la version enregistrée : un
+    texte d'origine faux ne peut faire écrire que ce que l'un des deux contient. Les
+    fins de ligne sont celles du texte saisi.
+    """
+    base = lines_of(original)
+    mine_lines, saved_lines = lines_of(mine), lines_of(saved)
+    ours, theirs = hunks(base, mine_lines), hunks(base, saved_lines)
+    if any(touches(a, b) for a in ours for b in theirs):
+        return None
+
+    result: list[str] = []
+    edits = []
+    position = 0
+    # Décalage des lignes du texte saisi par rapport au texte d'origine, avant le
+    # changement en cours.
+    shift = 0
+    changes = [(hunk, False) for hunk in ours] + [(hunk, True) for hunk in theirs]
+    for hunk, from_saved in sorted(changes, key=lambda change: change[0].start):
+        result.extend(base[position : hunk.start])
+        result.extend(hunk.lines)
+        if from_saved:
+            start = hunk.start + shift
+            edits.append(
+                {
+                    "from": start,
+                    "to": start + hunk.end - hunk.start,
+                    "lines": list(hunk.lines),
+                }
+            )
+        else:
+            shift += len(hunk.lines) - (hunk.end - hunk.start)
+        position = hunk.end
+    result.extend(base[position:])
+    newline = "\r\n" if "\r\n" in mine else "\n"
+    return Merge(newline.join(result), edits)
+
+
+def apply_edits(text: str, edits: list[dict]) -> str:
+    """Le texte avec les changements de `Merge.edits`, comme l'éditeur les applique."""
+    lines = lines_of(text)
+    newline = "\r\n" if "\r\n" in text else "\n"
+    for edit in reversed(edits):
+        lines[edit["from"] : edit["to"]] = edit["lines"]
+    return newline.join(lines)

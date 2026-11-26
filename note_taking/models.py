@@ -19,6 +19,7 @@ class Note(models.Model):
 
         EDITOR = "editor", "l'éditeur"
         OVERWRITE = "overwrite", "l'éditeur, en remplaçant la version enregistrée"
+        MERGE = "merge", "l'éditeur, en y réunissant une modification faite ailleurs"
         CAPTURE = "capture", "la capture rapide"
         PATH_RENAME = "path_rename", "le renommage d'un chemin"
         PROJECT_RENAME = "project_rename", "le renommage d'un projet"
