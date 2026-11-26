@@ -3,7 +3,7 @@
 import re
 from datetime import date, datetime
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -81,7 +81,98 @@ class GanttChartTests(GanttTestCase):
 
     def test_debuts_de_mois(self):
         self.assertEqual(
-            [label for label, _ in self.chart().ticks], ["jan.", "fév.", "mars"]
+            [tick.label for tick in self.chart().ticks], ["jan.", "fév.", "mars"]
+        )
+
+    def test_tache_terminee_sans_echeance_jusqu_a_sa_completion(self):
+        self.open.progress = 100
+        self.open.save()
+        # `save` réécrit la date de création : remise ensuite, avec la complétion.
+        Task.objects.filter(pk=self.open.pk).update(
+            created_at=aware(date(2026, 2, 1)), completed_at=aware(date(2026, 2, 10))
+        )
+
+        row = self.chart().rows[3]
+
+        self.assertEqual(row.finish, date(2026, 2, 10))
+        self.assertFalse(row.open_end)
+
+
+class GanttAxisTests(GanttTestCase):
+    """Axe d'un arbre ancien (#186) : arrêté à sa dernière date quand aujourd'hui est
+    loin, avec un repère « Aujourd'hui → » au bord."""
+
+    def chart_on(self, today: date):
+        from todolist.gantt import gantt_chart
+
+        return gantt_chart(Task.objects.get(pk=self.parent.pk), today=today)
+
+    def close_open_task(self):
+        Task.objects.filter(pk=self.open.pk).update(due_date=date(2026, 2, 20))
+
+    def test_axe_arrete_a_la_derniere_date_quand_aujourd_hui_est_loin(self):
+        self.close_open_task()
+
+        chart = self.chart_on(date(2026, 11, 1))
+
+        self.assertEqual(chart.end, date(2026, 3, 31))
+        self.assertIsNone(chart.today)
+        self.assertTrue(chart.today_beyond)
+        self.assertEqual(chart.parent_due, 100.0)
+
+    def test_axe_jusqu_a_aujourd_hui_quand_il_est_proche(self):
+        self.close_open_task()
+
+        chart = self.chart_on(date(2026, 4, 10))
+
+        self.assertEqual(chart.end, date(2026, 4, 10))
+        self.assertEqual(chart.today, 100.0)
+        self.assertFalse(chart.today_beyond)
+
+    def test_tache_en_cours_sans_echeance_garde_aujourd_hui(self):
+        """Sa barre va jusqu'à aujourd'hui : l'axe aussi, même loin."""
+        chart = self.chart_on(date(2026, 11, 1))
+
+        self.assertEqual(chart.end, date(2026, 11, 1))
+        self.assertFalse(chart.today_beyond)
+
+
+class GanttTicksTests(SimpleTestCase):
+    """Repères de mois espacés quand la place manque (#185) : un repère sur trois,
+    six ou douze selon la largeur de la frise (requêtes de conteneur)."""
+
+    def ticks(self, start: date, end: date):
+        from todolist.gantt import month_ticks
+
+        length = (end - start).days
+        return month_ticks(start, end, lambda day: (day - start).days / length * 100)
+
+    def test_axe_court_tous_les_mois_toujours(self):
+        ticks = self.ticks(date(2026, 1, 1), date(2026, 3, 31))
+
+        self.assertEqual({tick.visibility for tick in ticks}, {""})
+
+    def test_axe_long_mois_espaces_quand_la_place_manque(self):
+        ticks = {
+            tick.label: tick.visibility
+            for tick in self.ticks(date(2025, 1, 1), date(2026, 12, 31))
+        }
+
+        # Plusieurs années : janvier porte l'année, toujours affichée.
+        self.assertEqual(ticks["2025"], "")
+        self.assertEqual(ticks["2026"], "")
+        # Les trimestres d'abord, puis les autres mois sur une frise large.
+        self.assertEqual(ticks["avr."], "hidden @min-[32rem]:block")
+        self.assertTrue(ticks["fév."].startswith("hidden"))
+        visible_from = [
+            "",
+            "hidden @min-[20rem]:block",
+            "hidden @min-[32rem]:block",
+            "hidden @min-[48rem]:block",
+            "hidden",
+        ]
+        self.assertLess(
+            visible_from.index(ticks["juil."]), visible_from.index(ticks["fév."])
         )
 
 
@@ -110,13 +201,28 @@ class GanttPageTests(GanttTestCase):
         # La page utilise la vraie date du jour : seules les variables sont vérifiées.
         self.assertRegex(figure.group(), r'style="--start: [\d.]+%; --width: [\d.]+%;')
         self.assertRegex(figure.group(), r"aria-label=\"Aujourd(&#x27;|')hui\"")
-        self.assertIn('aria-label="Échéance de la tâche"', figure.group())
+        self.assertIn(
+            'aria-label="Échéance de la tâche : 31 mars 2026"', figure.group()
+        )
+        # La colonne des noms ne prend jamais plus d'un tiers environ (#185).
+        self.assertIn("grid-cols-[min(14rem,35%)_1fr]", figure.group())
+        self.assertIn("@container", figure.group())
 
     def test_texte_de_chaque_barre_pour_les_lecteurs_d_ecran(self):
         html = self.html(self.parent)
 
         self.assertIn("du 31 janvier 2026 au 10 février 2026, 40 %", html)
         self.assertIn("depuis le 1er février 2026, sans échéance, 0 %", html)
+
+    def test_aujourd_hui_au_bord_d_un_arbre_ancien(self):
+        """Les dates des tâches de test sont passées : sans la tâche en cours sans
+        échéance, l'axe s'arrête avant aujourd'hui (#186)."""
+        self.open.delete()
+
+        html = self.html(self.parent)
+
+        self.assertIn("Aujourd&#x27;hui →", html)
+        self.assertNotRegex(html, r"aria-label=\"Aujourd(&#x27;|')hui\"")
 
     def test_pas_de_frise_sans_sous_tache(self):
         html = self.html(self.grandchild)
