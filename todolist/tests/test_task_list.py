@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from core.dates import date_text
 from core.models import Project
 from core.sections import section_for
 from core.tables import Sort
@@ -307,6 +308,68 @@ class MultiProjectTests(TaskListTestCase):
             [row.task.title for row in response.context["dismissed_rows"]],
             ["Écartée gamma"],
         )
+
+
+class CompletionSortTests(TaskListTestCase):
+    """Tri par date de complétion (#255) : les terminées, de la plus récente à la
+    plus ancienne au premier clic, puis les autres, dans l'ordre de l'échéance."""
+
+    def setUp(self):
+        super().setUp()
+        self.recente = Task.objects.create(
+            title="Récente", project=self.beta, done=True, progress=100
+        )
+        now = timezone.now()
+        Task.objects.filter(pk=self.finie.pk).update(
+            completed_at=now - timedelta(days=4)
+        )
+        Task.objects.filter(pk=self.recente.pk).update(
+            completed_at=now - timedelta(days=1)
+        )
+
+    def test_terminees_les_plus_recentes_d_abord_puis_les_autres(self):
+        self.assertEqual(
+            self.roots(self.get(state="all", sort="-completed")),
+            ["Récente", "Finie", "Bilan", "Été à préparer", "Zèbre"],
+        )
+
+    def test_croissant_les_autres_restent_a_la_fin(self):
+        self.assertEqual(
+            self.roots(self.get(state="all", sort="completed")),
+            ["Finie", "Récente", "Bilan", "Été à préparer", "Zèbre"],
+        )
+
+    def test_sous_taches_triees_sous_leur_parent(self):
+        make = Task.objects.create
+        ancienne = make(
+            title="Ancienne", project=self.beta, parent=self.sans_date, done=True
+        )
+        nouvelle = make(
+            title="Nouvelle", project=self.beta, parent=self.sans_date, done=True
+        )
+        now = timezone.now()
+        Task.objects.filter(pk=ancienne.pk).update(completed_at=now - timedelta(3))
+        Task.objects.filter(pk=nouvelle.pk).update(completed_at=now - timedelta(1))
+
+        titles = self.titles(self.get(sort="-completed"))
+
+        zebre = titles.index("Zèbre")
+        self.assertEqual(
+            titles[zebre : zebre + 4],
+            ["Zèbre", "Nouvelle", "Ancienne", "Sous-tâche de zèbre"],
+        )
+
+    def test_en_tete_triable_les_plus_recentes_au_premier_clic(self):
+        html = self.get().content.decode()
+
+        self.assertIn('href="?sort=-completed"', html)
+        self.assertRegex(html, r'href="\?sort=-completed"[^>]*>\s*Terminée le')
+
+    def test_date_de_completion_affichee(self):
+        html = self.get(state="done").content.decode()
+
+        completed_at = Task.objects.get(pk=self.recente.pk).completed_at
+        self.assertIn(date_text(completed_at, "court"), html)
 
 
 class TaskSortTests(TaskListTestCase):
