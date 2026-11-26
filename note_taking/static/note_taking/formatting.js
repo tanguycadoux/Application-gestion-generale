@@ -1,13 +1,16 @@
 // Mise en forme dans l'éditeur (#434) : paires fermées toutes seules, et Ctrl+B, Ctrl+I, Ctrl+U.
 //
 // - **Paires** (`closeBracketPairs`) : `closeBrackets` de CodeMirror, sur `PAIRS`. Ni dans un
-//   bloc de code délimité, ni dans une formule, écrits tels quels. Un bloc de code indenté en
-//   a : l'analyseur en voit là où Pandoc voit une liste.
+//   bloc de code délimité, ni dans une formule, écrits tels quels, sauf autour d'une sélection
+//   (#498). Un bloc de code indenté en a : l'analyseur en voit là où Pandoc voit une liste.
+// - **`$` autour d'une sélection** (`wrapInMath`, #498) : une formule, en bloc sur plusieurs
+//   lignes ; sans sélection, `$` s'écrit seul.
 // - **Gras, italique, souligné** (`toggleMark`) : des bascules, qu'une seule annulation défait.
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { isolateHistory } from "@codemirror/commands";
 import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { EditorSelection, EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { hangingColumn } from "./hanging.js";
 
 const PAIRS = ["(", "[", "{", "'", '"', "`"];
@@ -58,10 +61,13 @@ function inMath(state, pos) {
     return display;
 }
 
-/** Les paires possibles au curseur ; avec une sélection, toutes : elles l'entourent. */
+/**
+ * Les paires possibles au curseur. Avec une sélection, toutes, même dans une formule ou un bloc
+ * de code : elles l'entourent.
+ */
 function pairsAt(state, pos) {
-    if (inCodeBlock(state, pos) || inMath(state, pos)) return [];
     if (!state.selection.main.empty) return PAIRS;
+    if (inCodeBlock(state, pos) || inMath(state, pos)) return [];
     const line = state.doc.lineAt(pos);
     const before = line.text.slice(0, pos - line.from);
     const next = line.text[pos - line.from];
@@ -73,8 +79,64 @@ function pairsAt(state, pos) {
     });
 }
 
+/**
+ * `$` tapé sur une sélection l'entoure : `$…$` sur une ligne, sans les blancs des bords (Pandoc
+ * n'en veut pas juste à l'intérieur) ; sur plusieurs lignes, `$$` sur une ligne au-dessus et une
+ * en dessous, au retrait de la première. Pas dans un bloc de code ni dans une formule.
+ */
+function wrapInMath(view, from, to, insert) {
+    const { state } = view;
+    if (insert !== "$" || view.composing || state.readOnly) return false;
+    const { ranges } = state.selection;
+    const writtenAsIs = (range) =>
+        !state.sliceDoc(range.from, range.to).trim() || inCodeBlock(state, range.from) || inMath(state, range.from);
+    if (ranges.some(writtenAsIs)) return false;
+    const fence = "$$";
+    const transaction = state.changeByRange((range) => {
+        let end = range.to;
+        // Des lignes entières sélectionnées : la fin est au début de la ligne suivante.
+        if (state.doc.lineAt(end).from === end) end -= 1;
+        const first = state.doc.lineAt(range.from);
+        const last = state.doc.lineAt(end);
+        if (first.number === last.number) {
+            const text = state.sliceDoc(range.from, end);
+            const start = range.from + text.length - text.trimStart().length;
+            const stop = range.from + text.trimEnd().length;
+            return {
+                changes: [
+                    { from: start, insert: "$" },
+                    { from: stop, insert: "$" },
+                ],
+                range: EditorSelection.range(start + 1, stop + 1),
+            };
+        }
+        // Les `$$` au retrait de la première ligne : dans un élément de liste, la formule y reste.
+        const indent = /^[ \t]*/.exec(first.text)[0];
+        const textStart = first.from + indent.length;
+        const start = Math.max(range.from, textStart);
+        const before = (range.from <= textStart ? "" : `\n${indent}`) + `${fence}\n${indent}`;
+        const after = `\n${indent}${fence}` + (end === last.to ? "" : `\n${indent}`);
+        return {
+            changes: [
+                { from: start, insert: before },
+                { from: end, insert: after },
+            ],
+            range: EditorSelection.range(start + before.length, end + before.length),
+        };
+    });
+    view.dispatch(
+        state.update(transaction, {
+            scrollIntoView: true,
+            userEvent: "input.type",
+            annotations: isolateHistory.of("full"),
+        }),
+    );
+    return true;
+}
+
 export const closeBracketPairs = [
     closeBrackets(),
+    EditorView.inputHandler.of(wrapInMath),
     // Lu seulement quand `closeBrackets` le demande.
     EditorState.languageData.of((state, pos) => [
         {
