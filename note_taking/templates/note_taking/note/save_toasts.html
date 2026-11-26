@@ -1,0 +1,3 @@
+{# Enregistrement sur place (#389) : les toasts et, après une fusion (#472), le texte fusionné et les lignes que note_form.js change dans l'éditeur. #}
+{% include "core/components/message_toasts.html" %}
+{% if merge %}{{ merge|json_script:"note-merge" }}{% endif %}

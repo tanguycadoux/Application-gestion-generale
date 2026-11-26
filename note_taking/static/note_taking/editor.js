@@ -19,6 +19,7 @@ import { editorMenu } from "./editor_menu.js";
 import { closeBracketPairs, formattingKeymap } from "./formatting.js";
 import { hangingIndent } from "./hanging.js";
 import { listKeymap, pandocListMarks } from "./lists.js";
+import { followMerges } from "./merge.js";
 import { createOutline } from "./outline.js";
 import { suggestions } from "./suggestions.js";
 import { openTableDialog } from "./table_dialog.js";
@@ -252,6 +253,8 @@ function mountEditor(textarea) {
     }
     textarea.after(workspace);
     textarea.hidden = true;
+    // Les lignes réunies par une fusion à l'enregistrement (#472).
+    followMerges(view, textarea);
     return view;
 }
 
