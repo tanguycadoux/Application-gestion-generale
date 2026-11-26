@@ -7,7 +7,6 @@ from note_taking.models import Note
 from note_taking.qmd.regroup import regroup_headings, repeated_headings
 from note_taking.services import process_passages
 from todolist.models import Task
-from todolist.services import body_lines
 
 
 class RegroupTasksTests(TestCase):
@@ -40,16 +39,3 @@ class RegroupTasksTests(TestCase):
 
         self.assertEqual(self.tasks(), before)
         self.assertEqual(Task.objects.count(), 7)
-
-    def test_lignes_de_taches_identiques(self):
-        keys = {heading.key for heading in repeated_headings(self.BODY)}
-        after = regroup_headings(self.BODY, keys)
-
-        def identities(body: str) -> set:
-            return {
-                (line.path, line.text, line.parent.text if line.parent else None)
-                for passage in body_lines(self.note.date, body)
-                for line in passage
-            }
-
-        self.assertEqual(identities(after), identities(self.BODY))

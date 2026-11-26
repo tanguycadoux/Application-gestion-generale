@@ -111,6 +111,8 @@ Icônes des boutons (#131) : tout bouton a une icône (paramètre `icon`, jamais
 | terminer (l'édition d'une note), valider (un tableau) | `check_circle` |
 | annuler, abandonner (l'édition d'un tableau) | `close` |
 | formater (un tableau) | `table` |
+| copier (le chemin d'un fichier) | `content_copy` |
+| regrouper les titres répétés d'une note | `account_tree` |
 
 Sélection (#497) : l'interface (boutons, menu, plan, raccourcis, textes indicatifs des champs, compteurs) ne se sélectionne pas ; Ctrl+A puis copier sur la page d'une note ne ramène que son titre et son contenu. Règles dans `assets/css/source.css`, détail dans `docs/architecture.md` (« Composants d'interface »).
 
@@ -397,6 +399,10 @@ Dans l'application, le lien mène à la page de la note, à la section visée, d
 
 La page d'une note liste, sous son texte, les notes qui la **citent** (#207) : pour chaque passage qui contient un lien vers elle, la note, le projet et le chemin du passage, la ligne du lien, et un lien vers ce passage. Ces liens sont recalculés à chaque enregistrement (et par `reprocess_notes`) ; un lien vers une note à venir est gardé, et la note le voit dès sa création.
 
+Un lien vers un **fichier local ou réseau** (`[plan](C:\Docs\plan.pdf)`, `\\serveur\partage\…`, `file:///…`), qu'un navigateur refuse d'ouvrir depuis une page web, s'affiche comme son texte suivi d'un bouton « Copier le chemin » (#496) : le chemin, en forme Windows, se colle ensuite dans l'explorateur.
+
+Un **titre répété** sous le même parent (`# A`, `# B`, `# A`) n'est jamais réorganisé d'office (#315) : la note est enregistrée telle qu'écrite, puis la page de la note propose « Regrouper les titres répétés », avec un aperçu et une case par titre. Le texte du second titre rejoint le premier, avant ses sous-titres. Un regroupement qui changerait les tags ou le chemin d'une ligne, ou le parent d'une tâche, n'est pas proposé.
+
 ### Fonctionnalités
 
 - calendrier des notes (`/notes/`, l'accueil des notes) : chaque jour qui a une note porte une étiquette par projet, avec la pastille de sa couleur (#162, #378), ou « Note » si elle n'a que du texte sans projet ;
@@ -471,12 +477,14 @@ Milestones terminés :
 | M25 · Recherche (suite) | tri des résultats par pertinence ou par date ; vue « Document » lue comme une note, avec son plan et son bandeau ; filtres toujours visibles ; arbre des chemins fidèle à ce qui est cherché |
 | M27 · Enregistrement et rendu des notes | fichiers statiques à l'adresse qui change avec leur contenu ; modifications des notes tracées dans un fichier de log, sans leur texte ; conflit d'enregistrement expliqué ; un seul bouton au bilan d'une note ; liens sans texte visibles et document des écarts à Pandoc |
 | M23 · Éditeur : listes et blocs | menu du clic droit hiérarchisé (presse-papiers, insertion des callouts, formules, colonnes, figures, renvois) ; formatage groupé des tableaux ; listes de Pandoc lues comme le rendu (coloration, Entrée, Tab) et marqueur du niveau d'arrivée avec Tab ; suite des lignes longues sous leur texte ; plan sans les titres des blocs |
+| M28 · Rendu des notes (suite) | bloc de code délimité sous un élément de liste, listes et code d'une citation, titre collé à un élément rendu hors de la liste ; « Copier le chemin » d'un lien vers un fichier local ou réseau ; regroupement proposé des titres répétés d'une note |
 | M26 · Éditeur : tableaux et mise en forme | paires fermées toutes seules, Ctrl+B / I / U et souligné au rendu ; lignes, colonnes et dimensions d'un tableau au clic droit ; tableau édité dans une fenêtre à part, retour à la ligne rétabli dans l'éditeur ; élément qui suit une sous-liste rendu à son niveau |
 
 Évolutions planifiées, dans l'ordre :
 
 | Milestone | Contenu |
 |---|---|
+| M29 · Édition : conflits et confort | différences et fusion automatique dans un conflit d'enregistrement, paires autour d'une sélection dans les formules, interface qui ne se sélectionne pas avec le contenu |
 | M20 · Tâches : tri, calendrier et frise | tri par date de complétion, toutes les tâches d'un jour, frise plus lisible et nouveau style |
 | M22 · Import et export (suite) | import depuis la page d'une note, choix de la version à garder au réimport |
 | M17 · Éditeur d'images | création et modification d'images vectorielles et matricielles, renommage d'une image dans les notes, import depuis la liste, suppression des images inutilisées |
