@@ -15,6 +15,10 @@ MARKDOWN_INDENT = 4
 BLOCK_ITEM_REGEX = re.compile(r"^(?P<indent>(?: {4})*)(?:\d+\.|[*+-]) ")
 # Lignes qui terminent une liste pour Python-Markdown : titre, trait horizontal.
 BLOCK_END_REGEX = re.compile(rf"^#|{HRProcessor.RE}")
+# Clôture d'un bloc de code délimité, lue après l'indentation de la ligne.
+FENCE_REGEX = re.compile(r"(?P<fence>`{3,}|~{3,})")
+# Ligne d'une citation, et son préfixe : `>` et une espace éventuelle.
+QUOTE_REGEX = re.compile(r"^ {0,3}> ?")
 
 
 class PandocListsExtension(markdown.Extension):
@@ -28,6 +32,11 @@ class PandocListsExtension(markdown.Extension):
     Python-Markdown découpe le texte en blocs aux lignes vides : une ligne vide
     est ajoutée avant un élément qui change de type de liste (Pandoc commence
     alors une autre liste), ou qui suit un paragraphe de suite d'un élément.
+
+    Python-Markdown ne reconnaît que les blocs de code délimités en début de
+    ligne, et ne prétraite pas le texte d'une citation : un bloc de code indenté
+    sous un élément est mis de côté ici (#489), et les listes d'une citation sont
+    prétraitées comme les autres (#490).
 
     Les marqueurs de Pandoc que Python-Markdown ne connaît pas (#325 : `a.`, `i)`,
     `(1)`, `#.`, `(@)`…) sont réécrits en `N.` ; le type de la liste (lettres,
@@ -78,6 +87,12 @@ class ListTypeTreeprocessor(markdown.treeprocessors.Treeprocessor):
 
 class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
     def run(self, lines: list[str]) -> list[str]:
+        # Éléments `(@)` déjà rencontrés : leur numéro continue d'une liste à
+        # l'autre, citations comprises.
+        self.examples = 0
+        return self.reindent(lines)
+
+    def reindent(self, lines: list[str]) -> list[str]:
         # Éléments ouverts, du plus extérieur au plus intérieur : colonne de leur
         # texte et marqueur. Un élément de niveau n s'écrit avec 4 × n espaces.
         items: list[tuple[int, Marker]] = []
@@ -85,11 +100,12 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
         # Une liste peut suivre un titre sans ligne vide, mais pas un paragraphe.
         after_heading = False
         in_paragraph_after_blank = False
-        # Éléments `(@)` déjà rencontrés : leur numéro continue d'une liste à l'autre.
-        examples = 0
-        result = []
+        result: list[str] = []
 
-        for line in lines:
+        index = 0
+        while index < len(lines):
+            line = lines[index]
+            index += 1
             if not line.strip():
                 result.append(line)
                 previous_blank = True
@@ -101,6 +117,43 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
             # texte. Les colonnes croissent de l'extérieur vers l'intérieur.
             depth = sum(1 for column, _ in items if indent >= column)
             container = items[depth - 1][0] if depth else 0
+
+            if not depth and (previous_blank or not items) and QUOTE_REGEX.match(line):
+                # Citation : ses lignes, sans leur préfixe, sont prétraitées à part.
+                end = index
+                while end < len(lines) and QUOTE_REGEX.match(lines[end]):
+                    end += 1
+                quoted = [QUOTE_REGEX.sub("", text) for text in lines[index - 1 : end]]
+                result.extend(f"> {text}".rstrip() for text in self.reindent(quoted))
+                index = end
+                items = []
+                previous_blank = after_heading = in_paragraph_after_blank = False
+                continue
+
+            fence = FENCE_REGEX.match(line, indent)
+            closing = closing_fence(lines, index, fence) if fence else None
+            if fence and closing is not None and indent < container + MARKDOWN_INDENT:
+                # Bloc de code délimité dans l'élément : mis de côté par l'extension
+                # `fenced_code`, sans l'indentation de sa clôture.
+                code = [dedent(text, indent) for text in lines[index - 1 : closing + 1]]
+                stashed = self.md.preprocessors["fenced_code_block"].run(code)
+                # Les lignes vides ajoutées autour du bloc aéreraient la liste.
+                stashed = "\n".join(stashed).strip("\n").split("\n")
+                items = items[:depth]
+                margin = " " * (MARKDOWN_INDENT * depth)
+                if not depth:
+                    # Hors d'un élément, le bloc ne doit pas finir dans un paragraphe.
+                    # Une ligne vide en tête d'une citation en ferait un, elle aussi.
+                    before = [""] if result and not previous_blank else []
+                    after = [""] if closing + 1 < len(lines) else []
+                    stashed = [*before, *stashed, *after]
+                result.extend(margin + text if text else text for text in stashed)
+                index = closing + 1
+                in_paragraph_after_blank = bool(depth) and (
+                    in_paragraph_after_blank or previous_blank
+                )
+                previous_blank = after_heading = False
+                continue
             sibling = items[depth] if depth < len(items) else None
             # Le marqueur de l'élément précédent de la liste décide des lettres
             # ambiguës : `i.` suit `b.` dans une liste de lettres.
@@ -137,11 +190,11 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
                 elif (new_list or in_paragraph_after_blank) and not previous_blank:
                     result.append("")
                 if marker.kind == "example":
-                    examples += 1
+                    self.examples += 1
                 text = line[indent:]
                 if not marker.native:
                     first = sibling is None or new_list
-                    number = examples if marker.kind == "example" else marker.value
+                    number = self.examples if marker.kind == "example" else marker.value
                     tag = ""
                     if first and marker.kind in ("alpha", "roman"):
                         tag = LIST_TYPE_TAG.format(marker.list_type)
@@ -162,7 +215,12 @@ class PandocListsPreprocessor(markdown.preprocessors.Preprocessor):
                 else:
                     # Ligne qui suit le texte de l'élément (continuation paresseuse),
                     # ou qui ferme les listes après une ligne vide ou en titre.
-                    if previous_blank or ATX_HEADING_REGEX.match(line):
+                    heading = ATX_HEADING_REGEX.match(line)
+                    if heading and items and not previous_blank:
+                        # Sans ligne vide, Python-Markdown lirait le titre dans le
+                        # paragraphe de suite de l'élément (#491).
+                        result.append("")
+                    if previous_blank or heading:
                         items = []
                         in_paragraph_after_blank = False
                     result.append(line)
@@ -265,6 +323,22 @@ def split_dedented_items(block: str) -> list[tuple[int | None, str]]:
             parts.append((level, "\n".join(lines[start:index])))
             start, level = index, item_level
     return [*parts, (level, "\n".join(lines[start:]))]
+
+
+def closing_fence(lines: list[str], start: int, fence: re.Match[str]) -> int | None:
+    """Indice de la ligne qui ferme le bloc de code ouvert par `fence`, à partir de
+    `start` : la même clôture, au moins aussi longue, seule sur sa ligne."""
+    opening = fence["fence"]
+    for index in range(start, len(lines)):
+        text = lines[index].strip()
+        if text.startswith(opening) and not text.strip(opening[0]):
+            return index
+    return None
+
+
+def dedent(line: str, columns: int) -> str:
+    """La ligne sans ses `columns` premières espaces, au plus."""
+    return line[min(columns, len(line) - len(line.lstrip(" "))) :]
 
 
 def escape_list_marker(item: re.Match[str], line: str) -> str:
